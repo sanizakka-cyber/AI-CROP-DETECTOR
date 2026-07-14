@@ -1,32 +1,122 @@
-services:
-  - type: web
-    name: msas-web
-    env: node
-    rootDir: web
-    buildCommand: npm install && npm run build
-    startCommand: npm run start:prod
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NEXT_PUBLIC_API_URL
-        value: https://msas-api.onrender.com/api
+# ── MSAS FarmAI — Render Infrastructure ──────────────────────────────────────
+# Deploy via: https://dashboard.render.com/new/blueprint
+# Repo:        https://github.com/sanizakka-cyber/AI-CROP-DETECTOR
 
+services:
+
+  # ── Laravel API + Web Dashboard ────────────────────────────────────────────
   - type: web
-    name: msas-api
-    env: node
-    rootDir: server
-    buildCommand: npm install
-    startCommand: npm start
+    name: msas-farmai
+    env: docker
+    dockerfilePath: ./msas-system/Dockerfile
+    dockerContext: ./msas-system
+    region: frankfurt          # Closest to Nigeria
+    plan: starter              # $7/mo — keeps app always-on (free tier sleeps)
+    healthCheckPath: /api/health
+
     envVars:
-      - key: NODE_ENV
+      - key: APP_NAME
+        value: "MSAS Livestock & Agro Services"
+      - key: APP_ENV
         value: production
-      - key: PORT
-        value: 10000
-      - key: MONGO_URI
-        value: mongodb+srv://<username>:<password>@<cluster>/<database>?retryWrites=true&w=majority
-      - key: CORS_ORIGINS
-        value: https://msasagro.com,https://www.msasagro.com
-      - key: JWT_SECRET
-        value: msasagro-render-secret-2026
-      - key: JWT_EXPIRES_IN
-        value: 7d
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        value: https://msas.online
+      - key: APP_KEY
+        value: base64:zf4kOSElJqhjPHVbnqtHlewu4REVVxmq54M/BAVdPVo=
+      - key: APP_LOCALE
+        value: en
+
+      # Database — auto-wired from the PostgreSQL service below
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: msas-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: msas-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: msas-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: msas-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: msas-db
+          property: password
+
+      # Session / Cache (no Redis needed initially)
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: SESSION_ENCRYPT
+        value: "false"
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      # Logging → Render log viewer
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+
+      # Domain & CORS
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: msas.online,www.msas.online
+      - key: SESSION_DOMAIN
+        value: .msas.online
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://msas.online,https://www.msas.online
+
+      # AI Engine
+      - key: AI_ENGINE_URL
+        value: http://127.0.0.1:8001
+      - key: AI_ENGINE_KEY
+        value: REPLACE_AFTER_DEPLOY
+
+      # Mail — set MAIL_PASSWORD in Render dashboard (not here)
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_ENCRYPTION
+        value: tls
+      - key: MAIL_USERNAME
+        value: REPLACE_WITH_GMAIL
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        value: noreply@msas.online
+      - key: MAIL_FROM_NAME
+        value: "MSAS FarmAI"
+
+      # Paystack — set secrets in Render dashboard
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PAYMENT_URL
+        value: https://api.paystack.co
+
+      - key: FILESYSTEM_DISK
+        value: local
+
+# ── PostgreSQL Database ───────────────────────────────────────────────────────
+databases:
+  - name: msas-db
+    databaseName: msas_production
+    user: msas_user
+    plan: free                 # Free 90-day trial → upgrade to Starter ($7/mo) after
+    region: frankfurt
