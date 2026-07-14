@@ -1,0 +1,14 @@
+[Unit]
+Description=MSAS Web App
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/msas/web
+Environment=PORT=3000
+ExecStart=/usr/bin/node /var/www/msas/web/.next/standalone/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

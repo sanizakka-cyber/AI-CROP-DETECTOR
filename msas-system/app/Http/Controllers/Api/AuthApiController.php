@@ -1,0 +1,143 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthApiController extends Controller
+{
+    public function login(Request $request): JsonResponse
+    {
+        $request->validate([
+            'phone'    => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = User::where('phone', $request->phone)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'phone' => ['These credentials do not match our records.'],
+            ]);
+        }
+
+        if (! $user->is_active) {
+            return response()->json(['message' => 'Account is suspended. Please contact support.'], 403);
+        }
+
+        $user->update(['last_seen' => now()]);
+
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => $this->userPayload($user),
+        ]);
+    }
+
+    public function register(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name'     => ['required', 'string', 'max:160'],
+            'phone'    => ['required', 'string', 'unique:users,phone'],
+            'password' => ['required', 'string', 'min:6'],
+            'role'     => ['sometimes', 'string', 'in:farmer,vet,agronomist,agro-dealer,extension-officer'],
+            'language' => ['sometimes', 'string', 'in:en,ha'],
+            'state'    => ['sometimes', 'string', 'max:100'],
+        ]);
+
+        $parts     = explode(' ', trim($request->name), 2);
+        $firstName = $parts[0];
+        $lastName  = $parts[1] ?? $parts[0];
+
+        $user = User::create([
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'phone'      => $request->phone,
+            'email'      => $request->email ?? null,
+            'password'   => Hash::make($request->password),
+            'role'       => $request->role ?? 'farmer',
+            'language'   => $request->language ?? 'en',
+            'state'      => $request->state ?? null,
+            'is_active'  => true,
+        ]);
+
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user'  => $this->userPayload($user),
+        ], 201);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json(['user' => $this->userPayload($request->user())]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out']);
+    }
+
+    private function userPayload(User $user): array
+    {
+        $roleDisplayNames = [
+            'farmer' => 'Farmer',
+            'vet' => 'Veterinarian',
+            'veterinarian' => 'Veterinarian',
+            'agronomist' => 'Agronomist',
+            'admin' => 'Administrator',
+            'agro-dealer' => 'Agro Dealer',
+            'agro_dealer' => 'Agro Dealer',
+            'extension-officer' => 'Extension Worker',
+            'extension_officer' => 'Extension Worker',
+            'extension-worker' => 'Extension Worker',
+            'extension_worker' => 'Extension Worker',
+            'researcher' => 'Researcher',
+            'hr' => 'Human Resources',
+            'finance' => 'Finance Officer',
+            'operations' => 'Operations Manager',
+            'data-analyst' => 'Data Analyst',
+            'data_analyst' => 'Data Analyst',
+            'field-officer' => 'Field Officer',
+            'field_officer' => 'Field Officer',
+            'me-officer' => 'Monitoring & Evaluation Officer',
+            'me_officer' => 'Monitoring & Evaluation Officer',
+            'customer-support' => 'Customer Support',
+            'customer_support' => 'Customer Support',
+        ];
+
+        return [
+            'id'                 => $user->id,
+            'name'               => $user->name,
+            'display_first_name' => $user->displayFirstName,
+            'first_name'         => $user->first_name,
+            'last_name'          => $user->last_name,
+            'phone'              => $user->phone,
+            'email'              => $user->email,
+            'role'               => $user->role,
+            'role_label'         => $user->roleLabel,
+            'role_display'       => $user->roleLabel,
+            'language'           => $user->language,
+            'state'              => $user->state,
+            'lga'                => $user->lga,
+            'village'            => $user->village,
+            'avatar_url'         => $user->avatarUrl,
+            'profile_photo'      => $user->profile_photo,
+            'is_verified'        => (bool) $user->is_verified,
+            'is_active'          => (bool) $user->is_active,
+            'last_seen'          => $user->last_seen,
+            'department'         => $user->department ?? null,
+            'job_title'          => $user->job_title ?? null,
+            'created_at'         => $user->created_at,
+        ];
+    }
+}

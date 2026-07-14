@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: msas-web
+    env: node
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://msas-api.onrender.com/api
+
+  - type: web
+    name: msas-api
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        value: mongodb+srv://<username>:<password>@<cluster>/<database>?retryWrites=true&w=majority
+      - key: CORS_ORIGINS
+        value: https://msasagro.com,https://www.msasagro.com
+      - key: JWT_SECRET
+        value: msasagro-render-secret-2026
+      - key: JWT_EXPIRES_IN
+        value: 7d
