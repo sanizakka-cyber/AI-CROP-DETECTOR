@@ -20,4 +20,4 @@ PORT=3000 node .next/standalone/server.js
 - Reverse proxy to port 3000
 - Serve via Nginx
 - Enable SSL with Let's Encrypt
-- Domain: msas.online
+- Domain: msasagro.com

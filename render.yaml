@@ -22,7 +22,7 @@ services:
       - key: APP_DEBUG
         value: "false"
       - key: APP_URL
-        value: https://msas.online
+        value: https://msasagro.com
       - key: APP_KEY
         value: base64:zf4kOSElJqhjPHVbnqtHlewu4REVVxmq54M/BAVdPVo=
       - key: APP_LOCALE
@@ -72,11 +72,11 @@ services:
 
       # Domain & CORS
       - key: SANCTUM_STATEFUL_DOMAINS
-        value: msas.online,www.msas.online
+        value: msasagro.com,www.msasagro.com
       - key: SESSION_DOMAIN
-        value: .msas.online
+        value: .msasagro.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://msas.online,https://www.msas.online
+        value: https://msasagro.com,https://www.msasagro.com
 
       # AI Engine
       - key: AI_ENGINE_URL
@@ -98,7 +98,7 @@ services:
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_FROM_ADDRESS
-        value: noreply@msas.online
+        value: noreply@msasagro.com
       - key: MAIL_FROM_NAME
         value: "MSAS FarmAI"
 
