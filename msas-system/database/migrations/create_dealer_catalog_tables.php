@@ -69,6 +69,7 @@ return new class extends Migration {
             // pending → confirmed → processing → shipped → delivered | cancelled
             $table->string('payment_status')->default('unpaid'); // unpaid, paid, refunded
             $table->string('payment_method')->nullable(); // paystack, flutterwave, transfer, ussd, card, wallet
+            $table->string('payment_channel')->nullable();
             $table->string('payment_reference')->nullable();
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->decimal('discount', 12, 2)->default(0);
