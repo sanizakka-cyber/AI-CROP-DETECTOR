@@ -116,11 +116,15 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
 // Farmer Routes
 Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->group(function () {
     // Basic plan features (any active subscription)
-    Route::get('/livestock',                 [\App\Http\Controllers\FarmerController::class, 'livestock'])->name('livestock');
-    Route::post('/livestock',                [\App\Http\Controllers\FarmerController::class, 'storeLivestock'])->name('livestock.store');
+    Route::get('/livestock',                  [\App\Http\Controllers\FarmerController::class, 'livestock'])->name('livestock');
+    Route::post('/livestock',                 [\App\Http\Controllers\FarmerController::class, 'storeLivestock'])->name('livestock.store');
+    Route::put('/livestock/{id}',             [\App\Http\Controllers\FarmerController::class, 'updateLivestock'])->name('livestock.update');
 
-    Route::get('/poultry',                   [\App\Http\Controllers\FarmerController::class, 'poultry'])->name('poultry');
-    Route::post('/poultry',                  [\App\Http\Controllers\FarmerController::class, 'storePoultry'])->name('poultry.store');
+    Route::get('/poultry',                    [\App\Http\Controllers\FarmerController::class, 'poultry'])->name('poultry');
+    Route::post('/poultry',                   [\App\Http\Controllers\FarmerController::class, 'storePoultry'])->name('poultry.store');
+    Route::put('/poultry/{id}',               [\App\Http\Controllers\FarmerController::class, 'updatePoultry'])->name('poultry.update');
+    Route::post('/poultry/{id}/mortality',    [\App\Http\Controllers\FarmerController::class, 'logMortality'])->name('poultry.mortality');
+    Route::post('/poultry/{id}/eggs',         [\App\Http\Controllers\FarmerController::class, 'logEggs'])->name('poultry.eggs');
 
     Route::get('/finance',                   [\App\Http\Controllers\FarmerController::class, 'finance'])->name('finance');
     Route::post('/finance',                  [\App\Http\Controllers\FarmerController::class, 'storeFinance'])->name('finance.store');
@@ -129,6 +133,9 @@ Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->g
     Route::get('/vet-consult',               [\App\Http\Controllers\FarmerController::class, 'vetConsult'])->name('vet');
     Route::post('/vet-consult',              [\App\Http\Controllers\FarmerController::class, 'storeConsult'])->name('vet.store');
     Route::get('/vet-consult/{consultation}',[\App\Http\Controllers\FarmerController::class, 'viewConsult'])->name('vet.view');
+
+    Route::get('/agro-request',              [\App\Http\Controllers\FarmerController::class, 'agroRequest'])->name('agro');
+    Route::post('/agro-request',             [\App\Http\Controllers\FarmerController::class, 'storeAgroRequest'])->name('agro.store');
 
     // Reports — Pro+ (subscription gate enforced inside controller)
     Route::get('/reports',                   [\App\Http\Controllers\FarmerController::class, 'reports'])->name('reports');

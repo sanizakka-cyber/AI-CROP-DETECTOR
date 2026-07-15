@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Animal;
 use App\Models\Consultation;
+use App\Models\EggProduction;
 use App\Models\Finance;
 use App\Models\PoultryRecord;
 use App\Models\SubscriptionUsage;
@@ -212,6 +213,89 @@ class FarmerController extends Controller
         return back()->with('success', "Flock registered. Batch ID: <strong>{$batchNumber}</strong>");
     }
 
+    public function updateLivestock(Request $request, int $id)
+    {
+        $animal = Animal::where('user_id', Auth::id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'name'      => 'nullable|string|max:100',
+            'breed'     => 'nullable|string|max:200',
+            'gender'    => 'nullable|in:Male,Female',
+            'weight_kg' => 'nullable|numeric|min:0',
+        ]);
+
+        $animal->update(array_filter($validated, fn($v) => $v !== null && $v !== ''));
+
+        return back()->with('success', 'Animal record updated successfully.');
+    }
+
+    public function updatePoultry(Request $request, int $id)
+    {
+        $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'breed'         => 'nullable|string|max:200',
+            'quantity'      => 'nullable|integer|min:1',
+            'date_acquired' => 'nullable|date',
+            'purpose'       => 'nullable|in:meat,egg,breeding,dual-purpose',
+        ]);
+
+        $flock->update(array_filter($validated, fn($v) => $v !== null && $v !== ''));
+
+        return back()->with('success', 'Flock record updated successfully.');
+    }
+
+    public function logMortality(Request $request, int $id)
+    {
+        $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'count' => 'required|integer|min:1',
+            'date'  => 'required|date',
+            'cause' => 'nullable|string|max:500',
+        ]);
+
+        $currentLive = $flock->quantity - ($flock->mortality ?? 0);
+        if ($validated['count'] > $currentLive) {
+            return back()->with('error', "Cannot log {$validated['count']} deaths — only {$currentLive} live birds in this batch.");
+        }
+
+        $flock->increment('mortality', $validated['count']);
+
+        return back()->with('success', "{$validated['count']} mortality logged for batch <strong>{$flock->batch_number}</strong>. Live count: <strong>" . ($currentLive - $validated['count']) . "</strong>.");
+    }
+
+    public function logEggs(Request $request, int $id)
+    {
+        $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
+
+        $validated = $request->validate([
+            'quantity'        => 'required|integer|min:1',
+            'broken'          => 'nullable|integer|min:0',
+            'production_date' => 'required|date',
+            'unit_price'      => 'nullable|numeric|min:0',
+        ]);
+
+        $qty       = $validated['quantity'];
+        $broken    = $validated['broken'] ?? 0;
+        $unitPrice = $validated['unit_price'] ?? 0;
+
+        $eggData = [
+            'user_id'         => Auth::id(),
+            'production_date' => $validated['production_date'],
+            'quantity'        => $qty,
+            'broken'          => $broken,
+            'unit_price'      => $unitPrice,
+        ];
+        if (Schema::hasColumn('egg_productions', 'poultry_record_id')) {
+            $eggData['poultry_record_id'] = $flock->id;
+        }
+
+        EggProduction::create($eggData);
+
+        return back()->with('success', "{$qty} eggs logged for batch <strong>{$flock->batch_number}</strong>.");
+    }
+
     // ── Finance ────────────────────────────────────────────────────────
 
     public function finance()
@@ -281,6 +365,47 @@ class FarmerController extends Controller
             abort(403);
         }
         return view('farmer.vet-report', compact('consultation'));
+    }
+
+    // ── Agronomist Request ─────────────────────────────────────────────
+
+    public function agroRequest()
+    {
+        $requests = Consultation::where('farmer_id', Auth::id())
+            ->where('case_type', 'crop')
+            ->latest()
+            ->get();
+        return view('farmer.agro', compact('requests'));
+    }
+
+    public function storeAgroRequest(Request $request)
+    {
+        $user      = Auth::user();
+        $activeSub = $user->activeSubscription();
+
+        if (!$activeSub || !$activeSub->hasFeature('vet_service_requests')) {
+            return back()->with('error',
+                'Agronomist advisory requests require the Pro Plan or higher. '
+                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade now</a>.'
+            );
+        }
+
+        $validated = $request->validate([
+            'crop_type' => 'required|string|max:100',
+            'symptoms'  => 'required|string|max:2000',
+            'priority'  => 'required|in:low,medium,high,critical',
+        ]);
+
+        Consultation::create([
+            'farmer_id'  => Auth::id(),
+            'case_type'  => 'crop',
+            'crop_type'  => $validated['crop_type'],
+            'symptoms'   => $validated['symptoms'],
+            'priority'   => $validated['priority'],
+            'status'     => 'pending',
+        ]);
+
+        return back()->with('success', 'Agronomist advisory request submitted. An agronomist will review it shortly.');
     }
 
     // ── Reports ────────────────────────────────────────────────────────

@@ -70,6 +70,9 @@
                         <a href="{{ route('farmer.vet') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition">
                             Vet Request
                         </a>
+                        <a href="{{ route('farmer.agro') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition">
+                            Agro Advisory
+                        </a>
                     @endif
 
                     {{-- Vet links --}}
@@ -179,6 +182,7 @@
                 <x-responsive-nav-link :href="route('farmer.livestock')">My Livestock</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('farmer.poultry')">Poultry</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('farmer.vet')">Request Vet</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('farmer.agro')">Agro Advisory</x-responsive-nav-link>
             @endif
             @if(in_array($role, ['vet', 'agronomist']))
                 <x-responsive-nav-link :href="route('vet.queue')">Consult Queue</x-responsive-nav-link>
