@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\OrderApiController;
 use App\Http\Controllers\Api\AnalyticsApiController;
 use App\Http\Controllers\Api\FarmApiController;
 use App\Http\Controllers\Api\AnimalApiController;
+use App\Http\Controllers\Api\PoultryApiController;
 use App\Models\SubscriptionUsage;
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +58,14 @@ Route::middleware('auth.api')->group(function () {
     Route::get('/animals/{id}',       [AnimalApiController::class, 'show']);
     Route::put('/animals/{id}',       [AnimalApiController::class, 'update']);
     Route::delete('/animals/{id}',    [AnimalApiController::class, 'destroy']);
+
+    // Poultry CRUD
+    Route::get('/poultry',                         [PoultryApiController::class, 'index']);
+    Route::post('/poultry',                        [PoultryApiController::class, 'store']);
+    Route::get('/poultry/{id}',                    [PoultryApiController::class, 'show']);
+    Route::put('/poultry/{id}',                    [PoultryApiController::class, 'update']);
+    Route::delete('/poultry/{id}',                 [PoultryApiController::class, 'destroy']);
+    Route::post('/poultry/{id}/mortality',         [PoultryApiController::class, 'logMortality']);
 
     // Analytics
     Route::get('/analytics/summary',       [AnalyticsApiController::class, 'summary']);

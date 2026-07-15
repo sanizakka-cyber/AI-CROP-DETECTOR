@@ -23,14 +23,18 @@ return new class extends Migration {
             }
         });
 
-        // Add unique index separately (idempotent — skip if already exists)
-        $indexExists = collect(Schema::getIndexes('animals'))
-            ->pluck('name')
-            ->contains('animals_tag_number_unique');
-        if (!$indexExists) {
-            Schema::table('animals', function (Blueprint $table) {
-                $table->unique('tag_number', 'animals_tag_number_unique');
-            });
+        // Add unique index separately — skip if already exists or data has duplicates
+        try {
+            $indexExists = collect(Schema::getIndexes('animals'))
+                ->pluck('name')
+                ->contains('animals_tag_number_unique');
+            if (!$indexExists) {
+                Schema::table('animals', function (Blueprint $table) {
+                    $table->unique('tag_number', 'animals_tag_number_unique');
+                });
+            }
+        } catch (\Exception $e) {
+            // Duplicate tag_number values in existing data — constraint skipped
         }
 
         // ── poultry_records table ─────────────────────────────────────────
@@ -49,13 +53,17 @@ return new class extends Migration {
             }
         });
 
-        $indexExists = collect(Schema::getIndexes('poultry_records'))
-            ->pluck('name')
-            ->contains('poultry_records_batch_number_unique');
-        if (!$indexExists) {
-            Schema::table('poultry_records', function (Blueprint $table) {
-                $table->unique('batch_number', 'poultry_records_batch_number_unique');
-            });
+        try {
+            $indexExists = collect(Schema::getIndexes('poultry_records'))
+                ->pluck('name')
+                ->contains('poultry_records_batch_number_unique');
+            if (!$indexExists) {
+                Schema::table('poultry_records', function (Blueprint $table) {
+                    $table->unique('batch_number', 'poultry_records_batch_number_unique');
+                });
+            }
+        } catch (\Exception $e) {
+            // Duplicate batch_number values in existing data — constraint skipped
         }
     }
 

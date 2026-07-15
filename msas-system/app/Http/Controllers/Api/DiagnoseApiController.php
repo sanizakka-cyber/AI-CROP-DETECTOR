@@ -12,7 +12,20 @@ use Illuminate\Support\Str;
 
 class DiagnoseApiController extends Controller
 {
-    private const AI_ENGINE = 'http://127.0.0.1:8001';
+    private function aiBase(): string
+    {
+        return rtrim(config('services.ai_engine.url', 'http://127.0.0.1:8001'), '/');
+    }
+
+    private function aiHttp(): \Illuminate\Http\Client\PendingRequest
+    {
+        $http = Http::timeout(30);
+        $key  = config('services.ai_engine.key');
+        if ($key) {
+            $http = $http->withToken($key);
+        }
+        return $http;
+    }
 
     public function crop(Request $request): JsonResponse
     {
@@ -24,7 +37,7 @@ class DiagnoseApiController extends Controller
         ]);
 
         try {
-            $pending = Http::timeout(30)
+            $pending = $this->aiHttp()
                 ->attach('cropType', $request->cropType)
                 ->attach('cropPart', $request->cropPart ?? 'crop');
 
@@ -32,7 +45,7 @@ class DiagnoseApiController extends Controller
                 $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
             }
 
-            $response = $pending->post(self::AI_ENGINE . '/predict/crop');
+            $response = $pending->post($this->aiBase() . '/predict/crop');
         } catch (\Exception $e) {
             return response()->json(['message' => 'AI engine unavailable. Please try again later.'], 503);
         }
@@ -85,7 +98,7 @@ class DiagnoseApiController extends Controller
         ]);
 
         try {
-            $pending = Http::timeout(30)
+            $pending = $this->aiHttp()
                 ->attach('animalType', $request->animalType)
                 ->attach('assessmentType', $request->assessmentType);
 
@@ -96,12 +109,11 @@ class DiagnoseApiController extends Controller
                     $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
                 }
             } else {
-                // Behavioral-only: send a 1×1 transparent PNG placeholder
                 $placeholder = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
                 $pending = $pending->attach('images', $placeholder, 'placeholder.png');
             }
 
-            $response = $pending->post(self::AI_ENGINE . '/predict/livestock');
+            $response = $pending->post($this->aiBase() . '/predict/livestock');
         } catch (\Exception $e) {
             return response()->json(['message' => 'AI engine unavailable. Please try again later.'], 503);
         }
