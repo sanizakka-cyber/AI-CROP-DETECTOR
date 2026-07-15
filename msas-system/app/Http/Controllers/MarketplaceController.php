@@ -6,10 +6,26 @@ use Illuminate\Http\Request;
 
 class MarketplaceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Simple stub for marketplace
-        $items = \App\Models\MarketplaceItem::latest()->get();
-        return view('marketplace.index', compact('items'));
+        $query = \App\Models\Product::where('status', 'active')
+            ->where('is_approved', true)
+            ->where('quantity_in_stock', '>', 0);
+
+        if ($request->category) {
+            $query->where('category', $request->category);
+        }
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%");
+            });
+        }
+
+        $items      = $query->latest()->paginate(12)->withQueryString();
+        $categories = \App\Models\Product::where('is_approved', true)
+                        ->distinct()->pluck('category')->filter()->values();
+
+        return view('marketplace.index', compact('items', 'categories'));
     }
 }

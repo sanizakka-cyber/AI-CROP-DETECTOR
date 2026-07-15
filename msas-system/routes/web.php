@@ -106,10 +106,10 @@ Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-
 // Admin Routes
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::post('/users/{user}/toggle', [AdminController::class, 'toggleStatus'])->name('users.toggle');
-    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+    Route::post('/users/{user}/toggle', [AdminController::class, 'toggleStatus'])->middleware('permission:user:suspend_account')->name('users.toggle');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->middleware('permission:user:delete_other')->name('users.delete');
     Route::get('/staff', [AdminController::class, 'staff'])->name('staff');
-    Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+    Route::get('/settings', [AdminController::class, 'settings'])->middleware('permission:admin:manage_settings')->name('settings');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
 });
 

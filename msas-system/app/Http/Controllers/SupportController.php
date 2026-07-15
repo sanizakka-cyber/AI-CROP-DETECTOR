@@ -60,12 +60,13 @@ class SupportController extends Controller implements HasMiddleware
         try {
             DB::table('support_tickets')->insert([
                 'user_id'      => $request->user_id,
-                'agent_id'     => auth()->id(),
+                'assigned_to'  => auth()->id(),
                 'subject'      => $request->subject,
                 'description'  => $request->description,
                 'priority'     => $request->priority,
                 'category'     => $request->category,
                 'status'       => 'open',
+                'reference'    => 'TKT-' . strtoupper(substr(uniqid(), -6)),
                 'created_at'   => now(),
                 'updated_at'   => now(),
             ]);
@@ -104,7 +105,7 @@ class SupportController extends Controller implements HasMiddleware
         try {
             DB::table('ticket_replies')->insert([
                 'ticket_id'  => $ticket,
-                'agent_id'   => auth()->id(),
+                'user_id'    => auth()->id(),
                 'message'    => $request->message,
                 'created_at' => now(),
                 'updated_at' => now(),

@@ -75,15 +75,15 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        // 6. RIDER / DELIVERY STAFF
+        // 6. FIELD OFFICER
         User::create([
             'first_name' => 'Abbas',
             'middle_name' => null,
             'last_name' => 'Sani',
-            'email' => 'rider@msas.com',
+            'email' => 'field@msas.com',
             'phone' => '08160225001',
             'password' => Hash::make('password123'),
-            'role' => 'rider',
+            'role' => 'field-officer',
             'is_active' => true,
         ]);
 
