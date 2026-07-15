@@ -33,7 +33,7 @@ class SubscriptionController extends Controller
         $period = now()->format('Y-m');
         $usage  = [];
         if ($activeSub) {
-            $keys = ['livestock_records', 'reports_generated', 'ai_scans_per_month'];
+            $keys = ['livestock_records', 'reports_per_month', 'ai_scans_per_month'];
             foreach ($keys as $key) {
                 $limit       = $activeSub->getLimit($key);
                 $current     = SubscriptionUsage::getCount($user->id, $key, $period);

@@ -40,8 +40,8 @@
 <!-- ── Active Subscription Hero ─────────────────────────────────────── -->
 @php
 $plan   = $activeSub ?? $latestSub;
-$cfg    = config('subscription.plans.'.$plan->plan);
-$status = config('subscription.statuses.'.$plan->status);
+$cfg    = config('subscription.plans.'.$plan->plan) ?? ['name' => ucfirst($plan->plan), 'badge_color' => '#64748b'];
+$status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst($plan->status), 'color' => '#64748b'];
 @endphp
 
 <div style="background:linear-gradient(135deg,#0B2447,#0F6B3E);border-radius:16px;padding:28px;margin-bottom:24px;position:relative;overflow:hidden;">
@@ -127,7 +127,7 @@ $status = config('subscription.statuses.'.$plan->status);
         @php
         $meters = [
             'livestock_records'   => ['label' => 'Livestock Records', 'icon' => '🐄', 'color' => '#1FA84A'],
-            'reports_generated'   => ['label' => 'Reports Generated', 'icon' => '📊', 'color' => '#2D9CDB'],
+            'reports_per_month'   => ['label' => 'Reports Generated', 'icon' => '📊', 'color' => '#2D9CDB'],
             'ai_scans_per_month'  => ['label' => 'AI Scans Used',     'icon' => '🔬', 'color' => '#F4A300'],
         ];
         @endphp
