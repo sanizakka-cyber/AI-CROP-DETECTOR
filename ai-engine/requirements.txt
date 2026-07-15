@@ -1,8 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
-numpy
 pillow
-requests
-python-dotenv
+anthropic
 a2wsgi
+python-dotenv
