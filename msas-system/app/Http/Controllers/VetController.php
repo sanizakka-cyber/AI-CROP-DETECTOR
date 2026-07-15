@@ -8,8 +8,22 @@ class VetController extends Controller
 {
     public function queue()
     {
-        // Vet views pending consultations
-        $consultations = \App\Models\Consultation::where('status', 'pending')->latest()->get();
+        $user = auth()->user();
+
+        // Vet sees: unassigned pending cases + cases already assigned to them
+        // Agronomist only sees crop cases; Vet only sees livestock cases
+        $query = \App\Models\Consultation::where('status', 'pending')
+            ->where(function ($q) use ($user) {
+                $q->whereNull('expert_id')->orWhere('expert_id', $user->id);
+            });
+
+        if ($user->role === 'agronomist') {
+            $query->where('case_type', 'crop');
+        } elseif ($user->role === 'vet') {
+            $query->where('case_type', 'livestock');
+        }
+
+        $consultations = $query->latest()->get();
         return view('vet.queue', compact('consultations'));
     }
 
