@@ -3,7 +3,6 @@ FROM php:8.2-fpm-alpine
 # ── System packages ──────────────────────────────────────────────────────────
 RUN apk add --no-cache \
     nginx \
-    nodejs npm \
     git unzip curl \
     postgresql-dev \
     libzip-dev libpng-dev oniguruma-dev \
@@ -30,16 +29,10 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# ── Install JS deps and build assets (cached when package-lock unchanged) ──────
-COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
-
 COPY . .
 
-# ── Finish Composer + build Vite assets ───────────────────────────────────────
-RUN composer dump-autoload --optimize \
- && npm run build \
- && rm -rf node_modules
+# ── Finish Composer (Vite assets pre-built and committed in public/build/) ────
+RUN composer dump-autoload --optimize
 
 # ── Permissions ───────────────────────────────────────────────────────────────
 RUN chown -R www-data:www-data /var/www/html \
