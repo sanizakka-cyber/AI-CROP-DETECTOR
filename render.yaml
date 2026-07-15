@@ -78,11 +78,11 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         value: https://msasagro.com,https://www.msasagro.com
 
-      # AI Engine
+      # AI Engine — points to the msas-ai-engine service below
       - key: AI_ENGINE_URL
-        value: http://127.0.0.1:8001
+        value: https://ai.msasagro.com
       - key: AI_ENGINE_KEY
-        value: REPLACE_AFTER_DEPLOY
+        value: c543a8d59df08d157d4cbce65fd3a1bbeefb408ecb810d2360ea17b21225f2dc
 
       # Mail — set MAIL_PASSWORD in Render dashboard (not here)
       - key: MAIL_MAILER
@@ -112,6 +112,25 @@ services:
 
       - key: FILESYSTEM_DISK
         value: local
+
+  # ── AI Inference Engine (Python / FastAPI) ────────────────────────────────
+  - type: web
+    name: msas-ai-engine
+    env: python
+    region: frankfurt
+    plan: starter
+    rootDir: ai-engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+
+    envVars:
+      # Set ANTHROPIC_API_KEY in the Render dashboard (sync: false keeps it secret)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Must match AI_ENGINE_KEY in the msas-farmai service above
+      - key: API_KEY
+        value: c543a8d59df08d157d4cbce65fd3a1bbeefb408ecb810d2360ea17b21225f2dc
 
 # ── PostgreSQL Database ───────────────────────────────────────────────────────
 databases:
