@@ -147,7 +147,7 @@
     </div>
 
     <!-- ── Navigation ── -->
-    <header class="sticky top-0 z-50 bg-navy/95 backdrop-blur-sm border-b border-cardlight">
+    <header class="sticky top-0 z-50 bg-navy/95 backdrop-blur-sm border-b border-cardlight" x-data="{ mobileOpen: false }">
         <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
 
             <!-- Logo -->
@@ -165,33 +165,107 @@
                 <a href="#contact"      class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">Contact Us</a>
             </nav>
 
-            <!-- Action Buttons -->
+            <!-- Desktop Action Buttons -->
             <div class="hidden md:flex items-center gap-2">
                 @auth
                     <a href="{{ url('/dashboard') }}"
-                       class="px-4 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition shadow-md shadow-emerald-500/20">
-                        Dashboard
+                       class="px-4 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gauge-high text-xs" aria-hidden="true"></i> Dashboard
                     </a>
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-1.5 rounded-md border border-red-400 text-red-400 text-sm font-medium hover:bg-red-400/10 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-right-from-bracket text-xs" aria-hidden="true"></i> Logout
+                        </button>
+                    </form>
                 @else
                     <a href="{{ route('login') }}"
-                       class="px-4 py-1.5 rounded-md border border-teal text-teal text-sm font-medium hover:bg-teal/10 transition min-h-[36px] flex items-center gap-1.5">
+                       class="px-4 py-1.5 rounded-md border border-emerald-400 text-emerald-400 text-sm font-medium hover:bg-emerald-400/10 transition min-h-[36px] flex items-center gap-1.5">
                         <i class="fa-solid fa-right-to-bracket text-xs" aria-hidden="true"></i> Sign In
                     </a>
                     <a href="{{ route('register') }}"
                        class="px-4 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition shadow-md shadow-emerald-500/20 min-h-[36px] flex items-center gap-1.5">
                         <i class="fa-solid fa-user-plus text-xs" aria-hidden="true"></i> Sign Up
                     </a>
-                    <a href="{{ route('login') }}"
-                       class="px-4 py-1.5 rounded-md bg-amber text-white text-sm font-semibold hover:opacity-90 transition shadow-md shadow-amber/20 min-h-[36px] flex items-center gap-1.5">
+                    <a href="{{ route('register') }}"
+                       class="px-4 py-1.5 rounded-md text-white text-sm font-semibold transition min-h-[36px] flex items-center gap-1.5"
+                       style="background:#F4A300;">
                         <i class="fa-solid fa-circle-check text-xs" aria-hidden="true"></i> Check In
                     </a>
                 @endauth
             </div>
 
-            <!-- Mobile Menu Btn -->
-            <button class="lg:hidden text-white text-xl" aria-label="Open menu">
-                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            <!-- Mobile Hamburger -->
+            <button @click="mobileOpen = !mobileOpen"
+                    class="md:hidden text-white text-xl p-2 rounded-md hover:bg-white/10 transition"
+                    :aria-expanded="mobileOpen" aria-label="Toggle menu"
+                    :aria-label="mobileOpen ? 'Close menu' : 'Open menu'">
+                <i x-show="!mobileOpen" class="fa-solid fa-bars" aria-hidden="true"></i>
+                <i x-show="mobileOpen"  class="fa-solid fa-xmark" aria-hidden="true" x-cloak></i>
             </button>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div x-show="mobileOpen"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             x-cloak
+             class="md:hidden border-t border-white/10 bg-[#0B2447]/98 backdrop-blur-sm">
+
+            <!-- Mobile Nav Links -->
+            <nav class="px-4 pt-3 pb-2 flex flex-col gap-1 text-sm font-medium border-b border-white/10">
+                <a href="#home"         @click="mobileOpen=false" class="py-2.5 px-3 text-white rounded-lg hover:bg-white/10 transition flex items-center gap-2"><i class="fa-solid fa-house w-4 text-emerald-400"></i> Home</a>
+                <a href="#about"        @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-circle-info w-4 text-emerald-400"></i> About Us</a>
+                <a href="#services"     @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-leaf w-4 text-emerald-400"></i> Services</a>
+                <a href="#marketplace"  @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-store w-4 text-emerald-400"></i> Marketplace</a>
+                <a href="#testimonials" @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-star w-4 text-emerald-400"></i> Feedback</a>
+                <a href="#contact"      @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-phone w-4 text-emerald-400"></i> Contact Us</a>
+            </nav>
+
+            <!-- Mobile Auth Buttons -->
+            <div class="px-4 py-4 flex flex-col gap-3">
+                @auth
+                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-1">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            {{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-white font-semibold text-sm truncate">{{ auth()->user()->name }}</p>
+                            <p class="text-emerald-400 text-xs font-medium uppercase tracking-wide">{{ auth()->user()->role }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ url('/dashboard') }}" @click="mobileOpen=false"
+                       class="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold text-center hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gauge-high"></i> Go to Dashboard
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                                class="w-full py-3 rounded-xl border border-red-400/50 text-red-400 text-sm font-semibold hover:bg-red-400/10 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" @click="mobileOpen=false"
+                       class="w-full py-3 rounded-xl border border-emerald-400 text-emerald-400 text-sm font-bold text-center hover:bg-emerald-400/10 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </a>
+                    <a href="{{ route('register') }}" @click="mobileOpen=false"
+                       class="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold text-center hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Sign Up
+                    </a>
+                    <a href="{{ route('register') }}" @click="mobileOpen=false"
+                       class="w-full py-3 rounded-xl text-white text-sm font-bold text-center hover:opacity-90 transition flex items-center justify-center gap-2"
+                       style="background:#F4A300;">
+                        <i class="fa-solid fa-circle-check"></i> Check In
+                    </a>
+                @endauth
+            </div>
         </div>
     </header>
 
