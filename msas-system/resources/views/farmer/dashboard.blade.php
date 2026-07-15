@@ -104,6 +104,12 @@
     </div>
 
     <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0;">
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Poultry Flocks</div>
+        <div style="font-size:34px;font-weight:900;color:#b45309;line-height:1;">{{ $poultryCount }}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;"><a href="{{ route('farmer.poultry') }}" style="color:#b45309;">View flocks →</a></div>
+    </div>
+
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0;">
         <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">AI Diagnoses</div>
         <div style="font-size:34px;font-weight:900;color:#1FA84A;line-height:1;">{{ $diagnosesCount }}</div>
         <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;">Total scans</div>
@@ -251,6 +257,34 @@
         </div>
     </div>
 
+    {{-- Recent Poultry Flocks --}}
+    <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:15px;font-weight:800;color:#0f172a;">Poultry Flocks</div>
+            <a href="{{ route('farmer.poultry') }}" style="font-size:12px;color:#b45309;font-weight:700;text-decoration:none;">View all →</a>
+        </div>
+        <div style="padding:0 4px;">
+            @forelse($recentFlocks as $flock)
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f8fafc;">
+                <div style="width:38px;height:38px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🐔</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:12px;font-weight:700;color:#0f172a;font-family:monospace;">{{ $flock->batch_number }}</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:1px;">{{ $flock->bird_type }} · {{ number_format($flock->quantity) }} birds</div>
+                </div>
+                @if($flock->purpose)
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap;">{{ ucfirst(str_replace('-',' ',$flock->purpose)) }}</span>
+                @endif
+            </div>
+            @empty
+            <div style="text-align:center;padding:32px 20px;">
+                <div style="font-size:36px;margin-bottom:10px;">🐔</div>
+                <p style="font-size:13px;color:#64748b;margin-bottom:10px;">No poultry flocks yet</p>
+                <a href="{{ route('farmer.poultry') }}" style="font-size:13px;color:#b45309;font-weight:700;text-decoration:none;">Register a flock →</a>
+            </div>
+            @endforelse
+        </div>
+    </div>
+
     {{-- Recent Vet Consultations --}}
     <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
         <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
@@ -304,7 +338,7 @@
                 <div style="width:38px;height:38px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔬</div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {{ $scan->subject ?? 'AI Scan Result' }}
+                        {{ $scan->disease_name ?? 'AI Scan Result' }}
                     </div>
                     <div style="font-size:11px;color:#64748b;margin-top:1px;">{{ $scan->created_at->diffForHumans() }}</div>
                 </div>
