@@ -67,8 +67,10 @@
                                             </span>
                                         </td>
                                         <td class="px-4 py-3">
-                                            @if($consult->status === 'pending')
-                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Pending</span>
+                                            @if($consult->status === 'awaiting_payment')
+                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700">Awaiting Payment</span>
+                                            @elseif($consult->status === 'pending')
+                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Pending Review</span>
                                             @elseif($consult->status === 'resolved')
                                                 <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Resolved</span>
                                             @else
@@ -78,6 +80,8 @@
                                         <td class="px-4 py-3 text-right">
                                             @if($consult->expert_response)
                                                 <a href="{{ route('farmer.vet.view', $consult) }}" class="inline-block text-white bg-indigo-600 font-bold text-[10px] uppercase hover:bg-indigo-700 px-3 py-1.5 rounded-lg shadow-sm transition">View Report</a>
+                                            @elseif($consult->status === 'awaiting_payment')
+                                                <span class="text-xs text-yellow-600 font-bold">Pay to activate</span>
                                             @else
                                                 <span class="text-xs text-slate-400 italic">Awaiting Vet</span>
                                             @endif
@@ -126,16 +130,55 @@
                         </div>
                     </div>
                     <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Consultation Channel *</label>
+                        <div class="grid grid-cols-3 gap-2 mt-1">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="channel" value="in_app" class="peer sr-only" required checked onchange="updateFee(1500)">
+                                <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-indigo-500 peer-checked:bg-indigo-50 transition">
+                                    <div class="text-lg mb-0.5">💬</div>
+                                    <div class="text-xs font-bold">In-App</div>
+                                    <div class="text-xs text-emerald-600 font-bold">₦1,500</div>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="channel" value="whatsapp" class="peer sr-only" onchange="updateFee(2500)">
+                                <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-green-500 peer-checked:bg-green-50 transition">
+                                    <div class="text-lg mb-0.5">📱</div>
+                                    <div class="text-xs font-bold">WhatsApp</div>
+                                    <div class="text-xs text-emerald-600 font-bold">₦2,500</div>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="channel" value="phone_call" class="peer sr-only" onchange="updateFee(3500)">
+                                <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 transition">
+                                    <div class="text-lg mb-0.5">📞</div>
+                                    <div class="text-xs font-bold">Phone Call</div>
+                                    <div class="text-xs text-emerald-600 font-bold">₦3,500</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Symptoms / Issue Description *</label>
                         <textarea name="symptoms" required rows="4" placeholder="Describe the symptoms your animal is experiencing..." class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 flex justify-between items-center">
+                        <span class="text-sm text-slate-600">Consultation Fee</span>
+                        <span id="vetFeeDisplay" class="text-base font-extrabold text-indigo-700">₦1,500</span>
                     </div>
                 </div>
                 <div class="mt-6">
                     <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow hover:bg-indigo-700 transition">
-                        Submit Request
+                        Proceed to Payment →
                     </button>
+                    <p class="text-xs text-center text-slate-400 mt-2">Payment via Paystack. Request is only sent after payment is confirmed.</p>
                 </div>
             </form>
+            <script>
+            function updateFee(amount) {
+                document.getElementById('vetFeeDisplay').textContent = '₦' + amount.toLocaleString();
+            }
+            </script>
         </div>
     </div>
 </x-app-layout>

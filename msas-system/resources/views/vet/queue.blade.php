@@ -92,6 +92,18 @@ $pc = $priorityColors[$consult->priority ?? 'low'];
                 <div style="font-size:11px;color:#64748b;margin-top:1px;">{{ $consult->farmer->phone ?? $consult->farmer->email ?? '—' }}</div>
             </div>
             @endif
+            @if($consult->channel)
+            <div style="background:#f0fdf4;border-radius:8px;padding:8px 12px;border:1px solid #bbf7d0;">
+                <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;margin-bottom:2px;">Consult Channel</div>
+                <div style="font-size:12px;font-weight:700;color:#0f172a;">
+                    @if($consult->channel === 'in_app') 💬 In-App Chat
+                    @elseif($consult->channel === 'whatsapp') 📱 WhatsApp
+                    @else 📞 Phone Call
+                    @endif
+                    &nbsp;·&nbsp; ₦{{ number_format($consult->fee ?? 0) }}
+                </div>
+            </div>
+            @endif
 
             <a href="{{ route('vet.show', $consult) }}"
                style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;background:#0F6B3E;color:#fff;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;">

@@ -50,7 +50,7 @@
                         </div>
                         <div class="text-right text-sm border-l pl-3">
                             <p class="text-slate-500">Staff ID</p>
-                            <p class="font-bold text-slate-800">#MSAS-{{ str_pad($user->id, 4, '0', STR_PAD_LEFT) }}</p>
+                            <p class="font-bold text-slate-800 tracking-widest text-xs">{{ $user->staffId }}</p>
                         </div>
                     </div>
                 </div>

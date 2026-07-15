@@ -72,10 +72,12 @@
                                             </span>
                                         </td>
                                         <td class="px-4 py-3">
-                                            @if($req->status === 'resolved')
+                                            @if($req->status === 'awaiting_payment')
+                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700">Awaiting Payment</span>
+                                            @elseif($req->status === 'resolved')
                                                 <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Resolved</span>
                                             @elseif($req->status === 'pending')
-                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Pending</span>
+                                                <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Pending Review</span>
                                             @else
                                                 <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">In Progress</span>
                                             @endif
@@ -129,18 +131,57 @@
                     </div>
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Consultation Channel *</label>
+                    <div class="grid grid-cols-3 gap-2 mt-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="in_app" class="peer sr-only" required checked onchange="updateAgroFee(1500)">
+                            <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-[#1FA84A] peer-checked:bg-emerald-50 transition">
+                                <div class="text-lg mb-0.5">💬</div>
+                                <div class="text-xs font-bold">In-App</div>
+                                <div class="text-xs text-emerald-600 font-bold">₦1,500</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="whatsapp" class="peer sr-only" onchange="updateAgroFee(2500)">
+                            <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-green-500 peer-checked:bg-green-50 transition">
+                                <div class="text-lg mb-0.5">📱</div>
+                                <div class="text-xs font-bold">WhatsApp</div>
+                                <div class="text-xs text-emerald-600 font-bold">₦2,500</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="phone_call" class="peer sr-only" onchange="updateAgroFee(3500)">
+                            <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 transition">
+                                <div class="text-lg mb-0.5">📞</div>
+                                <div class="text-xs font-bold">Phone Call</div>
+                                <div class="text-xs text-emerald-600 font-bold">₦3,500</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Issue / Symptoms *</label>
-                    <textarea name="symptoms" required rows="5"
+                    <textarea name="symptoms" required rows="4"
                               placeholder="Describe the crop problem — symptoms, location on plant, when it started, how many plants affected..."
                               class="w-full border-slate-200 rounded-lg text-sm focus:ring-[#1FA84A] focus:border-[#1FA84A]"></textarea>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex justify-between items-center">
+                    <span class="text-sm text-slate-600">Consultation Fee</span>
+                    <span id="agroFeeDisplay" class="text-base font-extrabold text-[#0F6B3E]">₦1,500</span>
                 </div>
                 <div class="pt-2">
                     <button type="submit"
                             class="w-full py-3 bg-[#0F6B3E] text-white rounded-xl font-bold shadow hover:bg-[#047857] transition text-sm">
-                        Submit Request
+                        Proceed to Payment →
                     </button>
+                    <p class="text-xs text-center text-slate-400 mt-2">Payment via Paystack. Request is only sent after payment is confirmed.</p>
                 </div>
             </form>
+            <script>
+            function updateAgroFee(amount) {
+                document.getElementById('agroFeeDisplay').textContent = '₦' + amount.toLocaleString();
+            }
+            </script>
         </div>
     </div>
 

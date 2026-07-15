@@ -52,6 +52,32 @@ class User extends Authenticatable
         };
     }
 
+    public function getStaffIdAttribute(): string
+    {
+        $codes = [
+            'ceo'               => 'CEO',
+            'admin'             => 'ADM',
+            'farmer'            => 'FMR',
+            'vet'               => 'VET',
+            'agronomist'        => 'AGR',
+            'agro-dealer'       => 'ACD',
+            'extension-officer' => 'EXT',
+            'field-officer'     => 'FLD',
+            'data-analyst'      => 'DAT',
+            'm-e-officer'       => 'MEO',
+            'me-officer'        => 'MEO',
+            'me_officer'        => 'MEO',
+            'customer-support'  => 'CSP',
+            'hr'                => 'HRS',
+            'finance'           => 'FIN',
+            'operations'        => 'OPS',
+        ];
+        $code = $codes[$this->role] ?? strtoupper(substr($this->role ?? 'STF', 0, 3));
+        $year = $this->created_at ? $this->created_at->format('Y') : now()->format('Y');
+        $seq  = str_pad($this->id, 4, '0', STR_PAD_LEFT);
+        return "{$code}-{$year}-{$seq}";
+    }
+
     public function getAvatarUrlAttribute(): string
     {
         if (!empty($this->profile_photo)) {

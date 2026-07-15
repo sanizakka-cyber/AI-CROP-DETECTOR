@@ -72,6 +72,24 @@ def _parse_claude_crop(text: str, crop_type: str) -> dict:
         "crop_type":  crop_type,
     }
 
+def _parse_claude_soil(text: str) -> dict:
+    lines = {
+        k.strip().lower(): v.strip()
+        for line in text.splitlines()
+        if "|" in line
+        for k, v in [line.split("|", 1)]
+    }
+    return {
+        "condition":     lines.get("condition",      "Unknown"),
+        "confidence":    float(lines.get("confidence", "70").replace("%", "")),
+        "nutrients":     lines.get("nutrients",      "Assessment unavailable"),
+        "ph_estimate":   lines.get("ph_estimate",    "Unknown"),
+        "urgency":       lines.get("urgency",        "Medium"),
+        "suitable_crops":lines.get("suitable_crops", "Consult an agronomist"),
+        "recommendation":lines.get("recommendation", "Apply balanced NPK fertiliser."),
+        "referral":      lines.get("referral",       "Consult an extension officer for a soil test."),
+    }
+
 def _parse_claude_livestock(text: str, animal_type: str) -> dict:
     lines = {
         k.strip().lower(): v.strip()
@@ -200,6 +218,58 @@ If this is a behavioral-only assessment (no image), base your response on the mo
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
     return _parse_claude_livestock(text, animalType)
+
+@app.post("/predict/soil")
+async def predict_soil(
+    request: Request,
+    soilContext: Optional[str] = Form(None),
+    images: List[UploadFile] = File(...),
+):
+    _check_auth(request)
+    client = _ai_client()
+
+    image_blocks = await _read_images_b64(images)
+
+    context_note = f"\nAdditional context from the farmer: {soilContext}" if soilContext else ""
+
+    prompt = f"""You are an expert soil scientist and agronomist specialising in Nigerian and West African farming soils.
+
+The farmer has uploaded a photo of a soil sample for assessment.{context_note}
+
+Analyse the image and respond ONLY in this exact pipe-delimited format (one field per line, no extra text):
+
+condition | <overall soil condition, e.g. "Sandy loam — low organic matter">
+confidence | <number 0-100>
+nutrients | <apparent nutrient profile, e.g. "Low nitrogen, moderate phosphorus, likely adequate potassium">
+ph_estimate | <estimated pH range, e.g. "6.0–6.5 (slightly acidic)">
+urgency | <one of: Low, Medium, High, Emergency>
+suitable_crops | <2-4 crops well-suited to this soil, e.g. "Cowpea, Sorghum, Groundnut">
+recommendation | <specific amendment advice, e.g. "Apply 2 bags of NPK 15:15:15 per hectare, add compost to improve water retention">
+referral | <when to get a laboratory soil test>
+
+If the image does not clearly show soil, set condition to "Invalid image" and confidence to 0."""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = message.content[0].text
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    result = _parse_claude_soil(text)
+
+    if result["condition"] == "Invalid image":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Image does not appear to show a soil sample. Please upload a clear photo of the soil.",
+        })
+
+    return result
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8001))

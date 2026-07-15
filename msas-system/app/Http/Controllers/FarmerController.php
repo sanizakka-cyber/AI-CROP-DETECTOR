@@ -11,7 +11,9 @@ use App\Models\SubscriptionUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class FarmerController extends Controller
 {
@@ -331,9 +333,14 @@ class FarmerController extends Controller
         return view('farmer.vet', compact('consultations'));
     }
 
+    private const CHANNEL_FEES = [
+        'in_app'     => 1500,
+        'whatsapp'   => 2500,
+        'phone_call' => 3500,
+    ];
+
     public function storeConsult(Request $request)
     {
-        // Requires Pro+ feature
         $user      = Auth::user();
         $activeSub = $user->activeSubscription();
 
@@ -345,18 +352,29 @@ class FarmerController extends Controller
         }
 
         $validated = $request->validate([
-            'animal_type' => 'required|string',
-            'symptoms'    => 'required|string',
+            'animal_type' => 'required|string|max:100',
+            'symptoms'    => 'required|string|max:2000',
             'priority'    => 'required|in:low,medium,high,critical',
+            'channel'     => 'required|in:in_app,whatsapp,phone_call',
         ]);
 
-        $validated['farmer_id'] = Auth::id();
-        $validated['case_type'] = 'livestock';
-        $validated['status']    = 'pending';
+        $fee  = self::CHANNEL_FEES[$validated['channel']];
+        $ref  = 'MSAS-CONSULT-' . strtoupper(Str::random(10));
 
-        Consultation::create($validated);
+        $consultation = Consultation::create([
+            'farmer_id'      => Auth::id(),
+            'case_type'      => 'livestock',
+            'animal_type'    => $validated['animal_type'],
+            'symptoms'       => $validated['symptoms'],
+            'priority'       => $validated['priority'],
+            'channel'        => $validated['channel'],
+            'fee'            => $fee,
+            'status'         => 'awaiting_payment',
+            'payment_status' => 'unpaid',
+            'payment_reference' => $ref,
+        ]);
 
-        return back()->with('success', 'Consultation requested successfully. A vet will review it shortly.');
+        return $this->redirectToConsultationPayment($user, $consultation, $fee, $ref, 'farmer.vet');
     }
 
     public function viewConsult(Consultation $consultation)
@@ -394,18 +412,84 @@ class FarmerController extends Controller
             'crop_type' => 'required|string|max:100',
             'symptoms'  => 'required|string|max:2000',
             'priority'  => 'required|in:low,medium,high,critical',
+            'channel'   => 'required|in:in_app,whatsapp,phone_call',
         ]);
 
-        Consultation::create([
-            'farmer_id'  => Auth::id(),
-            'case_type'  => 'crop',
-            'crop_type'  => $validated['crop_type'],
-            'symptoms'   => $validated['symptoms'],
-            'priority'   => $validated['priority'],
-            'status'     => 'pending',
+        $fee = self::CHANNEL_FEES[$validated['channel']];
+        $ref = 'MSAS-AGRO-' . strtoupper(Str::random(10));
+
+        $consultation = Consultation::create([
+            'farmer_id'         => Auth::id(),
+            'case_type'         => 'crop',
+            'crop_type'         => $validated['crop_type'],
+            'symptoms'          => $validated['symptoms'],
+            'priority'          => $validated['priority'],
+            'channel'           => $validated['channel'],
+            'fee'               => $fee,
+            'status'            => 'awaiting_payment',
+            'payment_status'    => 'unpaid',
+            'payment_reference' => $ref,
         ]);
 
-        return back()->with('success', 'Agronomist advisory request submitted. An agronomist will review it shortly.');
+        return $this->redirectToConsultationPayment($user, $consultation, $fee, $ref, 'farmer.agro');
+    }
+
+    private function redirectToConsultationPayment($user, Consultation $consultation, int $fee, string $ref, string $fallbackRoute)
+    {
+        $paystackKey = config('services.paystack.secret_key');
+        $paystackUrl = config('services.paystack.payment_url');
+
+        if ($paystackKey && !str_contains($paystackKey, 'REPLACE')) {
+            $response = Http::withToken($paystackKey)
+                ->post("{$paystackUrl}/transaction/initialize", [
+                    'email'        => $user->email,
+                    'amount'       => $fee * 100,
+                    'reference'    => $ref,
+                    'currency'     => 'NGN',
+                    'callback_url' => route('consultation.payment.callback'),
+                    'metadata'     => [
+                        'user_id'         => $user->id,
+                        'consultation_id' => $consultation->id,
+                        'cancel_action'   => route($fallbackRoute),
+                    ],
+                ]);
+
+            if ($response->successful() && $response->json('status')) {
+                return redirect($response->json('data.authorization_url'));
+            }
+        }
+
+        // Dev fallback: mark paid immediately
+        $consultation->update(['payment_status' => 'paid', 'status' => 'pending']);
+        return redirect()->route($fallbackRoute)
+            ->with('success', 'Request submitted successfully. A specialist will review it shortly.');
+    }
+
+    public function consultationPaymentCallback(Request $request)
+    {
+        $reference = $request->query('reference');
+        if (!$reference) {
+            return redirect()->route('farmer.vet')->with('error', 'Invalid payment reference.');
+        }
+
+        $response = Http::withToken(config('services.paystack.secret_key'))
+            ->get(config('services.paystack.payment_url') . "/transaction/verify/{$reference}");
+
+        $consultation = Consultation::where('payment_reference', $reference)->first();
+
+        if (!$consultation || !$response->successful() || $response->json('data.status') !== 'success') {
+            $cancelRoute = $consultation?->case_type === 'crop' ? 'farmer.agro' : 'farmer.vet';
+            return redirect()->route($cancelRoute)
+                ->with('error', 'Payment could not be confirmed. Please try again or contact support. Ref: ' . $reference);
+        }
+
+        if ($consultation->payment_status !== 'paid') {
+            $consultation->update(['payment_status' => 'paid', 'status' => 'pending']);
+        }
+
+        $route = $consultation->case_type === 'crop' ? 'farmer.agro' : 'farmer.vet';
+        return redirect()->route($route)
+            ->with('success', 'Payment confirmed! Your request is now in the specialist queue.');
     }
 
     // ── Reports ────────────────────────────────────────────────────────

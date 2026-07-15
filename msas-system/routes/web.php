@@ -56,7 +56,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
+    // Force password reset (exempt from force.password.reset middleware by route name)
+    Route::get('/change-password', [ProfileController::class, 'changePasswordForm'])->name('password.change');
+    Route::post('/change-password', [ProfileController::class, 'changePassword'])->name('password.change.update');
+
     // Diagnostics (Smart Scan)
     Route::get('/diagnostics/scan', [DiagnosticController::class, 'scan'])->name('diagnostics.scan');
     Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])->name('diagnostics.analyze');
@@ -161,6 +165,11 @@ Route::middleware(['auth', 'role:farmer'])->prefix('subscription')->name('subscr
 // Paystack webhook (no auth — HMAC signature verified in controller, CSRF excluded in bootstrap/app.php)
 Route::post('/webhooks/paystack', [SubscriptionController::class, 'paystackWebhook'])
     ->name('webhooks.paystack');
+
+// Consultation payment callback (auth only — farmer already logged in when Paystack redirects back)
+Route::middleware('auth')
+    ->get('/consultation/payment/callback', [App\Http\Controllers\FarmerController::class, 'consultationPaymentCallback'])
+    ->name('consultation.payment.callback');
 
 // ── Admin Subscription Management ──────────────────────────────────────────
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin/subscriptions')->name('admin.subscriptions.')->group(function () {
