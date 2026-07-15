@@ -47,4 +47,9 @@ return [
         'encryption_key'  => env('FLUTTERWAVE_ENCRYPTION_KEY'),
     ],
 
+    'ai_engine' => [
+        'url' => env('AI_ENGINE_URL', 'http://127.0.0.1:8001'),
+        'key' => env('AI_ENGINE_KEY'),
+    ],
+
 ];

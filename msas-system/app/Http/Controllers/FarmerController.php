@@ -129,9 +129,19 @@ class FarmerController extends Controller
             $animalData['breed_other'] = $validated['breed_other'] ?? null;
         }
 
-        Animal::create($animalData);
+        try {
+            Animal::create($animalData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return back()->withInput()->with('error',
+                'Registration failed. Please try again. If the problem persists, contact support.'
+            );
+        }
 
-        SubscriptionUsage::increment($user->id, 'livestock_records');
+        try {
+            SubscriptionUsage::increment($user->id, 'livestock_records');
+        } catch (\Exception $e) {
+            // Usage tracking failure should not block the farmer
+        }
 
         return back()->with('success', "Animal registered. Tag ID: <strong>{$tagNumber}</strong>");
     }
@@ -191,7 +201,13 @@ class FarmerController extends Controller
             $poultryData['bird_type_other'] = $validated['bird_type_other'] ?? null;
         }
 
-        PoultryRecord::create($poultryData);
+        try {
+            PoultryRecord::create($poultryData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return back()->withInput()->with('error',
+                'Registration failed. Please try again. If the problem persists, contact support.'
+            );
+        }
 
         return back()->with('success', "Flock registered. Batch ID: <strong>{$batchNumber}</strong>");
     }
