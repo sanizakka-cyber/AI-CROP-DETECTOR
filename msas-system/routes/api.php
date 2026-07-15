@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\DiagnoseApiController;
 use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\Api\CartApiController;
 use App\Http\Controllers\Api\OrderApiController;
+use App\Http\Controllers\Api\AnalyticsApiController;
+use App\Http\Controllers\Api\FarmApiController;
+use App\Http\Controllers\Api\AnimalApiController;
 use App\Models\SubscriptionUsage;
 use Illuminate\Support\Facades\Route;
 
@@ -19,8 +22,8 @@ Route::get('/health', function () {
     ]);
 });
 
-// ── Public Auth ───────────────────────────────────────────────────────────────
-Route::prefix('auth')->group(function () {
+// ── Public Auth (rate-limited: 5 attempts per minute per IP) ─────────────────
+Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
     Route::post('/login',    [AuthApiController::class, 'login']);
     Route::post('/register', [AuthApiController::class, 'register']);
 });
@@ -32,23 +35,35 @@ Route::middleware('auth.api')->group(function () {
     Route::get('/auth/me',   [AuthApiController::class, 'me']);
     Route::post('/auth/logout', [AuthApiController::class, 'logout']);
 
-    // AI Diagnosis
-    Route::post('/diagnose/crop',      [DiagnoseApiController::class, 'crop']);
-    Route::post('/diagnose/livestock', [DiagnoseApiController::class, 'livestock']);
+    // AI Diagnosis (rate-limited: 20 scans per minute per user)
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/diagnose/crop',      [DiagnoseApiController::class, 'crop']);
+        Route::post('/diagnose/livestock', [DiagnoseApiController::class, 'livestock']);
+    });
     Route::get('/diagnose',            [DiagnoseApiController::class, 'history']);
     Route::get('/diagnose/{id}',       [DiagnoseApiController::class, 'show']);
     Route::patch('/diagnose/{id}/feedback', [DiagnoseApiController::class, 'feedback']);
 
-    // Placeholder stubs — return empty data so the app doesn't crash
-    Route::get('/farms',          fn() => response()->json(['data' => []]));
-    Route::post('/farms',         fn() => response()->json(['message' => 'Coming soon'], 501));
-    Route::get('/animals',        fn() => response()->json(['data' => []]));
-    Route::post('/animals',       fn() => response()->json(['message' => 'Coming soon'], 501));
-    Route::get('/analytics/summary',       fn() => response()->json(['summary' => ['total'=>0,'processed'=>0,'crop'=>0,'livestock'=>0,'recent'=>[]]]));
-    Route::get('/analytics/admin-summary', fn() => response()->json(['summary' => ['users'=>['total'=>0,'farmers'=>0,'vets'=>0,'agronomists'=>0,'pendingExperts'=>0,'activeMonthly'=>0],'scans'=>['total'=>0,'processed'=>0,'expertReviews'=>0,'processingRate'=>0],'consultations'=>['total'=>0,'completed'=>0,'completionRate'=>0],'treatment'=>['successRate'=>0]]]));
-    Route::get('/analytics/outbreaks',     fn() => response()->json(['outbreaks' => []]));
-    Route::get('/analytics/outcomes',      fn() => response()->json(['outcomes'  => []]));
-    Route::get('/analytics/insurability',  fn() => response()->json(['creditScore' => null, 'tier' => null]));
+    // Farms CRUD
+    Route::get('/farms',              [FarmApiController::class, 'index']);
+    Route::post('/farms',             [FarmApiController::class, 'store']);
+    Route::get('/farms/{id}',         [FarmApiController::class, 'show']);
+    Route::put('/farms/{id}',         [FarmApiController::class, 'update']);
+    Route::delete('/farms/{id}',      [FarmApiController::class, 'destroy']);
+
+    // Animals CRUD
+    Route::get('/animals',            [AnimalApiController::class, 'index']);
+    Route::post('/animals',           [AnimalApiController::class, 'store']);
+    Route::get('/animals/{id}',       [AnimalApiController::class, 'show']);
+    Route::put('/animals/{id}',       [AnimalApiController::class, 'update']);
+    Route::delete('/animals/{id}',    [AnimalApiController::class, 'destroy']);
+
+    // Analytics
+    Route::get('/analytics/summary',       [AnalyticsApiController::class, 'summary']);
+    Route::get('/analytics/admin-summary', [AnalyticsApiController::class, 'adminSummary']);
+    Route::get('/analytics/outbreaks',     [AnalyticsApiController::class, 'outbreaks']);
+    Route::get('/analytics/outcomes',      [AnalyticsApiController::class, 'outcomes']);
+    Route::get('/analytics/insurability',  [AnalyticsApiController::class, 'insurability']);
     // ── Marketplace / Products ────────────────────────────────────────────────
     Route::get('/marketplace/products',         [ProductApiController::class, 'index']);
     Route::get('/marketplace/products/categories', [ProductApiController::class, 'categories']);

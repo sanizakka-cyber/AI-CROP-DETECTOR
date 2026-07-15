@@ -6,7 +6,8 @@ use App\Models\User;
 use App\Models\Animal;
 use App\Models\Finance;
 use App\Models\Consultation;
-use App\Models\MarketplaceItem;
+use App\Models\Product;
+use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
@@ -98,14 +99,28 @@ class CEOController extends Controller
         $pendingLeaves = LeaveRequest::where('status','pending')->count();
 
         // ── Marketplace Stats ───────────────────────────────────────
-        $marketItems    = MarketplaceItem::where('status','active')->count();
-        $pendingListings = MarketplaceItem::where('is_approved', false)->count();
+        $marketItems     = Product::where('status','active')->where('is_approved', true)->count();
+        $pendingListings = Product::where('is_approved', false)->count();
 
-        // ── Disease Alerts (Stub) ───────────────────────────────────
-        $diseaseAlerts = [
-            ['disease' => 'Fall Armyworm',       'region' => 'Katsina North',    'severity' => 'high',   'crop'   => 'Maize'],
-            ['disease' => 'Foot & Mouth Disease', 'region' => 'Katsina Central', 'severity' => 'medium', 'animal' => 'Cattle'],
-        ];
+        // ── Disease Alerts (live — top diseases needing review, last 30 days) ──
+        try {
+            $diseaseAlerts = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
+                ->where('created_at', '>=', now()->subDays(30))
+                ->whereIn('status', ['needs_review','pending'])
+                ->whereNotNull('disease_name')
+                ->where('disease_name', '!=', 'Pending Expert Review')
+                ->groupBy('disease_name', 'type')
+                ->orderByDesc('cases')
+                ->take(5)
+                ->get()
+                ->map(fn($d) => [
+                    'disease'  => $d->disease_name,
+                    'cases'    => $d->cases,
+                    'severity' => $d->cases >= 5 ? 'high' : ($d->cases >= 2 ? 'medium' : 'low'),
+                    'type'     => $d->type,
+                ])
+                ->toArray();
+        } catch (\Exception $e) { $diseaseAlerts = []; }
 
         return view('ceo.dashboard', compact(
             'totalUsers','activeUsers','pendingExperts',
