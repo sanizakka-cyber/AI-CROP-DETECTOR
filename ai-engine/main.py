@@ -1,305 +1,206 @@
-import time
-import random
-from typing import List
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from pydantic import BaseModel
+import os
+import base64
+from typing import List, Optional
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+import anthropic
 import uvicorn
 
-app = FastAPI(title="FarmAI Inference Engine", version="2.0.0")
+app = FastAPI(title="MSAS FarmAI Inference Engine", version="3.0.0")
 
-# --- AI Models Mock/Stub ---
-# In a real environment, you'd load .tflite models here:
-# interpreter = tf.lite.Interpreter(model_path="models/maize_model.tflite")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class DiagnosisResult(BaseModel):
-    primaryDiagnosis: str
-    confidence: float
-    severity: str
-    likelyCauses: List[str]
-    treatmentPlan: dict
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
-INVALID_IMAGE_MESSAGE = "Invalid image detected. Please upload a clear image of a plant, livestock animal, or agricultural sample only."
+API_KEY       = os.environ.get("API_KEY", "")          # set in cPanel / Render env
+ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-VALID_PLANT_INPUTS = {
-    "leaf", "leaf top", "leaf bottom", "stem", "root", "fruit", "flower",
-    "seed", "crop", "soil", "soil symptom", "whole plant"
-}
+def _check_auth(request: Request):
+    if not API_KEY:
+        return  # auth disabled if no key set
+    auth = request.headers.get("Authorization", "")
+    if auth != f"Bearer {API_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized.")
 
-VALID_ANIMAL_INPUTS = {
-    "goat", "ram", "cow", "cattle", "poultry", "chicken", "sheep",
-    "animal stool", "feces", "stool", "saliva", "skin infection", "hoof",
-    "mouth", "eye", "visual", "fecal", "behavioral", "comprehensive"
-}
+def _ai_client() -> anthropic.Anthropic:
+    if not ANTHROPIC_KEY:
+        raise HTTPException(status_code=503, detail="AI engine not configured (missing ANTHROPIC_API_KEY).")
+    return anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 
-INVALID_HINTS = {
-    "selfie", "human", "person", "shoe", "shoes", "car", "vehicle",
-    "building", "phone", "laptop", "random", "object"
-}
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _image_quality(images: List[UploadFile]):
-    if not images:
-        return {"status": "poor", "score": 0, "issues": ["No image was uploaded"]}
-    issues = []
-    score = 92
-    for image in images:
-        content_type = image.content_type or ""
-        filename = (image.filename or "").lower()
-        if not content_type.startswith("image/"):
-            issues.append(f"{image.filename or 'file'} is not an image")
-            score -= 40
-        if any(hint in filename for hint in INVALID_HINTS):
-            issues.append("Filename suggests a non-agricultural object")
-            score -= 45
-    score = max(0, min(score, 100))
+async def _read_images_b64(images: List[UploadFile]) -> List[dict]:
+    """Return list of base64-encoded image dicts for Claude."""
+    result = []
+    for img in images:
+        data = await img.read()
+        media_type = img.content_type or "image/jpeg"
+        result.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": media_type,
+                "data": base64.standard_b64encode(data).decode("utf-8"),
+            },
+        })
+    return result
+
+def _parse_claude_crop(text: str, crop_type: str) -> dict:
+    """
+    Extract structured fields from Claude's text response.
+    Claude is prompted to return a pipe-delimited block; this parses it.
+    """
+    lines = {
+        k.strip().lower(): v.strip()
+        for line in text.splitlines()
+        if "|" in line
+        for k, v in [line.split("|", 1)]
+    }
     return {
-        "status": "good" if score >= 75 else "needs_retake" if score >= 45 else "poor",
-        "score": score,
-        "issues": issues,
+        "disease":    lines.get("disease",    "Unknown"),
+        "confidence": float(lines.get("confidence", "70").replace("%", "")),
+        "cause":      lines.get("cause",      "Unknown cause"),
+        "urgency":    lines.get("urgency",    "Medium"),
+        "first_aid":  lines.get("first_aid",  "Isolate affected plants immediately."),
+        "medication": lines.get("medication", "Consult an agronomist."),
+        "referral":   lines.get("referral",   "Contact an agronomist if symptoms spread beyond 30% of crop."),
+        "crop_type":  crop_type,
     }
 
-def _classification_response(accepted, object_type, category, quality, reason=None):
+def _parse_claude_livestock(text: str, animal_type: str) -> dict:
+    lines = {
+        k.strip().lower(): v.strip()
+        for line in text.splitlines()
+        if "|" in line
+        for k, v in [line.split("|", 1)]
+    }
     return {
-        "accepted": accepted,
-        "message": None if accepted else INVALID_IMAGE_MESSAGE,
-        "objectType": object_type,
-        "category": category,
-        "quality": quality,
-        "reason": reason,
-        "modelStatus": "heuristic-validation-stub",
+        "disease":    lines.get("disease",    "Unknown"),
+        "confidence": float(lines.get("confidence", "70").replace("%", "")),
+        "cause":      lines.get("cause",      "Unknown cause"),
+        "urgency":    lines.get("urgency",    "High"),
+        "first_aid":  lines.get("first_aid",  "Isolate the animal immediately."),
+        "medication": lines.get("medication", "Consult a veterinarian."),
+        "referral":   lines.get("referral",   "Seek veterinary attention within 24 hours."),
+        "animal_type": animal_type,
     }
 
-async def validate_crop_image(crop_type: str, crop_part: str, images: List[UploadFile]):
-    quality = _image_quality(images)
-    crop = (crop_type or "").lower().strip()
-    part = (crop_part or "crop").lower().strip()
-    filenames = " ".join((image.filename or "").lower() for image in images)
-    if any(hint in crop or hint in part or hint in filenames for hint in INVALID_HINTS):
-      return _classification_response(False, "invalid", "non_agricultural", quality, "Non-agricultural object detected")
-    if crop not in DISEASE_DB:
-      return _classification_response(False, "unknown", "unsupported_crop", quality, "Unsupported or missing crop type")
-    if not any(valid in part for valid in VALID_PLANT_INPUTS):
-      return _classification_response(False, "unknown", "unsupported_plant_part", quality, "Unsupported plant input")
-    if quality["score"] < 45:
-      return _classification_response(False, "unknown", "poor_quality", quality, "Image quality is too low")
-    return _classification_response(True, part, "plant", quality)
-
-async def validate_livestock_image(animal_type: str, assessment_type: str, images: List[UploadFile]):
-    quality = _image_quality(images)
-    animal = (animal_type or "").lower().strip()
-    assessment = (assessment_type or "").lower().strip()
-    filenames = " ".join((image.filename or "").lower() for image in images)
-    if any(hint in animal or hint in assessment or hint in filenames for hint in INVALID_HINTS):
-      return _classification_response(False, "invalid", "non_agricultural", quality, "Non-agricultural object detected")
-    if animal not in {"cattle", "cow", "goat", "ram", "sheep", "poultry", "chicken"}:
-      return _classification_response(False, "unknown", "unsupported_animal", quality, "Unsupported or missing livestock type")
-    if assessment not in VALID_ANIMAL_INPUTS:
-      return _classification_response(False, "unknown", "unsupported_sample", quality, "Unsupported animal sample or symptom type")
-    if assessment != "behavioral" and quality["score"] < 45:
-      return _classification_response(False, "unknown", "poor_quality", quality, "Image quality is too low")
-    return _classification_response(True, assessment, "animal", quality)
-
-# Mock Database for Phase 2 (10+ Crops)
-DISEASE_DB = {
-    "maize": [
-        {"name": "Northern Leaf Blight", "conf": 0.88, "sev": "moderate", "causes": ["Fungus: Exserohilum turcicum"]},
-        {"name": "Nitrogen Deficiency", "conf": 0.82, "sev": "mild", "causes": ["Low soil nutrients"]},
-        {"name": "Maize Streak Virus", "conf": 0.94, "sev": "severe", "causes": ["Leafhopper transmission"]}
-    ],
-    "tomato": [
-        {"name": "Late Blight", "conf": 0.91, "sev": "severe", "causes": ["Phytophthora infestans"]},
-        {"name": "Bacterial Wilt", "conf": 0.85, "sev": "emergency", "causes": ["Ralstonia solanacearum"]},
-        {"name": "Tomato Leaf Miner", "conf": 0.89, "sev": "moderate", "causes": ["Tuta absoluta larvae"]}
-    ],
-    "rice": [
-        {"name": "Rice Blast", "conf": 0.87, "sev": "severe", "causes": ["Magnaporthe oryzae"]},
-        {"name": "Brown Spot", "conf": 0.83, "sev": "moderate", "causes": ["Cochliobolus miyabeanus"]}
-    ],
-    "cassava": [
-        {"name": "Cassava Mosaic Disease", "conf": 0.92, "sev": "severe", "causes": ["Begomovirus"]},
-        {"name": "Cassava Brown Streak", "conf": 0.88, "sev": "emergency", "causes": ["Ipomovirus"]}
-    ],
-    "yam": [
-        {"name": "Yam Anthracnose", "conf": 0.86, "sev": "moderate", "causes": ["Colletotrichum gloeosporioides"]},
-        {"name": "Yam Mosaic Virus", "conf": 0.84, "sev": "mild", "causes": ["Potyvirus"]}
-    ],
-    "beans": [
-        {"name": "Bean Rust", "conf": 0.89, "sev": "moderate", "causes": ["Uromyces appendiculatus"]},
-        {"name": "Common Blight", "conf": 0.91, "sev": "severe", "causes": ["Xanthomonas axonopodis"]}
-    ],
-    "soybeans": [
-        {"name": "Soybean Rust", "conf": 0.93, "sev": "severe", "causes": ["Phakopsora pachyrhizi"]}
-    ],
-    "onions": [
-        {"name": "Purple Blotch", "conf": 0.85, "sev": "moderate", "causes": ["Alternaria porri"]}
-    ],
-    "pepper": [
-        {"name": "Pepper Veinal Mottle", "conf": 0.88, "sev": "moderate", "causes": ["Potyvirus"]}
-    ],
-    "millet": [
-        {"name": "Downy Mildew", "conf": 0.90, "sev": "severe", "causes": ["Sclerospora graminicola"]}
-    ]
-}
+# ── Routes ─────────────────────────────────────────────────────────────────────
 
 @app.get("/")
 async def root():
-    return {"status": "online", "model_version": "v2.0-alpha", "supported_crops": list(DISEASE_DB.keys())}
+    return {
+        "status": "online",
+        "service": "MSAS FarmAI Inference Engine",
+        "version": "3.0.0",
+        "ai_backend": "Claude Vision" if ANTHROPIC_KEY else "not configured",
+    }
 
 @app.get("/health")
 async def health():
     return {
         "status": "ok",
         "service": "MSAS FarmAI Inference Engine",
-        "model_version": "v2.0-alpha",
-        "mode": "mock",
-        "supported_crops": list(DISEASE_DB.keys()),
-        "supported_livestock": ["cattle", "goat", "sheep", "chicken"],
-    }
-
-@app.get("/models")
-async def models():
-    return {
-        "crop": {
-            "status": "mock",
-            "target_accuracy": 0.85,
-            "supported_inputs": ["leaf", "stem", "whole_plant", "gallery_upload"],
-            "architecture_target": "MobileNetV3 or EfficientNet Lite",
-        },
-        "livestock": {
-            "status": "mock",
-            "target_accuracy": 0.80,
-            "supported_inputs": ["fecal_image", "visual_symptom_image", "behavioral_questionnaire"],
-            "architecture_target": "Multi-modal mobile-first classifier",
-        },
+        "ai_ready": bool(ANTHROPIC_KEY),
     }
 
 @app.post("/predict/crop")
 async def predict_crop(
+    request: Request,
     cropType: str = Form(...),
-    images: List[UploadFile] = File(...)
+    cropPart: Optional[str] = Form("crop"),
+    images: List[UploadFile] = File(...),
 ):
-    validation = await validate_crop_image(cropType, "crop", images)
-    if not validation["accepted"]:
-        raise HTTPException(status_code=422, detail=validation)
+    _check_auth(request)
+    client = _ai_client()
 
-    # Simulate inference delay
-    time.sleep(1.2)
-    
-    crop = cropType.lower()
-    if crop not in DISEASE_DB:
-        crop = "maize" # Fallback
-        
-    # In reality, you'd run:
-    # img = preprocess(images[0])
-    # prediction = model.predict(img)
-    
-    # Mocking the AI output for Phase 2 demonstration
-    result = random.choice(DISEASE_DB[crop])
-    
-    return {
-        "aiResult": {
-            "primaryDiagnosis": result["name"],
-            "confidence": round(result["conf"] * 100 + random.uniform(-5, 5), 1),
-            "severity": result["sev"],
-            "likelyCauses": result["causes"],
-            "contagionRisk": "high" if result["sev"] in ["severe", "emergency"] else "medium",
-            "needsVetVisit": False,
-            "needsExpertReview": result["sev"] in ["severe", "emergency"],
-            "expertType": "agronomist",
-            "validation": validation,
-        },
-        "treatmentPlan": {
-            "immediateActions": [
-                {"action": f"Isolate affected {crop} plants", "actionHa": "Ware amfanin gona da abin ya shafa"},
-                {"action": "Check irrigation drainage", "actionHa": "Duba magudanar ruwa"}
-            ],
-            "organicRemedies": [
-                {"remedy": "Neem oil spray", "dosage": "5ml/L", "method": "Foliar", "timing": "Weekly"}
-            ],
-            "chemicalTreatments": [
-                {"product": "Standard Fungicide", "dosage": "2g/L", "method": "Spray", "timing": "Every 10 days", "cost": "N2,500"}
-            ],
-            "prevention": [
-                {"measure": "Rotate crops annually"},
-                {"measure": "Use healthy seedlings and monitor affected plots every 3 days"}
-            ],
-            "consultation": {
-                "recommended": result["sev"] in ["severe", "emergency"],
-                "expertType": "agronomist",
-                "message": "Professional consultation is recommended." if result["sev"] in ["severe", "emergency"] else "Monitor for 7 days and consult an agronomist if symptoms spread.",
-                "callNumber": "08129582957",
-                "whatsapp": "https://wa.me/2348129582957"
-            }
-        }
-    }
+    image_blocks = await _read_images_b64(images)
+
+    prompt = f"""You are an expert agricultural plant pathologist specialising in Nigerian and West African crops.
+
+The farmer is scanning a {cropType} ({cropPart or 'whole plant'}) image for disease or nutrient issues.
+
+Analyse the image(s) and respond ONLY in this exact pipe-delimited format (one field per line, no extra text):
+
+disease | <disease or condition name, e.g. "Northern Leaf Blight">
+confidence | <number 0-100, e.g. "87">
+cause | <one-sentence cause, e.g. "Fungal infection by Exserohilum turcicum worsened by high humidity">
+urgency | <one of: Low, Medium, High, Emergency>
+first_aid | <2-3 immediate steps the farmer should take now>
+medication | <specific product name and dosage, e.g. "Mancozeb 80WP — 2g per litre of water, spray every 7 days">
+referral | <when to call an agronomist/extension officer>
+
+If the image does not show a plant or crop, set disease to "Invalid image" and confidence to 0."""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = message.content[0].text
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    result = _parse_claude_crop(text, cropType)
+
+    if result["disease"] == "Invalid image":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Image does not appear to show a plant or crop. Please upload a clear photo of the affected plant part.",
+        })
+
+    return result
 
 @app.post("/predict/livestock")
 async def predict_livestock(
+    request: Request,
     animalType: str = Form(...),
     assessmentType: str = Form(...),
-    images: List[UploadFile] = File(...)
+    images: List[UploadFile] = File(default=[]),
 ):
-    validation = await validate_livestock_image(animalType, assessmentType, images)
-    if not validation["accepted"]:
-        raise HTTPException(status_code=422, detail=validation)
+    _check_auth(request)
+    client = _ai_client()
 
-    time.sleep(1.5)
-    
-    # Simple logic for Phase 2 demo
-    diagnosis = "Foot Rot" if assessmentType == "visual" else "Internal Parasites"
-    severity = "severe" if "cattle" in animalType.lower() else "moderate"
-    
-    return {
-        "aiResult": {
-            "primaryDiagnosis": diagnosis,
-            "confidence": 92.5,
-            "severity": severity,
-            "likelyCauses": ["Bacterial infection", "Environmental dampness"],
-            "contagionRisk": "high",
-            "needsVetVisit": True,
-            "needsExpertReview": True,
-            "expertType": "vet",
-            "validation": validation,
-        },
-        "treatmentPlan": {
-            "immediateActions": [{"action": "Isolate the animal", "actionHa": "Ware dabba"}],
-            "organicRemedies": [],
-            "chemicalTreatments": [{"product": "Antibiotic Spray", "dosage": "As directed by vet", "method": "Topical", "timing": "Twice daily", "cost": "N4,000"}],
-            "prevention": [{"measure": "Keep pens dry and clean"}, {"measure": "Deworm regularly and disinfect housing"}],
-            "dosageGuidance": [
-                {"guidance": "Medication dosage must be calculated by animal weight"},
-                {"guidance": "Repeat deworming after 14 days only if symptoms persist or vet confirms"}
-            ],
-            "consultation": {
-                "recommended": True,
-                "expertType": "vet",
-                "message": "Professional consultation is recommended.",
-                "callNumber": "08129582957",
-                "whatsapp": "https://wa.me/2348129582957"
-            }
-        }
-    }
+    image_blocks = await _read_images_b64(images) if images else []
 
-@app.post("/validate/crop")
-async def validate_crop_endpoint(
-    cropType: str = Form(...),
-    cropPart: str = Form("crop"),
-    images: List[UploadFile] = File(...)
-):
-    result = await validate_crop_image(cropType, cropPart, images)
-    if not result["accepted"]:
-        raise HTTPException(status_code=422, detail=result)
-    return {"validation": result}
+    prompt = f"""You are an expert veterinarian specialising in smallholder livestock in Nigeria and West Africa.
 
-@app.post("/validate/livestock")
-async def validate_livestock_endpoint(
-    animalType: str = Form(...),
-    assessmentType: str = Form(...),
-    images: List[UploadFile] = File(...)
-):
-    result = await validate_livestock_image(animalType, assessmentType, images)
-    if not result["accepted"]:
-        raise HTTPException(status_code=422, detail=result)
-    return {"validation": result}
+The farmer is reporting a health concern for a {animalType}. Assessment type: {assessmentType}.
+
+{"Analyse the provided image(s) and " if image_blocks else "Based on the assessment type and "}respond ONLY in this exact pipe-delimited format (one field per line, no extra text):
+
+disease | <condition name, e.g. "Foot and Mouth Disease" or "Internal Parasites">
+confidence | <number 0-100>
+cause | <one-sentence cause>
+urgency | <one of: Low, Medium, High, Emergency>
+first_aid | <2-3 immediate steps the farmer can take now before the vet arrives>
+medication | <specific treatment name and dosage if applicable, or "Requires Vet prescription">
+referral | <when and how urgently to contact a veterinarian>
+
+If this is a behavioral-only assessment (no image), base your response on the most common {animalType} conditions for {assessmentType} presentations in West Africa."""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=512,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = message.content[0].text
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    return _parse_claude_livestock(text, animalType)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    port = int(os.environ.get("PORT", 8001))
+    uvicorn.run(app, host="0.0.0.0", port=port)
