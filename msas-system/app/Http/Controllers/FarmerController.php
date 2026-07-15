@@ -102,7 +102,7 @@ class FarmerController extends Controller
         $prefix      = "{$speciesCode}-{$stateCode}-{$yymm}-";
 
         $tagNumber = DB::transaction(function () use ($prefix) {
-            $next = Animal::where('tag_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            $next = Animal::select('id')->where('tag_number', 'like', $prefix . '%')->lockForUpdate()->get()->count() + 1;
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
 
@@ -177,7 +177,7 @@ class FarmerController extends Controller
         $prefix    = "PLT-{$birdCode}-{$stateCode}-{$yymm}-";
 
         $batchNumber = DB::transaction(function () use ($prefix) {
-            $next = PoultryRecord::where('batch_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            $next = PoultryRecord::select('id')->where('batch_number', 'like', $prefix . '%')->lockForUpdate()->get()->count() + 1;
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
 

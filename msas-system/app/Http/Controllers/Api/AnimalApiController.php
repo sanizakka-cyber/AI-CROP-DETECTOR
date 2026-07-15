@@ -36,7 +36,7 @@ class AnimalApiController extends Controller
         $prefix = "{$sc}-{$stCode}-" . now()->format('ym') . '-';
 
         return DB::transaction(function () use ($prefix) {
-            $next = Animal::where('tag_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            $next = Animal::select('id')->where('tag_number', 'like', $prefix . '%')->lockForUpdate()->get()->count() + 1;
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
     }

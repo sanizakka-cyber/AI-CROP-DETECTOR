@@ -36,7 +36,7 @@ class PoultryApiController extends Controller
         $prefix = "PLT-{$bc}-{$stCode}-" . now()->format('ym') . '-';
 
         return DB::transaction(function () use ($prefix) {
-            $next = PoultryRecord::where('batch_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            $next = PoultryRecord::select('id')->where('batch_number', 'like', $prefix . '%')->lockForUpdate()->get()->count() + 1;
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
     }
