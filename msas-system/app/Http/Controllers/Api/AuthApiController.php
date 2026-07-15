@@ -3,22 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\LoginRequest;
+use App\Http\Requests\Api\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthApiController extends Controller
 {
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'phone'    => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ]);
-
         $user = User::where('phone', $request->phone)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
@@ -41,16 +37,8 @@ class AuthApiController extends Controller
         ]);
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $request->validate([
-            'name'     => ['required', 'string', 'max:160'],
-            'phone'    => ['required', 'string', 'unique:users,phone'],
-            'password' => ['required', 'string', 'min:6'],
-            'role'     => ['sometimes', 'string', 'in:farmer,vet,agronomist,agro-dealer,extension-officer'],
-            'language' => ['sometimes', 'string', 'in:en,ha'],
-            'state'    => ['sometimes', 'string', 'max:100'],
-        ]);
 
         $parts     = explode(' ', trim($request->name), 2);
         $firstName = $parts[0];
