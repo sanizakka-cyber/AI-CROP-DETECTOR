@@ -32,7 +32,8 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Laravel / PHP
+# Laravel / PHP — keep pre-built Vite assets committed
+!msas-system/public/build/
 /vendor/
 /storage/app/*
 /storage/framework/cache/*
