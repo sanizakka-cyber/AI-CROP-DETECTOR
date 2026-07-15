@@ -9,9 +9,42 @@ use App\Models\PoultryRecord;
 use App\Models\SubscriptionUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class FarmerController extends Controller
 {
+    // ── Species / breed reference data ─────────────────────────────────
+    private static array $speciesCodes = [
+        'Cattle'  => 'CTL', 'Goat'   => 'GOT', 'Sheep'  => 'SHP',
+        'Pig'     => 'PIG', 'Camel'  => 'CAM', 'Donkey' => 'DNK',
+        'Horse'   => 'HRS', 'Rabbit' => 'RBT', 'Other'  => 'OTH',
+    ];
+
+    private static array $birdCodes = [
+        'Chicken'     => 'CHK', 'Turkey'      => 'TKY', 'Duck'    => 'DCK',
+        'Guinea Fowl' => 'GNF', 'Quail'       => 'QAL', 'Pigeon'  => 'PGN',
+        'Ostrich'     => 'OST', 'Other'        => 'OTH',
+    ];
+
+    private static array $stateCodes = [
+        'abia' => 'ABI', 'adamawa' => 'ADA', 'akwa ibom' => 'AKI', 'anambra' => 'ANA',
+        'bauchi' => 'BAU', 'bayelsa' => 'BAY', 'benue' => 'BEN', 'borno' => 'BOR',
+        'cross river' => 'CRS', 'delta' => 'DEL', 'ebonyi' => 'EBO', 'edo' => 'EDO',
+        'ekiti' => 'EKI', 'enugu' => 'ENU', 'fct' => 'FCT', 'gombe' => 'GOM',
+        'imo' => 'IMO', 'jigawa' => 'JIG', 'kaduna' => 'KAD', 'kano' => 'KAN',
+        'katsina' => 'KTS', 'kebbi' => 'KEB', 'kogi' => 'KOG', 'kwara' => 'KWA',
+        'lagos' => 'LAG', 'nasarawa' => 'NAS', 'niger' => 'NIG', 'ogun' => 'OGU',
+        'ondo' => 'OND', 'osun' => 'OSU', 'oyo' => 'OYO', 'plateau' => 'PLA',
+        'rivers' => 'RIV', 'sokoto' => 'SOK', 'taraba' => 'TAR', 'yobe' => 'YOB',
+        'zamfara' => 'ZAM',
+    ];
+
+    private function stateCode(?string $state): string
+    {
+        $key = strtolower(trim($state ?? ''));
+        return self::$stateCodes[$key] ?? strtoupper(substr($state ?? 'NGA', 0, 3));
+    }
+
     // ── Livestock ──────────────────────────────────────────────────────
 
     public function livestock()
@@ -25,7 +58,6 @@ class FarmerController extends Controller
         $user      = Auth::user();
         $activeSub = $user->activeSubscription();
 
-        // Enforce livestock limit for Basic plan
         if ($activeSub) {
             $limit = $activeSub->getLimit('livestock_records');
             if ($limit !== -1) {
@@ -37,7 +69,7 @@ class FarmerController extends Controller
                     );
                 }
             }
-        } elseif (!$activeSub) {
+        } else {
             return back()->with('error',
                 'You need an active subscription to register livestock. '
                 . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Start your free trial</a>.'
@@ -45,21 +77,49 @@ class FarmerController extends Controller
         }
 
         $validated = $request->validate([
-            'tag_number'    => 'required|string|max:50',
-            'species'       => 'required|string',
-            'breed'         => 'nullable|string',
+            'name'          => 'nullable|string|max:100',
+            'species'       => 'required|string|in:Cattle,Goat,Sheep,Pig,Camel,Donkey,Horse,Rabbit,Other',
+            'species_other' => 'required_if:species,Other|nullable|string|max:100',
+            'breed'         => 'nullable|string|max:200',
+            'breed_other'   => 'nullable|string|max:100',
             'gender'        => 'required|in:Male,Female',
             'date_of_birth' => 'nullable|date',
-            'weight_kg'     => 'nullable|numeric',
+            'weight_kg'     => 'nullable|numeric|min:0',
         ]);
 
-        $validated['user_id'] = $user->id;
-        Animal::create($validated);
+        $actualSpecies = $validated['species'] === 'Other'
+            ? ($validated['species_other'] ?? 'Other')
+            : $validated['species'];
 
-        // Track usage for metering
+        $actualBreed = ($validated['breed'] ?? null) === 'Other'
+            ? ($validated['breed_other'] ?? null)
+            : ($validated['breed'] ?? null);
+
+        $speciesCode = self::$speciesCodes[$validated['species']] ?? 'OTH';
+        $stateCode   = $this->stateCode($user->state);
+        $yymm        = now()->format('ym');
+        $prefix      = "{$speciesCode}-{$stateCode}-{$yymm}-";
+
+        $tagNumber = DB::transaction(function () use ($prefix) {
+            $next = Animal::where('tag_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
+        });
+
+        Animal::create([
+            'user_id'            => $user->id,
+            'name'               => $validated['name'] ?? null,
+            'tag_number'         => $tagNumber,
+            'species'            => $actualSpecies,
+            'breed'              => $actualBreed,
+            'gender'             => $validated['gender'],
+            'date_of_birth'      => $validated['date_of_birth'] ?? null,
+            'weight_kg'          => $validated['weight_kg'] ?? null,
+            'needs_admin_review' => $validated['species'] === 'Other',
+        ]);
+
         SubscriptionUsage::increment($user->id, 'livestock_records');
 
-        return back()->with('success', 'Livestock registered successfully.');
+        return back()->with('success', "Animal registered. Tag ID: <strong>{$tagNumber}</strong>");
     }
 
     // ── Poultry ────────────────────────────────────────────────────────
@@ -72,17 +132,43 @@ class FarmerController extends Controller
 
     public function storePoultry(Request $request)
     {
+        $user = Auth::user();
+
         $validated = $request->validate([
-            'batch_number' => 'required|string',
-            'bird_type'    => 'required|string',
-            'quantity'     => 'required|integer|min:1',
-            'date_acquired'=> 'required|date',
+            'bird_type'       => 'required|string|in:Chicken,Turkey,Duck,Guinea Fowl,Quail,Pigeon,Ostrich,Other',
+            'bird_type_other' => 'required_if:bird_type,Other|nullable|string|max:100',
+            'breed'           => 'nullable|string|max:200',
+            'quantity'        => 'required|integer|min:1',
+            'date_acquired'   => 'required|date',
+            'purpose'         => 'nullable|in:meat,egg,breeding,dual-purpose',
         ]);
 
-        $validated['user_id'] = Auth::id();
-        PoultryRecord::create($validated);
+        $actualBirdType = $validated['bird_type'] === 'Other'
+            ? ($validated['bird_type_other'] ?? 'Other')
+            : $validated['bird_type'];
 
-        return back()->with('success', 'Poultry batch added successfully.');
+        $birdCode  = self::$birdCodes[$validated['bird_type']] ?? 'OTH';
+        $stateCode = $this->stateCode($user->state);
+        $yymm      = now()->format('ym');
+        $prefix    = "PLT-{$birdCode}-{$stateCode}-{$yymm}-";
+
+        $batchNumber = DB::transaction(function () use ($prefix) {
+            $next = PoultryRecord::where('batch_number', 'like', $prefix . '%')->lockForUpdate()->count() + 1;
+            return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
+        });
+
+        PoultryRecord::create([
+            'user_id'            => $user->id,
+            'batch_number'       => $batchNumber,
+            'bird_type'          => $actualBirdType,
+            'breed'              => $validated['breed'] ?? null,
+            'quantity'           => $validated['quantity'],
+            'date_acquired'      => $validated['date_acquired'],
+            'purpose'            => $validated['purpose'] ?? null,
+            'needs_admin_review' => $validated['bird_type'] === 'Other',
+        ]);
+
+        return back()->with('success', "Flock registered. Batch ID: <strong>{$batchNumber}</strong>");
     }
 
     // ── Finance ────────────────────────────────────────────────────────

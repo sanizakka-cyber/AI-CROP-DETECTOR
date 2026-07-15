@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Diagnosis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -37,10 +38,12 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         try { $animalsCount       = \App\Models\Animal::where('user_id', $user->id)->count(); } catch (\Exception $e) { $animalsCount = 0; }
-        try { $diagnosesCount     = \App\Models\Consultation::where('farmer_id', $user->id)->count(); } catch (\Exception $e) { $diagnosesCount = 0; }
-        try { $recentScans        = \App\Models\Consultation::where('farmer_id', $user->id)->latest()->take(5)->get(); } catch (\Exception $e) { $recentScans = collect(); }
+        try { $poultryCount       = \App\Models\PoultryRecord::where('user_id', $user->id)->count(); } catch (\Exception $e) { $poultryCount = 0; }
+        try { $diagnosesCount     = \App\Models\Diagnosis::where('user_id', $user->id)->count(); } catch (\Exception $e) { $diagnosesCount = 0; }
+        try { $recentScans        = \App\Models\Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(); } catch (\Exception $e) { $recentScans = collect(); }
         try { $pendingVetConsults  = \App\Models\Consultation::where('farmer_id', $user->id)->where('status', 'pending')->count(); } catch (\Exception $e) { $pendingVetConsults = 0; }
         try { $recentAnimals      = \App\Models\Animal::where('user_id', $user->id)->latest()->take(5)->get(); } catch (\Exception $e) { $recentAnimals = collect(); }
+        try { $recentFlocks       = \App\Models\PoultryRecord::where('user_id', $user->id)->latest()->take(3)->get(); } catch (\Exception $e) { $recentFlocks = collect(); }
         try { $recentConsults     = \App\Models\Consultation::where('farmer_id', $user->id)->latest()->take(4)->get(); } catch (\Exception $e) { $recentConsults = collect(); }
         try { $totalIncome        = \App\Models\Finance::where('user_id', $user->id)->where('type', 'Income')->sum('amount'); } catch (\Exception $e) { $totalIncome = 0; }
         try { $totalExpense       = \App\Models\Finance::where('user_id', $user->id)->where('type', 'Expense')->sum('amount'); } catch (\Exception $e) { $totalExpense = 0; }
@@ -48,8 +51,8 @@ class DashboardController extends Controller
         $netBalance = $totalIncome - $totalExpense;
 
         return view('farmer.dashboard', compact(
-            'animalsCount', 'diagnosesCount', 'recentScans', 'pendingVetConsults',
-            'recentAnimals', 'recentConsults', 'totalIncome', 'totalExpense',
+            'animalsCount', 'poultryCount', 'diagnosesCount', 'recentScans', 'pendingVetConsults',
+            'recentAnimals', 'recentFlocks', 'recentConsults', 'totalIncome', 'totalExpense',
             'recentFinances', 'netBalance'
         ));
     }
