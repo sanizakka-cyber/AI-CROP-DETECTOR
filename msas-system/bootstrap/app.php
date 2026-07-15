@@ -13,14 +13,18 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role'         => \App\Http\Middleware\RoleMiddleware::class,
-            'permission'   => \App\Http\Middleware\PermissionMiddleware::class,
-            'auth.api'     => \App\Http\Middleware\ApiAuthenticate::class,
-            'subscription' => \App\Http\Middleware\RequireSubscription::class,
+            'role'                => \App\Http\Middleware\RoleMiddleware::class,
+            'permission'          => \App\Http\Middleware\PermissionMiddleware::class,
+            'auth.api'            => \App\Http\Middleware\ApiAuthenticate::class,
+            'subscription'        => \App\Http\Middleware\RequireSubscription::class,
+            'force.password.reset'=> \App\Http\Middleware\ForcePasswordReset::class,
         ]);
 
         // Restore user's chosen language from session on every web request
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
+
+        // Redirect users with a temporary password to the change-password page
+        $middleware->appendToGroup('web', \App\Http\Middleware\ForcePasswordReset::class);
 
         // Exclude payment webhooks from CSRF (they're verified by HMAC signature instead)
         $middleware->validateCsrfTokens(except: [

@@ -28,7 +28,12 @@
                     elseif($diagnosis->urgency_level === 'Medium') $color = 'amber';
                 @endphp
                 <div class="bg-{{ $color }}-500 px-6 py-2 flex justify-between items-center text-white">
-                    <div class="font-bold text-sm uppercase tracking-wider">{{ $diagnosis->type === 'plant' ? '🌿 Plant Analysis' : '🐄 Livestock Analysis' }}</div>
+                    <div class="font-bold text-sm uppercase tracking-wider">
+                        @if($diagnosis->type === 'plant') 🌿 Plant / Crop Analysis
+                        @elseif($diagnosis->type === 'soil') 🌱 Soil Assessment
+                        @else 🐄 Livestock Health Analysis
+                        @endif
+                    </div>
                     <div class="text-xs opacity-90">{{ $diagnosis->created_at->format('D, M j, Y g:i A') }}</div>
                 </div>
 
@@ -67,24 +72,31 @@
                         <!-- Analysis Grid -->
                         <div class="grid sm:grid-cols-2 gap-4">
                             <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span>🔍</span> Detected Cause</div>
-                                <p class="text-sm font-medium text-slate-700">{{ $diagnosis->cause }}</p>
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <span>🔍</span> {{ $diagnosis->type === 'soil' ? 'Soil Condition' : 'Detected Cause' }}
+                                </div>
+                                <p class="text-sm font-medium text-slate-700">{{ $diagnosis->cause ?: $diagnosis->disease_name }}</p>
                             </div>
                             <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                <div class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1"><span>🚑</span> First Aid / Action</div>
-                                <p class="text-sm font-medium text-blue-800">{{ $diagnosis->first_aid_steps }}</p>
+                                <div class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    <span>{{ $diagnosis->type === 'soil' ? '🌾' : '🚑' }}</span>
+                                    {{ $diagnosis->type === 'soil' ? 'Recommended Crops' : 'First Aid / Action' }}
+                                </div>
+                                <p class="text-sm font-medium text-blue-800">{{ $diagnosis->first_aid_steps ?: '—' }}</p>
                             </div>
                         </div>
 
                         <div class="bg-emerald-50 p-5 rounded-xl border border-emerald-100 mt-2">
-                            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1"><span>💊</span> Recommended Treatment</div>
+                            <div class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                <span>{{ $diagnosis->type === 'soil' ? '🪣' : '💊' }}</span>
+                                {{ $diagnosis->type === 'soil' ? 'Amendment Recommendation' : 'Recommended Treatment' }}
+                            </div>
                             <p class="font-bold text-emerald-900 mb-1">{{ $diagnosis->recommended_medication }}</p>
-                            <p class="text-xs text-emerald-700 mt-2 border-t border-emerald-200 pt-2"><span class="font-bold">Advice:</span> {{ $diagnosis->vet_referral_advice }}</p>
-                            
-                            <!-- Disclaimer -->
+                            <p class="text-xs text-emerald-700 mt-2 border-t border-emerald-200 pt-2"><span class="font-bold">{{ $diagnosis->type === 'soil' ? 'When to get a soil test:' : 'Advice:' }}</span> {{ $diagnosis->vet_referral_advice }}</p>
+
                             <div class="flex items-start gap-2 mt-3 text-[10px] text-emerald-600/80 leading-tight">
                                 <span>⚠️</span>
-                                <p>Disclaimer: This AI analysis provides guidance based on visual symptoms. Always consult with a certified Agronomist or Veterinary Doctor before applying heavy chemical treatments or restricted antibiotics.</p>
+                                <p>Disclaimer: This AI analysis provides guidance based on visual symptoms. Always consult with a certified {{ $diagnosis->type === 'soil' ? 'Agronomist or Soil Scientist' : 'Agronomist or Veterinary Doctor' }} before applying treatments.</p>
                             </div>
                         </div>
                     </div>
