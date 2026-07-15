@@ -10,6 +10,7 @@ use App\Models\SubscriptionUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class FarmerController extends Controller
 {
@@ -105,17 +106,30 @@ class FarmerController extends Controller
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
 
-        Animal::create([
-            'user_id'            => $user->id,
-            'name'               => $validated['name'] ?? null,
-            'tag_number'         => $tagNumber,
-            'species'            => $actualSpecies,
-            'breed'              => $actualBreed,
-            'gender'             => $validated['gender'],
-            'date_of_birth'      => $validated['date_of_birth'] ?? null,
-            'weight_kg'          => $validated['weight_kg'] ?? null,
-            'needs_admin_review' => $validated['species'] === 'Other',
-        ]);
+        $animalData = [
+            'user_id'       => $user->id,
+            'tag_number'    => $tagNumber,
+            'species'       => $actualSpecies,
+            'breed'         => $actualBreed,
+            'gender'        => $validated['gender'],
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'weight_kg'     => $validated['weight_kg'] ?? null,
+            'health_status' => 'healthy',
+        ];
+        if (Schema::hasColumn('animals', 'name')) {
+            $animalData['name'] = $validated['name'] ?? null;
+        }
+        if (Schema::hasColumn('animals', 'needs_admin_review')) {
+            $animalData['needs_admin_review'] = $validated['species'] === 'Other';
+        }
+        if (Schema::hasColumn('animals', 'species_other')) {
+            $animalData['species_other'] = $validated['species_other'] ?? null;
+        }
+        if (Schema::hasColumn('animals', 'breed_other')) {
+            $animalData['breed_other'] = $validated['breed_other'] ?? null;
+        }
+
+        Animal::create($animalData);
 
         SubscriptionUsage::increment($user->id, 'livestock_records');
 
@@ -157,16 +171,27 @@ class FarmerController extends Controller
             return $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
         });
 
-        PoultryRecord::create([
-            'user_id'            => $user->id,
-            'batch_number'       => $batchNumber,
-            'bird_type'          => $actualBirdType,
-            'breed'              => $validated['breed'] ?? null,
-            'quantity'           => $validated['quantity'],
-            'date_acquired'      => $validated['date_acquired'],
-            'purpose'            => $validated['purpose'] ?? null,
-            'needs_admin_review' => $validated['bird_type'] === 'Other',
-        ]);
+        $poultryData = [
+            'user_id'       => $user->id,
+            'batch_number'  => $batchNumber,
+            'bird_type'     => $actualBirdType,
+            'quantity'      => $validated['quantity'],
+            'date_acquired' => $validated['date_acquired'],
+        ];
+        if (Schema::hasColumn('poultry_records', 'breed')) {
+            $poultryData['breed'] = $validated['breed'] ?? null;
+        }
+        if (Schema::hasColumn('poultry_records', 'purpose')) {
+            $poultryData['purpose'] = $validated['purpose'] ?? null;
+        }
+        if (Schema::hasColumn('poultry_records', 'needs_admin_review')) {
+            $poultryData['needs_admin_review'] = $validated['bird_type'] === 'Other';
+        }
+        if (Schema::hasColumn('poultry_records', 'bird_type_other')) {
+            $poultryData['bird_type_other'] = $validated['bird_type_other'] ?? null;
+        }
+
+        PoultryRecord::create($poultryData);
 
         return back()->with('success', "Flock registered. Batch ID: <strong>{$batchNumber}</strong>");
     }
