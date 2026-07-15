@@ -305,110 +305,26 @@
         </div>
     </section>
 
-    <!-- ── About — CEO & Company ── -->
-    <section id="about" class="py-24 bg-carddark">
+    <!-- ── About / Company Stats ── -->
+    <section id="about" class="py-16 bg-carddark border-b border-cardlight">
         <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-2 gap-16 items-start">
-
-                <!-- CEO Block -->
-                <div>
-                    <span class="cred-pill mb-4 inline-flex">
-                        <i class="fa-solid fa-crown" aria-hidden="true"></i> Founder &amp; CEO
-                    </span>
-                    <h2 class="font-heading text-3xl font-bold text-white mb-8 leading-snug">
-                        Meet the Visionary<br/>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal">
-                            Behind MSAS
-                        </span>
-                    </h2>
-
-                    <div class="flex flex-col sm:flex-row gap-8 items-start">
-
-                        <!-- CEO Photo -->
-                        <div class="shrink-0 ceo-photo-ring">
-                            <img
-                                src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
-                                alt="Sani Yawale Zakka — Founder & CEO of MSAS Livestock & Agro Services"
-                                width="168"
-                                height="168"
-                                loading="lazy"
-                                class="w-[168px] h-[168px]"
-                                onerror="this.src='https://ui-avatars.com/api/?name=Sani+Yawale+Zakka&background=10b981&color=fff&size=200&rounded=true'"
-                            >
-                        </div>
-
-                        <!-- CEO Info -->
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-heading text-2xl font-bold text-white mb-0.5">Sani Yawale Zakka</h3>
-                            <p class="text-emerald-400 font-semibold text-sm mb-1">Founder &amp; Chief Executive Officer</p>
-                            <p class="text-graytext text-xs mb-4">MSAS Livestock &amp; Agro Services · Katsina, Nigeria</p>
-
-                            <div class="flex flex-wrap gap-2 mb-5">
-                                <span class="cred-pill">
-                                    <i class="fa-solid fa-wheat-awn" aria-hidden="true"></i> Agribusiness
-                                </span>
-                                <span class="cred-pill">
-                                    <i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Digital Innovation
-                                </span>
-                                <span class="cred-pill">
-                                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Entrepreneur
-                                </span>
-                            </div>
-
-                            <p class="text-graytext text-[15px] leading-relaxed mb-6">
-                                Sani Yawale Zakka is a visionary entrepreneur passionate about agriculture, livestock development and digital innovation. He founded MSAS Livestock &amp; Agro Services to transform traditional farming into a profitable, efficient and technology-driven industry that benefits farmers, communities and the wider economy.
-                            </p>
-
-                            <div class="flex flex-col gap-3 text-sm">
-                                <a href="tel:08032459879"
-                                   class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
-                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
-                                        <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>
-                                    </span>
-                                    08032459879
-                                </a>
-                                <a href="mailto:sanizakka@gmail.com"
-                                   class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
-                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
-                                        <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
-                                    </span>
-                                    sanizakka@gmail.com
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
+                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">500+</div>
+                    <div class="text-graytext text-sm font-medium">Farmers Served</div>
                 </div>
-
-                <!-- Company Block -->
-                <div>
-                    <div class="flex items-center gap-4 mb-6">
-                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Logo" class="h-20 w-auto shrink-0" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">
-                    </div>
-
-                    <p class="text-graytext text-[15px] leading-relaxed mb-8">
-                        MSAS was created to solve the challenges farmers face in livestock management, poor market access, low productivity and lack of expert support. We combine agriculture with technology to make farming easier, smarter and more profitable for every Nigerian farmer.
-                    </p>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg">
-                            <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">500+</div>
-                            <div class="text-graytext text-sm font-medium">Farmers Served</div>
-                        </div>
-                        <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg">
-                            <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">2k+</div>
-                            <div class="text-graytext text-sm font-medium">Livestock Managed</div>
-                        </div>
-                        <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg">
-                            <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">50+</div>
-                            <div class="text-graytext text-sm font-medium">Partner Vets</div>
-                        </div>
-                        <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg">
-                            <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">24/7</div>
-                            <div class="text-graytext text-sm font-medium">Expert Support</div>
-                        </div>
-                    </div>
+                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
+                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">2k+</div>
+                    <div class="text-graytext text-sm font-medium">Livestock Managed</div>
                 </div>
-
+                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
+                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">50+</div>
+                    <div class="text-graytext text-sm font-medium">Partner Vets</div>
+                </div>
+                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
+                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">24/7</div>
+                    <div class="text-graytext text-sm font-medium">Expert Support</div>
+                </div>
             </div>
         </div>
     </section>
@@ -668,53 +584,103 @@
         </div>
     </section>
 
-    <!-- ── Contact ── -->
+    <!-- ── CEO & Contact ── -->
     <section id="contact" class="py-24 bg-carddark">
-        <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-3 gap-8">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid lg:grid-cols-2 gap-16 items-start">
 
-            <div>
-                <h2 class="font-heading text-[30px] font-bold text-white mb-2">Contact Us</h2>
-                <p class="text-graytext text-[15px] mb-8">We are always here to help you grow</p>
-                <div class="space-y-5">
-                    <div class="flex items-start gap-4">
-                        <i class="fa-solid fa-envelope text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                        <a href="mailto:msaslivestockagroservices@gmail.com" class="text-gray-300 hover:text-emerald-400 transition break-all">msaslivestockagroservices@gmail.com</a>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fa-solid fa-phone text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                        <a href="tel:08129582957" class="text-gray-300 hover:text-emerald-400 transition">08129582957</a>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <i class="fa-solid fa-location-dot text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                        <span class="text-gray-300 leading-relaxed">No 21 Sarkin maska street dutsin safe lowcost Katsina State, Nigeria</span>
+                <!-- CEO Profile -->
+                <div>
+                    <span class="cred-pill mb-4 inline-flex">
+                        <i class="fa-solid fa-crown" aria-hidden="true"></i> Founder &amp; CEO
+                    </span>
+                    <h2 class="font-heading text-3xl font-bold text-white mb-8 leading-snug">
+                        Meet the Visionary<br/>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal">
+                            Behind MSAS
+                        </span>
+                    </h2>
+                    <div class="flex flex-col sm:flex-row gap-8 items-start">
+                        <div class="shrink-0 ceo-photo-ring">
+                            <img
+                                src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
+                                alt="Sani Yawale Zakka — Founder & CEO of MSAS Livestock & Agro Services"
+                                width="168" height="168" loading="lazy"
+                                class="w-[168px] h-[168px]"
+                                onerror="this.src='https://ui-avatars.com/api/?name=Sani+Yawale+Zakka&background=10b981&color=fff&size=200&rounded=true'"
+                            >
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-heading text-2xl font-bold text-white mb-0.5">Sani Yawale Zakka</h3>
+                            <p class="text-emerald-400 font-semibold text-sm mb-1">Founder &amp; Chief Executive Officer</p>
+                            <p class="text-graytext text-xs mb-4">MSAS Livestock &amp; Agro Services · Katsina, Nigeria</p>
+                            <div class="flex flex-wrap gap-2 mb-5">
+                                <span class="cred-pill"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i> Agribusiness</span>
+                                <span class="cred-pill"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Digital Innovation</span>
+                                <span class="cred-pill"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Entrepreneur</span>
+                            </div>
+                            <p class="text-graytext text-[15px] leading-relaxed mb-6">
+                                Sani Yawale Zakka is a visionary entrepreneur passionate about agriculture, livestock development and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient and technology-driven industry that benefits farmers, communities and the wider economy.
+                            </p>
+                            <div class="flex flex-col gap-3 text-sm">
+                                <a href="tel:08032459879" class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
+                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
+                                        <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>
+                                    </span>
+                                    08032459879
+                                </a>
+                                <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
+                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
+                                        <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
+                                    </span>
+                                    sanizakka@gmail.com
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="bg-navy p-10 rounded-2xl border border-cardlight text-center flex flex-col justify-center shadow-lg">
-                <h3 class="font-heading text-[22px] font-bold text-white mb-2">Get In Touch</h3>
-                <p class="text-graytext text-sm mb-8">We respond within minutes</p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="tel:08129582957" class="px-6 py-3 rounded-lg border border-emerald-500 text-emerald-400 font-bold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-phone" aria-hidden="true"></i> Call Now
-                    </a>
-                    <a href="https://wa.me/2348129582957" class="px-6 py-3 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp Us
-                    </a>
+                <!-- Contact Info -->
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="font-heading text-[30px] font-bold text-white mb-2">Contact Us</h2>
+                        <p class="text-graytext text-[15px] mb-6">We are always here to help you grow</p>
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-start gap-4">
+                                <i class="fa-solid fa-envelope text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
+                                <a href="mailto:msaslivestockagroservices@gmail.com" class="text-gray-300 hover:text-emerald-400 transition break-all">msaslivestockagroservices@gmail.com</a>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <i class="fa-solid fa-phone text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
+                                <a href="tel:08129582957" class="text-gray-300 hover:text-emerald-400 transition">08129582957</a>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <i class="fa-solid fa-location-dot text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
+                                <span class="text-gray-300 leading-relaxed">No 21 Sarkin maska street dutsin safe lowcost Katsina State, Nigeria</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="tel:08129582957" class="px-6 py-3 rounded-lg border border-emerald-500 text-emerald-400 font-bold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-phone" aria-hidden="true"></i> Call Now
+                            </a>
+                            <a href="https://wa.me/2348129582957" class="px-6 py-3 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp Us
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-navy p-6 rounded-2xl border border-cardlight shadow-lg flex items-center gap-5">
+                        <div class="w-12 h-12 bg-cardlight rounded-full flex items-center justify-center text-emerald-500 text-xl shrink-0">
+                            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading text-lg font-bold text-white mb-1">Visit Our Office</h3>
+                            <p class="text-graytext text-sm">MSAS Livestock &amp; Agro Services · Katsina State, Nigeria</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="bg-navy p-10 rounded-2xl border border-cardlight text-center flex flex-col justify-center items-center shadow-lg">
-                <div class="w-14 h-14 bg-cardlight rounded-full flex items-center justify-center text-emerald-500 text-2xl mb-5">
-                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                </div>
-                <h3 class="font-heading text-[22px] font-bold text-white mb-3">Visit Our Office</h3>
-                <p class="text-graytext text-[15px] mb-8">MSAS Livestock &amp; Agro Services<br/>Katsina State, Nigeria</p>
-                <a href="#" class="px-8 py-2.5 rounded-lg border border-teal text-teal font-medium hover:bg-teal/10 transition flex items-center gap-2">
-                    View on Map <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                </a>
             </div>
-
         </div>
     </section>
 

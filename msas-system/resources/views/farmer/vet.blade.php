@@ -14,8 +14,22 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             @if(session('success'))
-                <div class="mb-4 bg-green-100 text-green-700 p-4 rounded-xl font-bold shadow-sm">
-                    {{ session('success') }}
+                <div class="mb-4 bg-green-100 border border-green-300 text-green-800 p-4 rounded-xl font-semibold shadow-sm">
+                    {!! session('success') !!}
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border border-red-300 text-red-800 p-4 rounded-xl font-semibold shadow-sm">
+                    {!! session('error') !!}
+                </div>
+            @endif
+            @if($errors->any())
+                <div class="mb-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl shadow-sm">
+                    <ul class="list-disc list-inside text-sm space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 

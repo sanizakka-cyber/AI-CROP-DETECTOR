@@ -170,6 +170,23 @@
         </a>
         @endif
 
+        {{-- Agro Advisory — Pro+ --}}
+        @if($activeSub && $activeSub->hasFeature('vet_service_requests'))
+        <a href="{{ route('farmer.agro') }}"
+           style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px;background:#f0fdf4;border-radius:12px;text-decoration:none;border:1px solid transparent;"
+           onmouseenter="this.style.borderColor='#1FA84A'" onmouseleave="this.style.borderColor='transparent'">
+            <svg width="28" height="28" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24" style="margin-bottom:8px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            <span style="font-size:12px;font-weight:700;color:#0F6B3E;text-align:center;">Agro Advisory</span>
+        </a>
+        @else
+        <a href="{{ route('subscription.plans') }}"
+           style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px;background:#f8fafc;border-radius:12px;text-decoration:none;border:1px solid #e2e8f0;position:relative;opacity:0.7;">
+            <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24" style="margin-bottom:8px;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            <span style="font-size:12px;font-weight:700;color:#94a3b8;text-align:center;">Agro Advisory</span>
+            <span style="position:absolute;top:6px;right:6px;background:#0F6B3E;color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:8px;">PRO</span>
+        </a>
+        @endif
+
         {{-- Finance -- Basic+ --}}
         <a href="{{ route('farmer.finance') }}"
            style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 8px;background:#f5f3ff;border-radius:12px;text-decoration:none;border:1px solid transparent;"
