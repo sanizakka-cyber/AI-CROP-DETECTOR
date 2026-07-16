@@ -281,7 +281,7 @@
             <h2 class="section-title text-left">Meet Your<br/><span style="color:var(--green)">AI Farm Assistant</span></h2>
             <p class="text-gray-500 leading-relaxed mb-7">Get instant answers, smart recommendations and real-time insights to improve your productivity. Powered by advanced vision AI that diagnoses crop diseases, livestock conditions, and soil health from a single photo.</p>
             <ul class="space-y-3 mb-8">
-                @foreach(['Image-based disease detection','Fertilizer & crop recommendation','Weather & market price updates','Yield prediction & alerts','Soil sample analysis']) as $feat)
+                @foreach(['Image-based disease detection','Fertilizer & crop recommendation','Weather & market price updates','Yield prediction & alerts','Soil sample analysis'] as $feat)
                 <li class="flex items-center gap-3 text-sm text-gray-700"><span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-check"></i></span>{{ $feat }}</li>
                 @endforeach
             </ul>
@@ -306,7 +306,7 @@
                 <button class="w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0" style="background:var(--green)"><i class="fa-solid fa-paper-plane text-xs"></i></button>
             </div>
             <div class="grid grid-cols-2 gap-3 px-5 pb-5">
-                @foreach([['Disease Detection','Upload image & detect','bug','red'],['Market Prices','Real-time commodity prices','chart-line','blue'],['Weather Alerts','Forecasts & alerts','cloud-sun','yellow'],['Smart Insights','AI productivity tips','lightbulb','green']]) as [$t,$d,$i,$c])
+                @foreach([['Disease Detection','Upload image & detect','bug','red'],['Market Prices','Real-time commodity prices','chart-line','blue'],['Weather Alerts','Forecasts & alerts','cloud-sun','yellow'],['Smart Insights','AI productivity tips','lightbulb','green']] as [$t,$d,$i,$c])
                 <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm"><i class="fa-solid fa-{{ $i }} text-{{ $c }}-500 text-sm mb-1.5 block"></i><div class="text-[11px] font-bold text-gray-800">{{ $t }}</div><div class="text-[10px] text-gray-500">{{ $d }}</div></div>
                 @endforeach
             </div>
@@ -376,7 +376,7 @@
                 <h2 class="section-title text-left">Buy &amp; Sell Farm<br/><span style="color:var(--gold)">Inputs &amp; Produce</span></h2>
                 <p class="text-gray-500 leading-relaxed mb-7">Access Nigeria's largest agricultural marketplace. Buy seeds, fertilizer, equipment and livestock — or sell your produce directly to buyers, cooperatives, and processors.</p>
                 <div class="grid grid-cols-2 gap-4 mb-7">
-                    @foreach([['Seeds & Seedlings','seedling','green'],['Fertilizers','sack-dollar','yellow'],['Livestock & Poultry','cow','blue'],['Farm Equipment','tractor','purple'],['Veterinary Supplies','syringe','red'],['Processing Tools','gears','gray']]) as [$n,$i,$c])
+                    @foreach([['Seeds & Seedlings','seedling','green'],['Fertilizers','sack-dollar','yellow'],['Livestock & Poultry','cow','blue'],['Farm Equipment','tractor','purple'],['Veterinary Supplies','syringe','red'],['Processing Tools','gears','gray']] as [$n,$i,$c])
                     <div class="flex items-center gap-3 bg-white rounded-xl p-3.5 border border-gray-100 shadow-sm"><div class="w-9 h-9 rounded-lg bg-{{ $c }}-100 flex items-center justify-center shrink-0"><i class="fa-solid fa-{{ $i }} text-{{ $c }}-600 text-sm"></i></div><span class="font-semibold text-gray-700 text-sm">{{ $n }}</span></div>
                     @endforeach
                 </div>
@@ -402,7 +402,7 @@
             <h2 class="font-heading text-4xl font-extrabold mb-4">Take MSAS Agro<br/><span class="text-yellow-300">Anywhere You Go</span></h2>
             <p class="text-green-100 leading-relaxed mb-8">Our mobile app is fast, offline-ready and designed for farmers. Record data in the field, get AI diagnoses, check market prices — even without internet.</p>
             <div class="grid grid-cols-2 gap-3 mb-8">
-                @foreach([['Offline Data Collection','wifi-slash'],['Real-time Cloud Sync','cloud'],['Push Notifications','bell'],['Biometric Login','fingerprint']]) as [$f,$i])
+                @foreach([['Offline Data Collection','wifi-slash'],['Real-time Cloud Sync','cloud'],['Push Notifications','bell'],['Biometric Login','fingerprint']] as [$f,$i])
                 <div class="flex items-center gap-2.5 bg-white/10 border border-white/15 rounded-xl px-4 py-3"><i class="fa-solid fa-{{ $i }} text-green-300 text-sm shrink-0"></i><span class="text-sm font-medium text-green-50">{{ $f }}</span></div>
                 @endforeach
             </div>
@@ -449,7 +449,7 @@
     <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10"><div class="section-tag mx-auto">Development Partners</div></div>
         <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-12">
-            @foreach(['FAO','USAID','GIZ','African Union','ECOWAS','CBN','BOI','NIRSAL','AfDB','Bill & Melinda Gates Foundation']) as $p)
+            @foreach(['FAO','USAID','GIZ','African Union','ECOWAS','CBN','BOI','NIRSAL','AfDB','Bill & Melinda Gates Foundation'] as $p)
             <div class="text-gray-400 font-heading font-bold text-sm hover:text-green-700 transition cursor-default">{{ $p }}</div>
             @endforeach
         </div>
@@ -529,7 +529,7 @@
         <div class="grid lg:grid-cols-3 gap-8">
             {{-- Contact details --}}
             <div class="space-y-5">
-                @foreach([['fa-location-dot','Office Address','No 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Phone / WhatsApp','08129582957','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']]) as [$ico,$label,$val,$color])
+                @foreach([['fa-location-dot','Office Address','No 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Phone / WhatsApp','08129582957','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']] as [$ico,$label,$val,$color])
                 <div class="flex gap-4 bg-gray-50 rounded-2xl p-5 border border-gray-100">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style="background:{{ $color }}"><i class="{{ $ico }} text-sm"></i></div>
                     <div><div class="font-bold text-gray-800 text-sm mb-0.5">{{ $label }}</div><div class="text-gray-500 text-sm">{{ $val }}</div></div>
@@ -586,13 +586,13 @@
                 <div class="text-xs text-green-400 font-semibold mb-4">Smart Agriculture, Better Tomorrow</div>
                 <p class="text-sm leading-relaxed mb-5">Nigeria's leading AI-powered agribusiness platform connecting farmers, experts, governments, and development partners through digital innovation.</p>
                 <div class="flex gap-3">
-                    @foreach([['facebook-f','#3b82f6'],['twitter','#38bdf8'],['linkedin-in','#0077b5'],['youtube','#ef4444'],['whatsapp','#25d366']]) as [$ico,$col])
+                    @foreach([['facebook-f','#3b82f6'],['twitter','#38bdf8'],['linkedin-in','#0077b5'],['youtube','#ef4444'],['whatsapp','#25d366']] as [$ico,$col])
                     <a href="#" class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center hover:scale-110 transition" style="--hc:{{ $col }}" onmouseover="this.style.background=this.style.getPropertyValue('--hc')" onmouseout="this.style.background='#1f2937'"><i class="fa-brands fa-{{ $ico }} text-gray-300 text-sm"></i></a>
                     @endforeach
                 </div>
             </div>
-            <div><h4 class="text-white font-bold text-sm mb-4">Quick Links</h4><ul class="space-y-2.5 text-sm">@foreach([['#home','Home'],['#about','About Us'],['#solutions','Solutions'],['#marketplace','Marketplace'],['#pricing','Pricing'],['#contact','Contact']]) as [$href,$label])<li><a href="{{ $href }}" class="hover:text-green-400 transition">{{ $label }}</a></li>@endforeach</ul></div>
-            <div><h4 class="text-white font-bold text-sm mb-4">Services</h4><ul class="space-y-2.5 text-sm">@foreach([['services.livestock','Livestock Management'],['services.poultry','Poultry Management'],['services.crops','Crop Farming'],['services.finance','Finance Tools'],['services.vet','Vet Consultations'],['marketplace','Marketplace']]) as [$r,$l])<li><a href="{{ route($r) }}" class="hover:text-green-400 transition">{{ $l }}</a></li>@endforeach</ul></div>
+            <div><h4 class="text-white font-bold text-sm mb-4">Quick Links</h4><ul class="space-y-2.5 text-sm">@foreach([['#home','Home'],['#about','About Us'],['#solutions','Solutions'],['#marketplace','Marketplace'],['#pricing','Pricing'],['#contact','Contact']] as [$href,$label])<li><a href="{{ $href }}" class="hover:text-green-400 transition">{{ $label }}</a></li>@endforeach</ul></div>
+            <div><h4 class="text-white font-bold text-sm mb-4">Services</h4><ul class="space-y-2.5 text-sm">@foreach([['services.livestock','Livestock Management'],['services.poultry','Poultry Management'],['services.crops','Crop Farming'],['services.finance','Finance Tools'],['services.vet','Vet Consultations'],['marketplace','Marketplace']] as [$r,$l])<li><a href="{{ route($r) }}" class="hover:text-green-400 transition">{{ $l }}</a></li>@endforeach</ul></div>
             <div><h4 class="text-white font-bold text-sm mb-4">Contact</h4><div class="space-y-3 text-sm"><p><i class="fa-solid fa-location-dot text-green-500 mr-2"></i>Katsina State, Nigeria</p><p><a href="tel:08129582957" class="hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 mr-2"></i>08129582957</a></p><p><a href="mailto:msaslivestockagroservices@gmail.com" class="hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 mr-1"></i>msaslivestockagroservices<br/>@gmail.com</a></p></div></div>
         </div>
         <div class="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
