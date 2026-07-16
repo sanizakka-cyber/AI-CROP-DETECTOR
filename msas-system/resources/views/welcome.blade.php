@@ -3,973 +3,670 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MSAS Livestock & Agro Services | Smart Agriculture</title>
-
-    <!-- Fonts -->
+    <title>MSAS Agro | Smart Agriculture Platform — Nigeria</title>
+    <meta name="description" content="MSAS Agro is Nigeria's leading AI-powered agribusiness platform for farmers, livestock owners, cooperatives, governments and development partners.">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800|poppins:500,600,700,800&display=swap" rel="stylesheet" />
-
-    <!-- Font Awesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Tailwind CSS (compiled via Vite — custom colors defined in tailwind.config.js) -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700,800|inter:300,400,500,600,700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
-        body { background-color:#1e3a5f; color:#ffffff; }
+        :root{--green:#2E7D32;--green-dark:#1B5E20;--green-light:#E8F5E9;--gold:#F9A825;--gold-dark:#F57F17;--blue:#0288D1;--blue-light:#E1F5FE;}
+        body{font-family:'Inter',sans-serif;color:#212121;background:#fff;}
+        h1,h2,h3,h4,.font-heading{font-family:'Poppins',sans-serif;}
 
-        /* ── Card hover ── */
-        .hover-card { transition:all .3s ease; border:1px solid transparent; }
-        .hover-card:hover {
-            transform:translateY(-5px);
-            box-shadow:0 10px 25px -5px rgba(0,0,0,.5), 0 0 15px rgba(16,185,129,.3);
-            border-color:#1FA84A;
-        }
+        /* Navbar */
+        #main-nav{transition:background .3s,box-shadow .3s;}
+        #main-nav.scrolled{background:#fff!important;box-shadow:0 2px 20px rgba(0,0,0,.1);}
+        .nav-link{position:relative;padding-bottom:2px;color:#374151;font-weight:500;font-size:.875rem;transition:color .2s;}
+        .nav-link::after{content:'';position:absolute;bottom:0;left:0;width:0;height:2px;background:var(--green);transition:width .25s;}
+        .nav-link:hover{color:var(--green);}
+        .nav-link:hover::after{width:100%;}
+        .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:var(--green);color:#fff;border-radius:8px;font-weight:600;font-size:.875rem;transition:background .2s,transform .15s;border:2px solid var(--green);}
+        .btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark);transform:translateY(-1px);}
+        .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:transparent;color:var(--green);border:2px solid var(--green);border-radius:8px;font-weight:600;font-size:.875rem;transition:all .2s;}
+        .btn-outline:hover{background:var(--green);color:#fff;transform:translateY(-1px);}
+        .btn-gold{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:var(--gold);color:#1a1a1a;border:2px solid var(--gold);border-radius:8px;font-weight:700;font-size:.875rem;transition:all .2s;}
+        .btn-gold:hover{background:var(--gold-dark);border-color:var(--gold-dark);transform:translateY(-1px);}
 
-        /* ── Feature badges ── */
-        .feature-badge {
-            display:flex; flex-direction:column; align-items:center; text-align:center;
-            padding:.75rem 1rem; border-radius:.75rem; cursor:pointer;
-            border:1px solid transparent;
-            transition:background .25s, border-color .25s, transform .2s;
-            background:transparent;
-            color:inherit;
-        }
-        .feature-badge:hover, .feature-badge:focus-visible {
-            background:rgba(16,185,129,.1);
-            border-color:rgba(16,185,129,.4);
-            transform:translateY(-3px);
-            outline:none;
-        }
-        .feature-badge:focus-visible { outline:2px solid #1FA84A; outline-offset:3px; }
-        .feature-badge .badge-icon {
-            font-size:1.75rem; margin-bottom:.5rem; color:#34d399;
-            line-height:1;
-        }
+        /* Hero */
+        .hero-bg{background:linear-gradient(135deg,rgba(27,94,32,.92) 0%,rgba(46,125,50,.80) 60%,rgba(2,136,209,.70) 100%),url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1600&q=80&auto=format&fit=crop') center/cover no-repeat;}
+        .stat-card{background:rgba(255,255,255,.15);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:1rem 1.25rem;text-align:center;}
 
-        /* ── Modal ── */
-        .modal-overlay {
-            position:fixed; inset:0; z-index:9999;
-            display:flex; align-items:center; justify-content:center;
-            background:rgba(0,0,0,.75); backdrop-filter:blur(4px);
-            opacity:0; pointer-events:none; transition:opacity .25s;
-        }
-        .modal-overlay.open { opacity:1; pointer-events:auto; }
-        .modal-box {
-            background:#1e293b; border:1px solid #334155; border-radius:1.25rem;
-            padding:2.5rem; max-width:520px; width:90%;
-            transform:translateY(20px) scale(.97); transition:transform .25s;
-            position:relative;
-        }
-        .modal-overlay.open .modal-box { transform:translateY(0) scale(1); }
-        .modal-icon { font-size:2.25rem; color:#34d399; margin-bottom:1rem; line-height:1; }
+        /* Section */
+        .section-tag{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.35rem .9rem;border-radius:999px;margin-bottom:1rem;}
+        .section-title{font-size:clamp(1.6rem,3vw,2.25rem);font-weight:800;color:#111;line-height:1.25;margin-bottom:.75rem;}
+        .section-sub{font-size:1rem;color:#555;max-width:600px;margin:0 auto;line-height:1.7;}
 
-        /* ── Gallery zoom ── */
-        .gallery-img { transition:transform .7s ease; }
-        .gallery-tile:hover .gallery-img { transform:scale(1.1); }
+        /* Solution cards */
+        .sol-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.5rem;text-align:center;transition:all .3s;cursor:pointer;}
+        .sol-card:hover{transform:translateY(-6px);box-shadow:0 12px 32px rgba(46,125,50,.15);border-color:var(--green);}
+        .sol-icon{width:52px;height:52px;border-radius:14px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:1.375rem;color:var(--green);margin:0 auto .875rem;}
 
-        /* ── WhatsApp pulse ── */
-        .whatsapp-float { animation:pulse-wa 2s infinite; }
-        @keyframes pulse-wa {
-            0%   { transform:scale(1);    box-shadow:0 0 0 0   rgba(37,211,102,.7); }
-            70%  { transform:scale(1.05); box-shadow:0 0 0 15px rgba(37,211,102,0); }
-            100% { transform:scale(1);    box-shadow:0 0 0 0   rgba(37,211,102,0); }
-        }
+        /* Feature cards */
+        .feat-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.375rem;display:flex;gap:1rem;align-items:flex-start;transition:all .3s;}
+        .feat-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.08);border-color:var(--green);}
+        .feat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.125rem;flex-shrink:0;}
 
-        /* ── CEO photo ring ── */
-        .ceo-photo-ring {
-            padding:4px;
-            background:linear-gradient(135deg,#1FA84A,#14b8a6,#059669);
-            border-radius:9999px;
-        }
-        .ceo-photo-ring img {
-            display:block; border-radius:9999px; object-fit:cover;
-            border:3px solid #1e293b;
-        }
+        /* Pricing */
+        .price-card{background:#fff;border:2px solid #e5e7eb;border-radius:20px;padding:2rem;transition:all .3s;}
+        .price-card.featured{border-color:var(--green);box-shadow:0 16px 48px rgba(46,125,50,.18);}
+        .price-card:hover{transform:translateY(-4px);}
 
-        /* ── Credential pill ── */
-        .cred-pill {
-            display:inline-flex; align-items:center; gap:.4rem;
-            background:rgba(16,185,129,.1); border:1px solid rgba(16,185,129,.3);
-            border-radius:9999px; padding:.3rem .85rem;
-            font-size:.78rem; font-weight:600; color:#6ee7b7;
-        }
+        /* FAQ */
+        .faq-item{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:.75rem;}
+        .faq-q{padding:1.125rem 1.25rem;font-weight:600;font-size:.9375rem;color:#111;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:1rem;background:#fff;transition:background .2s;}
+        .faq-q:hover{background:#f9fafb;}
+        .faq-a{padding:0 1.25rem;font-size:.9rem;color:#555;line-height:1.7;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .3s;}
+        .faq-a.open{max-height:400px;padding-bottom:1.25rem;padding-top:.25rem;}
 
-        /* ── Phone mockup stat icon ── */
-        .stat-icon { font-size:1.1rem; margin-bottom:.125rem; line-height:1; }
+        /* Testimonial */
+        .testi-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.75rem;}
 
-        /* ── Social icon size fallback (when Tailwind not yet loaded) ── */
-        .social-icon-link { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:9999px; }
-        .social-icon-link svg { width:20px; height:20px; flex-shrink:0; }
+        /* Partner logo */
+        .partner-logo{height:44px;filter:grayscale(1);opacity:.55;transition:all .3s;}
+        .partner-logo:hover{filter:grayscale(0);opacity:1;}
 
-        /* ── Print styles ── */
-        @media print {
-            .social-icon-link { width:24px !important; height:24px !important; }
-            .social-icon-link svg { width:14px !important; height:14px !important; }
-            .whatsapp-float { display:none !important; }
-            .modal-overlay { display:none !important; }
-        }
+        /* How it works connector */
+        .step-connector{position:absolute;top:26px;left:calc(50% + 40px);right:calc(-50% + 40px);height:2px;background:linear-gradient(90deg,#2E7D32,#0288D1);}
+        @media(max-width:767px){.step-connector{display:none;}}
+
+        /* Floating WhatsApp */
+        .wa-float{animation:wa-pulse 2.5s infinite;}
+        @keyframes wa-pulse{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.6);}70%{box-shadow:0 0 0 14px rgba(37,211,102,0);}}
+
+        /* Animations */
+        .fade-up{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s;}
+        .fade-up.visible{opacity:1;transform:translateY(0);}
+        @media(prefers-reduced-motion:reduce){.fade-up{opacity:1;transform:none;}}
+
+        [x-cloak]{display:none!important;}
     </style>
 </head>
-<body class="antialiased font-sans">
+<body class="antialiased">
 
-{{-- ════════════════════════════════════════════════════════════════════════
-     IMAGE SLOTS — replace these paths once you have the final photos:
-     • /images/ceo-sani-yawale-zakka.jpg  ← CEO portrait (SUPPLIED ✅)
-     • /images/service-livestock.jpg      ← cattle/goats being handled
-     • /images/service-poultry.jpg        ← poultry house or egg collection
-     • /images/service-crops.jpg          ← green crop fields
-     • /images/service-vet.jpg            ← vet examining/treating an animal
-     • /images/service-marketplace.jpg    ← farm market or agro-inputs
-     • /images/service-finance.jpg        ← farmer using phone/calculator
-     • /images/gallery-poultry.jpg        ← real poultry operation
-     • /images/gallery-goats.jpg          ← goats/rams on a farm
-     • /images/gallery-crops.jpg          ← healthy crop fields
-     • /images/gallery-vet.jpg            ← vet care in action
-     • /images/gallery-farmers.jpg        ← Northern Nigerian farmers (with consent)
-     • /images/gallery-dashboard.jpg      ← screenshot of MSAS app dashboard
-════════════════════════════════════════════════════════════════════════ --}}
+{{-- ═══════════════════════════════════════ NAVBAR ═══════════════════════════════════════ --}}
+<header id="main-nav" class="fixed top-0 inset-x-0 z-50 transition-all" x-data="{ open:false, scrolled:false }"
+    x-init="window.addEventListener('scroll',()=>{ scrolled=window.scrollY>40; document.getElementById('main-nav').classList.toggle('scrolled',scrolled); })">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+        {{-- Logo --}}
+        <a href="/" class="flex items-center gap-2 shrink-0">
+            <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro" class="h-10 w-auto" onerror="this.style.display='none'">
+            <div class="leading-none">
+                <div class="font-heading font-extrabold text-base" :class="scrolled ? 'text-gray-900' : 'text-white'" style="line-height:1.1">MSAS Agro</div>
+                <div class="text-[9px] font-medium tracking-wider" :class="scrolled ? 'text-green-700' : 'text-green-200'">Smart Agriculture, Better Tomorrow</div>
+            </div>
+        </a>
 
-    <!-- Top Banner -->
-    <div class="bg-emerald-600 text-white text-xs md:text-sm py-2 px-4 flex justify-between items-center overflow-hidden">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-leaf" aria-hidden="true"></i>
-            <span>Welcome to MSAS Livestock &amp; Agro Services</span>
+        {{-- Desktop Nav --}}
+        <nav class="hidden lg:flex items-center gap-5">
+            <a href="#home"          class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Home</a>
+            <a href="#about"         class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">About</a>
+            <a href="#solutions"     class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Solutions</a>
+            <a href="#features"      class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Features</a>
+            <a href="#marketplace"   class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Marketplace</a>
+            <a href="#pricing"       class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Pricing</a>
+            <a href="#contact"       class="nav-link" :class="scrolled ? '' : 'text-white hover:text-green-200'">Contact</a>
+        </nav>
+
+        {{-- Desktop Auth --}}
+        <div class="hidden md:flex items-center gap-2">
+            @auth
+                <a href="{{ url('/dashboard') }}" class="btn-primary text-xs py-2 px-4"><i class="fa-solid fa-gauge-high text-xs"></i> Dashboard</a>
+            @else
+                <a href="{{ route('login') }}" class="font-medium text-sm transition px-3 py-1.5 rounded-lg" :class="scrolled ? 'text-gray-700 hover:text-green-700' : 'text-white hover:bg-white/10'">Sign In</a>
+                <a href="{{ route('register') }}" class="btn-primary text-xs py-2 px-4">Sign Up</a>
+                <a href="{{ route('register') }}" class="btn-gold text-xs py-2 px-4">Check In</a>
+            @endauth
         </div>
-        <div class="hidden md:block font-medium">
-            Empowering Farmers. Improving Livestock. Building a Better Future.
-        </div>
-        <div class="flex items-center gap-2">
-            <select class="bg-transparent text-white text-xs outline-none cursor-pointer border-none font-medium">
-                <option value="en" class="text-black">English</option>
-                <option value="ha" class="text-black">Hausa</option>
-            </select>
-        </div>
+
+        {{-- Hamburger --}}
+        <button @click="open=!open" class="lg:hidden p-2 rounded-lg transition" :class="scrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'" :aria-expanded="open">
+            <i x-show="!open" class="fa-solid fa-bars text-lg"></i>
+            <i x-show="open"  class="fa-solid fa-xmark text-lg" x-cloak></i>
+        </button>
     </div>
 
-    <!-- ── Navigation ── -->
-    <header class="sticky top-0 z-50 bg-navy/95 backdrop-blur-sm border-b border-cardlight" x-data="{ mobileOpen: false }">
-        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
-
-            <!-- Logo -->
-            <a href="/" class="flex items-center gap-2 group" aria-label="MSAS Home">
-                <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Logo" class="h-12 w-auto shrink-0" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">
-            </a>
-
-            <!-- Desktop Nav -->
-            <nav class="hidden lg:flex items-center gap-5 text-sm font-medium text-gray-300" aria-label="Main navigation">
-                <a href="#home"         class="text-white border-b-2 border-emerald-500 pb-0.5">Home</a>
-                <a href="#about"        class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">About Us</a>
-                <a href="#services"     class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">Services</a>
-                <a href="#marketplace"  class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">Marketplace</a>
-                <a href="#testimonials" class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">Feedback</a>
-                <a href="#contact"      class="hover:text-white hover:border-b-2 hover:border-emerald-500 pb-0.5 transition">Contact Us</a>
-            </nav>
-
-            <!-- Desktop Action Buttons -->
-            <div class="hidden md:flex items-center gap-2">
-                @auth
-                    <a href="{{ url('/dashboard') }}"
-                       class="px-4 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
-                        <i class="fa-solid fa-gauge-high text-xs" aria-hidden="true"></i> Dashboard
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit"
-                                class="px-4 py-1.5 rounded-md border border-red-400 text-red-400 text-sm font-medium hover:bg-red-400/10 transition flex items-center gap-1.5">
-                            <i class="fa-solid fa-right-from-bracket text-xs" aria-hidden="true"></i> Logout
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}"
-                       class="px-4 py-1.5 rounded-md border border-emerald-400 text-emerald-400 text-sm font-medium hover:bg-emerald-400/10 transition min-h-[36px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-right-to-bracket text-xs" aria-hidden="true"></i> Sign In
-                    </a>
-                    <a href="{{ route('register') }}"
-                       class="px-4 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition shadow-md shadow-emerald-500/20 min-h-[36px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-user-plus text-xs" aria-hidden="true"></i> Sign Up
-                    </a>
-                    <a href="{{ route('register') }}"
-                       class="px-4 py-1.5 rounded-md text-white text-sm font-semibold transition min-h-[36px] flex items-center gap-1.5"
-                       style="background:#F4A300;">
-                        <i class="fa-solid fa-circle-check text-xs" aria-hidden="true"></i> Check In
-                    </a>
-                @endauth
-            </div>
-
-            <!-- Mobile Hamburger -->
-            <button @click="mobileOpen = !mobileOpen"
-                    class="md:hidden text-white text-xl p-2 rounded-md hover:bg-white/10 transition"
-                    :aria-expanded="mobileOpen" aria-label="Toggle menu"
-                    :aria-label="mobileOpen ? 'Close menu' : 'Open menu'">
-                <i x-show="!mobileOpen" class="fa-solid fa-bars" aria-hidden="true"></i>
-                <i x-show="mobileOpen"  class="fa-solid fa-xmark" aria-hidden="true" x-cloak></i>
-            </button>
+    {{-- Mobile menu --}}
+    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="lg:hidden bg-white border-t border-gray-100 shadow-xl">
+        <nav class="px-4 py-3 space-y-1 border-b border-gray-100">
+            @foreach([['#home','Home','house'],['#about','About','circle-info'],['#solutions','Solutions','leaf'],['#features','Features','star'],['#marketplace','Marketplace','store'],['#pricing','Pricing','tag'],['#contact','Contact','phone']] as [$href,$label,$icon])
+            <a href="{{ $href }}" @click="open=false" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-800 font-medium text-sm transition"><i class="fa-solid fa-{{ $icon }} w-4 text-green-600"></i> {{ $label }}</a>
+            @endforeach
+        </nav>
+        <div class="px-4 py-4 flex flex-col gap-3">
+            @auth
+                <a href="{{ url('/dashboard') }}" @click="open=false" class="btn-primary justify-center">Dashboard</a>
+            @else
+                <a href="{{ route('login') }}"    @click="open=false" class="btn-outline justify-center">Sign In</a>
+                <a href="{{ route('register') }}" @click="open=false" class="btn-primary justify-center">Sign Up</a>
+                <a href="{{ route('register') }}" @click="open=false" class="btn-gold justify-center">Check In</a>
+            @endauth
         </div>
+    </div>
+</header>
 
-        <!-- Mobile Dropdown Menu -->
-        <div x-show="mobileOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-2"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-y-0"
-             x-transition:leave-end="opacity-0 -translate-y-2"
-             x-cloak
-             class="md:hidden border-t border-white/10 bg-[#0B2447]/98 backdrop-blur-sm">
-
-            <!-- Mobile Nav Links -->
-            <nav class="px-4 pt-3 pb-2 flex flex-col gap-1 text-sm font-medium border-b border-white/10">
-                <a href="#home"         @click="mobileOpen=false" class="py-2.5 px-3 text-white rounded-lg hover:bg-white/10 transition flex items-center gap-2"><i class="fa-solid fa-house w-4 text-emerald-400"></i> Home</a>
-                <a href="#about"        @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-circle-info w-4 text-emerald-400"></i> About Us</a>
-                <a href="#services"     @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-leaf w-4 text-emerald-400"></i> Services</a>
-                <a href="#marketplace"  @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-store w-4 text-emerald-400"></i> Marketplace</a>
-                <a href="#testimonials" @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-star w-4 text-emerald-400"></i> Feedback</a>
-                <a href="#contact"      @click="mobileOpen=false" class="py-2.5 px-3 text-gray-300 rounded-lg hover:bg-white/10 hover:text-white transition flex items-center gap-2"><i class="fa-solid fa-phone w-4 text-emerald-400"></i> Contact Us</a>
-            </nav>
-
-            <!-- Mobile Auth Buttons -->
-            <div class="px-4 py-4 flex flex-col gap-3">
-                @auth
-                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-3 mb-1">
-                        <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                            {{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-white font-semibold text-sm truncate">{{ auth()->user()->name }}</p>
-                            <p class="text-emerald-400 text-xs font-medium uppercase tracking-wide">{{ auth()->user()->role }}</p>
-                        </div>
-                    </div>
-                    <a href="{{ url('/dashboard') }}" @click="mobileOpen=false"
-                       class="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold text-center hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-gauge-high"></i> Go to Dashboard
-                    </a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit"
-                                class="w-full py-3 rounded-xl border border-red-400/50 text-red-400 text-sm font-semibold hover:bg-red-400/10 transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-right-from-bracket"></i> Logout
-                        </button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" @click="mobileOpen=false"
-                       class="w-full py-3 rounded-xl border border-emerald-400 text-emerald-400 text-sm font-bold text-center hover:bg-emerald-400/10 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
-                    </a>
-                    <a href="{{ route('register') }}" @click="mobileOpen=false"
-                       class="w-full py-3 rounded-xl bg-emerald-500 text-white text-sm font-bold text-center hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-user-plus"></i> Sign Up
-                    </a>
-                    <a href="{{ route('register') }}" @click="mobileOpen=false"
-                       class="w-full py-3 rounded-xl text-white text-sm font-bold text-center hover:opacity-90 transition flex items-center justify-center gap-2"
-                       style="background:#F4A300;">
-                        <i class="fa-solid fa-circle-check"></i> Check In
-                    </a>
-                @endauth
+{{-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ --}}
+<section id="home" class="hero-bg min-h-screen flex flex-col justify-center pt-16">
+    <div class="max-w-7xl mx-auto px-4 py-20 grid lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7 text-white">
+            <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur border border-white/25 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-green-100 mb-6">
+                <span class="w-2 h-2 rounded-full bg-green-300 animate-pulse inline-block"></span>
+                Nigeria's #1 AgriTech Platform
+            </div>
+            <h1 class="font-heading text-4xl md:text-5xl lg:text-[58px] font-extrabold leading-[1.15] mb-5">
+                Empowering Agriculture<br/>with <span class="text-yellow-300">Artificial Intelligence</span>
+            </h1>
+            <p class="text-green-100 text-lg leading-relaxed mb-8 max-w-lg">Helping farmers, livestock owners, agribusinesses, governments and development partners make smarter decisions through AI, data and digital innovation.</p>
+            <div class="flex flex-wrap gap-3 mb-12">
+                <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold text-base shadow-lg transition hover:-translate-y-1" style="background:#F9A825;color:#1a1a1a;box-shadow:0 8px 24px rgba(249,168,37,.4)"><i class="fa-solid fa-seedling"></i> Start Farming</a>
+                <a href="#solutions"              class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-base bg-white/15 backdrop-blur border border-white/30 text-white hover:bg-white/25 transition">Watch Demo <i class="fa-solid fa-play text-xs"></i></a>
+                <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-base bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 transition"><i class="fa-solid fa-mobile-screen text-xs"></i> Download App</a>
+            </div>
+            {{-- Stats row --}}
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                @foreach([['20,000+','Registered Farmers','users'],['150+','Cooperatives','handshake'],['100+','Projects','folder'],['36','States Coverage','map'],['99.9%','System Uptime','server']] as [$num,$label,$ico])
+                <div class="stat-card">
+                    <i class="fa-solid fa-{{ $ico }} text-green-300 text-sm mb-1"></i>
+                    <div class="font-heading font-extrabold text-xl text-white leading-none">{{ $num }}</div>
+                    <div class="text-green-200 text-[11px] mt-0.5 font-medium">{{ $label }}</div>
+                </div>
+                @endforeach
             </div>
         </div>
-    </header>
-
-    <!-- ── Hero ── -->
-    <section id="home" class="relative pt-20 pb-24 overflow-hidden">
-        <div class="absolute top-20 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] -z-10"></div>
-        <div class="absolute bottom-0 right-0 w-96 h-96 bg-teal/10 rounded-full blur-[100px] -z-10"></div>
-
-        <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-12 gap-12 items-center relative z-10">
-            <!-- Left (60%) -->
-            <div class="lg:col-span-7">
-                <h1 class="font-heading text-4xl md:text-[62px] font-extrabold text-white leading-[1.2] mb-6">
-                    Welcome to<br/>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal">MSAS Livestock</span><br/>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal">&amp; Agro Services</span>
-                </h1>
-                <p class="text-graytext text-lg leading-[1.7] max-w-[600px] mb-8">
-                    A smart digital platform for livestock farmers, poultry owners, and agribusiness operators. Manage your animals, access expert veterinary support, buy &amp; sell inputs, and grow your farm business with confidence.
-                </p>
-
-                <a href="#services" class="inline-flex items-center gap-2 px-8 py-3 bg-transparent border border-white/20 text-white font-medium rounded-full hover:bg-white/10 transition">
-                    Learn More <i class="fa-solid fa-arrow-right text-sm" aria-hidden="true"></i>
-                </a>
-
-                <!-- ── Feature Badges (interactive) ── -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-14" role="list">
-
-                    <button type="button" class="feature-badge" data-modal="modal-smart"
-                            aria-haspopup="dialog" aria-controls="modal-smart" role="listitem">
-                        <i class="fa-solid fa-mobile-screen badge-icon" aria-hidden="true"></i>
-                        <span class="text-sm font-medium text-gray-300">Smart Management</span>
-                    </button>
-
-                    <button type="button" class="feature-badge" data-modal="modal-expert"
-                            aria-haspopup="dialog" aria-controls="modal-expert" role="listitem">
-                        <i class="fa-solid fa-stethoscope badge-icon" aria-hidden="true"></i>
-                        <span class="text-sm font-medium text-gray-300">Expert Support</span>
-                    </button>
-
-                    <button type="button" class="feature-badge" data-modal="modal-ai"
-                            aria-haspopup="dialog" aria-controls="modal-ai" role="listitem">
-                        <i class="fa-solid fa-robot badge-icon" aria-hidden="true"></i>
-                        <span class="text-sm font-medium text-gray-300">AI Powered</span>
-                    </button>
-
-                    <button type="button" class="feature-badge" data-modal="modal-secure"
-                            aria-haspopup="dialog" aria-controls="modal-secure" role="listitem">
-                        <i class="fa-solid fa-shield-halved badge-icon" aria-hidden="true"></i>
-                        <span class="text-sm font-medium text-gray-300">Secure &amp; Reliable</span>
-                    </button>
+        {{-- Hero visual --}}
+        <div class="lg:col-span-5 hidden lg:flex justify-center">
+            <div class="relative w-72 h-72 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2)">
+                <div class="absolute inset-4 rounded-full flex items-center justify-center" style="background:rgba(255,255,255,.08)">
+                    <i class="fa-solid fa-leaf text-8xl text-green-200 opacity-80"></i>
                 </div>
-            </div>
-
-            <!-- Right — phone mockup -->
-            <div class="lg:col-span-5 relative flex flex-col items-center">
-                <div class="relative w-[280px] h-[560px] bg-black rounded-[3rem] border-[10px] border-carddark shadow-[0_20px_50px_rgba(16,185,129,0.2)] overflow-hidden transform hover:-translate-y-2 transition duration-500">
-                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-6 bg-carddark rounded-b-3xl z-20"></div>
-                    <div class="bg-emerald-500 text-white px-5 pt-10 pb-6 relative z-10">
-                        <h3 class="font-heading font-bold text-xl">Dashboard</h3>
-                        <p class="text-xs opacity-90 mt-1 flex items-center gap-1">
-                            Welcome back, Farmer
-                            <i class="fa-solid fa-user" aria-hidden="true"></i>
-                        </p>
-                    </div>
-                    <div class="p-4 bg-slate-50 h-full rounded-t-3xl -mt-4 relative z-20">
-                        <div class="grid grid-cols-2 gap-2 mb-4">
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                                <div class="stat-icon text-emerald-600"><i class="fa-solid fa-cow" aria-hidden="true"></i></div>
-                                <div class="text-xs text-gray-500 font-medium">Cattle</div>
-                                <div class="font-bold text-navy text-lg">120</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                                <div class="stat-icon text-amber-500"><i class="fa-solid fa-egg" aria-hidden="true"></i></div>
-                                <div class="text-xs text-gray-500 font-medium">Poultry</div>
-                                <div class="font-bold text-navy text-lg">350</div>
-                            </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-                                <div class="stat-icon text-green-600"><i class="fa-solid fa-seedling" aria-hidden="true"></i></div>
-                                <div class="text-xs text-gray-500 font-medium">Crops</div>
-                                <div class="font-bold text-navy text-lg">5</div>
-                            </div>
-                            <div class="bg-red-50 p-3 rounded-2xl shadow-sm border border-red-100">
-                                <div class="stat-icon text-red-500"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></div>
-                                <div class="text-xs text-red-500 font-medium">Alerts</div>
-                                <div class="font-bold text-red-700 text-lg">3</div>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-                                <div class="bg-emerald-100 w-9 h-9 rounded-xl flex items-center justify-center text-emerald-600">
-                                    <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
-                                </div>
-                                <span class="text-sm font-semibold text-navy">Health Check</span>
-                            </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-                                <div class="bg-teal/10 w-9 h-9 rounded-xl flex items-center justify-center text-teal">
-                                    <i class="fa-solid fa-phone" aria-hidden="true"></i>
-                                </div>
-                                <span class="text-sm font-semibold text-navy">Vet Consultation</span>
-                            </div>
-                            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-                                <div class="bg-amber/10 w-9 h-9 rounded-xl flex items-center justify-center text-amber">
-                                    <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
-                                </div>
-                                <span class="text-sm font-semibold text-navy">Marketplace</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {{-- Floating badges --}}
+                <div class="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-3 flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center"><i class="fa-solid fa-robot text-green-700 text-sm"></i></div><div class="text-xs"><div class="font-bold text-gray-800">AI Scan</div><div class="text-green-600 font-semibold">94% accuracy</div></div></div>
+                <div class="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-3 flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center"><i class="fa-solid fa-chart-line text-yellow-600 text-sm"></i></div><div class="text-xs"><div class="font-bold text-gray-800">Yield Up</div><div class="text-yellow-600 font-semibold">+40% avg</div></div></div>
+                <div class="absolute top-1/2 -right-10 -translate-y-1/2 bg-white rounded-2xl shadow-xl p-3"><div class="text-xs text-center"><div class="font-bold text-gray-800 mb-1">System</div><div class="text-green-600 font-bold text-base">Live</div></div></div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ── About / Company Stats ── -->
-    <section id="about" class="py-16 bg-carddark border-b border-cardlight">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
-                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">500+</div>
-                    <div class="text-graytext text-sm font-medium">Farmers Served</div>
-                </div>
-                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
-                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">2k+</div>
-                    <div class="text-graytext text-sm font-medium">Livestock Managed</div>
-                </div>
-                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
-                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">50+</div>
-                    <div class="text-graytext text-sm font-medium">Partner Vets</div>
-                </div>
-                <div class="bg-navy p-5 rounded-2xl hover-card border border-cardlight shadow-lg text-center">
-                    <div class="text-[40px] font-heading font-extrabold text-emerald-500 mb-0.5 leading-none">24/7</div>
-                    <div class="text-graytext text-sm font-medium">Expert Support</div>
-                </div>
-            </div>
+{{-- ═══════════════════════════════════════ TRUSTED BY ═══════════════════════════════════════ --}}
+<section class="py-12 bg-gray-50 border-y border-gray-100">
+    <div class="max-w-6xl mx-auto px-4">
+        <p class="text-center text-xs font-bold uppercase tracking-widest text-gray-400 mb-7">Trusted By Leading Organizations</p>
+        <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-14">
+            @foreach(['Federal Ministry of Agriculture','The World Bank','IFAD','NIRSAL','AGRA','CGIAR','FMARD'] as $org)
+            <div class="text-gray-400 font-heading font-bold text-sm hover:text-green-700 transition cursor-default">{{ $org }}</div>
+            @endforeach
+            <div class="text-gray-300 font-semibold text-sm">And Many More...</div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ── Services ── -->
-    <section id="services" class="py-24 bg-navy">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-14">
-                <h2 class="font-heading text-[38px] font-bold text-white mb-3">Our Services</h2>
-                <p class="text-graytext text-lg">Everything you need to run a successful farm business</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                {{-- IMAGE SLOT: /images/service-livestock.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-livestock.jpg')) ? asset('images/service-livestock.jpg') : 'https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Farmer recording livestock data on a cattle farm" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Livestock Management</h3>
-                        <p class="text-graytext text-[15px] mb-5">Record animals, track health, breeding, weight, and more.</p>
-                        <a href="{{ route('services.livestock') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/service-poultry.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-poultry.jpg')) ? asset('images/service-poultry.jpg') : 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Poultry house with chickens and egg collection" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Poultry Management</h3>
-                        <p class="text-graytext text-[15px] mb-5">Manage poultry, egg production, feed, sales and performance.</p>
-                        <a href="{{ route('services.poultry') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/service-crops.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-crops.jpg')) ? asset('images/service-crops.jpg') : 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Green maize and sorghum crop fields" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Crop Farming</h3>
-                        <p class="text-graytext text-[15px] mb-5">Plan, monitor and record your crops for better yield.</p>
-                        <a href="{{ route('services.crops') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/service-vet.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-vet.jpg')) ? asset('images/service-vet.jpg') : 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Veterinarian examining and treating a farm animal" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Veterinary Services</h3>
-                        <p class="text-graytext text-[15px] mb-5">Consult with experts, check symptoms and get advice.</p>
-                        <a href="{{ route('services.vet') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/service-marketplace.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-marketplace.jpg')) ? asset('images/service-marketplace.jpg') : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Agricultural market with farm inputs and livestock feed bags" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Marketplace</h3>
-                        <p class="text-graytext text-[15px] mb-5">Buy &amp; sell livestock, farm inputs and agricultural products.</p>
-                        <a href="{{ route('marketplace') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/service-finance.jpg --}}
-                <div class="bg-carddark rounded-2xl overflow-hidden hover-card border border-cardlight group">
-                    <div class="relative overflow-hidden h-48">
-                        <img src="{{ file_exists(public_path('images/service-finance.jpg')) ? asset('images/service-finance.jpg') : 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80&auto=format&fit=crop' }}"
-                             alt="Farmer using a smartphone for financial record-keeping" loading="lazy"
-                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    </div>
-                    <div class="p-7">
-                        <h3 class="font-heading font-bold text-xl text-white mb-2">Finance Tools</h3>
-                        <p class="text-graytext text-[15px] mb-5">Track income, expenses and profits easily.</p>
-                        <a href="{{ route('services.finance') }}" class="text-emerald-400 font-medium hover:underline flex items-center gap-1.5 text-sm">
-                            Learn More <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-
-            </div>
+{{-- ═══════════════════════════════════════ ABOUT ═══════════════════════════════════════ --}}
+<section id="about" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-16 items-center">
+        {{-- Image grid --}}
+        <div class="grid grid-cols-2 gap-4">
+            <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=400&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-2xl object-cover h-44 w-full">
+            <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=400&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-2xl object-cover h-44 w-full mt-8">
+            <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&q=80&auto=format&fit=crop" alt="Poultry" class="rounded-2xl object-cover h-44 w-full -mt-8">
+            <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=400&q=80&auto=format&fit=crop" alt="Livestock" class="rounded-2xl object-cover h-44 w-full">
         </div>
-    </section>
-
-    <!-- ── Gallery ── -->
-    <section class="py-24 bg-carddark border-y border-cardlight/50">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-14">
-                <h2 class="font-heading text-[38px] font-bold text-white mb-3">Agriculture In Action</h2>
-                <p class="text-graytext text-lg">Real farms. Real people. Real impact.</p>
+        {{-- Text --}}
+        <div>
+            <div class="section-tag"><i class="fa-solid fa-circle-info"></i> About MSAS Agro</div>
+            <h2 class="section-title text-left">Transforming Agriculture<br/>Across Nigeria</h2>
+            <p class="text-gray-500 leading-relaxed mb-6">MSAS Agro is an AI-powered digital platform that provides innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
+            <div class="grid sm:grid-cols-2 gap-5 mb-8">
+                @foreach([['Our Mission','To empower agriculture stakeholders with smart digital solutions.','bullseye','green'],['Our Vision','To become Africa\'s leading digital agriculture platform.','eye','blue'],['Core Values','Innovation, Integrity, Impact, Collaboration, Sustainability.','heart','yellow'],['Our Journey','Since 2019, we have been driving agriculture transformation.','route','green']] as [$title,$text,$ico,$color])
+                <div class="flex gap-3">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:var(--green-light)"><i class="fa-solid fa-{{ $ico }} text-sm" style="color:var(--green)"></i></div>
+                    <div><div class="font-bold text-gray-800 text-sm mb-0.5">{{ $title }}</div><div class="text-gray-500 text-xs leading-relaxed">{{ $text }}</div></div>
+                </div>
+                @endforeach
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
-                {{-- IMAGE SLOT: /images/gallery-poultry.jpg --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3]">
-                    <img src="{{ file_exists(public_path('images/gallery-poultry.jpg')) ? asset('images/gallery-poultry.jpg') : 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="A real poultry farm operation" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Poultry Farm</h3>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/gallery-goats.jpg --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3] lg:translate-y-8">
-                    <img src="{{ file_exists(public_path('images/gallery-goats.jpg')) ? asset('images/gallery-goats.jpg') : 'https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="Goats and rams grazing on a Northern Nigerian farm" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Goats &amp; Rams</h3>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/gallery-crops.jpg --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3]">
-                    <img src="{{ file_exists(public_path('images/gallery-crops.jpg')) ? asset('images/gallery-crops.jpg') : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="Healthy green maize and sorghum crop fields" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Green Crops</h3>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/gallery-vet.jpg --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3]">
-                    <img src="{{ file_exists(public_path('images/gallery-vet.jpg')) ? asset('images/gallery-vet.jpg') : 'https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="Veterinarian providing animal health care on a farm" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Vet Services</h3>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/gallery-farmers.jpg — Northern Nigerian farmers (with consent) --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3] lg:translate-y-8">
-                    <img src="{{ file_exists(public_path('images/gallery-farmers.jpg')) ? asset('images/gallery-farmers.jpg') : 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="Happy Northern Nigerian farmers using MSAS on their smartphones" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Happy Farmers</h3>
-                    </div>
-                </div>
-
-                {{-- IMAGE SLOT: /images/gallery-dashboard.jpg — actual MSAS app screenshot --}}
-                <div class="gallery-tile relative rounded-[18px] overflow-hidden group aspect-[4/3]">
-                    <img src="{{ file_exists(public_path('images/gallery-dashboard.jpg')) ? asset('images/gallery-dashboard.jpg') : 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format&fit=crop' }}"
-                         alt="MSAS app dashboard showing farm analytics and livestock records" loading="lazy" class="gallery-img w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex items-end p-7">
-                        <h3 class="text-white font-bold text-2xl">Dashboard Analytics</h3>
-                    </div>
-                </div>
-
-            </div>
+            <a href="{{ route('register') }}" class="btn-primary">Read More <i class="fa-solid fa-arrow-right text-xs"></i></a>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ── Testimonials ── -->
-    <section id="testimonials" class="py-24 bg-navy">
-        <div class="max-w-7xl mx-auto px-4">
-            <h2 class="font-heading text-[38px] font-bold text-white text-center mb-14">What Our Farmers Say</h2>
-
-            <div class="grid lg:grid-cols-4 gap-8">
-                <div class="lg:col-span-3 grid md:grid-cols-3 gap-6">
-
-                    <div class="bg-carddark p-8 rounded-2xl shadow-lg flex flex-col justify-between border border-cardlight hover-card">
-                        <div>
-                            <div class="flex gap-0.5 text-amber mb-4" aria-label="5 stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="text-graytext text-[15px] italic mb-6">"MSAS platform has improved how I manage my poultry farm. The health alerts and expert advice are just amazing!"</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 bg-cardlight text-graytext rounded-full flex items-center justify-center">
-                                <i class="fa-solid fa-user" aria-hidden="true"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-white font-bold text-[15px]">Amina Hassan</h4>
-                                <p class="text-graytext text-[13px]">Poultry Farmer, Katsina</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-carddark p-8 rounded-2xl shadow-lg flex flex-col justify-between border border-cardlight hover-card">
-                        <div>
-                            <div class="flex gap-0.5 text-amber mb-4" aria-label="5 stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="text-graytext text-[15px] italic mb-6">"I can now record my animals, track expenses and even sell my goats online. Very helpful platform!"</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 bg-cardlight text-graytext rounded-full flex items-center justify-center">
-                                <i class="fa-solid fa-user" aria-hidden="true"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-white font-bold text-[15px]">Kabiru Usman</h4>
-                                <p class="text-graytext text-[13px]">Livestock Farmer, Kano</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-carddark p-8 rounded-2xl shadow-lg flex flex-col justify-between border border-cardlight hover-card">
-                        <div>
-                            <div class="flex gap-0.5 text-amber mb-4" aria-label="5 stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="text-graytext text-[15px] italic mb-6">"The veterinary support is fast and reliable. I recommend MSAS to every farmer."</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <div class="w-11 h-11 bg-cardlight text-graytext rounded-full flex items-center justify-center">
-                                <i class="fa-solid fa-user" aria-hidden="true"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-white font-bold text-[15px]">Fatima Bello</h4>
-                                <p class="text-graytext text-[13px]">Crop Farmer, Katsina</p>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="bg-emerald-500 p-8 rounded-2xl shadow-xl text-white relative overflow-hidden">
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-                    <h3 class="font-heading text-[22px] font-bold mb-2 relative z-10">Share Your Feedback</h3>
-                    <p class="text-emerald-100 text-[15px] mb-5 relative z-10">Help us serve you better</p>
-                    <textarea class="w-full bg-emerald-600/60 border border-emerald-400 rounded-lg p-4 text-white placeholder-emerald-200 mb-5 focus:outline-none focus:ring-2 focus:ring-white/50 resize-none h-28 relative z-10" placeholder="Write your feedback..."></textarea>
-                    <button class="w-full bg-white text-emerald-600 font-bold py-3 rounded-lg hover:bg-gray-50 transition shadow-lg relative z-10 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> Give Feedback
-                    </button>
-                </div>
-            </div>
+{{-- ═══════════════════════════════════════ SOLUTIONS ═══════════════════════════════════════ --}}
+<section id="solutions" class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-layer-group"></i> Platform Solutions</div>
+            <h2 class="section-title">Everything You Need to<br/><span style="color:var(--green)">Grow Your Agribusiness</span></h2>
+            <p class="section-sub">20+ integrated modules covering every aspect of modern agricultural management.</p>
         </div>
-    </section>
-
-    <!-- ── CEO & Contact ── -->
-    <section id="contact" class="py-24 bg-carddark">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid lg:grid-cols-2 gap-16 items-start">
-
-                <!-- CEO Profile -->
-                <div>
-                    <span class="cred-pill mb-4 inline-flex">
-                        <i class="fa-solid fa-crown" aria-hidden="true"></i> Founder &amp; CEO
-                    </span>
-                    <h2 class="font-heading text-3xl font-bold text-white mb-8 leading-snug">
-                        Meet the Visionary<br/>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal">
-                            Behind MSAS
-                        </span>
-                    </h2>
-                    <div class="flex flex-col sm:flex-row gap-8 items-start">
-                        <div class="shrink-0 ceo-photo-ring">
-                            <img
-                                src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
-                                alt="Sani Yawale Zakka — Founder & CEO of MSAS Livestock & Agro Services"
-                                width="168" height="168" loading="lazy"
-                                class="w-[168px] h-[168px]"
-                                onerror="this.src='https://ui-avatars.com/api/?name=Sani+Yawale+Zakka&background=10b981&color=fff&size=200&rounded=true'"
-                            >
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-heading text-2xl font-bold text-white mb-0.5">Sani Yawale Zakka</h3>
-                            <p class="text-emerald-400 font-semibold text-sm mb-1">Founder &amp; Chief Executive Officer</p>
-                            <p class="text-graytext text-xs mb-4">MSAS Livestock &amp; Agro Services · Katsina, Nigeria</p>
-                            <div class="flex flex-wrap gap-2 mb-5">
-                                <span class="cred-pill"><i class="fa-solid fa-wheat-awn" aria-hidden="true"></i> Agribusiness</span>
-                                <span class="cred-pill"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i> Digital Innovation</span>
-                                <span class="cred-pill"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Entrepreneur</span>
-                            </div>
-                            <p class="text-graytext text-[15px] leading-relaxed mb-6">
-                                Sani Yawale Zakka is a visionary entrepreneur passionate about agriculture, livestock development and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient and technology-driven industry that benefits farmers, communities and the wider economy.
-                            </p>
-                            <div class="flex flex-col gap-3 text-sm">
-                                <a href="tel:08032459879" class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
-                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
-                                        <i class="fa-solid fa-phone text-xs" aria-hidden="true"></i>
-                                    </span>
-                                    08032459879
-                                </a>
-                                <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-3 text-gray-300 hover:text-emerald-400 transition group">
-                                    <span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500/25 transition">
-                                        <i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>
-                                    </span>
-                                    sanizakka@gmail.com
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contact Info -->
-                <div class="space-y-6">
-                    <div>
-                        <h2 class="font-heading text-[30px] font-bold text-white mb-2">Contact Us</h2>
-                        <p class="text-graytext text-[15px] mb-6">We are always here to help you grow</p>
-                        <div class="space-y-4 mb-6">
-                            <div class="flex items-start gap-4">
-                                <i class="fa-solid fa-envelope text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                                <a href="mailto:msaslivestockagroservices@gmail.com" class="text-gray-300 hover:text-emerald-400 transition break-all">msaslivestockagroservices@gmail.com</a>
-                            </div>
-                            <div class="flex items-start gap-4">
-                                <i class="fa-solid fa-phone text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                                <a href="tel:08129582957" class="text-gray-300 hover:text-emerald-400 transition">08129582957</a>
-                            </div>
-                            <div class="flex items-start gap-4">
-                                <i class="fa-solid fa-location-dot text-emerald-500 text-lg mt-0.5 w-5 shrink-0" aria-hidden="true"></i>
-                                <span class="text-gray-300 leading-relaxed">No 21 Sarkin maska street dutsin safe lowcost Katsina State, Nigeria</span>
-                            </div>
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <a href="tel:08129582957" class="px-6 py-3 rounded-lg border border-emerald-500 text-emerald-400 font-bold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-phone" aria-hidden="true"></i> Call Now
-                            </a>
-                            <a href="https://wa.me/2348129582957" class="px-6 py-3 rounded-lg bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp Us
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="bg-navy p-6 rounded-2xl border border-cardlight shadow-lg flex items-center gap-5">
-                        <div class="w-12 h-12 bg-cardlight rounded-full flex items-center justify-center text-emerald-500 text-xl shrink-0">
-                            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-heading text-lg font-bold text-white mb-1">Visit Our Office</h3>
-                            <p class="text-graytext text-sm">MSAS Livestock &amp; Agro Services · Katsina State, Nigeria</p>
-                        </div>
-                    </div>
-                </div>
-
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            @foreach([
+                ['Crop Farming','seedling','services.crops'],
+                ['Livestock','cow','services.livestock'],
+                ['Poultry','egg','services.poultry'],
+                ['Fish Farming','fish','register'],
+                ['Greenhouse','house','register'],
+                ['Farm Marketplace','store','marketplace'],
+                ['Warehouse','warehouse','register'],
+                ['AI Assistant','robot','register'],
+                ['Weather Intel','cloud-sun','register'],
+                ['Satellite Monitoring','satellite-dish','register'],
+                ['Inventory','boxes-stacking','register'],
+                ['Farm Finance','coins','services.finance'],
+                ['Insurance','shield-halved','register'],
+                ['Extension Services','person-chalkboard','register'],
+                ['GIS Mapping','map-location-dot','register'],
+                ['Govt Dashboard','landmark','register'],
+                ['NGO Dashboard','hand-holding-heart','register'],
+                ['Research Portal','microscope','register'],
+                ['Data Analytics','chart-bar','register'],
+                ['IoT Devices','microchip','register'],
+            ] as [$name,$icon,$route])
+            <div class="sol-card fade-up">
+                <div class="sol-icon"><i class="fa-solid fa-{{ $icon }}"></i></div>
+                <div class="font-heading font-bold text-gray-800 text-[13px] mb-1">{{ $name }}</div>
+                <a href="{{ route($route) }}" class="text-[11px] font-semibold transition" style="color:var(--green)">Learn More →</a>
             </div>
+            @endforeach
         </div>
-    </section>
-
-    <!-- ── Footer ── -->
-    <footer class="bg-[#0f172a] pt-20">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-12 mb-14">
-
-                <div>
-                    <a href="/" class="inline-flex mb-6" aria-label="MSAS Home">
-                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Logo" class="h-14 w-auto" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">
-                    </a>
-                    <div class="text-amber font-bold mb-2 text-sm">Livestock &amp; Agro Services</div>
-                    <p class="text-graytext text-sm mb-6">Smart Agriculture · Healthy Livestock · Better Future</p>
-                    <div class="flex gap-3">
-                        <a href="#" aria-label="Facebook" class="social-icon-link w-10 h-10 rounded-full bg-cardlight flex items-center justify-center text-gray-400 hover:bg-[#3b82f6] hover:text-white transition">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M22.675 0h-21.35C.597 0 0 .597 0 1.325v21.351C0 23.403.597 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.323-.597 1.323-1.324V1.325C24 .597 23.403 0 22.675 0z"/></svg>
-                        </a>
-                        <a href="#" aria-label="Instagram" class="social-icon-link w-10 h-10 rounded-full bg-cardlight flex items-center justify-center text-gray-400 hover:text-white transition hover:bg-[#E1306C]">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                        </a>
-                        <a href="#" aria-label="LinkedIn" class="social-icon-link w-10 h-10 rounded-full bg-cardlight flex items-center justify-center text-gray-400 hover:bg-[#0077b5] hover:text-white transition">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-white font-bold text-lg mb-5 font-heading">Quick Links</h4>
-                    <ul class="space-y-3 text-graytext text-sm">
-                        <li><a href="#home"         class="hover:text-emerald-400 transition">Home</a></li>
-                        <li><a href="#about"        class="hover:text-emerald-400 transition">About Us</a></li>
-                        <li><a href="#services"     class="hover:text-emerald-400 transition">Services</a></li>
-                        <li><a href="#marketplace"  class="hover:text-emerald-400 transition">Marketplace</a></li>
-                        <li><a href="#contact"      class="hover:text-emerald-400 transition">Contact Us</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-white font-bold text-lg mb-5 font-heading">Services</h4>
-                    <ul class="space-y-3 text-graytext text-sm">
-                        <li><a href="{{ route('services.livestock') }}" class="hover:text-emerald-400 transition">Livestock Management</a></li>
-                        <li><a href="{{ route('services.poultry') }}"  class="hover:text-emerald-400 transition">Poultry Management</a></li>
-                        <li><a href="{{ route('services.crops') }}"    class="hover:text-emerald-400 transition">Crop Farming</a></li>
-                        <li><a href="{{ route('services.finance') }}"  class="hover:text-emerald-400 transition">Finance Tools</a></li>
-                        <li><a href="{{ route('services.vet') }}"      class="hover:text-emerald-400 transition">Partner Vets</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-white font-bold text-lg mb-5 font-heading">Reach Us</h4>
-                    <div class="space-y-3 text-graytext text-sm">
-                        <p class="flex items-center gap-2">
-                            <i class="fa-solid fa-location-dot text-emerald-500 w-4 shrink-0" aria-hidden="true"></i>
-                            Katsina State, Nigeria
-                        </p>
-                        <p class="flex items-center gap-2">
-                            <i class="fa-solid fa-phone text-emerald-500 w-4 shrink-0" aria-hidden="true"></i>
-                            <a href="tel:08129582957" class="hover:text-emerald-400 transition">08129582957</a>
-                        </p>
-                        <p class="flex items-start gap-2">
-                            <i class="fa-solid fa-envelope text-emerald-500 w-4 shrink-0 mt-0.5" aria-hidden="true"></i>
-                            <a href="mailto:msaslivestockagroservices@gmail.com" class="hover:text-emerald-400 transition break-all">msaslivestockagroservices@gmail.com</a>
-                        </p>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="border-t border-cardlight py-8 text-center md:flex justify-between items-center text-sm text-gray-500">
-                <p>&copy; {{ date('Y') }} MSAS Livestock &amp; Agro Services. All rights reserved.</p>
-                <div class="flex gap-6 mt-4 md:mt-0 justify-center">
-                    <a href="#" class="hover:text-gray-300 transition">Privacy Policy</a>
-                    <a href="#" class="hover:text-gray-300 transition">Terms of Service</a>
-                </div>
-            </div>
+        <div class="text-center mt-10">
+            <a href="{{ route('register') }}" class="btn-primary inline-flex px-8 py-3 text-sm">Explore All Solutions <i class="fa-solid fa-arrow-right text-xs"></i></a>
         </div>
-    </footer>
+    </div>
+</section>
 
-    <!-- ── Floating WhatsApp ── -->
-    <a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer"
-       class="fixed bottom-8 right-8 bg-[#25d366] text-white py-4 px-6 rounded-full font-bold flex items-center gap-3 shadow-[0_10px_25px_rgba(37,211,102,0.5)] whatsapp-float z-50 hover:scale-105 transition"
-       aria-label="Chat with MSAS on WhatsApp">
-        <i class="fa-brands fa-whatsapp text-2xl" aria-hidden="true"></i>
-        <span class="hidden sm:inline">Chat on WhatsApp</span>
-    </a>
-
-    <!-- ══ Modals ══════════════════════════════════════════════════════════ -->
-
-    <!-- Modal: Smart Management -->
-    <div id="modal-smart" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-smart-title">
-        <div class="modal-box">
-            <button type="button" class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close">
-                <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
-            </button>
-            <i class="fa-solid fa-mobile-screen modal-icon" aria-hidden="true"></i>
-            <h2 id="modal-smart-title" class="font-heading text-2xl font-bold text-white mb-3">Smart Farm Management</h2>
-            <p class="text-graytext text-[15px] leading-relaxed mb-5">
-                MSAS gives every farmer a complete digital back-office for their farm — no paper, no guesswork.
-            </p>
-            <ul class="space-y-3 text-graytext text-sm mb-6">
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Register and track all animals (cattle, goats, sheep, poultry)</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Digital health records: vaccinations, weight, treatments, breeding</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Crop records: planting dates, growth stages, harvest yield</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Income &amp; expense ledger — know your profit at a glance</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Works in English and Hausa on any smartphone</li>
+{{-- ═══════════════════════════════════════ AI ASSISTANT ═══════════════════════════════════════ --}}
+<section class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+            <div class="section-tag"><i class="fa-solid fa-robot"></i> AI Powered</div>
+            <h2 class="section-title text-left">Meet Your<br/><span style="color:var(--green)">AI Farm Assistant</span></h2>
+            <p class="text-gray-500 leading-relaxed mb-7">Get instant answers, smart recommendations and real-time insights to improve your productivity. Powered by advanced vision AI that diagnoses crop diseases, livestock conditions, and soil health from a single photo.</p>
+            <ul class="space-y-3 mb-8">
+                @foreach(['Image-based disease detection','Fertilizer & crop recommendation','Weather & market price updates','Yield prediction & alerts','Soil sample analysis']) as $feat)
+                <li class="flex items-center gap-3 text-sm text-gray-700"><span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]" style="background:var(--green-light);color:var(--green)"><i class="fa-solid fa-check"></i></span>{{ $feat }}</li>
+                @endforeach
             </ul>
-            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition">
-                Get Started Free <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-            </a>
+            <a href="{{ route('register') }}" class="btn-primary">Try AI Assistant Now <i class="fa-solid fa-arrow-right text-xs"></i></a>
+        </div>
+        {{-- AI Chat Card --}}
+        <div class="bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+            <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 bg-white">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background:var(--green)"><i class="fa-solid fa-robot"></i></div>
+                    <div><div class="font-bold text-gray-800 text-sm">AI Farm Assistant</div><div class="text-xs text-green-600 font-medium">● Online</div></div>
+                </div>
+                <i class="fa-solid fa-ellipsis text-gray-400"></i>
+            </div>
+            <div class="p-5 space-y-4 min-h-[200px]">
+                <div class="flex gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shrink-0" style="background:var(--green)"><i class="fa-solid fa-robot"></i></div><div class="bg-white rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-700 max-w-xs">Hello! I am your AI Farm Assistant. How can I help you today?</div></div>
+                <div class="flex justify-end"><div class="rounded-2xl rounded-tr-none px-4 py-2.5 text-sm text-white max-w-xs" style="background:var(--green)">What is the best fertilizer for maize at vegetative stage?</div></div>
+                <div class="flex gap-3"><div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shrink-0" style="background:var(--green)"><i class="fa-solid fa-robot"></i></div><div class="bg-white rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-700 max-w-xs">For maize at vegetative stage, <strong>NPK 20:10:10</strong> at 100kg/ha is recommended. Ensure good weed control and adequate irrigation.</div></div>
+            </div>
+            <div class="flex gap-2 px-5 pb-5">
+                <input type="text" placeholder="Ask something..." class="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400">
+                <button class="w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0" style="background:var(--green)"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 px-5 pb-5">
+                @foreach([['Disease Detection','Upload image & detect','bug','red'],['Market Prices','Real-time commodity prices','chart-line','blue'],['Weather Alerts','Forecasts & alerts','cloud-sun','yellow'],['Smart Insights','AI productivity tips','lightbulb','green']]) as [$t,$d,$i,$c])
+                <div class="bg-white rounded-xl p-3 border border-gray-100 shadow-sm"><i class="fa-solid fa-{{ $i }} text-{{ $c }}-500 text-sm mb-1.5 block"></i><div class="text-[11px] font-bold text-gray-800">{{ $t }}</div><div class="text-[10px] text-gray-500">{{ $d }}</div></div>
+                @endforeach
+            </div>
         </div>
     </div>
+</section>
 
-    <!-- Modal: Expert Support -->
-    <div id="modal-expert" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-expert-title">
-        <div class="modal-box">
-            <button type="button" class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close">
-                <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
-            </button>
-            <i class="fa-solid fa-stethoscope modal-icon" aria-hidden="true"></i>
-            <h2 id="modal-expert-title" class="font-heading text-2xl font-bold text-white mb-3">Expert Veterinary &amp; Agro Support</h2>
-            <p class="text-graytext text-[15px] leading-relaxed mb-5">
-                Get access to a network of 50+ verified veterinarians and agronomists — directly from your phone.
-            </p>
-            <ul class="space-y-3 text-graytext text-sm mb-6">
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Chat, voice, or video consultation at your convenience</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Vets respond within 2–4 hours; emergency cases prioritised</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Receive digital prescriptions and treatment plans</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Agronomists advise on crop diseases, soil, and inputs</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Rate your expert after every session</li>
-            </ul>
-            <p class="text-graytext text-xs mb-4">To book: sign up &rarr; run a scan &rarr; tap "Consult Expert" on your diagnosis result.</p>
-            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition">
-                Book a Consultation <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-            </a>
+{{-- ═══════════════════════════════════════ FEATURES ═══════════════════════════════════════ --}}
+<section id="features" class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-star"></i> Features</div>
+            <h2 class="section-title">Built for the Modern<br/><span style="color:var(--green)">Agri-Professional</span></h2>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            @foreach([
+                ['Offline Capability','Works without internet — syncs when back online','wifi','bg-green-50 text-green-700'],
+                ['Cloud Sync','Real-time data synchronisation across all devices','cloud','bg-blue-50 text-blue-700'],
+                ['GPS Tracking','Geo-tag farms, fields and livestock locations','location-dot','bg-purple-50 text-purple-700'],
+                ['Real-time Reports','Instant dashboards and downloadable reports','chart-bar','bg-yellow-50 text-yellow-700'],
+                ['AI Analytics','Machine learning insights for yield optimisation','brain','bg-green-50 text-green-700'],
+                ['Role Management','Granular permissions for every team member','shield-halved','bg-red-50 text-red-700'],
+                ['Secure Login','2FA, biometric ready, NDPR compliant','lock','bg-gray-100 text-gray-700'],
+                ['Audit Logs','Full activity trail for every action taken','clock-rotate-left','bg-blue-50 text-blue-700'],
+                ['SMS & Email Alerts','Automated notifications for critical events','bell','bg-yellow-50 text-yellow-700'],
+                ['QR Code Support','Animal tags, produce tracking, marketplace','qrcode','bg-purple-50 text-purple-700'],
+                ['Mobile App','Android & iOS native app available now','mobile-screen','bg-green-50 text-green-700'],
+                ['Multi-language','English, Hausa, Yoruba, Igbo support','language','bg-blue-50 text-blue-700'],
+            ] as [$title,$desc,$icon,$color])
+            <div class="feat-card fade-up">
+                <div class="feat-icon {{ $color }}"><i class="fa-solid fa-{{ $icon }}"></i></div>
+                <div><div class="font-bold text-gray-800 text-sm mb-1">{{ $title }}</div><div class="text-gray-500 text-xs leading-relaxed">{{ $desc }}</div></div>
+            </div>
+            @endforeach
         </div>
     </div>
+</section>
 
-    <!-- Modal: AI Powered -->
-    <div id="modal-ai" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-ai-title">
-        <div class="modal-box">
-            <button type="button" class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close">
-                <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
-            </button>
-            <i class="fa-solid fa-robot modal-icon" aria-hidden="true"></i>
-            <h2 id="modal-ai-title" class="font-heading text-2xl font-bold text-white mb-3">AI Diagnostic Scanning</h2>
-            <p class="text-graytext text-[15px] leading-relaxed mb-5">
-                Point your camera at a sick animal or diseased plant — MSAS AI gives you a diagnosis in seconds.
-            </p>
-            <ul class="space-y-3 text-graytext text-sm mb-6">
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Supports 10+ crops: maize, tomato, cassava, rice, yam and more</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Livestock: cattle, goats, sheep, poultry — visual &amp; stool analysis</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Returns disease name, confidence score (0–100%), and severity</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Instant treatment plan: organic remedies + chemical options</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Low-confidence cases are automatically escalated to a human expert</li>
-            </ul>
-            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition">
-                Try a Free Scan <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-            </a>
+{{-- ═══════════════════════════════════════ HOW IT WORKS ═══════════════════════════════════════ --}}
+<section class="py-24 bg-white">
+    <div class="max-w-5xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto">How It Works</div>
+            <h2 class="section-title">Get Started in<br/><span style="color:var(--green)">Four Simple Steps</span></h2>
+        </div>
+        <div class="grid md:grid-cols-4 gap-8 relative">
+            @foreach([['1','Register','Create your free account as a farmer, vet, agronomist, or any role','user-plus'],['2','Create Farm','Add your farm profile, crops, livestock, and field details','plus-circle'],['3','Collect Data','Record activities, run AI scans, log health events daily','database'],['4','Get AI Insights','Receive smart recommendations and actionable AI insights','brain']] as [$n,$t,$d,$i])
+            <div class="text-center fade-up relative">
+                @if(!$loop->last)<div class="step-connector hidden md:block"></div>@endif
+                <div class="w-14 h-14 rounded-full text-white font-heading font-black text-xl flex items-center justify-center mx-auto mb-4 shadow-lg" style="background:linear-gradient(135deg,#2E7D32,#0288D1)">{{ $n }}</div>
+                <i class="fa-solid fa-{{ $i }} mb-3 text-2xl block" style="color:var(--green)"></i>
+                <h3 class="font-heading font-bold text-gray-800 text-base mb-2">{{ $t }}</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">{{ $d }}</p>
+            </div>
+            @endforeach
+        </div>
+        <div class="text-center mt-12"><a href="{{ route('register') }}" class="btn-primary px-8 py-3">Start Farming Today <i class="fa-solid fa-arrow-right text-xs"></i></a></div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ MARKETPLACE ═══════════════════════════════════════ --}}
+<section id="marketplace" class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+                <div class="section-tag"><i class="fa-solid fa-store"></i> MSAS Marketplace</div>
+                <h2 class="section-title text-left">Buy &amp; Sell Farm<br/><span style="color:var(--gold)">Inputs &amp; Produce</span></h2>
+                <p class="text-gray-500 leading-relaxed mb-7">Access Nigeria's largest agricultural marketplace. Buy seeds, fertilizer, equipment and livestock — or sell your produce directly to buyers, cooperatives, and processors.</p>
+                <div class="grid grid-cols-2 gap-4 mb-7">
+                    @foreach([['Seeds & Seedlings','seedling','green'],['Fertilizers','sack-dollar','yellow'],['Livestock & Poultry','cow','blue'],['Farm Equipment','tractor','purple'],['Veterinary Supplies','syringe','red'],['Processing Tools','gears','gray']]) as [$n,$i,$c])
+                    <div class="flex items-center gap-3 bg-white rounded-xl p-3.5 border border-gray-100 shadow-sm"><div class="w-9 h-9 rounded-lg bg-{{ $c }}-100 flex items-center justify-center shrink-0"><i class="fa-solid fa-{{ $i }} text-{{ $c }}-600 text-sm"></i></div><span class="font-semibold text-gray-700 text-sm">{{ $n }}</span></div>
+                    @endforeach
+                </div>
+                <a href="{{ route('marketplace') }}" class="btn-primary">Visit Marketplace <i class="fa-solid fa-arrow-right text-xs"></i></a>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2 rounded-2xl overflow-hidden h-48"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80&auto=format&fit=crop" alt="Marketplace" class="w-full h-full object-cover"></div>
+                <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center"><div class="text-2xl font-extrabold mb-1" style="color:var(--green)">120+</div><div class="text-gray-500 text-xs font-medium">Active Listings</div></div>
+                <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center"><div class="text-2xl font-extrabold text-yellow-500 mb-1">₦0</div><div class="text-gray-500 text-xs font-medium">Listing Fee</div></div>
+                <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center"><div class="text-2xl font-extrabold mb-1" style="color:var(--blue)">35+</div><div class="text-gray-500 text-xs font-medium">Verified Dealers</div></div>
+                <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center"><div class="text-2xl font-extrabold text-purple-600 mb-1">NGN</div><div class="text-gray-500 text-xs font-medium">Naira Payments</div></div>
+            </div>
         </div>
     </div>
+</section>
 
-    <!-- Modal: Secure & Reliable -->
-    <div id="modal-secure" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-secure-title">
-        <div class="modal-box">
-            <button type="button" class="modal-close absolute top-4 right-4 text-gray-400 hover:text-white" aria-label="Close">
-                <i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i>
-            </button>
-            <i class="fa-solid fa-shield-halved modal-icon" aria-hidden="true"></i>
-            <h2 id="modal-secure-title" class="font-heading text-2xl font-bold text-white mb-3">Secure &amp; Reliable Platform</h2>
-            <p class="text-graytext text-[15px] leading-relaxed mb-5">
-                Your farm data and personal information are protected by industry-standard security measures.
-            </p>
-            <ul class="space-y-3 text-graytext text-sm mb-6">
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> NDPR compliant — Nigeria Data Protection Regulation</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Data encrypted in transit (TLS) and at rest (AES-256)</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Offline mode — works without internet, syncs when reconnected</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> 24/7 uptime monitoring with automatic failover</li>
-                <li class="flex gap-3"><i class="fa-solid fa-circle-check text-emerald-400 shrink-0 mt-0.5" aria-hidden="true"></i> Your data is never sold to third parties</li>
-            </ul>
-            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition">
-                Create Your Account <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-            </a>
+{{-- ═══════════════════════════════════════ MOBILE APP ═══════════════════════════════════════ --}}
+<section class="py-24 text-white relative overflow-hidden" style="background:linear-gradient(135deg,#1B5E20 0%,#2E7D32 50%,#0288D1 100%)">
+    <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(#fff 1px,transparent 1px);background-size:20px 20px;"></div>
+    <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+        <div>
+            <div class="inline-flex items-center gap-2 bg-white/15 border border-white/25 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-green-200 mb-5">Mobile App</div>
+            <h2 class="font-heading text-4xl font-extrabold mb-4">Take MSAS Agro<br/><span class="text-yellow-300">Anywhere You Go</span></h2>
+            <p class="text-green-100 leading-relaxed mb-8">Our mobile app is fast, offline-ready and designed for farmers. Record data in the field, get AI diagnoses, check market prices — even without internet.</p>
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                @foreach([['Offline Data Collection','wifi-slash'],['Real-time Cloud Sync','cloud'],['Push Notifications','bell'],['Biometric Login','fingerprint']]) as [$f,$i])
+                <div class="flex items-center gap-2.5 bg-white/10 border border-white/15 rounded-xl px-4 py-3"><i class="fa-solid fa-{{ $i }} text-green-300 text-sm shrink-0"></i><span class="text-sm font-medium text-green-50">{{ $f }}</span></div>
+                @endforeach
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('register') }}" class="flex items-center gap-2.5 bg-black text-white rounded-xl px-5 py-3 hover:bg-gray-900 transition"><i class="fa-brands fa-google-play text-lg text-green-400"></i><div><div class="text-[9px] text-gray-300 uppercase tracking-wide">Get it on</div><div class="text-sm font-bold">Google Play</div></div></a>
+                <a href="{{ route('register') }}" class="flex items-center gap-2.5 bg-black text-white rounded-xl px-5 py-3 hover:bg-gray-900 transition"><i class="fa-brands fa-apple text-lg"></i><div><div class="text-[9px] text-gray-300 uppercase tracking-wide">Download on</div><div class="text-sm font-bold">App Store</div></div></a>
+            </div>
+        </div>
+        <div class="flex justify-center gap-6">
+            <div class="w-40 h-72 bg-white/15 backdrop-blur border border-white/25 rounded-3xl flex flex-col items-center justify-center shadow-2xl"><i class="fa-solid fa-mobile-screen text-5xl text-green-200 mb-3"></i><div class="text-xs text-green-200 font-semibold">Android</div></div>
+            <div class="w-40 h-72 bg-white/20 backdrop-blur border border-white/30 rounded-3xl flex flex-col items-center justify-center shadow-2xl mt-8"><i class="fa-brands fa-apple text-5xl text-green-100 mb-3"></i><div class="text-xs text-green-200 font-semibold">iOS</div></div>
         </div>
     </div>
+</section>
 
-    <!-- ── Modal JS ── -->
-    <script>
-    (function () {
-        document.querySelectorAll('[data-modal]').forEach(function (btn) {
-            btn.addEventListener('click', function () { openModal(btn.getAttribute('data-modal')); });
-            btn.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(btn.getAttribute('data-modal')); }
-            });
+{{-- ═══════════════════════════════════════ TESTIMONIALS ═══════════════════════════════════════ --}}
+<section id="testimonials" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-star"></i> Success Stories</div>
+            <h2 class="section-title">What Farmers Are Saying</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+            @foreach([
+                ['Amina Yusuf','Maize Farmer, Kano State','MSAS Agro has improved my yield by 40% through smart recommendations. The AI disease detection saved my entire farm from a devastating fungal outbreak last season.','5','photo-1494790108377-be9c29b29330'],
+                ['Bello Salisu','Livestock Farmer, Kaduna','The livestock monitoring system helps me track my animals health in real-time. I can now detect illness early and call the vet before it spreads to the whole herd.','5','photo-1570295999919-56ceb5ecca61'],
+                ['Grace Okafor','Poultry Farmer, Enugu','I get market prices, alerts and training all in one platform. The marketplace helps me sell my eggs directly to buyers without middlemen.','5','photo-1508214751196-bcfd4ca60f91'],
+            ] as [$name,$role,$text,$stars,$img])
+            <div class="testi-card fade-up">
+                <div class="flex gap-0.5 text-yellow-400 mb-4">@for($i=0;$i<5;$i++)<i class="fa-solid fa-star text-sm"></i>@endfor</div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-5 italic">&ldquo;{{ $text }}&rdquo;</p>
+                <div class="flex items-center gap-3">
+                    <img src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-11 h-11 rounded-full object-cover">
+                    <div><div class="font-bold text-gray-800 text-sm">{{ $name }}</div><div class="text-gray-400 text-xs">{{ $role }}</div></div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ PARTNERS ═══════════════════════════════════════ --}}
+<section class="py-16 bg-gray-50 border-y border-gray-100">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="text-center mb-10"><div class="section-tag mx-auto">Development Partners</div></div>
+        <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-12">
+            @foreach(['FAO','USAID','GIZ','African Union','ECOWAS','CBN','BOI','NIRSAL','AfDB','Bill & Melinda Gates Foundation']) as $p)
+            <div class="text-gray-400 font-heading font-bold text-sm hover:text-green-700 transition cursor-default">{{ $p }}</div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ PRICING ═══════════════════════════════════════ --}}
+<section id="pricing" class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-tag"></i> Pricing</div>
+            <h2 class="section-title">Simple, Transparent<br/><span style="color:var(--green)">Pricing Plans</span></h2>
+            <p class="section-sub">Start free, scale as you grow. No hidden charges.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach([
+                ['Free Farmer','₦0','month','Basic farm management, AI scans (3/month), Marketplace access','register',false,['Farm records','AI Scans ×3','Marketplace','Mobile app','Community forum']],
+                ['Premium','₦2,500','month','Unlimited AI scans, Vet consultations, Weather alerts, Priority support','register',true,['Everything in Free','Unlimited AI Scans','Vet consultation','Weather intelligence','SMS alerts','Priority support']],
+                ['Enterprise','₦15,000','month','All features + custom integrations, dedicated support, bulk user management','register',false,['Everything in Premium','Custom integrations','API access','Dedicated manager','White-label option','SLA guarantee']],
+                ['Government / NGO','Custom','project','Tailored for large-scale deployments, nationwide coverage, M&E dashboards','register',false,['All Enterprise features','GIS & satellite mapping','M&E dashboards','Bulk registration','Training & onboarding','Policy reporting']],
+            ] as [$plan,$price,$per,$desc,$route,$featured,$items])
+            <div class="price-card {{ $featured ? 'featured' : '' }} fade-up">
+                @if($featured)<div class="text-center mb-4"><span class="text-xs font-bold uppercase tracking-widest text-white px-3 py-1 rounded-full" style="background:var(--green)">Most Popular</span></div>@endif
+                <div class="text-gray-500 font-semibold text-sm mb-2">{{ $plan }}</div>
+                <div class="font-heading font-extrabold text-3xl mb-0.5 text-gray-900">{{ $price }}</div>
+                <div class="text-gray-400 text-xs mb-5">per {{ $per }}</div>
+                <p class="text-gray-500 text-xs leading-relaxed mb-5">{{ $desc }}</p>
+                <ul class="space-y-2.5 mb-6">
+                    @foreach($items as $item)
+                    <li class="flex items-start gap-2 text-xs text-gray-600"><i class="fa-solid fa-check shrink-0 mt-0.5" style="color:var(--green)"></i>{{ $item }}</li>
+                    @endforeach
+                </ul>
+                <a href="{{ route($route) }}" class="{{ $featured ? 'btn-primary' : 'btn-outline' }} w-full justify-center text-sm">Get Started</a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ FAQ ═══════════════════════════════════════ --}}
+<section class="py-24 bg-gray-50">
+    <div class="max-w-3xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-circle-question"></i> FAQ</div>
+            <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+        <div id="faq-list">
+            @foreach([
+                ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
+                ['Is the platform free to use?','Yes! Our Free Farmer plan is completely free and includes basic farm management, 3 AI scans per month, and marketplace access. Premium features are available from ₦2,500/month.'],
+                ['Does it work without internet?','Yes. Our mobile app supports offline data collection. Once you reconnect, all data syncs automatically to the cloud.'],
+                ['How does the AI diagnostic work?','Simply upload a photo of your sick animal, diseased crop, or soil sample. Our AI engine — powered by advanced computer vision — identifies the condition and provides a treatment plan within seconds.'],
+                ['Can I consult a vet on the platform?','Yes. Farmers can request vet consultations via in-app chat (₦1,500), WhatsApp (₦2,500), or phone call (₦3,500). Vets respond within 2–4 hours.'],
+                ['Is my farm data secure?','Absolutely. All data is encrypted in transit (TLS) and at rest (AES-256). MSAS Agro is NDPR compliant and your data is never sold to third parties.'],
+                ['How do I register?','Click "Sign Up" on any page, enter your name, phone, email, state, and farm type, and your account is ready in under 2 minutes.'],
+            ] as [$q,$a])
+            <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                    <span>{{ $q }}</span>
+                    <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0"></i>
+                </div>
+                <div class="faq-a">{{ $a }}</div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ CONTACT ═══════════════════════════════════════ --}}
+<section id="contact" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="text-center mb-14">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-phone"></i> Contact Us</div>
+            <h2 class="section-title">Get In Touch</h2>
+            <p class="section-sub">We are always here to help you grow your agribusiness.</p>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-8">
+            {{-- Contact details --}}
+            <div class="space-y-5">
+                @foreach([['fa-location-dot','Office Address','No 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Phone / WhatsApp','08129582957','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']]) as [$ico,$label,$val,$color])
+                <div class="flex gap-4 bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style="background:{{ $color }}"><i class="{{ $ico }} text-sm"></i></div>
+                    <div><div class="font-bold text-gray-800 text-sm mb-0.5">{{ $label }}</div><div class="text-gray-500 text-sm">{{ $val }}</div></div>
+                </div>
+                @endforeach
+                <div class="flex gap-3 pt-2">
+                    <a href="https://wa.me/2348129582957" class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold text-sm transition hover:opacity-90" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                    <a href="tel:08129582957"             class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 transition hover:opacity-90" style="border-color:var(--green);color:var(--green)"><i class="fa-solid fa-phone"></i> Call Now</a>
+                </div>
+                {{-- CEO card --}}
+                <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex items-center gap-4">
+                    <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}" alt="Sani Yawale Zakka" class="w-14 h-14 rounded-full object-cover border-2 border-green-200" onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=80&rounded=true'">
+                    <div><div class="font-bold text-gray-800">Sani Yawale Zakka</div><div class="text-xs text-green-700 font-semibold">Founder &amp; CEO</div><div class="text-xs text-gray-400">MSAS Agro · Katsina, Nigeria</div></div>
+                </div>
+            </div>
+
+            {{-- Contact Form --}}
+            <div class="lg:col-span-2 bg-gray-50 rounded-2xl p-8 border border-gray-100">
+                <h3 class="font-heading font-bold text-xl text-gray-800 mb-6">Send a Message</h3>
+                <form action="https://wa.me/2348129582957" method="get" target="_blank" onsubmit="return sendWhatsApp(this)">
+                    <div class="grid sm:grid-cols-2 gap-5 mb-5">
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Full Name *</label><input type="text" name="name" required placeholder="Your full name" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Phone / WhatsApp *</label><input type="tel" name="phone" required placeholder="08xxxxxxxxx" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Email</label><input type="email" name="email" placeholder="you@example.com" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
+                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Subject</label><input type="text" name="subject" placeholder="How can we help?" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
+                    </div>
+                    <div class="mb-5"><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Message *</label><textarea name="message" required rows="4" placeholder="Tell us about your farm or enquiry..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white resize-none"></textarea></div>
+                    <button type="submit" class="btn-primary w-full justify-center py-3 text-sm">Send Message <i class="fa-solid fa-paper-plane text-xs"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ NEWSLETTER ═══════════════════════════════════════ --}}
+<section class="py-16" style="background:linear-gradient(135deg,#2E7D32,#1B5E20)">
+    <div class="max-w-2xl mx-auto px-4 text-center text-white">
+        <i class="fa-solid fa-envelope-open-text text-3xl text-green-300 mb-4 block"></i>
+        <h2 class="font-heading font-extrabold text-2xl mb-2">Subscribe to Our Newsletter</h2>
+        <p class="text-green-200 text-sm mb-6">Get the latest agri-tech news, tips, market prices and platform updates delivered to your inbox.</p>
+        <form class="flex gap-3 max-w-md mx-auto" onsubmit="return subscribeNewsletter(this)">
+            <input type="email" required placeholder="Enter your email address" class="flex-1 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-300 bg-white">
+            <button type="submit" class="bg-yellow-400 text-gray-900 font-bold px-5 py-3 rounded-xl hover:bg-yellow-300 transition text-sm shrink-0">Subscribe</button>
+        </form>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════ FOOTER ═══════════════════════════════════════ --}}
+<footer class="bg-gray-900 text-gray-400 pt-16 pb-6">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="grid md:grid-cols-5 gap-10 mb-12">
+            <div class="md:col-span-2">
+                <div class="font-heading font-extrabold text-xl text-white mb-1">MSAS Agro</div>
+                <div class="text-xs text-green-400 font-semibold mb-4">Smart Agriculture, Better Tomorrow</div>
+                <p class="text-sm leading-relaxed mb-5">Nigeria's leading AI-powered agribusiness platform connecting farmers, experts, governments, and development partners through digital innovation.</p>
+                <div class="flex gap-3">
+                    @foreach([['facebook-f','#3b82f6'],['twitter','#38bdf8'],['linkedin-in','#0077b5'],['youtube','#ef4444'],['whatsapp','#25d366']]) as [$ico,$col])
+                    <a href="#" class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center hover:scale-110 transition" style="--hc:{{ $col }}" onmouseover="this.style.background=this.style.getPropertyValue('--hc')" onmouseout="this.style.background='#1f2937'"><i class="fa-brands fa-{{ $ico }} text-gray-300 text-sm"></i></a>
+                    @endforeach
+                </div>
+            </div>
+            <div><h4 class="text-white font-bold text-sm mb-4">Quick Links</h4><ul class="space-y-2.5 text-sm">@foreach([['#home','Home'],['#about','About Us'],['#solutions','Solutions'],['#marketplace','Marketplace'],['#pricing','Pricing'],['#contact','Contact']]) as [$href,$label])<li><a href="{{ $href }}" class="hover:text-green-400 transition">{{ $label }}</a></li>@endforeach</ul></div>
+            <div><h4 class="text-white font-bold text-sm mb-4">Services</h4><ul class="space-y-2.5 text-sm">@foreach([['services.livestock','Livestock Management'],['services.poultry','Poultry Management'],['services.crops','Crop Farming'],['services.finance','Finance Tools'],['services.vet','Vet Consultations'],['marketplace','Marketplace']]) as [$r,$l])<li><a href="{{ route($r) }}" class="hover:text-green-400 transition">{{ $l }}</a></li>@endforeach</ul></div>
+            <div><h4 class="text-white font-bold text-sm mb-4">Contact</h4><div class="space-y-3 text-sm"><p><i class="fa-solid fa-location-dot text-green-500 mr-2"></i>Katsina State, Nigeria</p><p><a href="tel:08129582957" class="hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 mr-2"></i>08129582957</a></p><p><a href="mailto:msaslivestockagroservices@gmail.com" class="hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 mr-1"></i>msaslivestockagroservices<br/>@gmail.com</a></p></div></div>
+        </div>
+        <div class="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+            <p>&copy; {{ date('Y') }} MSAS Agro. All rights reserved.</p>
+            <div class="flex gap-5"><a href="#" class="hover:text-gray-200 transition">Privacy Policy</a><a href="#" class="hover:text-gray-200 transition">Terms of Service</a><a href="#" class="hover:text-gray-200 transition">Data Protection</a></div>
+        </div>
+    </div>
+</footer>
+
+{{-- Floating WhatsApp --}}
+<a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" class="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-2xl shadow-xl wa-float z-50 hover:scale-110 transition" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i></a>
+
+{{-- Scripts --}}
+<script>
+// FAQ accordion
+function toggleFaq(el) {
+    var ans = el.nextElementSibling;
+    var icon = el.querySelector('i');
+    var isOpen = ans.classList.contains('open');
+    document.querySelectorAll('.faq-a.open').forEach(function(a){ a.classList.remove('open'); a.previousElementSibling.querySelector('i').style.transform=''; });
+    if (!isOpen) { ans.classList.add('open'); icon.style.transform='rotate(180deg)'; }
+}
+
+// Contact form → WhatsApp
+function sendWhatsApp(form) {
+    var name = form.name.value;
+    var phone = form.phone.value;
+    var subject = form.subject ? form.subject.value : '';
+    var message = form.message.value;
+    var text = 'MSAS Agro Enquiry\n\nName: ' + name + '\nPhone: ' + phone + (subject ? '\nSubject: ' + subject : '') + '\n\nMessage:\n' + message;
+    window.open('https://wa.me/2348129582957?text=' + encodeURIComponent(text), '_blank');
+    return false;
+}
+
+// Newsletter
+function subscribeNewsletter(form) {
+    var email = form.querySelector('input[type=email]').value;
+    alert('Thank you for subscribing! We will be in touch at ' + email);
+    form.reset();
+    return false;
+}
+
+// Intersection Observer for fade-up and counters
+(function(){
+    // Fade-up animations
+    var fadeEls = document.querySelectorAll('.fade-up');
+    var fadeObs = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('visible'); fadeObs.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    fadeEls.forEach(function(el){ fadeObs.observe(el); });
+
+    // Counter animation for stat numbers in hero
+    var counters = document.querySelectorAll('.stat-card .font-extrabold');
+    var countObs = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+            if(e.isIntersecting){
+                var el = e.target;
+                var target = parseInt(el.textContent.replace(/[^0-9]/g,''));
+                if(!target||el.dataset.counted) return;
+                el.dataset.counted = 1;
+                var suffix = el.textContent.replace(/[0-9]/g,'');
+                var start = 0; var dur = 1500; var step = 16;
+                var inc = target / (dur / step);
+                var timer = setInterval(function(){
+                    start += inc;
+                    if(start >= target){ el.textContent = target + suffix; clearInterval(timer); }
+                    else { el.textContent = Math.floor(start) + suffix; }
+                }, step);
+                countObs.unobserve(el);
+            }
         });
-        document.querySelectorAll('.modal-close').forEach(function (btn) {
-            btn.addEventListener('click', closeAll);
-        });
-        document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
-            overlay.addEventListener('click', function (e) { if (e.target === overlay) closeAll(); });
-        });
-        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
-
-        function openModal(id) {
-            var overlay = document.getElementById(id);
-            if (!overlay) return;
-            overlay.classList.add('open');
-            var focusable = overlay.querySelector('button, a, [tabindex]:not([tabindex="-1"])');
-            if (focusable) focusable.focus();
-        }
-        function closeAll() {
-            document.querySelectorAll('.modal-overlay.open').forEach(function (el) { el.classList.remove('open'); });
-        }
-    })();
-    </script>
-
+    }, { threshold: 0.5 });
+    counters.forEach(function(el){ countObs.observe(el); });
+})();
+</script>
 </body>
 </html>
