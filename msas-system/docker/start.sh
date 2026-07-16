@@ -3,15 +3,13 @@ set -e
 
 echo "==> Starting MSAS FarmAI..."
 
-# Ensure storage dirs exist and are writable (including tmp for Blade compiler)
+# Ensure storage dirs exist
 mkdir -p /var/www/html/storage/framework/{sessions,views,cache}
 mkdir -p /var/www/html/storage/logs
 mkdir -p /var/www/html/storage/tmp
 mkdir -p /var/www/html/bootstrap/cache
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Point PHP's temp dir at our writable storage path (avoids /tmp permission issues)
+# Point PHP's temp dir at our writable storage path
 echo "sys_temp_dir = /var/www/html/storage/tmp" > /usr/local/etc/php/conf.d/tempdir.ini
 echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/tempdir.ini
 
@@ -19,14 +17,21 @@ echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/t
 echo "==> Running migrations..."
 php artisan migrate --force
 
-# Cache configuration AFTER migrations so config picks up any env-based logic
-echo "==> Caching config & routes..."
+# Cache configuration, routes and views (runs as root; chown follows below)
+echo "==> Caching config, routes & views..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
 # Seed if the products table is empty (first deploy)
 php artisan db:seed --class=ProductSeeder --force 2>/dev/null || true
+
+# Fix permissions AFTER artisan commands so compiled/cached files are also
+# owned by www-data and writable at runtime (view:cache runs as root and
+# creates files owned by root; php-fpm runs as www-data and needs write access
+# to storage/framework/views for any runtime Blade compilation).
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 echo "==> Starting PHP-FPM..."
 php-fpm -D
