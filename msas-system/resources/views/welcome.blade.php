@@ -119,10 +119,14 @@
     <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         {{-- Logo --}}
         <a href="/" class="flex items-center gap-2 shrink-0">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:var(--green)"><i class="fa-solid fa-leaf text-white text-sm"></i></div>
+            {{-- Real MSAS logo image in a dark-navy container — works on both transparent and white nav --}}
+            <div style="width:42px;height:42px;border-radius:10px;overflow:hidden;background:#0B2447;border:1.5px solid rgba(255,255,255,0.22);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.28);">
+                <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro"
+                     style="width:100%;height:100%;object-fit:cover;display:block;">
+            </div>
             <div class="leading-none">
                 <div class="font-heading font-extrabold text-sm md:text-base" :class="scrolled?'text-gray-900':'text-white'" style="line-height:1.1">MSAS Agro</div>
-                <div class="text-[9px] font-medium tracking-wider hidden sm:block" :class="scrolled?'text-green-700':'text-green-200'">Smart Agriculture, Better Tomorrow</div>
+                <div class="font-medium tracking-wider hidden sm:block" :class="scrolled?'text-green-700':'text-green-200'" style="font-size:9px">Smart Agriculture, Better Tomorrow</div>
             </div>
         </a>
 
@@ -916,7 +920,11 @@
             {{-- Brand (spans 2 cols on sm, 2 on md, 2 on lg) --}}
             <div class="col-span-2 md:col-span-1 lg:col-span-2">
                 <div class="flex items-center gap-2 mb-1">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--green)"><i class="fa-solid fa-leaf text-white text-xs"></i></div>
+                    {{-- Logo on dark footer background — no extra wrapper needed --}}
+                    <div style="width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;">
+                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro"
+                             style="width:100%;height:100%;object-fit:cover;display:block;">
+                    </div>
                     <div class="font-heading font-extrabold text-base text-white">MSAS Agro</div>
                 </div>
                 <div class="text-xs font-semibold mb-3 md:mb-4" style="color:var(--green)">Smart Agriculture, Better Tomorrow</div>

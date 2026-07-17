@@ -13,11 +13,12 @@
             {{-- Logo & Primary Links --}}
             <div class="flex items-center">
                 <div class="shrink-0 flex items-center">
-                    <a href="/" class="flex items-center gap-2 group">
-                        <div class="w-8 h-8 rounded-full bg-[#1FA84A] flex items-center justify-center shadow group-hover:scale-105 transition">
-                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/></svg>
+                    <a href="/" class="flex items-center gap-2 group" style="text-decoration:none">
+                        <div style="width:36px;height:36px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#0B2447;box-shadow:0 2px 6px rgba(0,0,0,0.18);transition:transform 0.2s;" class="group-hover:scale-105">
+                            <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro"
+                                 style="width:100%;height:100%;object-fit:cover;display:block;">
                         </div>
-                        <span class="font-bold text-[#0F6B3E] tracking-tight">MSAS Portal</span>
+                        <span class="font-bold tracking-tight" style="color:#0F6B3E">MSAS Portal</span>
                     </a>
                 </div>
 
