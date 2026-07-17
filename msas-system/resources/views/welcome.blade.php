@@ -107,10 +107,27 @@
             @endforeach
         </nav>
 
-        {{-- Desktop Auth --}}
+        {{-- Desktop Auth + Language --}}
         <div class="hidden lg:flex items-center gap-1.5">
             <button class="p-2 rounded-lg transition" :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
-            <button class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-semibold transition" :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'">EN <i class="fa-solid fa-chevron-down text-[9px]"></i></button>
+            {{-- Language Selector --}}
+            <div class="relative" x-data="{ langOpen: false }">
+                @php $locale = session('locale', app()->getLocale()); $localeLabels = ['en'=>'EN','ha'=>'HA','fr'=>'FR','yo'=>'YO','ig'=>'IG','ff'=>'FF']; @endphp
+                <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                    class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-bold transition"
+                    :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'">
+                    {{ strtoupper($localeLabels[$locale] ?? 'EN') }} <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                </button>
+                <div x-show="langOpen" x-cloak x-transition
+                    class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
+                    @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yoruba'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
+                    <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
+                    <button type="submit" class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $locale === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
+                        <span>{{ $flag }}</span> {{ $name }}
+                    </button></form>
+                    @endforeach
+                </div>
+            </div>
             @auth
                 <a href="{{ url('/dashboard') }}" class="btn-primary text-xs py-2 px-4"><i class="fa-solid fa-gauge-high text-xs"></i> Dashboard</a>
             @else
@@ -150,6 +167,16 @@
             </a>
             @endforeach
         </nav>
+        {{-- Mobile language switcher --}}
+        <div class="px-4 py-2 border-b border-gray-100">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Language</p>
+            <div class="flex flex-wrap gap-1.5">
+                @foreach([['en','🇬🇧','EN'],['ha','🇳🇬','HA'],['fr','🇫🇷','FR'],['yo','🇳🇬','YO'],['ig','🇳🇬','IG']] as [$code,$flag,$label])
+                <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
+                <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition {{ session('locale','en') === $code ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 hover:bg-green-50' }}">{{ $flag }} {{ $label }}</button></form>
+                @endforeach
+            </div>
+        </div>
         <div class="px-4 py-4 flex flex-col gap-2.5">
             @auth
                 <a href="{{ url('/dashboard') }}" @click="open=false" class="btn-primary justify-center">Dashboard</a>
@@ -635,8 +662,82 @@
     </div>
 </section>
 
+{{-- ═══════════ FOUNDER & CEO ═══════════ --}}
+<section id="founder" class="s-py bg-white border-t border-gray-100">
+    <div class="max-w-5xl mx-auto px-4">
+        <div class="text-center s-header-mb">
+            <div class="section-tag mx-auto"><i class="fa-solid fa-crown"></i> Leadership</div>
+            <h2 class="section-title">Meet Our <span style="color:var(--green)">Founder & CEO</span></h2>
+        </div>
+        <div class="grid md:grid-cols-5 gap-8 md:gap-12 items-center">
+            {{-- Photo + credentials --}}
+            <div class="md:col-span-2 flex flex-col items-center text-center">
+                <div class="relative mb-4">
+                    <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
+                         alt="Sani Yawale Zakka — Founder & CEO, MSAS Agro"
+                         class="w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-4 shadow-xl"
+                         style="border-color:var(--green)"
+                         onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=180&rounded=true&bold=true'">
+                    <div class="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border-2 flex items-center justify-center" style="border-color:var(--green)">
+                        <i class="fa-solid fa-check text-xs" style="color:var(--green)"></i>
+                    </div>
+                </div>
+                <h3 class="font-heading font-extrabold text-xl text-gray-900 mb-0.5">Sani Yawale Zakka</h3>
+                <p class="font-semibold text-sm mb-1" style="color:var(--green)">Founder & CEO, MSAS Agro</p>
+                <p class="text-gray-400 text-xs mb-4 leading-relaxed">Agribusiness · Digital Innovation · Entrepreneur</p>
+                <div class="flex gap-2 justify-center mb-4">
+                    @foreach([['linkedin-in','#0077b5'],['twitter','#38bdf8'],['whatsapp','#25D366']] as [$ico,$col])
+                    <a href="#" class="w-8 h-8 rounded-full flex items-center justify-center transition hover:scale-110 text-gray-400 hover:text-white"
+                       style="background:#f3f4f6"
+                       onmouseover="this.style.background='{{ $col }}';this.querySelector('i').style.color='#fff'"
+                       onmouseout="this.style.background='#f3f4f6';this.querySelector('i').style.color='#9ca3af'">
+                        <i class="fa-brands fa-{{ $ico }} text-xs"></i>
+                    </a>
+                    @endforeach
+                </div>
+                {{-- Contact quick-links --}}
+                <div class="space-y-2 w-full max-w-xs">
+                    <a href="tel:+2348032459879" class="flex items-center gap-2.5 bg-gray-50 hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-xl px-3 py-2.5 text-sm transition group">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--green-light)"><i class="fa-solid fa-phone text-xs" style="color:var(--green)"></i></div>
+                        <div class="text-left"><div class="text-xs text-gray-400 leading-none">Call / WhatsApp</div><div class="font-bold text-gray-700 text-xs mt-0.5 group-hover:text-green-700">+234 8032459879</div></div>
+                    </a>
+                    <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2.5 bg-gray-50 hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-xl px-3 py-2.5 text-sm transition group">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--green-light)"><i class="fa-solid fa-envelope text-xs" style="color:var(--green)"></i></div>
+                        <div class="text-left"><div class="text-xs text-gray-400 leading-none">Email</div><div class="font-bold text-gray-700 text-xs mt-0.5 group-hover:text-green-700">sanizakka@gmail.com</div></div>
+                    </a>
+                </div>
+            </div>
+            {{-- Bio --}}
+            <div class="md:col-span-3">
+                <blockquote class="text-base md:text-lg font-medium text-gray-500 italic leading-relaxed mb-5 pl-4 border-l-4" style="border-color:var(--green)">
+                    "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS Agro."
+                </blockquote>
+                <p class="text-gray-600 leading-relaxed text-sm md:text-base mb-4">
+                    <strong class="text-gray-900">Sani Yawale Zakka</strong> is a visionary entrepreneur passionate about agriculture, livestock development and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient and technology-driven industry that benefits farmers, communities and the wider economy.
+                </p>
+                <p class="text-gray-500 leading-relaxed text-sm mb-5">
+                    With deep roots in Katsina State, Nigeria, Sani combines hands-on agricultural knowledge with modern technology to build solutions that are practical, accessible and impactful. Under his leadership, MSAS Agro has grown to serve over 20,000 registered farmers across all 36 states of Nigeria.
+                </p>
+                {{-- Achievement badges --}}
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    @foreach([['20K+','Farmers Served','users'],['36','States Covered','map'],['5+','Years Experience','calendar'],['100+','Projects','folder']] as [$n,$l,$i])
+                    <div class="text-center bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div class="font-heading font-extrabold text-lg" style="color:var(--green)">{{ $n }}</div>
+                        <div class="text-gray-400 text-[10px] font-medium">{{ $l }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="mailto:sanizakka@gmail.com" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-envelope text-xs"></i> Send Message</a>
+                    <a href="https://wa.me/2348032459879" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm text-white transition hover:opacity-90" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 {{-- ═══════════ CONTACT ═══════════ --}}
-<section id="contact" class="s-py bg-white">
+<section id="contact" class="s-py bg-white" style="background:#f9fafb">
     <div class="max-w-7xl mx-auto px-4">
         <div class="text-center s-header-mb">
             <div class="section-tag mx-auto"><i class="fa-solid fa-phone"></i> Contact Us</div>
@@ -645,7 +746,7 @@
         </div>
         <div class="grid lg:grid-cols-3 gap-5 lg:gap-8">
             <div class="space-y-3">
-                @foreach([['fa-location-dot','Office Address','No 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Phone / WhatsApp','08129582957','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']] as [$ico,$label,$val,$color])
+                @foreach([['fa-location-dot','Office Address','No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Call','08032459879 · 08129582957 (WhatsApp)','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']] as [$ico,$label,$val,$color])
                 <div class="flex gap-3 bg-gray-50 rounded-2xl p-4 border border-gray-100">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0" style="background:{{ $color }}"><i class="{{ $ico }} text-sm"></i></div>
                     <div><div class="font-bold text-gray-800 text-sm mb-0.5">{{ $label }}</div><div class="text-gray-500 text-xs md:text-sm break-all">{{ $val }}</div></div>
@@ -653,11 +754,7 @@
                 @endforeach
                 <div class="flex gap-2.5">
                     <a href="https://wa.me/2348129582957" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                    <a href="tel:08129582957" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 hover:opacity-90 transition" style="border-color:var(--green);color:var(--green)"><i class="fa-solid fa-phone"></i> Call Now</a>
-                </div>
-                <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-center gap-3">
-                    <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}" alt="Sani Yawale Zakka" class="w-12 h-12 rounded-full object-cover border-2 border-green-200 shrink-0" onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=80&rounded=true'">
-                    <div><div class="font-bold text-gray-800 text-sm">Sani Yawale Zakka</div><div class="text-xs text-green-700 font-semibold">Founder &amp; CEO</div><div class="text-xs text-gray-400">MSAS Agro · Katsina, Nigeria</div></div>
+                    <a href="tel:+2348032459879" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 hover:opacity-90 transition" style="border-color:var(--green);color:var(--green)"><i class="fa-solid fa-phone"></i> Call Now</a>
                 </div>
             </div>
             <div class="lg:col-span-2 bg-gray-50 rounded-2xl p-5 md:p-8 border border-gray-100">
