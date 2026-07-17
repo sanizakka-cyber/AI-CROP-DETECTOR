@@ -46,21 +46,21 @@
         /* ── Contact 2-col enterprise layout ── */
         .contact-2col{display:grid;gap:2rem;}
         @media(min-width:1024px){.contact-2col{grid-template-columns:38fr 62fr;gap:2.5rem;align-items:start;}}
-        /* Contact info cards */
-        .cinfo-card{display:flex;align-items:flex-start;gap:.875rem;background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:1.125rem 1.25rem;transition:box-shadow .2s,border-color .2s;}
-        .cinfo-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.07);border-color:rgba(46,125,50,.22);}
-        .cinfo-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9375rem;flex-shrink:0;margin-top:1px;}
-        .cinfo-label{font-weight:700;font-size:.6875rem;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem;}
-        .cinfo-name{font-size:.9375rem;font-weight:700;color:#111827;margin-bottom:.125rem;}
-        .cinfo-val{font-size:.8125rem;color:#4b5563;line-height:1.55;font-weight:500;}
+        /* Contact info cards — compact enterprise */
+        .cinfo-card{display:flex;align-items:flex-start;gap:.75rem;background:#fff;border:1px solid #e8ecf0;border-radius:10px;padding:.8125rem .9375rem;transition:box-shadow .2s,border-color .2s;}
+        .cinfo-card:hover{box-shadow:0 3px 14px rgba(0,0,0,.07);border-color:rgba(46,125,50,.22);}
+        .cinfo-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8125rem;flex-shrink:0;margin-top:1px;}
+        .cinfo-label{font-weight:700;font-size:.5625rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.09em;margin-bottom:.1rem;}
+        .cinfo-name{font-size:.8125rem;font-weight:700;color:#111827;margin-bottom:.1rem;}
+        .cinfo-val{font-size:.75rem;color:#4b5563;line-height:1.5;font-weight:500;}
         .cinfo-val a{color:#4b5563;text-decoration:none;}
         .cinfo-val a:hover{color:var(--green);}
-        .cinfo-btn{display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;font-weight:700;padding:.32rem .8rem;border-radius:6px;color:#fff;text-decoration:none;transition:all .18s;border:none;cursor:pointer;line-height:1.2;margin-top:.625rem;letter-spacing:.01em;}
+        .cinfo-btn{display:inline-flex;align-items:center;gap:.275rem;font-size:.6875rem;font-weight:700;padding:.24rem .65rem;border-radius:5px;color:#fff;text-decoration:none;transition:all .18s;border:none;cursor:pointer;line-height:1.2;margin-top:.5rem;letter-spacing:.01em;}
         .cinfo-btn.g{background:var(--green);}    .cinfo-btn.g:hover{background:var(--green-dark);}
         .cinfo-btn.b{background:var(--blue);}     .cinfo-btn.b:hover{background:#0176bd;}
         .cinfo-btn.o{background:#e67e00;}         .cinfo-btn.o:hover{background:#cc6e00;}
         .cinfo-btn.w{background:#25D366;}         .cinfo-btn.w:hover{background:#1da851;}
-        .cinfo-copy{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;font-weight:600;color:#9ca3af;background:none;border:none;cursor:pointer;padding:.2rem .4rem;border-radius:4px;transition:color .15s;}
+        .cinfo-copy{display:inline-flex;align-items:center;gap:.2rem;font-size:.625rem;font-weight:600;color:#9ca3af;background:none;border:none;cursor:pointer;padding:.15rem .35rem;border-radius:4px;transition:color .15s;}
         .cinfo-copy:hover{color:var(--green);}
         /* Enterprise contact form */
         .ctf-wrap{background:#fff;border:1px solid #e8ecf0;border-radius:14px;padding:1.75rem 2rem;box-shadow:0 2px 16px rgba(0,0,0,.05);}
@@ -597,28 +597,146 @@
             </div>
             {{-- Phone mockups (hidden on small, shown md+) --}}
             <div class="hidden md:flex justify-center gap-3 items-end">
-                <div class="w-24 lg:w-28 h-48 lg:h-52 bg-white/15 backdrop-blur border border-white/25 rounded-2xl overflow-hidden shadow-2xl">
-                    <div class="h-2.5 bg-white/20 flex items-center px-2"><span class="w-1.5 h-1.5 rounded-full bg-white/40"></span></div>
-                    <div class="p-2 flex flex-col gap-1.5">
-                        <div class="bg-white/30 rounded text-[7px] text-white font-bold px-1 py-0.5">Farm Overview</div>
-                        <div class="grid grid-cols-2 gap-1"><div class="bg-white/20 rounded h-7"></div><div class="bg-white/20 rounded h-7"></div><div class="bg-white/20 rounded h-7"></div><div class="bg-white/20 rounded h-7"></div></div>
+
+                {{-- Farm Overview --}}
+                <div class="w-24 lg:w-28 h-48 lg:h-52 rounded-2xl overflow-hidden shadow-2xl" style="background:#0a1f12;border:1.5px solid #1a3a22;">
+                    <div style="height:9px;background:#0a1f12;display:flex;align-items:center;padding:0 6px;justify-content:space-between;">
+                        <span style="font-size:5px;color:#6b7280;font-weight:500;">9:41</span>
+                        <span style="width:4px;height:4px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+                    </div>
+                    <div style="background:#f8fafc;height:calc(100% - 9px);padding:5px;display:flex;flex-direction:column;gap:2.5px;overflow:hidden;">
+                        <div style="background:linear-gradient(135deg,#15803d,#16a34a);border-radius:5px;padding:4px 5px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:6px;font-weight:700;color:#fff;">Farm Overview</span>
+                            <span style="display:flex;align-items:center;gap:1.5px;"><span style="width:3px;height:3px;border-radius:50%;background:#4ade80;display:inline-block;"></span><span style="font-size:4.5px;color:#bbf7d0;">Live</span></span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2.5px 3px;">
+                                <div style="font-size:4.5px;color:#15803d;font-weight:600;">🌾 Crop</div>
+                                <div style="font-size:10px;font-weight:800;color:#14532d;line-height:1.1;">95%</div>
+                                <div style="font-size:4px;color:#16a34a;">Health</div>
+                            </div>
+                            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:2.5px 3px;">
+                                <div style="font-size:4.5px;color:#d97706;font-weight:600;">🐄 Stock</div>
+                                <div style="font-size:10px;font-weight:800;color:#78350f;line-height:1.1;">128</div>
+                                <div style="font-size:4px;color:#d97706;">Animals</div>
+                            </div>
+                            <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:4px;padding:2.5px 3px;">
+                                <div style="font-size:4.5px;color:#7c3aed;font-weight:600;">🐔 Birds</div>
+                                <div style="font-size:10px;font-weight:800;color:#4c1d95;line-height:1.1;">2.4K</div>
+                                <div style="font-size:4px;color:#7c3aed;">Poultry</div>
+                            </div>
+                            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2.5px 3px;">
+                                <div style="font-size:4.5px;color:#1d4ed8;font-weight:600;">🌦 Temp</div>
+                                <div style="font-size:10px;font-weight:800;color:#1e3a8a;line-height:1.1;">28°C</div>
+                                <div style="font-size:4px;color:#3b82f6;">Lt. Rain</div>
+                            </div>
+                        </div>
+                        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:3px 4px;">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:1.5px;">
+                                <span style="font-size:4.5px;color:#6b7280;font-weight:600;">Soil Moisture</span>
+                                <span style="font-size:4.5px;font-weight:700;color:#3b82f6;">72%</span>
+                            </div>
+                            <div style="height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden;">
+                                <div style="width:72%;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:2px;"></div>
+                            </div>
+                        </div>
+                        <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;gap:2px;">
+                            <span style="font-size:6px;">⚠️</span>
+                            <span style="font-size:4.5px;color:#92400e;font-weight:600;">Irrigation needed · Field A2</span>
+                        </div>
                     </div>
                 </div>
-                <div class="w-24 lg:w-28 h-56 lg:h-60 bg-white/20 backdrop-blur border border-white/30 rounded-2xl overflow-hidden shadow-2xl">
-                    <div class="h-2.5 bg-white/20 flex items-center px-2"><span class="w-1.5 h-1.5 rounded-full bg-white/40"></span></div>
-                    <div class="p-2 flex flex-col gap-1.5">
-                        <div class="bg-white/30 rounded text-[7px] text-white font-bold px-1 py-0.5">Analytics</div>
-                        <div class="bg-white/20 rounded h-14"></div>
-                        <div class="space-y-1"><div class="bg-white/20 h-1.5 rounded"></div><div class="bg-white/20 h-1.5 rounded w-3/4"></div><div class="bg-white/20 h-1.5 rounded w-1/2"></div></div>
+
+                {{-- Analytics (tallest) --}}
+                <div class="w-24 lg:w-28 h-56 lg:h-60 rounded-2xl overflow-hidden shadow-2xl" style="background:#0f172a;border:1.5px solid #1e293b;">
+                    <div style="height:9px;background:#0f172a;display:flex;align-items:center;padding:0 6px;justify-content:space-between;">
+                        <span style="font-size:5px;color:#64748b;font-weight:500;">9:41</span>
+                        <span style="width:4px;height:4px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+                    </div>
+                    <div style="background:#fff;height:calc(100% - 9px);padding:5px;display:flex;flex-direction:column;gap:2.5px;overflow:hidden;">
+                        <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:5px;padding:4px 5px;">
+                            <div style="font-size:6px;font-weight:700;color:#fff;">Analytics</div>
+                            <div style="font-size:4.5px;color:#bfdbfe;margin-top:1px;">Jul 2026 · Summary</div>
+                        </div>
+                        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:3px 4px;display:flex;align-items:center;justify-content:space-between;">
+                            <div>
+                                <div style="font-size:4.5px;color:#6b7280;font-weight:600;">Monthly Income</div>
+                                <div style="font-size:9px;font-weight:800;color:#15803d;">₦847,500</div>
+                            </div>
+                            <div style="background:#16a34a;border-radius:3px;padding:1px 3px;">
+                                <span style="font-size:5px;font-weight:700;color:#fff;">+24%</span>
+                            </div>
+                        </div>
+                        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:3px 4px;">
+                            <div style="font-size:4.5px;color:#6b7280;font-weight:600;margin-bottom:3px;">Revenue (₦k) — Jan to Jul</div>
+                            <div style="display:flex;align-items:flex-end;gap:1.5px;height:20px;">
+                                <div style="flex:1;background:#bfdbfe;border-radius:1px 1px 0 0;height:45%;"></div>
+                                <div style="flex:1;background:#93c5fd;border-radius:1px 1px 0 0;height:58%;"></div>
+                                <div style="flex:1;background:#60a5fa;border-radius:1px 1px 0 0;height:50%;"></div>
+                                <div style="flex:1;background:#3b82f6;border-radius:1px 1px 0 0;height:72%;"></div>
+                                <div style="flex:1;background:#2563eb;border-radius:1px 1px 0 0;height:65%;"></div>
+                                <div style="flex:1;background:#1d4ed8;border-radius:1px 1px 0 0;height:88%;"></div>
+                                <div style="flex:1;background:#1e40af;border-radius:1px 1px 0 0;height:100%;"></div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;margin-top:1.5px;">
+                                <span style="font-size:4px;color:#9ca3af;">Jan</span>
+                                <span style="font-size:4px;color:#9ca3af;">Jul</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:2px;">
+                            <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:3px;text-align:center;">
+                                <div style="font-size:4.5px;color:#6b7280;">Score</div>
+                                <div style="font-size:11px;font-weight:800;color:#15803d;line-height:1.1;">87</div>
+                                <div style="font-size:4px;color:#16a34a;">Excellent</div>
+                            </div>
+                            <div style="flex:1;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:3px;text-align:center;">
+                                <div style="font-size:4.5px;color:#6b7280;">Yield</div>
+                                <div style="font-size:11px;font-weight:800;color:#92400e;line-height:1.1;">4.2t</div>
+                                <div style="font-size:4px;color:#d97706;">per ha</div>
+                            </div>
+                        </div>
+                        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2.5px 4px;display:flex;align-items:flex-start;gap:2px;">
+                            <span style="font-size:7px;flex-shrink:0;">🤖</span>
+                            <span style="font-size:4.5px;color:#1e40af;font-weight:600;line-height:1.4;">AI: Apply 30kg NPK to<br>Maize field by Jul 20</span>
+                        </div>
                     </div>
                 </div>
-                <div class="w-24 lg:w-28 h-48 lg:h-52 bg-white/15 backdrop-blur border border-white/25 rounded-2xl overflow-hidden shadow-2xl">
-                    <div class="h-2.5 bg-white/20 flex items-center px-2"><span class="w-1.5 h-1.5 rounded-full bg-white/40"></span></div>
-                    <div class="p-2 flex flex-col gap-1.5">
-                        <div class="bg-white/30 rounded text-[7px] text-white font-bold px-1 py-0.5">Market Prices</div>
-                        <div class="space-y-1"><div class="bg-white/20 rounded h-5"></div><div class="bg-white/20 rounded h-5"></div><div class="bg-white/20 rounded h-5"></div><div class="bg-white/20 rounded h-5"></div></div>
+
+                {{-- Market Prices --}}
+                <div class="w-24 lg:w-28 h-48 lg:h-52 rounded-2xl overflow-hidden shadow-2xl" style="background:#1e1035;border:1.5px solid #3b1f6e;">
+                    <div style="height:9px;background:#1e1035;display:flex;align-items:center;padding:0 6px;justify-content:space-between;">
+                        <span style="font-size:5px;color:#a78bfa;font-weight:500;">9:41</span>
+                        <span style="width:4px;height:4px;border-radius:50%;background:#22c55e;display:inline-block;"></span>
+                    </div>
+                    <div style="background:#fff;height:calc(100% - 9px);padding:5px;display:flex;flex-direction:column;gap:2px;overflow:hidden;">
+                        <div style="background:linear-gradient(135deg,#4c1d95,#7c3aed);border-radius:5px;padding:4px 5px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:6px;font-weight:700;color:#fff;">Market Prices</span>
+                            <span style="display:flex;align-items:center;gap:1.5px;background:rgba(255,255,255,.15);border-radius:3px;padding:1px 3px;">
+                                <span style="width:3px;height:3px;border-radius:50%;background:#4ade80;display:inline-block;"></span>
+                                <span style="font-size:4.5px;color:#fff;font-weight:600;">LIVE</span>
+                            </span>
+                        </div>
+                        <div style="font-size:4.5px;color:#6b7280;padding:0 1px;">📍 Katsina State</div>
+                        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;justify-content:space-between;">
+                            <div><div style="font-size:5px;font-weight:700;color:#1f2937;">Maize</div><div style="font-size:4px;color:#9ca3af;">per 100kg</div></div>
+                            <div style="text-align:right;"><div style="font-size:6.5px;font-weight:800;color:#15803d;">₦68k</div><div style="font-size:4.5px;color:#16a34a;font-weight:700;">▲ 2.1%</div></div>
+                        </div>
+                        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;justify-content:space-between;">
+                            <div><div style="font-size:5px;font-weight:700;color:#1f2937;">Rice</div><div style="font-size:4px;color:#9ca3af;">per 50kg</div></div>
+                            <div style="text-align:right;"><div style="font-size:6.5px;font-weight:800;color:#dc2626;">₦92k</div><div style="font-size:4.5px;color:#dc2626;font-weight:700;">▼ 1.3%</div></div>
+                        </div>
+                        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;justify-content:space-between;">
+                            <div><div style="font-size:5px;font-weight:700;color:#1f2937;">Soybeans</div><div style="font-size:4px;color:#9ca3af;">per 100kg</div></div>
+                            <div style="text-align:right;"><div style="font-size:6.5px;font-weight:800;color:#15803d;">₦115k</div><div style="font-size:4.5px;color:#16a34a;font-weight:700;">▲ 3.5%</div></div>
+                        </div>
+                        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;justify-content:space-between;">
+                            <div><div style="font-size:5px;font-weight:700;color:#1f2937;">Tomatoes</div><div style="font-size:4px;color:#9ca3af;">per basket</div></div>
+                            <div style="text-align:right;"><div style="font-size:6.5px;font-weight:800;color:#15803d;">₦24.5k</div><div style="font-size:4.5px;color:#16a34a;font-weight:700;">▲ 5.2%</div></div>
+                        </div>
+                        <div style="font-size:4px;color:#9ca3af;text-align:center;padding-top:1px;">Updated 2 mins ago</div>
                     </div>
                 </div>
+
             </div>
             {{-- Feature checklist --}}
             <div class="grid grid-cols-2 md:grid-cols-1 gap-2 md:space-y-0 md:gap-2.5">
@@ -844,8 +962,8 @@
                     {{-- Social icons + CTA --}}
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex gap-1.5">
-                            @foreach([['linkedin-in','https://linkedin.com','#0077b5'],['facebook-f','#','#1877f2'],['twitter','#','#1d9bf0'],['whatsapp','https://wa.me/2348032459879','#25D366']] as [$fico,$fhref,$fcol])
-                            <a href="{{ $fhref }}" @if($fhref !== '#') target="_blank" rel="noopener noreferrer" @endif
+                            @foreach([['linkedin-in','https://www.linkedin.com/search/results/all/?keywords=Sani+Yawale+Zakka','#0077b5'],['facebook-f','https://www.facebook.com/search/top/?q=Sani%20Yawale%20Zakka','#1877f2'],['x-twitter','https://twitter.com/Sanizakka','#000000'],['whatsapp','https://wa.me/2348032459879','#25D366']] as [$fico,$fhref,$fcol])
+                            <a href="{{ $fhref }}" target="_blank" rel="noopener noreferrer"
                                class="rounded-full flex items-center justify-center transition hover:scale-110"
                                style="width:28px;height:28px;background:#f0f2f4;flex-shrink:0"
                                onmouseover="this.style.background='{{ $fcol }}';this.querySelector('i').style.color='#fff'"
@@ -982,13 +1100,13 @@
                 </div>
 
                 {{-- Hours badge --}}
-                <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:.875rem 1.125rem;display:flex;align-items:center;gap:.75rem;">
-                    <div style="width:36px;height:36px;border-radius:9px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-regular fa-clock" style="color:var(--green);font-size:.875rem;"></i>
+                <div style="background:#fff;border:1px solid #e8ecf0;border-radius:10px;padding:.6875rem .9375rem;display:flex;align-items:center;gap:.625rem;">
+                    <div style="width:30px;height:30px;border-radius:8px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-regular fa-clock" style="color:var(--green);font-size:.75rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size:.8125rem;font-weight:700;color:#111827;">Business Hours</div>
-                        <div style="font-size:.75rem;color:#6b7280;line-height:1.5;">Mon – Fri: 8:00 AM – 6:00 PM<br>Sat: 9:00 AM – 2:00 PM (WAT)</div>
+                        <div style="font-size:.75rem;font-weight:700;color:#111827;">Business Hours</div>
+                        <div style="font-size:.6875rem;color:#6b7280;line-height:1.5;">Mon – Fri: 8:00 AM – 6:00 PM · Sat: 9:00 AM – 2:00 PM (WAT)</div>
                     </div>
                 </div>
 
