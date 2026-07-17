@@ -25,10 +25,27 @@
         /* ── Buttons ── */
         .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:var(--green);color:#fff;border-radius:8px;font-weight:600;font-size:.875rem;transition:all .2s;border:2px solid var(--green);white-space:nowrap;}
         .btn-primary:hover{background:var(--green-dark);border-color:var(--green-dark);transform:translateY(-1px);}
+        .btn-primary:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
         .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:transparent;color:var(--green);border:2px solid var(--green);border-radius:8px;font-weight:600;font-size:.875rem;transition:all .2s;white-space:nowrap;}
         .btn-outline:hover{background:var(--green);color:#fff;transform:translateY(-1px);}
+        .btn-outline:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
         .btn-gold{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.6rem 1.25rem;background:var(--gold);color:#1a1a1a;border:2px solid var(--gold);border-radius:8px;font-weight:700;font-size:.875rem;transition:all .2s;white-space:nowrap;}
         .btn-gold:hover{background:var(--gold-dark);border-color:var(--gold-dark);transform:translateY(-1px);}
+        .btn-gold:focus-visible{outline:2px solid var(--gold-dark);outline-offset:2px;}
+
+        /* ── Nav Sign-In button (state-aware: white outline on transparent, green outline when scrolled) ── */
+        .nav-auth-signin{display:inline-flex;align-items:center;gap:.375rem;padding:.45rem 1rem;border-radius:8px;font-weight:600;font-size:.8rem;border:2px solid rgba(255,255,255,.7);color:#fff;background:rgba(255,255,255,.1);transition:all .2s;white-space:nowrap;}
+        .nav-auth-signin:hover{background:rgba(255,255,255,.22);border-color:#fff;}
+        .nav-auth-signin:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+        #main-nav.scrolled .nav-auth-signin{border-color:var(--green);color:var(--green);background:transparent;}
+        #main-nav.scrolled .nav-auth-signin:hover{background:var(--green);color:#fff;}
+        #main-nav.scrolled .nav-auth-signin:focus-visible{outline-color:var(--green);}
+
+        /* ── Nav user avatar ── */
+        .nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2.5px solid rgba(255,255,255,.55);transition:border-color .3s;}
+        #main-nav.scrolled .nav-avatar{border-color:var(--green-light);}
+        .nav-user-name{font-weight:600;font-size:.8125rem;color:#fff;white-space:nowrap;transition:color .3s;}
+        #main-nav.scrolled .nav-user-name{color:#111;}
 
         /* ── Hero ── */
         .hero-bg{background:linear-gradient(135deg,rgba(27,94,32,.88) 0%,rgba(46,125,50,.80) 55%,rgba(2,136,209,.65) 100%),url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80&auto=format&fit=crop') center/cover no-repeat;}
@@ -134,21 +151,93 @@
                 </div>
             </div>
             @auth
-                <a href="{{ url('/dashboard') }}" class="btn-primary text-xs py-2 px-4"><i class="fa-solid fa-gauge-high text-xs"></i> Dashboard</a>
+            @php
+                $navUser = auth()->user();
+                $navNotifCount = 0;
+                try { $navNotifCount = \App\Models\Notification::where('user_id',$navUser->id)->where('is_read',false)->count(); } catch(\Exception $e) {}
+            @endphp
+            <div class="relative flex items-center gap-1.5" x-data="{ userOpen: false }">
+                {{-- Notification bell --}}
+                <a href="{{ route('notifications.index') }}"
+                   class="relative p-2 rounded-lg transition"
+                   :class="scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'"
+                   aria-label="{{ $navNotifCount }} unread notifications">
+                    <i class="fa-solid fa-bell text-sm"></i>
+                    @if($navNotifCount > 0)
+                    <span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">{{ $navNotifCount > 9 ? '9+' : $navNotifCount }}</span>
+                    @endif
+                </a>
+                {{-- User dropdown trigger --}}
+                <button @click="userOpen=!userOpen" @click.outside="userOpen=false"
+                    class="flex items-center gap-2 px-2 py-1 rounded-lg transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                    :class="scrolled ? 'hover:bg-gray-100 focus-visible:outline-gray-400' : 'hover:bg-white/10 focus-visible:outline-white'"
+                    aria-label="User menu" :aria-expanded="userOpen.toString()" aria-haspopup="true">
+                    <div class="nav-avatar" aria-hidden="true">{{ strtoupper(substr($navUser->first_name ?? $navUser->name ?? 'U',0,1)) }}{{ strtoupper(substr($navUser->last_name ?? '',0,1)) }}</div>
+                    <span class="nav-user-name hidden xl:block">{{ $navUser->first_name ?? $navUser->name }}</span>
+                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200"
+                       :class="[scrolled ? 'text-gray-500' : 'text-white/70', userOpen ? 'rotate-180' : '']"></i>
+                </button>
+                {{-- Dropdown panel --}}
+                <div x-show="userOpen" x-cloak
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 w-56 z-50"
+                     style="transform-origin:top right">
+                    <div class="px-4 py-3 border-b border-gray-100">
+                        <div class="font-bold text-sm text-gray-900 truncate">{{ trim(($navUser->first_name ?? '').' '.($navUser->last_name ?? '')) ?: $navUser->name }}</div>
+                        <div class="text-xs text-gray-400 truncate mt-0.5">{{ $navUser->email }}</div>
+                        <span class="mt-1.5 inline-flex px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full capitalize">{{ $navUser->roleLabel ?? $navUser->role ?? 'User' }}</span>
+                    </div>
+                    <a href="{{ url('/dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800 transition group">
+                        <i class="fa-solid fa-gauge-high w-4 text-center text-green-500 text-xs group-hover:text-green-700"></i> Dashboard
+                    </a>
+                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800 transition group">
+                        <i class="fa-solid fa-user w-4 text-center text-green-500 text-xs group-hover:text-green-700"></i> My Profile
+                    </a>
+                    <a href="{{ route('profile.edit') }}#settings" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800 transition group">
+                        <i class="fa-solid fa-gear w-4 text-center text-green-500 text-xs group-hover:text-green-700"></i> Settings
+                    </a>
+                    <div class="border-t border-gray-100 mt-1 pt-1">
+                        <form method="POST" action="{{ route('logout') }}">@csrf
+                        <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-semibold">
+                            <i class="fa-solid fa-right-from-bracket w-4 text-center text-xs"></i> Sign Out
+                        </button></form>
+                    </div>
+                </div>
+            </div>
             @else
-                <a href="{{ route('login') }}" class="font-medium text-sm transition px-3 py-1.5 rounded-lg" :class="scrolled?'text-gray-700 hover:text-green-700':'text-white hover:bg-white/10'">Sign In</a>
-                <a href="{{ route('register') }}" class="btn-primary text-xs py-2 px-4">Sign Up</a>
-                <a href="{{ route('register') }}" class="btn-gold text-xs py-2 px-4">Check In</a>
+                <a href="{{ route('login') }}"
+                   class="nav-auth-signin"
+                   aria-label="Sign in to your account">
+                    <i class="fa-solid fa-right-to-bracket text-xs"></i> Sign In
+                </a>
+                <a href="{{ route('register') }}"
+                   class="btn-primary text-xs py-2 px-3.5"
+                   aria-label="Create a new account">
+                    <i class="fa-solid fa-user-plus text-xs"></i> Sign Up
+                </a>
+                <a href="{{ route('register') }}"
+                   class="btn-gold text-xs py-2 px-3.5"
+                   aria-label="Check in to the platform">
+                    <i class="fa-solid fa-clipboard-check text-xs"></i> Check In
+                </a>
             @endauth
         </div>
 
         {{-- Tablet auth (md–lg) --}}
         <div class="hidden md:flex lg:hidden items-center gap-2">
             @auth
-                <a href="{{ url('/dashboard') }}" class="btn-primary text-xs py-2 px-3">Dashboard</a>
+                <a href="{{ url('/dashboard') }}" class="btn-primary text-xs py-2 px-3">
+                    <i class="fa-solid fa-gauge-high text-xs"></i> Dashboard
+                </a>
             @else
-                <a href="{{ route('login') }}" class="btn-outline text-xs py-2 px-3">Sign In</a>
-                <a href="{{ route('register') }}" class="btn-primary text-xs py-2 px-3">Sign Up</a>
+                <a href="{{ route('login') }}"    class="nav-auth-signin" aria-label="Sign in"><i class="fa-solid fa-right-to-bracket text-xs"></i> Sign In</a>
+                <a href="{{ route('register') }}" class="btn-primary text-xs py-2 px-3" aria-label="Create account"><i class="fa-solid fa-user-plus text-xs"></i> Sign Up</a>
+                <a href="{{ route('register') }}" class="btn-gold text-xs py-2 px-3" aria-label="Check in"><i class="fa-solid fa-clipboard-check text-xs"></i> Check In</a>
             @endauth
         </div>
 
@@ -184,11 +273,28 @@
         </div>
         <div class="px-4 py-4 flex flex-col gap-2.5">
             @auth
-                <a href="{{ url('/dashboard') }}" @click="open=false" class="btn-primary justify-center">Dashboard</a>
+            @php $mobileUser = auth()->user(); @endphp
+            {{-- Mobile: authenticated user info + actions --}}
+            <div class="flex items-center gap-3 px-3 py-2.5 bg-green-50 rounded-xl border border-green-100 mb-1">
+                <div class="w-10 h-10 rounded-full bg-green-700 text-white text-sm font-bold flex items-center justify-center shrink-0">
+                    {{ strtoupper(substr($mobileUser->first_name ?? $mobileUser->name ?? 'U',0,1)) }}{{ strtoupper(substr($mobileUser->last_name ?? '',0,1)) }}
+                </div>
+                <div class="min-w-0">
+                    <div class="font-bold text-sm text-gray-900 truncate">{{ trim(($mobileUser->first_name ?? '').' '.($mobileUser->last_name ?? '')) ?: $mobileUser->name }}</div>
+                    <div class="text-xs text-green-700 font-semibold capitalize">{{ $mobileUser->roleLabel ?? $mobileUser->role ?? 'User' }}</div>
+                </div>
+            </div>
+                <a href="{{ url('/dashboard') }}"     @click="open=false" class="btn-primary justify-center"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+                <a href="{{ route('profile.edit') }}" @click="open=false" class="btn-outline justify-center"><i class="fa-solid fa-user"></i> My Profile</a>
+                <a href="{{ route('notifications.index') }}" @click="open=false" class="btn-outline justify-center"><i class="fa-solid fa-bell"></i> Notifications</a>
+                <form method="POST" action="{{ route('logout') }}">@csrf
+                <button type="submit" @click="open=false" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 font-semibold text-sm hover:bg-red-50 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                </button></form>
             @else
-                <a href="{{ route('login') }}"    @click="open=false" class="btn-outline justify-center">Sign In</a>
-                <a href="{{ route('register') }}" @click="open=false" class="btn-primary justify-center">Sign Up</a>
-                <a href="{{ route('register') }}" @click="open=false" class="btn-gold justify-center">Check In</a>
+                <a href="{{ route('login') }}"    @click="open=false" class="btn-outline justify-center" aria-label="Sign in to your account"><i class="fa-solid fa-right-to-bracket"></i> Sign In</a>
+                <a href="{{ route('register') }}" @click="open=false" class="btn-primary justify-center" aria-label="Create a new account"><i class="fa-solid fa-user-plus"></i> Sign Up</a>
+                <a href="{{ route('register') }}" @click="open=false" class="btn-gold justify-center" aria-label="Check in to the platform"><i class="fa-solid fa-clipboard-check"></i> Check In</a>
             @endauth
         </div>
     </div>
