@@ -56,7 +56,7 @@
                             <tr class="hover:bg-slate-50 transition">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        <img class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" src="{{ $user->avatarUrl }}" alt="">
+                                        <img class="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-100" src="{{ $user->avatarUrl }}" alt="" loading="lazy">
                                         <div>
                                             <div class="font-bold text-slate-800">{{ $user->name ?: $user->email }}</div>
                                             <div class="text-xs text-slate-500">ID: #{{ str_pad($user->id, 4, '0', STR_PAD_LEFT) }}</div>

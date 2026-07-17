@@ -93,7 +93,7 @@
                     <!-- Image -->
                     <div class="col-span-1">
                         <div class="rounded-xl overflow-hidden shadow-sm border border-slate-200 relative aspect-square bg-slate-100">
-                            <img src="{{ Storage::url($diagnosis->image_path) }}" alt="Scanned Image" class="w-full h-full object-cover">
+                            <img src="{{ Storage::url($diagnosis->image_path) }}" alt="Scanned Image" class="w-full h-full object-cover" loading="lazy">
                             <div class="absolute bottom-2 right-2 bg-black/70 backdrop-blur text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/20">
                                 AI Confidence: <span class="{{ $diagnosis->confidence_score > 90 ? 'text-green-400' : 'text-amber-400' }}">{{ $diagnosis->confidence_score }}%</span>
                             </div>

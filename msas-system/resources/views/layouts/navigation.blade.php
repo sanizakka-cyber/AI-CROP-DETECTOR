@@ -3,9 +3,10 @@
     $role = $user->role ?? 'user';
     $fullName = $user->name ?: 'User';
     $initial = strtoupper(substr($user->displayFirstName ?: 'U', 0, 1));
+    $unreadNotifications = \App\Models\Notification::where('user_id', $user->id)->where('is_read', false)->count();
 @endphp
 
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm">
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 shadow-sm" role="navigation" aria-label="Main navigation">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
 
@@ -102,12 +103,27 @@
                 </div>
             </div>
 
-            {{-- Right: Language + User --}}
+            {{-- Right: Language + Notifications + User --}}
             <div class="hidden sm:flex sm:items-center sm:ms-6 gap-2">
+                {{-- Notifications Bell --}}
+                <a href="{{ route('notifications.index') }}"
+                    class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#0F6B3E] transition"
+                    title="Notifications" aria-label="View notifications">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    @if($unreadNotifications > 0)
+                    <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                        {{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}
+                    </span>
+                    @endif
+                </a>
                 {{-- Language Selector --}}
                 @php $loc = session('locale', app()->getLocale()); @endphp
                 <div class="relative" x-data="{ langOpen: false }">
                     <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                        :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                         class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition border border-slate-200">
                         {{ match($loc){ 'ha'=>'🇳🇬 HA','fr'=>'🇫🇷 FR','yo'=>'🇳🇬 YO','ig'=>'🇳🇬 IG',default=>'🇬🇧 EN' } }}
                         <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
@@ -178,7 +194,7 @@
 
             {{-- Hamburger --}}
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out" aria-label="Toggle navigation menu" :aria-expanded="open.toString()">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -229,6 +245,12 @@
 
             <div class="mt-3 space-y-1 px-2">
                 <x-responsive-nav-link :href="route('profile.edit')">My Profile</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('notifications.index')">
+                    Notifications
+                    @if($unreadNotifications > 0)
+                    <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full px-1">{{ $unreadNotifications }}</span>
+                    @endif
+                </x-responsive-nav-link>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"

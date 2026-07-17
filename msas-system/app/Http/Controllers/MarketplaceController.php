@@ -8,7 +8,8 @@ class MarketplaceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = \App\Models\Product::where('status', 'active')
+        $query = \App\Models\Product::with('dealer:id,first_name,last_name,phone')
+            ->where('status', 'active')
             ->where('is_approved', true)
             ->where('quantity_in_stock', '>', 0);
 

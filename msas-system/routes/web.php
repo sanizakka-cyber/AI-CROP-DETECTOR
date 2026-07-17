@@ -152,6 +152,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/marketplace', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('marketplace');
 });
 
+// Notifications
+Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications',           [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read',[\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.markRead');
+});
+
 // ── Subscription Routes (farmer-facing) ────────────────────────────────────
 Route::middleware(['auth', 'role:farmer'])->prefix('subscription')->name('subscription.')->group(function () {
     Route::get('/plans',              [SubscriptionController::class, 'plans'])->name('plans');

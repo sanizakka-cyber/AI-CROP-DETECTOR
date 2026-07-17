@@ -41,7 +41,7 @@
                         <tr class="hover:bg-slate-50">
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-3">
-                                    <img src="{{ $member->avatarUrl }}" class="w-9 h-9 rounded-full object-cover" alt="">
+                                    <img src="{{ $member->avatarUrl }}" class="w-9 h-9 rounded-full object-cover" alt="" loading="lazy">
                                     <div>
                                         <div class="font-semibold text-slate-800 text-xs">{{ $member->name ?: $member->email }}</div>
                                         <div class="text-slate-400 text-xs">{{ $member->email }}</div>

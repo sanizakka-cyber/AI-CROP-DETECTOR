@@ -205,7 +205,7 @@
                 <p class="text-green-100 text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-xl">Helping farmers, livestock owners, agribusinesses, governments and development partners make smarter decisions through AI, data and digital innovation.</p>
                 <div class="flex flex-wrap gap-2 md:gap-3">
                     <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-bold text-sm md:text-base shadow-lg transition hover:-translate-y-1" style="background:var(--green);color:#fff;box-shadow:0 8px 24px rgba(46,125,50,.45)"><i class="fa-solid fa-seedling"></i> Start Farming</a>
-                    <a href="#solutions" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/15 backdrop-blur border border-white/30 text-white hover:bg-white/25 transition"><i class="fa-solid fa-play text-xs"></i> Watch Demo</a>
+                    <a href="#ai-assistant" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/15 backdrop-blur border border-white/30 text-white hover:bg-white/25 transition"><i class="fa-solid fa-play text-xs"></i> Watch Demo</a>
                     <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 transition"><i class="fa-solid fa-download text-xs"></i> Download App</a>
                 </div>
             </div>
@@ -265,16 +265,16 @@
             {{-- Image grid — renders second on mobile, first on desktop (no broken outer wrapper) --}}
             <div class="order-2 lg:order-1">
                 <div class="grid grid-cols-2 gap-3">
-                    <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
-                    <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=300&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:mt-5 md:mt-6">
-                    <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=300&q=80&auto=format&fit=crop" alt="Poultry" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:-mt-5 md:-mt-6">
-                    <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=300&q=80&auto=format&fit=crop" alt="Livestock" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=300&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:mt-5 md:mt-6">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=300&q=80&auto=format&fit=crop" alt="Poultry" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:-mt-5 md:-mt-6">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=300&q=80&auto=format&fit=crop" alt="Livestock" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
                 </div>
             </div>
             {{-- Video card — renders third on both --}}
             <div class="order-3 rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
                 <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80&auto=format&fit=crop" alt="Agriculture Technology" class="w-full h-44 md:h-52 object-cover">
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80&auto=format&fit=crop" alt="Agriculture Technology" class="w-full h-44 md:h-52 object-cover">
                     <div class="absolute inset-0 flex items-center justify-center" style="background:rgba(27,94,32,.35)">
                         <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-xl cursor-pointer hover:scale-110 transition"><i class="fa-solid fa-play ml-1" style="color:var(--green)"></i></div>
                     </div>
@@ -338,7 +338,7 @@
 </section>
 
 {{-- ═══════════ AI ASSISTANT ═══════════ --}}
-<section class="s-py bg-white">
+<section id="ai-assistant" class="s-py bg-white">
     <div class="max-w-7xl mx-auto px-4">
         <div class="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <div>
@@ -525,7 +525,7 @@
                     <div class="flex gap-0.5 text-yellow-400 mb-3">@for($i=0;$i<5;$i++)<i class="fa-solid fa-star text-sm"></i>@endfor</div>
                     <p class="text-gray-600 text-sm leading-relaxed mb-4 italic">&ldquo;{{ $text }}&rdquo;</p>
                     <div class="flex items-center gap-3">
-                        <img src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                        <img loading="lazy" src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-10 h-10 rounded-full object-cover shrink-0">
                         <div><div class="font-bold text-gray-800 text-sm">{{ $name }}</div><div class="text-gray-400 text-xs">{{ $role }}</div></div>
                     </div>
                 </div>
@@ -561,7 +561,7 @@
                 <a href="{{ route('marketplace') }}" class="btn-primary text-sm">Visit Marketplace <i class="fa-solid fa-arrow-right text-xs"></i></a>
             </div>
             <div class="grid grid-cols-2 gap-3 md:gap-4">
-                <div class="col-span-2 rounded-2xl overflow-hidden h-44 md:h-48"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80&auto=format&fit=crop" alt="Marketplace" class="w-full h-full object-cover"></div>
+                <div class="col-span-2 rounded-2xl overflow-hidden h-44 md:h-48"><img loading="lazy" src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80&auto=format&fit=crop" alt="Marketplace" class="w-full h-full object-cover"></div>
                 <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center"><div class="text-xl md:text-2xl font-extrabold mb-0.5" style="color:var(--green)">120+</div><div class="text-gray-500 text-xs">Active Listings</div></div>
                 <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center"><div class="text-xl md:text-2xl font-extrabold text-yellow-500 mb-0.5">₦0</div><div class="text-gray-500 text-xs">Listing Fee</div></div>
                 <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center"><div class="text-xl md:text-2xl font-extrabold mb-0.5" style="color:var(--blue)">35+</div><div class="text-gray-500 text-xs">Verified Dealers</div></div>
@@ -837,10 +837,10 @@
             <div class="col-span-2 md:col-span-1">
                 <h4 class="text-white font-bold text-sm mb-3 md:mb-4">Contact Us</h4>
                 <div class="space-y-2.5 text-xs md:text-sm">
-                    <p class="flex gap-2 items-start"><i class="fa-solid fa-location-dot text-green-500 mt-0.5 shrink-0"></i><span>No 12 Innovation Drive, Abuja, Nigeria</span></p>
-                    <p><a href="tel:+2348001234567" class="flex gap-2 hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 shrink-0"></i>+234 800 123 4567</a></p>
-                    <p><a href="mailto:info@msasagro.com" class="flex gap-2 hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 shrink-0"></i>info@msasagro.com</a></p>
-                    <p><a href="https://wa.me/2348001234567" class="flex gap-2 hover:text-green-400 transition"><i class="fa-brands fa-whatsapp text-green-500 shrink-0"></i>+234 800 123 4567</a></p>
+                    <p class="flex gap-2 items-start"><i class="fa-solid fa-location-dot text-green-500 mt-0.5 shrink-0"></i><span>No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria</span></p>
+                    <p><a href="tel:+2348032459879" class="flex gap-2 hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 shrink-0"></i>08032459879</a></p>
+                    <p><a href="mailto:msaslivestockagroservices@gmail.com" class="flex gap-2 hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 shrink-0"></i>msaslivestockagroservices@gmail.com</a></p>
+                    <p><a href="https://wa.me/2348129582957" class="flex gap-2 hover:text-green-400 transition"><i class="fa-brands fa-whatsapp text-green-500 shrink-0"></i>08129582957 (WhatsApp)</a></p>
                 </div>
             </div>
         </div>
