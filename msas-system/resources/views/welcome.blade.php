@@ -75,14 +75,19 @@
         [x-cloak]{display:none!important;}
 
         /* ── Responsive section rhythm ── */
-        .s-py{padding-top:2rem;padding-bottom:2rem;}
-        @media(min-width:640px){.s-py{padding-top:3.5rem;padding-bottom:3.5rem;}}
-        @media(min-width:768px){.s-py{padding-top:5rem;padding-bottom:5rem;}}
-        @media(min-width:1024px){.s-py{padding-top:6rem;padding-bottom:6rem;}}
+        .s-py{padding-top:2.5rem;padding-bottom:2.5rem;}
+        @media(min-width:768px){.s-py{padding-top:4rem;padding-bottom:4rem;}}
+        @media(min-width:1024px){.s-py{padding-top:5rem;padding-bottom:5rem;}}
 
         .s-header-mb{margin-bottom:1.25rem;}
-        @media(min-width:640px){.s-header-mb{margin-bottom:2rem;}}
-        @media(min-width:768px){.s-header-mb{margin-bottom:2.75rem;}}
+        @media(min-width:768px){.s-header-mb{margin-bottom:2rem;}}
+
+        /* ── About column reorder (CSS-native, no Tailwind breakpoint needed) ── */
+        @media(min-width:1024px){
+            .about-col-text{order:2;}
+            .about-col-images{order:1;}
+            .about-col-video{order:3;}
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -228,7 +233,7 @@
 </section>
 
 {{-- ═══════════ TRUSTED BY ═══════════ --}}
-<section class="py-8 md:py-10 bg-white border-b border-gray-100">
+<section class="py-6 md:py-8 bg-white border-b border-gray-100">
     <div class="max-w-6xl mx-auto px-4">
         <p class="text-center text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 md:mb-8">Trusted by Leading Organizations</p>
         <div class="flex flex-wrap items-center justify-center gap-5 md:gap-8 lg:gap-14">
@@ -248,7 +253,7 @@
     <div class="max-w-7xl mx-auto px-4">
         <div class="grid lg:grid-cols-3 gap-6 lg:gap-10 items-start">
             {{-- Text — renders first on mobile, second on desktop --}}
-            <div class="order-1 lg:order-2">
+            <div class="about-col-text">
                 <div class="section-tag"><i class="fa-solid fa-circle-info"></i> About MSAS Agro</div>
                 <h2 class="font-heading font-extrabold text-2xl md:text-3xl text-gray-900 mb-3">About <span style="color:var(--green)">MSAS Agro</span></h2>
                 <p class="text-gray-500 text-sm leading-relaxed mb-4">MSAS Agro is an AI-powered digital platform providing innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
@@ -262,8 +267,8 @@
                 </div>
                 <a href="{{ route('register') }}" class="btn-primary text-sm">Read More <i class="fa-solid fa-arrow-right text-xs"></i></a>
             </div>
-            {{-- Image grid — renders second on mobile, first on desktop (no broken outer wrapper) --}}
-            <div class="order-2 lg:order-1">
+            {{-- Image grid — renders second on mobile, first on desktop --}}
+            <div class="about-col-images">
                 <div class="grid grid-cols-2 gap-3">
                     <img loading="lazy" src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
                     <img loading="lazy" src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=300&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:mt-5 md:mt-6">
@@ -272,7 +277,7 @@
                 </div>
             </div>
             {{-- Video card — renders third on both --}}
-            <div class="order-3 rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
+            <div class="about-col-video rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
                 <div class="relative">
                     <img loading="lazy" src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80&auto=format&fit=crop" alt="Agriculture Technology" class="w-full h-44 md:h-52 object-cover">
                     <div class="absolute inset-0 flex items-center justify-center" style="background:rgba(27,94,32,.35)">
@@ -494,7 +499,7 @@
 </section>
 
 {{-- ═══════════ STATS BAR ═══════════ --}}
-<section class="py-10 md:py-14 bg-white border-b border-gray-100">
+<section class="py-8 md:py-10 bg-white border-b border-gray-100">
     <div class="max-w-6xl mx-auto px-4">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5 md:gap-6 text-center">
             @foreach([['20,000+','Registered Farmers','users'],['150+','Cooperatives','handshake'],['100+','Dev. Projects','folder'],['500+','Extension Agents','person-chalkboard'],['36 States','Nationwide Coverage','map'],['99.9%','System Uptime','server']] as [$num,$label,$ico])
