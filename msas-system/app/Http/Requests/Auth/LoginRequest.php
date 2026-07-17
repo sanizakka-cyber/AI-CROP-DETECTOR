@@ -42,11 +42,20 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $loginType = filter_var($this->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+        $login     = trim($this->input('login'));
+        $loginType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        if ($loginType === 'phone') {
+            $clean = preg_replace('/\D/', '', $login);
+            if (str_starts_with($clean, '0')) {
+                $clean = '234' . substr($clean, 1);
+            }
+            $login = '+' . ltrim($clean, '+');
+        }
 
         $credentials = [
-            $loginType => $this->input('login'),
-            'password' => $this->input('password')
+            $loginType => $login,
+            'password' => $this->input('password'),
         ];
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
@@ -76,7 +85,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
+            'login' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),

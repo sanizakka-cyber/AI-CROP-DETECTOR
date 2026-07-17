@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\OtpVerificationController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -30,11 +31,16 @@ Route::middleware('guest')->group(function () {
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->name('password.reset');
+    Route::get('reset-password', [NewPasswordController::class, 'create'])
+        ->name('password.reset.form');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // OTP Verification — accessible to guests (registration) and during password reset
+    Route::get('verify-otp',        [OtpVerificationController::class, 'show'])  ->name('otp.verify');
+    Route::post('verify-otp',       [OtpVerificationController::class, 'verify'])->name('otp.verify.post')->middleware('throttle:10,1');
+    Route::post('verify-otp/resend',[OtpVerificationController::class, 'resend'])->name('otp.resend')->middleware('throttle:3,1');
 });
 
 Route::middleware('auth')->group(function () {

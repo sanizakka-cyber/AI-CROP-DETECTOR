@@ -177,22 +177,25 @@ $startStep = $oldRole ? 3 : 1;
             <input id="s2_middle_name" class="form-input" type="text" value="{{ old('middle_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
         </div>
 
-        {{-- Email + Phone --}}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-            <div>
-                <label class="fl">Email *</label>
-                <div style="position:relative;">
-                    <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-                    <input id="s2_email" class="form-input" style="padding-left:32px;" type="email" placeholder="" value="{{ old('email') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
+        {{-- Single identifier field (email OR phone) --}}
+        <div style="margin-bottom:10px;">
+            <label class="fl">Email Address or Phone Number *</label>
+            <div style="position:relative;">
+                <div id="s2-id-icon" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;transition:opacity .2s;">
+                    <svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </div>
+                <input id="s2_identifier" class="form-input" style="padding-left:32px;padding-right:130px;"
+                    type="text" inputmode="email"
+                    placeholder="Enter your email address or phone number"
+                    value="{{ old('identifier') }}"
+                    readonly
+                    onfocus="this.removeAttribute('readonly')"
+                    onclick="this.removeAttribute('readonly')"
+                    oninput="detectIdentifier(this.value)">
+                {{-- Auto-detected type badge --}}
+                <div id="s2-id-badge" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:none;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;"></div>
             </div>
-            <div>
-                <label class="fl">Phone *</label>
-                <div style="position:relative;">
-                    <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
-                    <input id="s2_phone" class="form-input" style="padding-left:32px;" type="tel" placeholder="08xxxxxxxxx" value="{{ old('phone') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
-                </div>
-            </div>
+            <p style="font-size:11px;color:#94a3b8;margin:4px 0 0;">e.g. name@email.com or 08012345678</p>
         </div>
 
         {{-- Location --}}
@@ -268,8 +271,7 @@ $startStep = $oldRole ? 3 : 1;
             <input type="hidden" name="first_name"  id="h_first_name"  :value="step2.first_name">
             <input type="hidden" name="middle_name" id="h_middle_name" :value="step2.middle_name">
             <input type="hidden" name="last_name"   id="h_last_name"   :value="step2.last_name">
-            <input type="hidden" name="email"       id="h_email"       :value="step2.email">
-            <input type="hidden" name="phone"       id="h_phone"       :value="step2.phone">
+            <input type="hidden" name="identifier"  id="h_identifier"  :value="step2.identifier">
             <input type="hidden" name="country"     id="h_country"     :value="step2.country">
             <input type="hidden" name="state"       id="h_state"       :value="step2.state">
             <input type="hidden" name="lga"         id="h_lga"         :value="step2.lga">
@@ -280,8 +282,7 @@ $startStep = $oldRole ? 3 : 1;
                 <div style="font-weight:700;color:#374151;margin-bottom:6px;">Registration Summary</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;color:#64748b;">
                     <span>Name:</span><span style="color:#1e293b;font-weight:600;" x-text="step2.first_name + ' ' + step2.last_name"></span>
-                    <span>Email:</span><span style="color:#1e293b;font-weight:600;word-break:break-all;" x-text="step2.email"></span>
-                    <span>Phone:</span><span style="color:#1e293b;font-weight:600;" x-text="step2.phone"></span>
+                    <span>Contact:</span><span style="color:#1e293b;font-weight:600;word-break:break-all;" x-text="step2.identifier"></span>
                     <span>Location:</span><span style="color:#1e293b;font-weight:600;" x-text="(step2.lga ? step2.lga + ', ' : '') + step2.state + (step2.country !== 'Nigeria' ? ', ' + step2.country : '')"></span>
                 </div>
             </div>
@@ -336,6 +337,30 @@ $startStep = $oldRole ? 3 : 1;
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
+// ── Identifier auto-detection ─────────────────────────────────────────────
+function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+function isValidPhone(v) { return /^(\+?234|0)[789]\d{9}$/.test(v.replace(/[\s\-\(\)]/g,'')); }
+
+function detectIdentifier(val) {
+    const badge = document.getElementById('s2-id-badge');
+    const icon  = document.getElementById('s2-id-icon');
+    if (!val) { badge.style.display='none'; return; }
+    if (isValidEmail(val)) {
+        badge.style.display='block';
+        badge.textContent='📧 Email';
+        badge.style.background='#dbeafe'; badge.style.color='#1d4ed8';
+        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>';
+    } else if (isValidPhone(val)) {
+        badge.style.display='block';
+        badge.textContent='📱 Phone';
+        badge.style.background='#dcfce7'; badge.style.color='#15803d';
+        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>';
+    } else {
+        badge.style.display='none';
+        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
+    }
+}
+
 const NG_STATES = @json($nigeriaStates);
 const COUNTRIES = @json($countries);
 const OLD = {
@@ -435,8 +460,7 @@ function regWizard() {
             first_name:  '{{ old('first_name', '') }}',
             middle_name: '{{ old('middle_name', '') }}',
             last_name:   '{{ old('last_name', '') }}',
-            email:       '{{ old('email', '') }}',
-            phone:       '{{ old('phone', '') }}',
+            identifier:  '{{ old('identifier', '') }}',
             country:     '{{ $oldCountry }}',
             state:       '{{ $oldState }}',
             lga:         '{{ $oldLga }}',
@@ -480,15 +504,15 @@ function regWizard() {
 
             const fn  = document.getElementById('s2_first_name').value.trim();
             const ln  = document.getElementById('s2_last_name').value.trim();
-            const em  = document.getElementById('s2_email').value.trim();
-            const ph  = document.getElementById('s2_phone').value.trim();
+            const id  = document.getElementById('s2_identifier').value.trim();
             const co  = tsCountry ? tsCountry.getValue() : '';
             const st  = tsState   ? tsState.getValue()   : '';
 
             if (!fn)  msgs.push('First name is required.');
             if (!ln)  msgs.push('Last name is required.');
-            if (!em || !em.includes('@')) msgs.push('A valid email is required.');
-            if (!ph)  msgs.push('Phone number is required.');
+            if (!id)  msgs.push('Email address or phone number is required.');
+            else if (!isValidEmail(id) && !isValidPhone(id))
+                      msgs.push('Enter a valid email address or Nigerian phone number.');
             if (!co)  msgs.push('Please select your country.');
             if (!st)  msgs.push('Please select your state / province.');
 
@@ -503,11 +527,10 @@ function regWizard() {
                 first_name:  fn,
                 middle_name: document.getElementById('s2_middle_name').value.trim(),
                 last_name:   ln,
-                email:       em,
-                phone:       ph,
+                identifier:  id,
                 country:     co,
                 state:       st,
-                lga:         tsLga   ? tsLga.getValue()   : '',
+                lga:         tsLga ? tsLga.getValue() : '',
                 ward:        document.getElementById('s2_ward').value.trim(),
             };
             this.step = 3;

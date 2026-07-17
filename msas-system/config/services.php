@@ -52,4 +52,23 @@ return [
         'key' => env('AI_ENGINE_KEY'),
     ],
 
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'log'), // log | termii | africas_talking | twilio
+        'termii' => [
+            'api_key' => env('TERMII_API_KEY'),
+            'from'    => env('TERMII_SENDER_ID', 'MSAS'),
+            'channel' => env('TERMII_CHANNEL', 'generic'),
+        ],
+        'africas_talking' => [
+            'api_key'  => env('AT_API_KEY'),
+            'username' => env('AT_USERNAME'),
+            'from'     => env('AT_SENDER_ID', 'MSAS'),
+        ],
+        'twilio' => [
+            'sid'   => env('TWILIO_SID'),
+            'token' => env('TWILIO_TOKEN'),
+            'from'  => env('TWILIO_FROM'),
+        ],
+    ],
+
 ];

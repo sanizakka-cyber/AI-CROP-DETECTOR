@@ -13,6 +13,9 @@ class ForcePasswordReset
         'password.change.update',
         'logout',
         'profile.edit',
+        'otp.verify',
+        'otp.verify.post',
+        'otp.resend',
     ];
 
     public function handle(Request $request, Closure $next): Response
