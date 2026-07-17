@@ -28,9 +28,9 @@
                 <input id="login" class="form-input" style="padding-left:40px;"
                     type="text" name="login"
                     value="" required autofocus
-                    autocomplete="off" spellcheck="false"
+                    autocomplete="new-password" spellcheck="false" readonly
                     placeholder="Enter your email address or phone number"
-                    onfocus="onLoginFocus(this)"
+                    onfocus="this.removeAttribute('readonly');onLoginFocus(this)"
                     oninput="onLoginInput(this)"/>
 
                 <!-- Suggestion dropdown — only shown when there are remembered accounts -->
@@ -59,8 +59,9 @@
                 </div>
                 <input id="password" class="form-input" style="padding-left:40px;padding-right:44px;"
                     type="password" name="password" required
-                    autocomplete="current-password"
-                    placeholder="Enter your password"/>
+                    autocomplete="new-password" readonly
+                    placeholder="Enter your password"
+                    onfocus="this.removeAttribute('readonly')"/>
                 <button type="button" onclick="togglePwd()" title="Show/hide password"
                     style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;">
                     <svg id="eye-show" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
