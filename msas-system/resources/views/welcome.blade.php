@@ -43,18 +43,40 @@
         /* Button label text hidden at lg (icon-only), visible from xl up — prevents navbar overflow */
         .nav-btn-label{display:none;}
         @media(min-width:1280px){.nav-btn-label{display:inline;}}
+        /* ── Contact 2-col enterprise layout ── */
+        .contact-2col{display:grid;gap:2rem;}
+        @media(min-width:1024px){.contact-2col{grid-template-columns:38fr 62fr;gap:2.5rem;align-items:start;}}
         /* Contact info cards */
-        .cinfo-card{display:flex;gap:1rem;align-items:flex-start;background:#fff;border:1px solid #e9ecef;border-radius:16px;padding:1.125rem;transition:box-shadow .2s,border-color .2s;}
-        .cinfo-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.07);border-color:rgba(46,125,50,.2);}
-        .cinfo-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.125rem;flex-shrink:0;}
-        .cinfo-label{font-weight:700;font-size:.7rem;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem;}
-        .cinfo-val{font-size:.875rem;color:#374151;line-height:1.5;margin-bottom:.5rem;font-weight:500;}
-        .cinfo-val a{color:inherit;text-decoration:none;}
+        .cinfo-card{display:flex;align-items:flex-start;gap:.875rem;background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:1.125rem 1.25rem;transition:box-shadow .2s,border-color .2s;}
+        .cinfo-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.07);border-color:rgba(46,125,50,.22);}
+        .cinfo-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9375rem;flex-shrink:0;margin-top:1px;}
+        .cinfo-label{font-weight:700;font-size:.6875rem;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem;}
+        .cinfo-name{font-size:.9375rem;font-weight:700;color:#111827;margin-bottom:.125rem;}
+        .cinfo-val{font-size:.8125rem;color:#4b5563;line-height:1.55;font-weight:500;}
+        .cinfo-val a{color:#4b5563;text-decoration:none;}
         .cinfo-val a:hover{color:var(--green);}
-        .cinfo-actions{display:flex;flex-wrap:wrap;gap:.375rem;}
-        .caction{display:inline-flex;align-items:center;gap:.3rem;font-size:.725rem;font-weight:600;padding:.3rem .7rem;border-radius:6px;background:#f3f4f6;color:#4b5563;text-decoration:none;transition:all .18s;border:none;cursor:pointer;line-height:1;}
-        .caction:hover{background:var(--green);color:#fff;}
-        .caction.wa:hover{background:#25D366;color:#fff;}
+        .cinfo-btn{display:inline-flex;align-items:center;gap:.3rem;font-size:.75rem;font-weight:700;padding:.32rem .8rem;border-radius:6px;color:#fff;text-decoration:none;transition:all .18s;border:none;cursor:pointer;line-height:1.2;margin-top:.625rem;letter-spacing:.01em;}
+        .cinfo-btn.g{background:var(--green);}    .cinfo-btn.g:hover{background:var(--green-dark);}
+        .cinfo-btn.b{background:var(--blue);}     .cinfo-btn.b:hover{background:#0176bd;}
+        .cinfo-btn.o{background:#e67e00;}         .cinfo-btn.o:hover{background:#cc6e00;}
+        .cinfo-btn.w{background:#25D366;}         .cinfo-btn.w:hover{background:#1da851;}
+        .cinfo-copy{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;font-weight:600;color:#9ca3af;background:none;border:none;cursor:pointer;padding:.2rem .4rem;border-radius:4px;transition:color .15s;}
+        .cinfo-copy:hover{color:var(--green);}
+        /* Enterprise contact form */
+        .ctf-wrap{background:#fff;border:1px solid #e8ecf0;border-radius:14px;padding:1.75rem 2rem;box-shadow:0 2px 16px rgba(0,0,0,.05);}
+        @media(max-width:639px){.ctf-wrap{padding:1.25rem 1.125rem;}}
+        .ctf-title{font-family:'Poppins',sans-serif;font-size:1.25rem;font-weight:700;color:#111827;margin:0 0 1.25rem 0;}
+        .ctf-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+        @media(max-width:639px){.ctf-grid{grid-template-columns:1fr;}}
+        .ctf-field{margin-bottom:0;}
+        .ctf-label{display:block;font-size:.8125rem;font-weight:600;color:#374151;margin-bottom:.3rem;}
+        .ctf-input{width:100%;padding:.52rem .875rem;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.9375rem;font-family:'Inter',sans-serif;color:#1f2937;background:#fafafa;transition:all .18s;outline:none;line-height:1.5;}
+        .ctf-input::placeholder{font-size:.875rem;color:#9ca3af;}
+        .ctf-input:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(46,125,50,.09);}
+        textarea.ctf-input{resize:vertical;min-height:108px;}
+        .ctf-submit{width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.72rem 1.5rem;background:var(--green);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.9375rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all .22s;letter-spacing:.01em;margin-top:1rem;}
+        .ctf-submit:hover{background:var(--green-dark);transform:translateY(-1px);box-shadow:0 4px 18px rgba(46,125,50,.28);}
+        .ctf-submit:active{transform:translateY(0);box-shadow:none;}
 
         /* ── Nav user avatar ── */
         .nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2.5px solid rgba(255,255,255,.55);transition:border-color .3s;}
@@ -877,86 +899,146 @@
 </section>
 
 {{-- ═══════════ CONTACT ═══════════ --}}
-<section id="contact" class="s-py" style="background:#f9fafb">
+<section id="contact" style="padding:60px 0;background:#f4f6f8;">
     <div class="max-w-7xl mx-auto px-4">
-        <div class="text-center s-header-mb">
+
+        {{-- Section header --}}
+        <div class="text-center" style="margin-bottom:2.25rem;">
             <div class="section-tag mx-auto"><i class="fa-solid fa-headset"></i> Contact Us</div>
-            <h2 class="section-title">Get In Touch</h2>
-            <p class="section-sub">Reach our team via your preferred channel — we respond within 2 hours on business days.</p>
+            <h2 style="font-family:'Poppins',sans-serif;font-size:clamp(1.75rem,4vw,2.25rem);font-weight:800;color:#111827;margin:.35rem 0 .5rem;line-height:1.2;">Get In Touch</h2>
+            <p style="font-size:1.0625rem;color:#6b7280;max-width:520px;margin:0 auto;line-height:1.6;">Reach our team via your preferred channel — we respond within 2 hours on business days.</p>
         </div>
 
-        {{-- 4 contact info cards --}}
-        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        {{-- 2-column: left = contact cards, right = form --}}
+        <div class="contact-2col">
 
-            {{-- Office Address --}}
-            <div class="cinfo-card">
-                <div class="cinfo-icon" style="background:var(--green)"><i class="fa-solid fa-location-dot"></i></div>
-                <div class="min-w-0">
-                    <div class="cinfo-label">Office Address</div>
-                    <div class="cinfo-val">No. 21 Sarkin Maska Street,<br>Dutsin Safe Lowcost,<br>Katsina State, Nigeria</div>
-                    <div class="cinfo-actions">
-                        <a href="https://maps.google.com?q=Dutsin+Safe+Lowcost+Katsina+Nigeria" target="_blank" rel="noopener noreferrer" class="caction"><i class="fa-solid fa-map text-xs"></i> Get Directions</a>
-                        <button type="button" class="caction" onclick="navigator.clipboard.writeText('No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.innerHTML='<i class=\'fa-regular fa-copy text-xs\'></i> Copy';},1500)})"><i class="fa-regular fa-copy text-xs"></i> Copy</button>
+            {{-- ── LEFT: Contact info cards ── --}}
+            <div style="display:flex;flex-direction:column;gap:.875rem;">
+
+                {{-- Office Address --}}
+                <div class="cinfo-card">
+                    <div class="cinfo-icon" style="background:var(--green);"><i class="fa-solid fa-location-dot"></i></div>
+                    <div style="min-width:0;flex:1;">
+                        <div class="cinfo-label">Location</div>
+                        <div class="cinfo-name">Office Address</div>
+                        <div class="cinfo-val">No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria</div>
+                        <div style="display:flex;align-items:center;gap:.5rem;margin-top:.625rem;">
+                            <a href="https://maps.google.com?q=Dutsin+Safe+Lowcost+Katsina+Nigeria" target="_blank" rel="noopener noreferrer" class="cinfo-btn g">
+                                <i class="fa-solid fa-diamond-turn-right" style="font-size:.65rem;"></i> Get Directions
+                            </a>
+                            <button type="button" class="cinfo-copy"
+                                onclick="navigator.clipboard.writeText('No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria').then(function(){var b=this;b.innerHTML='<i class=\'fa-solid fa-check\'></i> Copied';setTimeout(function(){b.innerHTML='<i class=\'fa-regular fa-copy\'></i> Copy';},1600);}.bind(this))">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                {{-- Phone --}}
+                <div class="cinfo-card">
+                    <div class="cinfo-icon" style="background:var(--blue);"><i class="fa-solid fa-phone"></i></div>
+                    <div style="min-width:0;flex:1;">
+                        <div class="cinfo-label">Telephone</div>
+                        <div class="cinfo-name">Phone Numbers</div>
+                        <div class="cinfo-val">
+                            <a href="tel:+2348032459879">08032459879</a> &nbsp;·&nbsp; <a href="tel:+2348129582957">08129582957</a>
+                        </div>
+                        <a href="tel:+2348032459879" class="cinfo-btn b">
+                            <i class="fa-solid fa-phone" style="font-size:.65rem;"></i> Call Now
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Email --}}
+                <div class="cinfo-card">
+                    <div class="cinfo-icon" style="background:#e67e00;"><i class="fa-solid fa-envelope"></i></div>
+                    <div style="min-width:0;flex:1;">
+                        <div class="cinfo-label">Email Address</div>
+                        <div class="cinfo-name">Send Us a Mail</div>
+                        <div class="cinfo-val" style="word-break:break-all;">
+                            <a href="mailto:msaslivestockagroservices@gmail.com">msaslivestockagroservices@gmail.com</a>
+                        </div>
+                        <a href="mailto:msaslivestockagroservices@gmail.com" class="cinfo-btn o">
+                            <i class="fa-solid fa-envelope" style="font-size:.65rem;"></i> Send Email
+                        </a>
+                    </div>
+                </div>
+
+                {{-- WhatsApp --}}
+                <div class="cinfo-card">
+                    <div class="cinfo-icon" style="background:#25D366;"><i class="fa-brands fa-whatsapp"></i></div>
+                    <div style="min-width:0;flex:1;">
+                        <div class="cinfo-label">WhatsApp</div>
+                        <div class="cinfo-name">Chat With Us</div>
+                        <div class="cinfo-val">
+                            <a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer">08129582957</a>
+                            &nbsp;·&nbsp;
+                            <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer">08032459879</a>
+                        </div>
+                        <a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer" class="cinfo-btn w">
+                            <i class="fa-brands fa-whatsapp" style="font-size:.75rem;"></i> Chat on WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Hours badge --}}
+                <div style="background:#fff;border:1px solid #e8ecf0;border-radius:12px;padding:.875rem 1.125rem;display:flex;align-items:center;gap:.75rem;">
+                    <div style="width:36px;height:36px;border-radius:9px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-regular fa-clock" style="color:var(--green);font-size:.875rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:.8125rem;font-weight:700;color:#111827;">Business Hours</div>
+                        <div style="font-size:.75rem;color:#6b7280;line-height:1.5;">Mon – Fri: 8:00 AM – 6:00 PM<br>Sat: 9:00 AM – 2:00 PM (WAT)</div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- ── RIGHT: Contact form ── --}}
+            <div class="ctf-wrap">
+                <h3 class="ctf-title">Send a Message</h3>
+                <form action="https://wa.me/2348129582957" method="get" target="_blank" onsubmit="return sendWhatsApp(this)">
+                    <div class="ctf-grid">
+                        <div class="ctf-field">
+                            <label class="ctf-label">Full Name <span style="color:#dc2626;">*</span></label>
+                            <input type="text" name="name" required placeholder="Your full name" class="ctf-input">
+                        </div>
+                        <div class="ctf-field">
+                            <label class="ctf-label">Phone Number <span style="color:#dc2626;">*</span></label>
+                            <input type="tel" name="phone" required placeholder="08xxxxxxxxx" class="ctf-input">
+                        </div>
+                        <div class="ctf-field">
+                            <label class="ctf-label">Email Address</label>
+                            <input type="email" name="email" placeholder="you@example.com" class="ctf-input">
+                        </div>
+                        <div class="ctf-field">
+                            <label class="ctf-label">Subject</label>
+                            <input type="text" name="subject" placeholder="How can we help?" class="ctf-input">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="ctf-label">Message <span style="color:#dc2626;">*</span></label>
+                        <textarea name="message" required rows="5" placeholder="Tell us about your farm, livestock, or any enquiry — we'll respond promptly." class="ctf-input"></textarea>
+                    </div>
+                    <button type="submit" class="ctf-submit">
+                        <i class="fa-solid fa-paper-plane" style="font-size:.8125rem;"></i> Send Message
+                    </button>
+                </form>
+
+                {{-- Trust strip --}}
+                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-top:1.125rem;padding-top:1rem;border-top:1px solid #f3f4f6;flex-wrap:wrap;">
+                    <span style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:#9ca3af;">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--green);font-size:.8rem;"></i> Secure & private
+                    </span>
+                    <span style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:#9ca3af;">
+                        <i class="fa-solid fa-bolt" style="color:var(--gold);font-size:.8rem;"></i> 2-hour response
+                    </span>
+                    <span style="display:flex;align-items:center;gap:.35rem;font-size:.75rem;color:#9ca3af;">
+                        <i class="fa-brands fa-whatsapp" style="color:#25D366;font-size:.8rem;"></i> WhatsApp reply available
+                    </span>
                 </div>
             </div>
 
-            {{-- Phone --}}
-            <div class="cinfo-card">
-                <div class="cinfo-icon" style="background:var(--blue)"><i class="fa-solid fa-phone"></i></div>
-                <div class="min-w-0">
-                    <div class="cinfo-label">Phone</div>
-                    <div class="cinfo-val">
-                        <a href="tel:+2348032459879">08032459879</a><br>
-                        <a href="tel:+2348129582957">08129582957</a>
-                    </div>
-                    <div class="cinfo-actions">
-                        <a href="tel:+2348032459879" class="caction"><i class="fa-solid fa-phone text-xs"></i> Call Now</a>
-                        <a href="tel:+2348129582957" class="caction"><i class="fa-solid fa-phone text-xs"></i> Alt Line</a>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Email --}}
-            <div class="cinfo-card">
-                <div class="cinfo-icon" style="background:var(--gold-dark)"><i class="fa-solid fa-envelope"></i></div>
-                <div class="min-w-0">
-                    <div class="cinfo-label">Email</div>
-                    <div class="cinfo-val" style="word-break:break-all"><a href="mailto:msaslivestockagroservices@gmail.com">msaslivestockagroservices@gmail.com</a></div>
-                    <div class="cinfo-actions">
-                        <a href="mailto:msaslivestockagroservices@gmail.com" class="caction"><i class="fa-solid fa-envelope text-xs"></i> Send Email</a>
-                    </div>
-                </div>
-            </div>
-
-            {{-- WhatsApp --}}
-            <div class="cinfo-card">
-                <div class="cinfo-icon" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i></div>
-                <div class="min-w-0">
-                    <div class="cinfo-label">WhatsApp</div>
-                    <div class="cinfo-val"><a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer">08129582957</a></div>
-                    <div class="cinfo-actions">
-                        <a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer" class="caction wa"><i class="fa-brands fa-whatsapp text-xs"></i> Chat Now</a>
-                        <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer" class="caction wa"><i class="fa-brands fa-whatsapp text-xs"></i> Alt Chat</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        {{-- Contact form --}}
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-8 max-w-3xl mx-auto">
-            <h3 class="font-heading font-bold text-lg md:text-xl text-gray-800 mb-5">Send a Message</h3>
-            <form action="https://wa.me/2348129582957" method="get" target="_blank" onsubmit="return sendWhatsApp(this)">
-                <div class="grid sm:grid-cols-2 gap-4 mb-4">
-                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Full Name *</label><input type="text" name="name" required placeholder="Your full name" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Phone *</label><input type="tel" name="phone" required placeholder="08xxxxxxxxx" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Email</label><input type="email" name="email" placeholder="you@example.com" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
-                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Subject</label><input type="text" name="subject" placeholder="How can we help?" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
-                </div>
-                <div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Message *</label><textarea name="message" required rows="4" placeholder="Tell us about your farm or enquiry..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50 resize-none"></textarea></div>
-                <button type="submit" class="btn-primary w-full justify-center py-2.5 md:py-3 text-sm">Send Message <i class="fa-solid fa-paper-plane text-xs"></i></button>
-            </form>
         </div>
     </div>
 </section>
