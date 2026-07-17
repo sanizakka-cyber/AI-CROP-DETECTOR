@@ -743,16 +743,18 @@
                 <div class="section-tag mb-3"><i class="fa-solid fa-crown"></i> Leadership</div>
                 <div class="bg-gray-50 rounded-2xl border border-gray-100 p-5">
 
-                    {{-- Profile header: photo + name side by side --}}
+                    {{-- Profile header: fixed-size photo + name --}}
                     <div class="flex items-start gap-3 mb-4">
-                        <div class="relative shrink-0">
+                        {{-- Wrapper constrains photo; inline style avoids uncompiled Tailwind arbitrary values --}}
+                        <div class="relative" style="width:72px;height:72px;flex-shrink:0;min-width:72px;">
                             <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
                                  alt="Sani Yawale Zakka — Founder &amp; CEO, MSAS Agro"
-                                 class="w-[68px] h-[68px] rounded-xl object-cover border-2 shadow-md"
-                                 style="border-color:var(--green)"
+                                 class="rounded-xl border-2 shadow-md"
+                                 style="width:72px;height:72px;min-width:72px;object-fit:cover;object-position:top;display:block;border-color:var(--green);"
                                  onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=120&rounded=false&bold=true'">
-                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white shadow border-2 flex items-center justify-center" style="border-color:var(--green)">
-                                <i class="fa-solid fa-check text-[8px]" style="color:var(--green)"></i>
+                            <div class="absolute flex items-center justify-center bg-white border-2 rounded-full shadow"
+                                 style="bottom:-3px;right:-3px;width:17px;height:17px;border-color:var(--green);">
+                                <i class="fa-solid fa-check" style="font-size:7px;color:var(--green)"></i>
                             </div>
                         </div>
                         <div class="min-w-0 flex-1">
@@ -760,14 +762,14 @@
                             <p class="text-xs font-semibold mt-0.5" style="color:var(--green)">Founder &amp; CEO, MSAS Agro</p>
                             <div class="flex flex-wrap gap-1 mt-1.5">
                                 @foreach(['Agribusiness','Digital Innovation','Entrepreneur'] as $ftag)
-                                <span class="text-[10px] font-medium text-gray-500 bg-gray-200/80 rounded px-1.5 py-0.5">{{ $ftag }}</span>
+                                <span class="font-medium text-gray-500 bg-gray-200 rounded" style="font-size:10px;padding:2px 6px">{{ $ftag }}</span>
                                 @endforeach
                             </div>
                         </div>
                     </div>
 
                     {{-- Quote --}}
-                    <blockquote class="text-[11px] text-gray-500 italic leading-relaxed mb-3 pl-3 border-l-2" style="border-color:var(--green)">
+                    <blockquote class="text-gray-500 italic leading-relaxed mb-3 pl-3 border-l-2" style="border-color:var(--green);font-size:11px">
                         "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS Agro."
                     </blockquote>
 
@@ -776,49 +778,49 @@
                         Sani Yawale Zakka is a visionary entrepreneur passionate about agriculture, livestock development, and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient, and technology-driven industry that benefits farmers, communities, and the wider economy.
                     </p>
 
-                    {{-- Stats mini-grid --}}
-                    <div class="grid grid-cols-4 gap-1.5 mb-4">
+                    {{-- Stats mini-grid — inline style avoids Tailwind grid-cols-4 compilation dependency --}}
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem;">
                         @foreach([['20K+','Farmers'],['36','States'],['5+','Years'],['100+','Projects']] as [$fn,$fl])
-                        <div class="text-center bg-white rounded-lg py-2 border border-gray-100">
-                            <div class="font-heading font-extrabold text-sm leading-none" style="color:var(--green)">{{ $fn }}</div>
-                            <div class="text-gray-400 text-[9px] mt-0.5 leading-tight">{{ $fl }}</div>
+                        <div class="text-center bg-white rounded-lg border border-gray-100" style="padding:8px 4px">
+                            <div class="font-heading font-extrabold leading-none" style="color:var(--green);font-size:14px">{{ $fn }}</div>
+                            <div class="text-gray-400 leading-tight" style="font-size:9px;margin-top:2px">{{ $fl }}</div>
                         </div>
                         @endforeach
                     </div>
 
                     {{-- Contact links --}}
-                    <div class="space-y-1.5 mb-4">
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem;">
                         <a href="tel:+2348032459879" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
-                            <i class="fa-solid fa-phone text-[10px] shrink-0" style="color:var(--green)"></i>
-                            <span class="text-[11px] font-semibold text-gray-700 group-hover:text-green-700">+234 8032459879</span>
+                            <i class="fa-solid fa-phone shrink-0" style="color:var(--green);font-size:10px"></i>
+                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">+234 8032459879</span>
                         </a>
                         <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
-                            <i class="fa-solid fa-envelope text-[10px] shrink-0" style="color:var(--green)"></i>
-                            <span class="text-[11px] font-semibold text-gray-700 group-hover:text-green-700">sanizakka@gmail.com</span>
+                            <i class="fa-solid fa-envelope shrink-0" style="color:var(--green);font-size:10px"></i>
+                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">sanizakka@gmail.com</span>
                         </a>
                     </div>
 
-                    {{-- Social icons + CTA buttons --}}
+                    {{-- Social icons + CTA --}}
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex gap-1.5">
                             @foreach([['linkedin-in','https://linkedin.com','#0077b5'],['facebook-f','#','#1877f2'],['twitter','#','#1d9bf0'],['whatsapp','https://wa.me/2348032459879','#25D366']] as [$fico,$fhref,$fcol])
                             <a href="{{ $fhref }}" @if($fhref !== '#') target="_blank" rel="noopener noreferrer" @endif
-                               class="w-7 h-7 rounded-full flex items-center justify-center transition hover:scale-110"
-                               style="background:#f0f2f4"
+                               class="rounded-full flex items-center justify-center transition hover:scale-110"
+                               style="width:28px;height:28px;background:#f0f2f4;flex-shrink:0"
                                onmouseover="this.style.background='{{ $fcol }}';this.querySelector('i').style.color='#fff'"
                                onmouseout="this.style.background='#f0f2f4';this.querySelector('i').style.color='#9ca3af'">
-                                <i class="fa-brands fa-{{ $fico }} text-[10px] text-gray-400"></i>
+                                <i class="fa-brands fa-{{ $fico }} text-gray-400" style="font-size:10px"></i>
                             </a>
                             @endforeach
                         </div>
                         <div class="flex gap-2">
-                            <a href="mailto:sanizakka@gmail.com" class="btn-primary text-[11px] py-1.5 px-3">
-                                <i class="fa-solid fa-envelope text-[9px]"></i> Message
+                            <a href="mailto:sanizakka@gmail.com" class="btn-primary" style="font-size:11px;padding:6px 12px;gap:4px">
+                                <i class="fa-solid fa-envelope" style="font-size:9px"></i> Message
                             </a>
                             <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer"
-                               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] text-white transition hover:opacity-90"
-                               style="background:#25D366">
-                                <i class="fa-brands fa-whatsapp text-[10px]"></i> WhatsApp
+                               class="flex items-center gap-1.5 rounded-lg font-bold text-white transition hover:opacity-90"
+                               style="background:#25D366;font-size:11px;padding:6px 12px">
+                                <i class="fa-brands fa-whatsapp" style="font-size:10px"></i> WhatsApp
                             </a>
                         </div>
                     </div>
@@ -828,7 +830,7 @@
             {{-- ── RIGHT: FAQ (60%) ── --}}
             <div>
                 <div class="section-tag mb-3"><i class="fa-solid fa-circle-question"></i> FAQ</div>
-                <h2 class="font-heading font-extrabold text-xl md:text-2xl text-gray-900 mb-4">Frequently Asked <span style="color:var(--green)">Questions</span></h2>
+                <h2 class="font-heading font-extrabold text-gray-900 mb-4" style="font-size:clamp(1.2rem,2.5vw,1.5rem)">Frequently Asked <span style="color:var(--green)">Questions</span></h2>
                 <div id="faq-list">
                     @foreach([
                         ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
@@ -842,13 +844,13 @@
                     <div class="faq-item">
                         <div class="faq-q" onclick="toggleFaq(this)">
                             <span>{{ $q }}</span>
-                            <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0"></i>
+                            <i class="fa-solid fa-chevron-down text-gray-400 transition-transform shrink-0" style="font-size:10px"></i>
                         </div>
                         <div class="faq-a">{{ $a }}</div>
                     </div>
                     @endforeach
                 </div>
-                <p class="text-xs text-gray-400 mt-4">Have more questions? <a href="#contact" class="font-semibold hover:text-green-600 transition" style="color:var(--green)">Contact us directly →</a></p>
+                <p class="text-gray-400 mt-4" style="font-size:12px">Have more questions? <a href="#contact" class="font-semibold hover:text-green-600 transition" style="color:var(--green)">Contact us directly →</a></p>
             </div>
 
         </div>
