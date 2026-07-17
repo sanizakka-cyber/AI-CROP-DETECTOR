@@ -34,12 +34,27 @@
         .btn-gold:focus-visible{outline:2px solid var(--gold-dark);outline-offset:2px;}
 
         /* ── Nav Sign-In button (state-aware: white outline on transparent, green outline when scrolled) ── */
-        .nav-auth-signin{display:inline-flex;align-items:center;gap:.375rem;padding:.45rem 1rem;border-radius:8px;font-weight:600;font-size:.8rem;border:2px solid rgba(255,255,255,.7);color:#fff;background:rgba(255,255,255,.1);transition:all .2s;white-space:nowrap;}
+        .nav-auth-signin{display:inline-flex;align-items:center;gap:.3rem;padding:.38rem .7rem;border-radius:7px;font-weight:600;font-size:.75rem;border:2px solid rgba(255,255,255,.7);color:#fff;background:rgba(255,255,255,.1);transition:all .2s;white-space:nowrap;}
         .nav-auth-signin:hover{background:rgba(255,255,255,.22);border-color:#fff;}
         .nav-auth-signin:focus-visible{outline:2px solid #fff;outline-offset:2px;}
         #main-nav.scrolled .nav-auth-signin{border-color:var(--green);color:var(--green);background:transparent;}
         #main-nav.scrolled .nav-auth-signin:hover{background:var(--green);color:#fff;}
         #main-nav.scrolled .nav-auth-signin:focus-visible{outline-color:var(--green);}
+        /* Button label text hidden at lg (icon-only), visible from xl up — prevents navbar overflow */
+        .nav-btn-label{display:none;}
+        @media(min-width:1280px){.nav-btn-label{display:inline;}}
+        /* Contact info cards */
+        .cinfo-card{display:flex;gap:1rem;align-items:flex-start;background:#fff;border:1px solid #e9ecef;border-radius:16px;padding:1.125rem;transition:box-shadow .2s,border-color .2s;}
+        .cinfo-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.07);border-color:rgba(46,125,50,.2);}
+        .cinfo-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.125rem;flex-shrink:0;}
+        .cinfo-label{font-weight:700;font-size:.7rem;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem;}
+        .cinfo-val{font-size:.875rem;color:#374151;line-height:1.5;margin-bottom:.5rem;font-weight:500;}
+        .cinfo-val a{color:inherit;text-decoration:none;}
+        .cinfo-val a:hover{color:var(--green);}
+        .cinfo-actions{display:flex;flex-wrap:wrap;gap:.375rem;}
+        .caction{display:inline-flex;align-items:center;gap:.3rem;font-size:.725rem;font-weight:600;padding:.3rem .7rem;border-radius:6px;background:#f3f4f6;color:#4b5563;text-decoration:none;transition:all .18s;border:none;cursor:pointer;line-height:1;}
+        .caction:hover{background:var(--green);color:#fff;}
+        .caction.wa:hover{background:#25D366;color:#fff;}
 
         /* ── Nav user avatar ── */
         .nav-avatar{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2.5px solid rgba(255,255,255,.55);transition:border-color .3s;}
@@ -131,7 +146,7 @@
         </a>
 
         {{-- Desktop Nav --}}
-        <nav class="hidden lg:flex items-center gap-4 xl:gap-5">
+        <nav class="hidden lg:flex items-center gap-3 xl:gap-5">
             @foreach([['#home','Home',null],['#about','About',null],['#solutions','Solutions','chevron-down'],['#features','Features',null],['#marketplace','Marketplace',null],['#pricing','Pricing',null],['#','Partners',null],['#','Resources','chevron-down'],['#contact','Contact',null]] as [$href,$label,$drop])
             <a href="{{ $href }}" class="nav-link flex items-center gap-1" :class="scrolled?'text-gray-700 hover:text-green-700':'text-white hover:text-green-200'">{{ $label }}@isset($drop)<i class="fa-solid fa-{{ $drop }} text-[9px] opacity-70"></i>@endisset</a>
             @endforeach
@@ -221,17 +236,17 @@
                 <a href="{{ route('login') }}"
                    class="nav-auth-signin"
                    aria-label="Sign in to your account">
-                    <i class="fa-solid fa-right-to-bracket text-xs"></i> Sign In
+                    <i class="fa-solid fa-right-to-bracket text-xs"></i><span class="nav-btn-label"> Sign In</span>
                 </a>
                 <a href="{{ route('register') }}"
-                   class="btn-primary text-xs py-2 px-3.5"
+                   class="btn-primary text-xs py-2 px-3"
                    aria-label="Create a new account">
-                    <i class="fa-solid fa-user-plus text-xs"></i> Sign Up
+                    <i class="fa-solid fa-user-plus text-xs"></i><span class="nav-btn-label"> Sign Up</span>
                 </a>
                 <a href="{{ route('register') }}"
-                   class="btn-gold text-xs py-2 px-3.5"
+                   class="btn-gold text-xs py-2 px-3"
                    aria-label="Check in to the platform">
-                    <i class="fa-solid fa-clipboard-check text-xs"></i> Check In
+                    <i class="fa-solid fa-clipboard-check text-xs"></i><span class="nav-btn-label"> Check In</span>
                 </a>
             @endauth
         </div>
@@ -862,39 +877,86 @@
 </section>
 
 {{-- ═══════════ CONTACT ═══════════ --}}
-<section id="contact" class="s-py bg-white" style="background:#f9fafb">
+<section id="contact" class="s-py" style="background:#f9fafb">
     <div class="max-w-7xl mx-auto px-4">
         <div class="text-center s-header-mb">
-            <div class="section-tag mx-auto"><i class="fa-solid fa-phone"></i> Contact Us</div>
+            <div class="section-tag mx-auto"><i class="fa-solid fa-headset"></i> Contact Us</div>
             <h2 class="section-title">Get In Touch</h2>
-            <p class="section-sub">We are always here to help you grow your agribusiness.</p>
+            <p class="section-sub">Reach our team via your preferred channel — we respond within 2 hours on business days.</p>
         </div>
-        <div class="grid lg:grid-cols-3 gap-5 lg:gap-8">
-            <div class="space-y-3">
-                @foreach([['fa-location-dot','Office Address','No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Call','08032459879 · 08129582957 (WhatsApp)','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']] as [$ico,$label,$val,$color])
-                <div class="flex gap-3 bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0" style="background:{{ $color }}"><i class="{{ $ico }} text-sm"></i></div>
-                    <div><div class="font-bold text-gray-800 text-sm mb-0.5">{{ $label }}</div><div class="text-gray-500 text-xs md:text-sm break-all">{{ $val }}</div></div>
-                </div>
-                @endforeach
-                <div class="flex gap-2.5">
-                    <a href="https://wa.me/2348129582957" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                    <a href="tel:+2348032459879" class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 hover:opacity-90 transition" style="border-color:var(--green);color:var(--green)"><i class="fa-solid fa-phone"></i> Call Now</a>
-                </div>
-            </div>
-            <div class="lg:col-span-2 bg-gray-50 rounded-2xl p-5 md:p-8 border border-gray-100">
-                <h3 class="font-heading font-bold text-lg md:text-xl text-gray-800 mb-5">Send a Message</h3>
-                <form action="https://wa.me/2348129582957" method="get" target="_blank" onsubmit="return sendWhatsApp(this)">
-                    <div class="grid sm:grid-cols-2 gap-4 mb-4">
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Full Name *</label><input type="text" name="name" required placeholder="Your full name" class="w-full border border-gray-200 rounded-xl px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Phone / WhatsApp *</label><input type="tel" name="phone" required placeholder="08xxxxxxxxx" class="w-full border border-gray-200 rounded-xl px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Email</label><input type="email" name="email" placeholder="you@example.com" class="w-full border border-gray-200 rounded-xl px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Subject</label><input type="text" name="subject" placeholder="How can we help?" class="w-full border border-gray-200 rounded-xl px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white"></div>
+
+        {{-- 4 contact info cards --}}
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+
+            {{-- Office Address --}}
+            <div class="cinfo-card">
+                <div class="cinfo-icon" style="background:var(--green)"><i class="fa-solid fa-location-dot"></i></div>
+                <div class="min-w-0">
+                    <div class="cinfo-label">Office Address</div>
+                    <div class="cinfo-val">No. 21 Sarkin Maska Street,<br>Dutsin Safe Lowcost,<br>Katsina State, Nigeria</div>
+                    <div class="cinfo-actions">
+                        <a href="https://maps.google.com?q=Dutsin+Safe+Lowcost+Katsina+Nigeria" target="_blank" rel="noopener noreferrer" class="caction"><i class="fa-solid fa-map text-xs"></i> Get Directions</a>
+                        <button type="button" class="caction" onclick="navigator.clipboard.writeText('No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.innerHTML='<i class=\'fa-regular fa-copy text-xs\'></i> Copy';},1500)})"><i class="fa-regular fa-copy text-xs"></i> Copy</button>
                     </div>
-                    <div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Message *</label><textarea name="message" required rows="4" placeholder="Tell us about your farm or enquiry..." class="w-full border border-gray-200 rounded-xl px-3 md:px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-white resize-none"></textarea></div>
-                    <button type="submit" class="btn-primary w-full justify-center py-2.5 md:py-3 text-sm">Send Message <i class="fa-solid fa-paper-plane text-xs"></i></button>
-                </form>
+                </div>
             </div>
+
+            {{-- Phone --}}
+            <div class="cinfo-card">
+                <div class="cinfo-icon" style="background:var(--blue)"><i class="fa-solid fa-phone"></i></div>
+                <div class="min-w-0">
+                    <div class="cinfo-label">Phone</div>
+                    <div class="cinfo-val">
+                        <a href="tel:+2348032459879">08032459879</a><br>
+                        <a href="tel:+2348129582957">08129582957</a>
+                    </div>
+                    <div class="cinfo-actions">
+                        <a href="tel:+2348032459879" class="caction"><i class="fa-solid fa-phone text-xs"></i> Call Now</a>
+                        <a href="tel:+2348129582957" class="caction"><i class="fa-solid fa-phone text-xs"></i> Alt Line</a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Email --}}
+            <div class="cinfo-card">
+                <div class="cinfo-icon" style="background:var(--gold-dark)"><i class="fa-solid fa-envelope"></i></div>
+                <div class="min-w-0">
+                    <div class="cinfo-label">Email</div>
+                    <div class="cinfo-val" style="word-break:break-all"><a href="mailto:msaslivestockagroservices@gmail.com">msaslivestockagroservices@gmail.com</a></div>
+                    <div class="cinfo-actions">
+                        <a href="mailto:msaslivestockagroservices@gmail.com" class="caction"><i class="fa-solid fa-envelope text-xs"></i> Send Email</a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- WhatsApp --}}
+            <div class="cinfo-card">
+                <div class="cinfo-icon" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i></div>
+                <div class="min-w-0">
+                    <div class="cinfo-label">WhatsApp</div>
+                    <div class="cinfo-val"><a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer">08129582957</a></div>
+                    <div class="cinfo-actions">
+                        <a href="https://wa.me/2348129582957" target="_blank" rel="noopener noreferrer" class="caction wa"><i class="fa-brands fa-whatsapp text-xs"></i> Chat Now</a>
+                        <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer" class="caction wa"><i class="fa-brands fa-whatsapp text-xs"></i> Alt Chat</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{-- Contact form --}}
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-8 max-w-3xl mx-auto">
+            <h3 class="font-heading font-bold text-lg md:text-xl text-gray-800 mb-5">Send a Message</h3>
+            <form action="https://wa.me/2348129582957" method="get" target="_blank" onsubmit="return sendWhatsApp(this)">
+                <div class="grid sm:grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Full Name *</label><input type="text" name="name" required placeholder="Your full name" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Phone *</label><input type="tel" name="phone" required placeholder="08xxxxxxxxx" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Email</label><input type="email" name="email" placeholder="you@example.com" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
+                    <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Subject</label><input type="text" name="subject" placeholder="How can we help?" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50"></div>
+                </div>
+                <div class="mb-4"><label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Message *</label><textarea name="message" required rows="4" placeholder="Tell us about your farm or enquiry..." class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-400 bg-gray-50 resize-none"></textarea></div>
+                <button type="submit" class="btn-primary w-full justify-center py-2.5 md:py-3 text-sm">Send Message <i class="fa-solid fa-paper-plane text-xs"></i></button>
+            </form>
         </div>
     </div>
 </section>
@@ -969,7 +1031,7 @@
                     <p class="flex gap-2 items-start"><i class="fa-solid fa-location-dot text-green-500 mt-0.5 shrink-0"></i><span>No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria</span></p>
                     <p><a href="tel:+2348032459879" class="flex gap-2 hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 shrink-0"></i>08032459879</a></p>
                     <p><a href="mailto:msaslivestockagroservices@gmail.com" class="flex gap-2 hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 shrink-0"></i>msaslivestockagroservices@gmail.com</a></p>
-                    <p><a href="https://wa.me/2348129582957" class="flex gap-2 hover:text-green-400 transition"><i class="fa-brands fa-whatsapp text-green-500 shrink-0"></i>08129582957 (WhatsApp)</a></p>
+                    <p><a href="https://wa.me/2348129582957" class="flex gap-2 hover:text-green-400 transition" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp text-green-500 shrink-0"></i>08129582957</a></p>
                 </div>
             </div>
         </div>

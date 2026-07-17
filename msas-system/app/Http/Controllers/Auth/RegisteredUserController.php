@@ -30,12 +30,15 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $allowedRoles = ['farmer','vet','agronomist','agro-dealer','extension-officer','field-officer','finance','operations','customer-support','data-analyst'];
+
         $request->validate([
             'first_name'   => 'required|string|max:255',
             'middle_name'  => 'nullable|string|max:255',
             'last_name'    => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
             'phone'        => 'required|string|max:20|unique:users,phone',
+            'role'         => 'nullable|string|in:'.implode(',', $allowedRoles),
             'password'     => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -45,7 +48,7 @@ class RegisteredUserController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'role' => 'farmer', // default role
+            'role' => in_array($request->role, $allowedRoles) ? $request->role : 'farmer',
             'password' => Hash::make($request->password),
         ]);
 
