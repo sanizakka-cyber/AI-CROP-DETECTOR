@@ -102,8 +102,26 @@
                 </div>
             </div>
 
-            {{-- Right: User Dropdown --}}
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            {{-- Right: Language + User --}}
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-2">
+                {{-- Language Selector --}}
+                @php $loc = session('locale', app()->getLocale()); @endphp
+                <div class="relative" x-data="{ langOpen: false }">
+                    <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                        class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition border border-slate-200">
+                        {{ match($loc){ 'ha'=>'🇳🇬 HA','fr'=>'🇫🇷 FR','yo'=>'🇳🇬 YO','ig'=>'🇳🇬 IG',default=>'🇬🇧 EN' } }}
+                        <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+                    <div x-show="langOpen" x-cloak x-transition
+                        class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
+                        @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yoruba'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
+                        <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
+                        <button type="submit" class="w-full text-left px-3 py-2 text-xs hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $loc === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
+                            {{ $flag }} {{ $name }}
+                        </button></form>
+                        @endforeach
+                    </div>
+                </div>
                 <x-dropdown align="right" width="56">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center gap-2 px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-xl text-slate-600 bg-white hover:bg-slate-50 focus:outline-none transition ease-in-out duration-150 group">
@@ -156,7 +174,7 @@
                         </div>
                     </x-slot>
                 </x-dropdown>
-            </div>
+            </div>{{-- end right panel --}}
 
             {{-- Hamburger --}}
             <div class="-me-2 flex items-center sm:hidden">
