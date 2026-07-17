@@ -34,9 +34,9 @@
         .hero-bg{background:linear-gradient(135deg,rgba(27,94,32,.88) 0%,rgba(46,125,50,.80) 55%,rgba(2,136,209,.65) 100%),url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80&auto=format&fit=crop') center/cover no-repeat;}
 
         /* ── Section shared ── */
-        .section-tag{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.35rem .9rem;border-radius:999px;margin-bottom:.875rem;}
-        .section-title{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;color:#111;line-height:1.25;margin-bottom:.75rem;}
-        .section-sub{font-size:.9375rem;color:#555;max-width:580px;margin:0 auto;line-height:1.7;}
+        .section-tag{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.3rem .85rem;border-radius:999px;margin-bottom:.5rem;}
+        .section-title{font-size:clamp(1.4rem,4vw,2.1rem);font-weight:800;color:#111;line-height:1.25;margin-bottom:.5rem;}
+        .section-sub{font-size:.9rem;color:#555;max-width:580px;margin:0 auto;line-height:1.65;}
 
         /* ── Solutions ── */
         .sol-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:.875rem .625rem;text-align:center;transition:all .3s;cursor:pointer;}
@@ -75,12 +75,14 @@
         [x-cloak]{display:none!important;}
 
         /* ── Responsive section rhythm ── */
-        .s-py{padding-top:3rem;padding-bottom:3rem;}
+        .s-py{padding-top:2rem;padding-bottom:2rem;}
+        @media(min-width:640px){.s-py{padding-top:3.5rem;padding-bottom:3.5rem;}}
         @media(min-width:768px){.s-py{padding-top:5rem;padding-bottom:5rem;}}
         @media(min-width:1024px){.s-py{padding-top:6rem;padding-bottom:6rem;}}
 
-        .s-header-mb{margin-bottom:2rem;}
-        @media(min-width:768px){.s-header-mb{margin-bottom:3rem;}}
+        .s-header-mb{margin-bottom:1.25rem;}
+        @media(min-width:640px){.s-header-mb{margin-bottom:2rem;}}
+        @media(min-width:768px){.s-header-mb{margin-bottom:2.75rem;}}
     </style>
 </head>
 <body class="antialiased">
@@ -217,40 +219,40 @@
 {{-- ═══════════ ABOUT ═══════════ --}}
 <section id="about" class="s-py bg-white">
     <div class="max-w-7xl mx-auto px-4">
-        <div class="grid lg:grid-cols-3 gap-8 lg:gap-10 items-start">
-            {{-- Image grid --}}
-            <div class="grid grid-cols-2 gap-3 lg:block lg:space-y-0">
-                <div class="grid grid-cols-2 gap-3">
-                    <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-xl object-cover h-36 md:h-40 w-full">
-                    <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=300&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-xl object-cover h-36 md:h-40 w-full mt-5 md:mt-6">
-                    <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=300&q=80&auto=format&fit=crop" alt="Poultry" class="rounded-xl object-cover h-36 md:h-40 w-full -mt-5 md:-mt-6">
-                    <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=300&q=80&auto=format&fit=crop" alt="Livestock" class="rounded-xl object-cover h-36 md:h-40 w-full">
-                </div>
-            </div>
-            {{-- Text --}}
-            <div>
+        <div class="grid lg:grid-cols-3 gap-6 lg:gap-10 items-start">
+            {{-- Text — renders first on mobile, second on desktop --}}
+            <div class="order-1 lg:order-2">
                 <div class="section-tag"><i class="fa-solid fa-circle-info"></i> About MSAS Agro</div>
                 <h2 class="font-heading font-extrabold text-2xl md:text-3xl text-gray-900 mb-3">About <span style="color:var(--green)">MSAS Agro</span></h2>
-                <p class="text-gray-500 text-sm leading-relaxed mb-5">MSAS Agro is an AI-powered digital platform providing innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
-                <div class="grid grid-cols-2 gap-3 mb-5">
+                <p class="text-gray-500 text-sm leading-relaxed mb-4">MSAS Agro is an AI-powered digital platform providing innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     @foreach([['Our Mission','To empower agriculture stakeholders with smart digital solutions.','bullseye'],['Our Vision','To become Africa\'s leading digital agriculture platform.','eye'],['Core Values','Innovation, Integrity, Impact, Collaboration, Sustainability.','heart'],['Our Journey','Since 2019, we have been driving agriculture transformation.','route']] as [$title,$text,$ico])
-                    <div class="flex gap-2.5">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background:var(--green-light)"><i class="fa-solid fa-{{ $ico }} text-xs" style="color:var(--green)"></i></div>
+                    <div class="flex gap-2">
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style="background:var(--green-light)"><i class="fa-solid fa-{{ $ico }} text-xs" style="color:var(--green)"></i></div>
                         <div><div class="font-bold text-gray-800 text-xs mb-0.5">{{ $title }}</div><div class="text-gray-500 text-[11px] leading-relaxed">{{ $text }}</div></div>
                     </div>
                     @endforeach
                 </div>
                 <a href="{{ route('register') }}" class="btn-primary text-sm">Read More <i class="fa-solid fa-arrow-right text-xs"></i></a>
             </div>
-            {{-- Video card --}}
-            <div class="rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
+            {{-- Image grid — renders second on mobile, first on desktop (no broken outer wrapper) --}}
+            <div class="order-2 lg:order-1">
+                <div class="grid grid-cols-2 gap-3">
+                    <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=300&q=80&auto=format&fit=crop" alt="Crop farming" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
+                    <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=300&q=80&auto=format&fit=crop" alt="Farmers" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:mt-5 md:mt-6">
+                    <img src="https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=300&q=80&auto=format&fit=crop" alt="Poultry" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full sm:-mt-5 md:-mt-6">
+                    <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=300&q=80&auto=format&fit=crop" alt="Livestock" class="rounded-xl object-cover h-32 sm:h-36 md:h-40 w-full">
+                </div>
+            </div>
+            {{-- Video card — renders third on both --}}
+            <div class="order-3 rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
                 <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80&auto=format&fit=crop" alt="Agriculture Technology" class="w-full h-48 md:h-52 object-cover">
+                    <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=500&q=80&auto=format&fit=crop" alt="Agriculture Technology" class="w-full h-44 md:h-52 object-cover">
                     <div class="absolute inset-0 flex items-center justify-center" style="background:rgba(27,94,32,.35)">
                         <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-xl cursor-pointer hover:scale-110 transition"><i class="fa-solid fa-play ml-1" style="color:var(--green)"></i></div>
                     </div>
                 </div>
-                <div class="p-4 md:p-5 bg-white">
+                <div class="p-4 bg-white">
                     <div class="font-bold text-gray-800 text-sm mb-1">Transforming Agriculture with Technology</div>
                     <div class="text-gray-400 text-xs leading-relaxed">Watch how MSAS Agro is changing lives across Africa.</div>
                 </div>
@@ -264,7 +266,7 @@
     <div class="max-w-7xl mx-auto px-4">
         <div class="text-center s-header-mb">
             <h2 class="section-title">Our Platform Solutions</h2>
-            <p class="section-sub">Comprehensive digital tools covering every aspect of modern agriculture.</p>
+            <p class="section-sub mt-1">Comprehensive digital tools covering every aspect of modern agriculture.</p>
         </div>
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-3">
             @foreach([
@@ -315,8 +317,8 @@
             <div>
                 <div class="section-tag"><i class="fa-solid fa-robot"></i> AI Powered</div>
                 <h2 class="font-heading font-extrabold text-2xl md:text-3xl text-gray-900 mb-3">Meet Your <span style="color:var(--green)">AI Farm Assistant</span></h2>
-                <p class="text-gray-500 leading-relaxed mb-5 text-sm">Get instant answers, smart recommendations and real-time insights to improve your productivity. Powered by advanced vision AI that diagnoses crop diseases, livestock conditions, and soil health from a single photo.</p>
-                <ul class="space-y-2.5 mb-6">
+                <p class="text-gray-500 leading-relaxed mb-4 text-sm">Get instant answers, smart recommendations and real-time insights to improve your productivity. Powered by advanced vision AI that diagnoses crop diseases, livestock conditions, and soil health from a single photo.</p>
+                <ul class="space-y-2 mb-5">
                     @foreach(['Image based disease detection','Fertilizer & crop recommendation','Weather & market price updates','Yield prediction & alerts'] as $feat)
                     <li class="flex items-center gap-3 text-sm text-gray-700">
                         <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style="background:var(--green);color:#fff"><i class="fa-solid fa-check text-[9px]"></i></span>
@@ -412,12 +414,12 @@
 <section class="s-py text-white relative overflow-hidden" style="background:linear-gradient(135deg,#1B5E20 0%,#2E7D32 55%,#0288D1 100%)">
     <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(#fff 1px,transparent 1px);background-size:24px 24px;pointer-events:none;"></div>
     <div class="max-w-7xl mx-auto px-4 relative z-10">
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 items-center">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12 items-center">
             {{-- Text + QR --}}
             <div>
                 <h2 class="font-heading font-extrabold text-2xl md:text-3xl mb-3">Take MSAS Agro<br/><span class="text-yellow-300">Anywhere You Go</span></h2>
-                <p class="text-green-100 text-sm leading-relaxed mb-5">Our mobile app is fast, offline-ready and designed for farmers. Record data in the field, get AI diagnoses, check market prices — even without internet.</p>
-                <div class="flex flex-wrap gap-3 mb-5">
+                <p class="text-green-100 text-sm leading-relaxed mb-4">Our mobile app is fast, offline-ready and designed for farmers. Record data in the field, get AI diagnoses, check market prices — even without internet.</p>
+                <div class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-5">
                     <a href="{{ route('register') }}" class="flex items-center gap-2 bg-black text-white rounded-xl px-4 py-2.5 hover:bg-gray-900 transition"><i class="fa-brands fa-google-play text-green-400"></i><div><div class="text-[9px] text-gray-300 uppercase">Get it on</div><div class="text-xs font-bold">Google Play</div></div></a>
                     <a href="{{ route('register') }}" class="flex items-center gap-2 bg-black text-white rounded-xl px-4 py-2.5 hover:bg-gray-900 transition"><i class="fa-brands fa-apple"></i><div><div class="text-[9px] text-gray-300 uppercase">Download on</div><div class="text-xs font-bold">App Store</div></div></a>
                 </div>
@@ -520,8 +522,8 @@
             <div>
                 <div class="section-tag"><i class="fa-solid fa-store"></i> MSAS Marketplace</div>
                 <h2 class="section-title text-left">Buy &amp; Sell Farm<br/><span style="color:var(--gold)">Inputs &amp; Produce</span></h2>
-                <p class="text-gray-500 leading-relaxed mb-5 text-sm">Access Nigeria's largest agricultural marketplace. Buy seeds, fertilizer, equipment and livestock — or sell your produce directly to buyers, cooperatives, and processors.</p>
-                <div class="grid grid-cols-2 gap-2.5 mb-6">
+                <p class="text-gray-500 leading-relaxed mb-4 text-sm">Access Nigeria's largest agricultural marketplace. Buy seeds, fertilizer, equipment and livestock — or sell your produce directly to buyers, cooperatives, and processors.</p>
+                <div class="grid grid-cols-2 gap-2 md:gap-2.5 mb-4 md:mb-6">
                     @foreach([['Seeds & Seedlings','seedling','green'],['Fertilizers','sack-dollar','yellow'],['Livestock & Poultry','cow','blue'],['Farm Equipment','tractor','purple'],['Veterinary Supplies','syringe','red'],['Processing Tools','gears','gray']] as [$n,$i,$c])
                     <div class="flex items-center gap-2.5 bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <div class="w-8 h-8 rounded-lg bg-{{ $c }}-100 flex items-center justify-center shrink-0"><i class="fa-solid fa-{{ $i }} text-{{ $c }}-600 text-sm"></i></div>
@@ -548,7 +550,7 @@
         <div class="text-center s-header-mb">
             <h2 class="section-title">Built for the Modern<br/><span style="color:var(--green)">Agri-Professional</span></h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             @foreach([
                 ['Offline Capability','Works without internet — syncs when back online','wifi','bg-green-50 text-green-700'],
                 ['Cloud Sync','Real-time data synchronisation across all devices','cloud','bg-blue-50 text-blue-700'],
@@ -641,8 +643,8 @@
             <h2 class="section-title">Get In Touch</h2>
             <p class="section-sub">We are always here to help you grow your agribusiness.</p>
         </div>
-        <div class="grid lg:grid-cols-3 gap-6 lg:gap-8">
-            <div class="space-y-4">
+        <div class="grid lg:grid-cols-3 gap-5 lg:gap-8">
+            <div class="space-y-3">
                 @foreach([['fa-location-dot','Office Address','No 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria','var(--green)'],['fa-phone','Phone / WhatsApp','08129582957','var(--blue)'],['fa-envelope','Email','msaslivestockagroservices@gmail.com','var(--gold)']] as [$ico,$label,$val,$color])
                 <div class="flex gap-3 bg-gray-50 rounded-2xl p-4 border border-gray-100">
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0" style="background:{{ $color }}"><i class="{{ $ico }} text-sm"></i></div>
@@ -692,7 +694,7 @@
 <footer style="background:var(--footer-bg)" class="text-gray-400 pt-12 md:pt-16 pb-6">
     <div class="max-w-7xl mx-auto px-4">
         {{-- Main grid: brand full-width on mobile, 2-col sm, 3-col md, 6-col lg --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-8 mb-8 md:mb-10">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 md:gap-8 mb-6 md:mb-10">
             {{-- Brand (spans 2 cols on sm, 2 on md, 2 on lg) --}}
             <div class="col-span-2 md:col-span-1 lg:col-span-2">
                 <div class="flex items-center gap-2 mb-1">
