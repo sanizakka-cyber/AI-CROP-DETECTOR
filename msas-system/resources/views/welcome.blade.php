@@ -70,12 +70,16 @@
         .price-card.featured{border-color:var(--green);box-shadow:0 16px 48px rgba(46,125,50,.18);}
         .price-card:hover{transform:translateY(-4px);}
 
-        /* ── FAQ ── */
-        .faq-item{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:.625rem;}
-        .faq-q{padding:1rem 1.125rem;font-weight:600;font-size:.9rem;color:#111;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:#fff;transition:background .2s;}
-        .faq-q:hover{background:#f9fafb;}
-        .faq-a{padding:0 1.125rem;font-size:.875rem;color:#555;line-height:1.7;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .3s;}
-        .faq-a.open{max-height:400px;padding-bottom:1.125rem;padding-top:.25rem;}
+        /* ── FAQ (compact) ── */
+        .faq-item{border:1px solid #e9ecef;border-radius:10px;overflow:hidden;margin-bottom:.375rem;}
+        .faq-q{padding:.7rem .9rem;font-weight:600;font-size:.8rem;color:#111;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:#fff;transition:background .2s;}
+        .faq-q:hover{background:#f8fafc;}
+        .faq-a{padding:0 .9rem;font-size:.775rem;color:#555;line-height:1.65;max-height:0;overflow:hidden;transition:max-height .4s ease,padding .3s;}
+        .faq-a.open{max-height:260px;padding-bottom:.8rem;padding-top:.2rem;}
+
+        /* ── Founder + FAQ merged two-column ── */
+        .founder-faq-grid{display:grid;gap:2rem;}
+        @media(min-width:1024px){.founder-faq-grid{grid-template-columns:2fr 3fr;gap:3rem;align-items:start;}}
 
         /* ── Testimonials ── */
         .testi-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.5rem;}
@@ -334,22 +338,6 @@
                 </div>
                 @endforeach
             </div>
-        </div>
-    </div>
-</section>
-
-{{-- ═══════════ TRUSTED BY ═══════════ --}}
-<section class="py-6 md:py-8 bg-white border-b border-gray-100">
-    <div class="max-w-6xl mx-auto px-4">
-        <p class="text-center text-[10px] md:text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 md:mb-8">Trusted by Leading Organizations</p>
-        <div class="flex flex-wrap items-center justify-center gap-5 md:gap-8 lg:gap-14">
-            @foreach([['Federal Ministry of Agriculture','landmark'],['THE WORLD BANK','globe'],['IFAD','seedling'],['NIRSAL','shield-halved'],['AGRA','leaf'],['CGIAR','microscope']] as [$name,$icon])
-            <div class="flex flex-col items-center gap-1.5 group cursor-default">
-                <i class="fa-solid fa-{{ $icon }} text-xl md:text-2xl text-gray-300 group-hover:text-green-600 transition"></i>
-                <span class="font-bold text-[10px] md:text-[11px] text-gray-400 group-hover:text-green-700 transition text-center" style="max-width:72px;line-height:1.3">{{ $name }}</span>
-            </div>
-            @endforeach
-            <div class="text-gray-300 font-semibold text-[10px] md:text-xs border border-gray-200 rounded-lg px-3 py-2 text-center leading-tight">And Many<br/>More...</div>
         </div>
     </div>
 </section>
@@ -745,104 +733,124 @@
     </div>
 </section>
 
-{{-- ═══════════ FAQ ═══════════ --}}
-<section class="s-py bg-gray-50">
-    <div class="max-w-3xl mx-auto px-4">
-        <div class="text-center s-header-mb">
-            <h2 class="section-title">Frequently Asked Questions</h2>
-        </div>
-        <div id="faq-list">
-            @foreach([
-                ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
-                ['Is the platform free to use?','Yes! Our Free Farmer plan is completely free and includes basic farm management, 3 AI scans per month, and marketplace access. Premium features are available from ₦2,500/month.'],
-                ['Does it work without internet?','Yes. Our mobile app supports offline data collection. Once you reconnect, all data syncs automatically to the cloud.'],
-                ['How does the AI diagnostic work?','Simply upload a photo of your sick animal, diseased crop, or soil sample. Our AI engine identifies the condition and provides a treatment plan within seconds.'],
-                ['Can I consult a vet on the platform?','Yes. Farmers can request vet consultations via in-app chat (₦1,500), WhatsApp (₦2,500), or phone call (₦3,500). Vets respond within 2–4 hours.'],
-                ['Is my farm data secure?','Absolutely. All data is encrypted in transit (TLS) and at rest (AES-256). MSAS Agro is NDPR compliant and your data is never sold to third parties.'],
-                ['How do I register?','Click "Sign Up" on any page, enter your name, phone, email, state, and farm type, and your account is ready in under 2 minutes.'],
-            ] as [$q,$a])
-            <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                    <span>{{ $q }}</span>
-                    <i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform shrink-0"></i>
-                </div>
-                <div class="faq-a">{{ $a }}</div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-
-{{-- ═══════════ FOUNDER & CEO ═══════════ --}}
+{{-- ═══════════ FOUNDER + FAQ (MERGED) ═══════════ --}}
 <section id="founder" class="s-py bg-white border-t border-gray-100">
-    <div class="max-w-5xl mx-auto px-4">
-        <div class="text-center s-header-mb">
-            <div class="section-tag mx-auto"><i class="fa-solid fa-crown"></i> Leadership</div>
-            <h2 class="section-title">Meet Our <span style="color:var(--green)">Founder & CEO</span></h2>
-        </div>
-        <div class="grid md:grid-cols-5 gap-8 md:gap-12 items-center">
-            {{-- Photo + credentials --}}
-            <div class="md:col-span-2 flex flex-col items-center text-center">
-                <div class="relative mb-4">
-                    <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
-                         alt="Sani Yawale Zakka — Founder & CEO, MSAS Agro"
-                         class="w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-4 shadow-xl"
-                         style="border-color:var(--green)"
-                         onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=180&rounded=true&bold=true'">
-                    <div class="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border-2 flex items-center justify-center" style="border-color:var(--green)">
-                        <i class="fa-solid fa-check text-xs" style="color:var(--green)"></i>
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="founder-faq-grid">
+
+            {{-- ── LEFT: Founder & CEO (40%) ── --}}
+            <div>
+                <div class="section-tag mb-3"><i class="fa-solid fa-crown"></i> Leadership</div>
+                <div class="bg-gray-50 rounded-2xl border border-gray-100 p-5">
+
+                    {{-- Profile header: photo + name side by side --}}
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="relative shrink-0">
+                            <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
+                                 alt="Sani Yawale Zakka — Founder &amp; CEO, MSAS Agro"
+                                 class="w-[68px] h-[68px] rounded-xl object-cover border-2 shadow-md"
+                                 style="border-color:var(--green)"
+                                 onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=120&rounded=false&bold=true'">
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white shadow border-2 flex items-center justify-center" style="border-color:var(--green)">
+                                <i class="fa-solid fa-check text-[8px]" style="color:var(--green)"></i>
+                            </div>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-heading font-extrabold text-sm text-gray-900 leading-snug">Sani Yawale Zakka</h3>
+                            <p class="text-xs font-semibold mt-0.5" style="color:var(--green)">Founder &amp; CEO, MSAS Agro</p>
+                            <div class="flex flex-wrap gap-1 mt-1.5">
+                                @foreach(['Agribusiness','Digital Innovation','Entrepreneur'] as $ftag)
+                                <span class="text-[10px] font-medium text-gray-500 bg-gray-200/80 rounded px-1.5 py-0.5">{{ $ftag }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Quote --}}
+                    <blockquote class="text-[11px] text-gray-500 italic leading-relaxed mb-3 pl-3 border-l-2" style="border-color:var(--green)">
+                        "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS Agro."
+                    </blockquote>
+
+                    {{-- Bio --}}
+                    <p class="text-xs text-gray-600 leading-relaxed mb-4">
+                        Sani Yawale Zakka is a visionary entrepreneur passionate about agriculture, livestock development, and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient, and technology-driven industry that benefits farmers, communities, and the wider economy.
+                    </p>
+
+                    {{-- Stats mini-grid --}}
+                    <div class="grid grid-cols-4 gap-1.5 mb-4">
+                        @foreach([['20K+','Farmers'],['36','States'],['5+','Years'],['100+','Projects']] as [$fn,$fl])
+                        <div class="text-center bg-white rounded-lg py-2 border border-gray-100">
+                            <div class="font-heading font-extrabold text-sm leading-none" style="color:var(--green)">{{ $fn }}</div>
+                            <div class="text-gray-400 text-[9px] mt-0.5 leading-tight">{{ $fl }}</div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Contact links --}}
+                    <div class="space-y-1.5 mb-4">
+                        <a href="tel:+2348032459879" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
+                            <i class="fa-solid fa-phone text-[10px] shrink-0" style="color:var(--green)"></i>
+                            <span class="text-[11px] font-semibold text-gray-700 group-hover:text-green-700">+234 8032459879</span>
+                        </a>
+                        <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
+                            <i class="fa-solid fa-envelope text-[10px] shrink-0" style="color:var(--green)"></i>
+                            <span class="text-[11px] font-semibold text-gray-700 group-hover:text-green-700">sanizakka@gmail.com</span>
+                        </a>
+                    </div>
+
+                    {{-- Social icons + CTA buttons --}}
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex gap-1.5">
+                            @foreach([['linkedin-in','https://linkedin.com','#0077b5'],['facebook-f','#','#1877f2'],['twitter','#','#1d9bf0'],['whatsapp','https://wa.me/2348032459879','#25D366']] as [$fico,$fhref,$fcol])
+                            <a href="{{ $fhref }}" @if($fhref !== '#') target="_blank" rel="noopener noreferrer" @endif
+                               class="w-7 h-7 rounded-full flex items-center justify-center transition hover:scale-110"
+                               style="background:#f0f2f4"
+                               onmouseover="this.style.background='{{ $fcol }}';this.querySelector('i').style.color='#fff'"
+                               onmouseout="this.style.background='#f0f2f4';this.querySelector('i').style.color='#9ca3af'">
+                                <i class="fa-brands fa-{{ $fico }} text-[10px] text-gray-400"></i>
+                            </a>
+                            @endforeach
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="mailto:sanizakka@gmail.com" class="btn-primary text-[11px] py-1.5 px-3">
+                                <i class="fa-solid fa-envelope text-[9px]"></i> Message
+                            </a>
+                            <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer"
+                               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] text-white transition hover:opacity-90"
+                               style="background:#25D366">
+                                <i class="fa-brands fa-whatsapp text-[10px]"></i> WhatsApp
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <h3 class="font-heading font-extrabold text-xl text-gray-900 mb-0.5">Sani Yawale Zakka</h3>
-                <p class="font-semibold text-sm mb-1" style="color:var(--green)">Founder & CEO, MSAS Agro</p>
-                <p class="text-gray-400 text-xs mb-4 leading-relaxed">Agribusiness · Digital Innovation · Entrepreneur</p>
-                <div class="flex gap-2 justify-center mb-4">
-                    @foreach([['linkedin-in','#0077b5'],['twitter','#38bdf8'],['whatsapp','#25D366']] as [$ico,$col])
-                    <a href="#" class="w-8 h-8 rounded-full flex items-center justify-center transition hover:scale-110 text-gray-400 hover:text-white"
-                       style="background:#f3f4f6"
-                       onmouseover="this.style.background='{{ $col }}';this.querySelector('i').style.color='#fff'"
-                       onmouseout="this.style.background='#f3f4f6';this.querySelector('i').style.color='#9ca3af'">
-                        <i class="fa-brands fa-{{ $ico }} text-xs"></i>
-                    </a>
-                    @endforeach
-                </div>
-                {{-- Contact quick-links --}}
-                <div class="space-y-2 w-full max-w-xs">
-                    <a href="tel:+2348032459879" class="flex items-center gap-2.5 bg-gray-50 hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-xl px-3 py-2.5 text-sm transition group">
-                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--green-light)"><i class="fa-solid fa-phone text-xs" style="color:var(--green)"></i></div>
-                        <div class="text-left"><div class="text-xs text-gray-400 leading-none">Call / WhatsApp</div><div class="font-bold text-gray-700 text-xs mt-0.5 group-hover:text-green-700">+234 8032459879</div></div>
-                    </a>
-                    <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2.5 bg-gray-50 hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-xl px-3 py-2.5 text-sm transition group">
-                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:var(--green-light)"><i class="fa-solid fa-envelope text-xs" style="color:var(--green)"></i></div>
-                        <div class="text-left"><div class="text-xs text-gray-400 leading-none">Email</div><div class="font-bold text-gray-700 text-xs mt-0.5 group-hover:text-green-700">sanizakka@gmail.com</div></div>
-                    </a>
-                </div>
             </div>
-            {{-- Bio --}}
-            <div class="md:col-span-3">
-                <blockquote class="text-base md:text-lg font-medium text-gray-500 italic leading-relaxed mb-5 pl-4 border-l-4" style="border-color:var(--green)">
-                    "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS Agro."
-                </blockquote>
-                <p class="text-gray-600 leading-relaxed text-sm md:text-base mb-4">
-                    <strong class="text-gray-900">Sani Yawale Zakka</strong> is a visionary entrepreneur passionate about agriculture, livestock development and digital innovation. He founded MSAS to transform traditional farming into a profitable, efficient and technology-driven industry that benefits farmers, communities and the wider economy.
-                </p>
-                <p class="text-gray-500 leading-relaxed text-sm mb-5">
-                    With deep roots in Katsina State, Nigeria, Sani combines hands-on agricultural knowledge with modern technology to build solutions that are practical, accessible and impactful. Under his leadership, MSAS Agro has grown to serve over 20,000 registered farmers across all 36 states of Nigeria.
-                </p>
-                {{-- Achievement badges --}}
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                    @foreach([['20K+','Farmers Served','users'],['36','States Covered','map'],['5+','Years Experience','calendar'],['100+','Projects','folder']] as [$n,$l,$i])
-                    <div class="text-center bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <div class="font-heading font-extrabold text-lg" style="color:var(--green)">{{ $n }}</div>
-                        <div class="text-gray-400 text-[10px] font-medium">{{ $l }}</div>
+
+            {{-- ── RIGHT: FAQ (60%) ── --}}
+            <div>
+                <div class="section-tag mb-3"><i class="fa-solid fa-circle-question"></i> FAQ</div>
+                <h2 class="font-heading font-extrabold text-xl md:text-2xl text-gray-900 mb-4">Frequently Asked <span style="color:var(--green)">Questions</span></h2>
+                <div id="faq-list">
+                    @foreach([
+                        ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
+                        ['Is the platform free to use?','Yes! Our Free Farmer plan is completely free and includes basic farm management, 3 AI scans per month, and marketplace access. Premium features are available from ₦2,500/month.'],
+                        ['Does it work without internet?','Yes. Our mobile app supports offline data collection. Once you reconnect, all data syncs automatically to the cloud.'],
+                        ['How does the AI diagnostic work?','Simply upload a photo of your sick animal, diseased crop, or soil sample. Our AI engine identifies the condition and provides a treatment plan within seconds.'],
+                        ['Can I consult a vet on the platform?','Yes. Farmers can request vet consultations via in-app chat (₦1,500), WhatsApp (₦2,500), or phone call (₦3,500). Vets respond within 2–4 hours.'],
+                        ['Is my farm data secure?','Absolutely. All data is encrypted in transit (TLS) and at rest (AES-256). MSAS Agro is NDPR compliant and your data is never sold to third parties.'],
+                        ['How do I register?','Click "Sign Up" on any page, enter your name, phone, email, state, and farm type, and your account is ready in under 2 minutes.'],
+                    ] as [$q,$a])
+                    <div class="faq-item">
+                        <div class="faq-q" onclick="toggleFaq(this)">
+                            <span>{{ $q }}</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform shrink-0"></i>
+                        </div>
+                        <div class="faq-a">{{ $a }}</div>
                     </div>
                     @endforeach
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="mailto:sanizakka@gmail.com" class="btn-primary text-sm py-2 px-4"><i class="fa-solid fa-envelope text-xs"></i> Send Message</a>
-                    <a href="https://wa.me/2348032459879" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm text-white transition hover:opacity-90" style="background:#25D366"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-                </div>
+                <p class="text-xs text-gray-400 mt-4">Have more questions? <a href="#contact" class="font-semibold hover:text-green-600 transition" style="color:var(--green)">Contact us directly →</a></p>
             </div>
+
         </div>
     </div>
 </section>
