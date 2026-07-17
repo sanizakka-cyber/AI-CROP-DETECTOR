@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800,900|poppins:600,700,800,900&display=swap" rel="stylesheet"/>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('head')
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; background: #f8fafc; overflow-x: hidden; }
@@ -283,5 +284,6 @@
     window.addEventListener('resize', check);
 })();
 </script>
+@stack('scripts')
 </body>
 </html>
