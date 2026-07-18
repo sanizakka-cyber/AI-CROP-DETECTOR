@@ -11,6 +11,7 @@ use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -45,25 +46,39 @@ class CEOController extends Controller
                           ->groupBy('role')
                           ->pluck('count', 'role');
 
-        // ── Monthly Revenue Chart (last 6 months) ──────────────────
-        $revenueChart = collect(range(5, 0))->map(function ($i) {
-            $month = now()->subMonths($i);
-            return [
-                'month'   => $month->format('M'),
-                'income'  => Finance::where('type','Income')->whereMonth('transaction_date', $month->month)->whereYear('transaction_date', $month->year)->sum('amount'),
-                'expense' => Finance::where('type','Expense')->whereMonth('transaction_date', $month->month)->whereYear('transaction_date', $month->year)->sum('amount'),
-            ];
+        // ── Monthly Revenue Chart (last 6 months) — cached 5 min ──
+        $revenueChart = Cache::remember('ceo:revenue_chart', 300, function () {
+            return collect(range(5, 0))->map(function ($i) {
+                $month = now()->subMonths($i);
+                $rows  = Finance::selectRaw("type, SUM(amount) as total")
+                    ->whereMonth('transaction_date', $month->month)
+                    ->whereYear('transaction_date', $month->year)
+                    ->groupBy('type')
+                    ->pluck('total', 'type');
+                return [
+                    'month'   => $month->format('M'),
+                    'income'  => $rows['Income']  ?? 0,
+                    'expense' => $rows['Expense'] ?? 0,
+                ];
+            });
         });
 
-        // ── Monthly User Growth (last 6 months) ────────────────────
-        $monthlyGrowth = collect(range(5, 0))->map(function ($i) {
-            $month = now()->subMonths($i);
-            return [
-                'label'   => $month->format('M'),
-                'farmers' => User::where('role','farmer')->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count(),
-                'experts' => User::whereIn('role',['vet','agronomist'])->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count(),
-                'total'   => User::whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count(),
-            ];
+        // ── Monthly User Growth (last 6 months) — cached 5 min ────
+        $monthlyGrowth = Cache::remember('ceo:monthly_growth', 300, function () {
+            return collect(range(5, 0))->map(function ($i) {
+                $month = now()->subMonths($i);
+                $rows  = User::selectRaw("role, COUNT(*) as count")
+                    ->whereMonth('created_at', $month->month)
+                    ->whereYear('created_at', $month->year)
+                    ->groupBy('role')
+                    ->pluck('count', 'role');
+                return [
+                    'label'   => $month->format('M'),
+                    'farmers' => $rows['farmer'] ?? 0,
+                    'experts' => ($rows['vet'] ?? 0) + ($rows['agronomist'] ?? 0),
+                    'total'   => $rows->sum(),
+                ];
+            });
         });
 
         // ── Diagnosis Type Split ────────────────────────────────────

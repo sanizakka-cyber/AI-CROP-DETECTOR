@@ -35,14 +35,21 @@ Route::prefix('services')->group(function() {
 Route::get('/dashboard', function () {
     $user = auth()->user();
     return match($user->role) {
-        'ceo'              => redirect()->to('/ceo'),
-        'admin'            => redirect()->route('admin.dashboard'),
-        'farmer'           => redirect()->route('farmer.dashboard'),
-        'vet'              => redirect()->route('vet.dashboard'),
-        'agronomist'       => redirect()->route('agronomist.dashboard'),
-        'agro-dealer'      => redirect()->route('dealer.dashboard'),
-        'extension-officer'=> redirect()->route('extension.dashboard'),
-        'finance'          => redirect()->route('finance.dashboard'),
+        'ceo'                   => redirect()->route('ceo.dashboard'),
+        'admin'                 => redirect()->route('admin.dashboard'),
+        'farmer'                => redirect()->route('farmer.dashboard'),
+        'vet'                   => redirect()->route('vet.dashboard'),
+        'agronomist'            => redirect()->route('agronomist.dashboard'),
+        'agro-dealer'           => redirect()->route('dealer.dashboard'),
+        'equipment-dealer'      => redirect()->route('equipment-dealer.dashboard'),
+        'cooperative'           => redirect()->route('cooperative.dashboard'),
+        'ngo'                   => redirect()->route('ngo.dashboard'),
+        'government'            => redirect()->route('government.dashboard'),
+        'research-institution'  => redirect()->route('research-institution.dashboard'),
+        'investor'              => redirect()->route('investor.dashboard'),
+        'financial-institution' => redirect()->route('financial-institution.dashboard'),
+        'extension-officer'     => redirect()->route('extension.dashboard'),
+        'finance'               => redirect()->route('finance.dashboard'),
         'hr'                    => redirect()->route('hr.dashboard'),
         'operations'            => redirect()->route('operations.dashboard'),
         'data-analyst'          => redirect()->route('data-analyst.dashboard'),
@@ -51,7 +58,7 @@ Route::get('/dashboard', function () {
         'me-officer'            => redirect()->route('monitoring-evaluation.dashboard'),
         'field-officer'         => redirect()->route('field-officer.dashboard'),
         'customer-support'      => redirect()->route('customer-support.dashboard'),
-        default            => view('dashboard'),
+        default                 => view('dashboard'),
     };
 })->middleware(['auth'])->name('dashboard');
 
@@ -76,8 +83,15 @@ Route::middleware('auth')->group(function () {
 
 // Role-Specific Dashboards
 Route::middleware(['auth'])->group(function () {
-    Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->middleware('role:admin,ceo')->name('admin.dashboard');
-    Route::get('/farmer/dashboard', [DashboardController::class, 'farmer'])->middleware('role:farmer')->name('farmer.dashboard');
+    Route::get('/admin/dashboard',                [DashboardController::class, 'admin'])               ->middleware('role:admin,ceo')            ->name('admin.dashboard');
+    Route::get('/farmer/dashboard',               [DashboardController::class, 'farmer'])              ->middleware('role:farmer')               ->name('farmer.dashboard');
+    Route::get('/equipment-dealer/dashboard',     [DashboardController::class, 'equipmentDealer'])     ->middleware('role:equipment-dealer')     ->name('equipment-dealer.dashboard');
+    Route::get('/cooperative/dashboard',          [DashboardController::class, 'cooperative'])         ->middleware('role:cooperative')          ->name('cooperative.dashboard');
+    Route::get('/ngo/dashboard',                  [DashboardController::class, 'ngo'])                 ->middleware('role:ngo')                  ->name('ngo.dashboard');
+    Route::get('/government/dashboard',           [DashboardController::class, 'government'])          ->middleware('role:government')           ->name('government.dashboard');
+    Route::get('/research-institution/dashboard', [DashboardController::class, 'researchInstitution'])->middleware('role:research-institution') ->name('research-institution.dashboard');
+    Route::get('/investor/dashboard',             [DashboardController::class, 'investor'])            ->middleware('role:investor')             ->name('investor.dashboard');
+    Route::get('/financial-institution/dashboard',[DashboardController::class, 'financialInstitution'])->middleware('role:financial-institution')->name('financial-institution.dashboard');
     Route::get('/vet/dashboard', [DashboardController::class, 'vet'])->middleware('role:vet')->name('vet.dashboard');
     Route::get('/agronomist/dashboard', [DashboardController::class, 'agronomist'])->middleware('role:agronomist,ceo,admin')->name('agronomist.dashboard');
     Route::get('/dealer/dashboard', [DashboardController::class, 'dealer'])->middleware('role:agro-dealer')->name('dealer.dashboard');

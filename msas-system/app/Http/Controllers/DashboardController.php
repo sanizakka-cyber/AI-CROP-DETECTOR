@@ -338,4 +338,85 @@ class DashboardController extends Controller
             'staffCount','presentToday','pendingLeaves','recentStaff','absentToday'
         ));
     }
+
+    // ── Equipment Dealer Dashboard ─────────────────────────────────
+    public function equipmentDealer()
+    {
+        $user = auth()->user();
+        try { $totalProducts  = DB::table('products')->where('user_id', $user->id)->count(); } catch (\Exception $e) { $totalProducts = 0; }
+        try { $totalOrders    = DB::table('orders')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalOrders = 0; }
+        try { $pendingOrders  = DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
+        try { $totalRevenue   = DB::table('orders')->where('dealer_id', $user->id)->where('status','confirmed')->sum('total'); } catch (\Exception $e) { $totalRevenue = 0; }
+        try { $recentOrders   = DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(5)->get(); } catch (\Exception $e) { $recentOrders = collect(); }
+        return view('equipment-dealer.dashboard', compact('totalProducts','totalOrders','pendingOrders','totalRevenue','recentOrders'));
+    }
+
+    // ── Cooperative Dashboard ──────────────────────────────────────
+    public function cooperative()
+    {
+        $user = auth()->user();
+        try { $totalFarmers     = \App\Models\User::where('role','farmer')->where('state', $user->state)->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $totalConsults    = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsults = 0; }
+        try { $recentFarmers    = \App\Models\User::where('role','farmer')->latest()->take(10)->get(); } catch (\Exception $e) { $recentFarmers = collect(); }
+        try { $totalDiagnoses   = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
+        return view('cooperative.dashboard', compact('totalFarmers','totalConsults','recentFarmers','totalDiagnoses'));
+    }
+
+    // ── NGO Dashboard ──────────────────────────────────────────────
+    public function ngo()
+    {
+        try { $totalBeneficiaries = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalBeneficiaries = 0; }
+        try { $totalDiagnoses     = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
+        try { $totalConsults      = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsults = 0; }
+        try { $resolvedConsults   = \App\Models\Consultation::where('status','resolved')->count(); } catch (\Exception $e) { $resolvedConsults = 0; }
+        try { $recentActivity     = \App\Models\User::where('role','farmer')->latest()->take(8)->get(); } catch (\Exception $e) { $recentActivity = collect(); }
+        return view('ngo.dashboard', compact('totalBeneficiaries','totalDiagnoses','totalConsults','resolvedConsults','recentActivity'));
+    }
+
+    // ── Government Dashboard ───────────────────────────────────────
+    public function government()
+    {
+        try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $totalAnimals     = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
+        try { $totalDiagnoses   = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
+        try { $diseaseAlerts    = \App\Models\Diagnosis::where('status','reviewed')->latest()->take(5)->get(); } catch (\Exception $e) { $diseaseAlerts = collect(); }
+        try { $stateBreakdown   = \App\Models\User::where('role','farmer')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(10)->get(); } catch (\Exception $e) { $stateBreakdown = collect(); }
+        return view('government.dashboard', compact('totalFarmers','totalAnimals','totalDiagnoses','diseaseAlerts','stateBreakdown'));
+    }
+
+    // ── Research Institution Dashboard ─────────────────────────────
+    public function researchInstitution()
+    {
+        try { $totalDiagnoses   = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
+        try { $totalAnimals     = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
+        try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $recentDiagnoses  = \App\Models\Diagnosis::latest()->take(10)->get(); } catch (\Exception $e) { $recentDiagnoses = collect(); }
+        try { $diseaseFrequency = \App\Models\Diagnosis::select('disease_name', DB::raw('count(*) as count'))->groupBy('disease_name')->orderByDesc('count')->take(8)->get(); } catch (\Exception $e) { $diseaseFrequency = collect(); }
+        return view('research-institution.dashboard', compact('totalDiagnoses','totalAnimals','totalFarmers','recentDiagnoses','diseaseFrequency'));
+    }
+
+    // ── Investor Dashboard ─────────────────────────────────────────
+    public function investor()
+    {
+        try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $totalRevenue     = \App\Models\Payment::where('status','success')->sum('amount'); } catch (\Exception $e) { $totalRevenue = 0; }
+        try { $totalTransacts   = \App\Models\Payment::where('status','success')->count(); } catch (\Exception $e) { $totalTransacts = 0; }
+        try { $marketProducts   = DB::table('products')->where('is_active', true)->count(); } catch (\Exception $e) { $marketProducts = 0; }
+        try { $monthlyRevenue   = collect(range(5,0))->map(fn($i) => [
+            'label'  => now()->subMonths($i)->format('M'),
+            'amount' => \App\Models\Payment::where('status','success')->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->sum('amount'),
+        ]); } catch (\Exception $e) { $monthlyRevenue = collect(); }
+        return view('investor.dashboard', compact('totalFarmers','totalRevenue','totalTransacts','marketProducts','monthlyRevenue'));
+    }
+
+    // ── Financial Institution Dashboard ────────────────────────────
+    public function financialInstitution()
+    {
+        try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $totalAnimals     = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
+        try { $verifiedFarmers  = \App\Models\User::where('role','farmer')->where('is_active',true)->count(); } catch (\Exception $e) { $verifiedFarmers = 0; }
+        try { $recentFarmers    = \App\Models\User::where('role','farmer')->latest()->take(10)->get(); } catch (\Exception $e) { $recentFarmers = collect(); }
+        try { $stateBreakdown   = \App\Models\User::where('role','farmer')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(8)->get(); } catch (\Exception $e) { $stateBreakdown = collect(); }
+        return view('financial-institution.dashboard', compact('totalFarmers','totalAnimals','verifiedFarmers','recentFarmers','stateBreakdown'));
+    }
 }

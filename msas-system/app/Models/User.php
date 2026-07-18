@@ -16,11 +16,11 @@ class User extends Authenticatable
 
     protected $fillable = [
         'first_name', 'middle_name', 'last_name',
-        'email', 'phone', 'role', 'state', 'lga', 'ward', 'country',
+        'email', 'phone', 'role', 'state', 'lga', 'ward', 'village', 'country',
         'password', 'profile_photo', 'language', 'last_seen',
         'is_active', 'is_verified', 'force_password_reset',
         'email_verified_at', 'phone_verified_at',
-        'expo_push_token', 'fcm_token',
+        'expo_push_token', 'fcm_token', 'api_token',
     ];
 
     public function getNameAttribute(): string
