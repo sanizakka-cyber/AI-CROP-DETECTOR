@@ -33,6 +33,40 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+
+        // Structured logging for all unhandled exceptions
+        $exceptions->report(function (\Throwable $e) {
+            $context = [
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'url'       => request()->fullUrl(),
+                'method'    => request()->method(),
+                'user_id'   => auth()->id(),
+                'user_role' => auth()->user()?->role,
+                'ip'        => request()->ip(),
+            ];
+
+            // Categorise for easier log filtering
+            $category = match(true) {
+                $e instanceof \Illuminate\Database\QueryException              => 'database',
+                $e instanceof \Illuminate\Auth\AuthenticationException         => 'auth',
+                $e instanceof \Illuminate\Auth\Access\AuthorizationException   => 'auth',
+                $e instanceof \App\Exceptions\PaymentException ?? false        => 'payment',
+                str_contains($e->getMessage(), 'OTP')                          => 'otp',
+                str_contains($e->getMessage(), 'SMS')                          => 'sms',
+                str_contains($e->getMessage(), 'mail')                         => 'email',
+                str_contains(strtolower($e->getMessage()), 'upload')           => 'file_upload',
+                str_contains(strtolower($e->getMessage()), 'marketplace')      => 'marketplace',
+                str_contains(strtolower($e->getMessage()), 'paystack')         => 'payment',
+                str_contains(strtolower($e->getMessage()), 'ai engine')        => 'ai',
+                default                                                         => 'app',
+            };
+
+            \Illuminate\Support\Facades\Log::error("[{$category}] Unhandled exception", $context);
+        });
+
         // Return standard JSON for all API errors (request path starts with /api)
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
