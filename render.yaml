@@ -80,7 +80,7 @@ services:
 
       # AI Engine — points to the msas-ai-engine service below
       - key: AI_ENGINE_URL
-        value: https://ai.msasagro.com
+        value: https://msas-ai-engine.onrender.com
       - key: AI_ENGINE_KEY
         value: c543a8d59df08d157d4cbce65fd3a1bbeefb408ecb810d2360ea17b21225f2dc
 
