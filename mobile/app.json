@@ -2,7 +2,7 @@
   "expo": {
     "name": "MSAS Livestock & Agro",
     "slug": "msas-livestock-agro",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "farmai",
@@ -19,7 +19,12 @@
         "backgroundColor": "#10b981"
       },
       "package": "com.msas.livestock",
-      "usesCleartextTraffic": true
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -34,10 +39,32 @@
         {
           "cameraPermission": "Allow FarmAI to access your camera to scan crops and livestock."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1C6B38",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow FarmAI to access your location for weather data."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3f06a308-094e-476a-b437-259171d68867"
+      }
+    },
+    "owner": "sanizakka3370"
   }
 }
