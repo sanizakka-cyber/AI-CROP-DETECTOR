@@ -22,7 +22,19 @@ class AnalyticsApiController extends Controller
         $processed  = Diagnosis::where('user_id', $user->id)->where('status', 'confirmed')->count();
         $crop       = Diagnosis::where('user_id', $user->id)->where('type', 'plant')->count();
         $livestock  = Diagnosis::where('user_id', $user->id)->where('type', 'animal')->count();
-        $recent     = Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(['id','disease_name','type','status','created_at']);
+        $recentRaw  = Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(['id','disease_name','type','status','created_at']);
+        $recent = $recentRaw->map(fn($d) => [
+            'id'          => $d->id,
+            'type'        => $d->type === 'plant' ? 'crop' : 'livestock',
+            'disease_name'=> $d->disease_name,
+            'status'      => $d->status === 'confirmed' ? 'processed' : $d->status,
+            'created_at'  => $d->created_at->toISOString(),
+            // Fields mobile home screen expects
+            'aiResult'    => ['primaryDiagnosis' => $d->disease_name, 'severity' => null],
+            'cropType'    => $d->type === 'plant'  ? 'crop'      : null,
+            'animalType'  => $d->type === 'animal' ? 'livestock' : null,
+            'createdAt'   => $d->created_at->toISOString(),
+        ]);
 
         return response()->json([
             'summary' => [

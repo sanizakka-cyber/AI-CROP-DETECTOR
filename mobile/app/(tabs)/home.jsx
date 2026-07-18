@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, A
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import { analyticsAPI } from '../../lib/api';
+import { analyticsAPI, weatherAPI, notificationsAPI } from '../../lib/api';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 
 const QUICK_ACTIONS = [
@@ -121,15 +121,15 @@ function FarmerDashboard({ summary, outbreaks, credit, router, isHausa }) {
         </View>
       ) : (
         recent.map((d, i) => (
-          <TouchableOpacity key={i} style={styles.dxCard} onPress={() => router.push(`/diagnosis/${d._id}`)}>
+          <TouchableOpacity key={d.id || i} style={styles.dxCard} onPress={() => router.push(`/diagnosis/${d.id}`)}>
             <Text style={styles.dxTypeIcon}>{d.type === 'crop' ? '🌽' : '🐄'}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.dxTitle}>{d.aiResult?.primaryDiagnosis || (isHausa ? 'Ana sarrafa...' : 'Processing...')}</Text>
-              <Text style={styles.dxMeta}>{d.type === 'crop' ? d.cropType : d.animalType} · {new Date(d.createdAt).toLocaleDateString()}</Text>
+              <Text style={styles.dxTitle}>{d.disease_name || d.aiResult?.primaryDiagnosis || (isHausa ? 'Ana sarrafa...' : 'Processing...')}</Text>
+              <Text style={styles.dxMeta}>{d.type === 'crop' ? 'Crop' : 'Livestock'} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}</Text>
             </View>
-            {d.aiResult?.severity && (
-              <View style={[styles.sevBadge, { backgroundColor: Colors[d.aiResult.severity] + '20' }]}>
-                <Text style={[styles.sevText, { color: Colors[d.aiResult.severity] }]}>{d.aiResult.severity}</Text>
+            {d.urgency_level && (
+              <View style={[styles.sevBadge, { backgroundColor: '#FEF3C7' }]}>
+                <Text style={[styles.sevText, { color: '#D97706' }]}>{d.urgency_level}</Text>
               </View>
             )}
             <Text style={styles.dxArrow}>›</Text>
@@ -259,16 +259,29 @@ export default function HomeScreen() {
   const router = useRouter();
   const isHausa = i18n.language === 'ha';
 
-  const [summary, setSummary]       = useState(null);
-  const [adminData, setAdminData]   = useState(null);
-  const [outbreaks, setOutbreaks]   = useState([]);
-  const [credit, setCredit]         = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading]       = useState(true);
+  const [summary, setSummary]         = useState(null);
+  const [adminData, setAdminData]     = useState(null);
+  const [outbreaks, setOutbreaks]     = useState([]);
+  const [credit, setCredit]           = useState(null);
+  const [weather, setWeather]         = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [loading, setLoading]         = useState(true);
 
   const load = useCallback(async () => {
     try {
       const role = user?.role;
+
+      // Load weather + notification count for all roles
+      try {
+        const [w, n] = await Promise.all([
+          weatherAPI.current({ state: user?.state || 'Katsina' }),
+          notificationsAPI.list(),
+        ]);
+        setWeather(w);
+        setUnreadCount(n.unread_count || 0);
+      } catch { /* non-critical */ }
+
       if (role === 'admin' || role === 'ceo') {
         const res = await analyticsAPI.adminSummary();
         setAdminData(res.summary);
@@ -319,9 +332,23 @@ export default function HomeScreen() {
           <Text style={styles.userName}>{user?.display_first_name || user?.name?.split(' ')[0] || 'Farmer'} 👋</Text>
           <Text style={styles.dateText}>{today}</Text>
         </View>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeIcon}>🌿</Text>
-          <Text style={styles.heroBadgeLabel}>{getRoleLabel().replace(/[👑🩺🌱🌿]/g, '').trim()}</Text>
+        <View style={{ alignItems: 'flex-end', gap: 8 }}>
+          {/* Notifications bell */}
+          <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')}>
+            <Text style={{ fontSize: 20 }}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {/* Weather pill */}
+          {weather?.current && (
+            <TouchableOpacity style={styles.weatherPill} onPress={() => router.push('/weather')}>
+              <Text style={{ fontSize: 14 }}>{weather.current.emoji}</Text>
+              <Text style={styles.weatherPillText}>{weather.current.temperature}°C</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -377,12 +404,25 @@ const styles = StyleSheet.create({
   greeting:  { ...Typography.body,  color: 'rgba(255,255,255,0.75)' },
   userName:  { ...Typography.h2,    color: Colors.white, fontWeight: '800', marginTop: 2 },
   dateText:  { ...Typography.tiny,  color: 'rgba(255,255,255,0.55)', marginTop: 6 },
-  heroBadge: {
-    alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: Radius.lg, padding: Spacing.sm, minWidth: 72,
+  notifBtn: {
+    position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20, width: 40, height: 40,
+    alignItems: 'center', justifyContent: 'center',
   },
-  heroBadgeIcon:  { fontSize: 28 },
-  heroBadgeLabel: { ...Typography.tiny, color: 'rgba(255,255,255,0.9)', fontWeight: '600', textAlign: 'center', marginTop: 4 },
+  notifBadge: {
+    position: 'absolute', top: -3, right: -3,
+    backgroundColor: '#DC2626', borderRadius: 9,
+    minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4, borderWidth: 1.5, borderColor: Colors.primary,
+  },
+  notifBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  weatherPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5,
+  },
+  weatherPillText: { ...Typography.small, color: '#fff', fontWeight: '700' },
 
   loadingBox:  { alignItems: 'center', paddingVertical: 48 },
   loadingText: { ...Typography.body, color: Colors.textSecondary, marginTop: Spacing.md },
