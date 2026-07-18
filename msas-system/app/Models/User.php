@@ -14,7 +14,14 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'first_name', 'middle_name', 'last_name',
+        'email', 'phone', 'role', 'state', 'lga', 'ward', 'country',
+        'password', 'profile_photo', 'language', 'last_seen',
+        'is_active', 'is_verified', 'force_password_reset',
+        'email_verified_at', 'phone_verified_at',
+        'expo_push_token', 'fcm_token',
+    ];
 
     public function getNameAttribute(): string
     {

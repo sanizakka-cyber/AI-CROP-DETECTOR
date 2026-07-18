@@ -29,7 +29,7 @@ class PaymentController extends Controller
         $amount = (float) $request->amount;
 
         // Server-side amount validation — never trust client amount for real services
-        $validatedAmount = $this->validateAmount($request->module, $request->module_id, $amount);
+        $validatedAmount = $this->validateAmount($request->module, $request->module_id, $amount, $request->metadata ?? []);
         if ($validatedAmount === false) {
             return response()->json(['success' => false, 'message' => 'Invalid payment amount.'], 422);
         }
@@ -223,15 +223,43 @@ class PaymentController extends Controller
      * Validate amount server-side based on module.
      * Returns correct amount in NGN, or false if invalid.
      */
-    private function validateAmount(string $module, ?int $moduleId, float $clientAmount): float|false
+    private function validateAmount(string $module, ?int $moduleId, float $clientAmount, array $metadata = []): float|false
     {
         return match ($module) {
-            'subscription' => $clientAmount > 0 ? $clientAmount : false,
+            'subscription' => $this->validateSubscriptionAmount($clientAmount, $metadata),
             'consultation' => $clientAmount > 0 ? $clientAmount : false,
             'marketplace'  => $moduleId
                 ? (\App\Models\Order::find($moduleId)?->total ?? false)
                 : false,
             default => $clientAmount > 0 ? $clientAmount : false,
         };
+    }
+
+    private function validateSubscriptionAmount(float $clientAmount, array $metadata): float|false
+    {
+        $plan  = $metadata['plan']          ?? null;
+        $cycle = $metadata['billing_cycle'] ?? 'monthly';
+
+        if (! $plan) {
+            return $clientAmount > 0 ? $clientAmount : false;
+        }
+
+        $price = config("subscription.plans.{$plan}.price.{$cycle}");
+        if (! $price) {
+            return false;
+        }
+
+        // Allow ±1 NGN tolerance for rounding differences
+        if (abs($clientAmount - $price) > 1) {
+            Log::warning('Subscription payment amount mismatch', [
+                'client_amount' => $clientAmount,
+                'expected'      => $price,
+                'plan'          => $plan,
+                'cycle'         => $cycle,
+            ]);
+            return false;
+        }
+
+        return (float) $price;
     }
 }

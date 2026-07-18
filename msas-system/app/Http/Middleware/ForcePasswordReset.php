@@ -12,7 +12,6 @@ class ForcePasswordReset
         'password.change',
         'password.change.update',
         'logout',
-        'profile.edit',
         'otp.verify',
         'otp.verify.post',
         'otp.resend',
