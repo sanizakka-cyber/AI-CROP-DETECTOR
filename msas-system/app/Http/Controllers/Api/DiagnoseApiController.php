@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Diagnosis;
+use App\Models\MobileNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -82,10 +83,40 @@ class DiagnoseApiController extends Controller
 
         $diagnosisId = $diagnosis->id;
 
-        cache()->put("diagnosis:{$diagnosisId}", array_merge($payload, [
+        $cachePayload = array_merge($payload, [
             'diagnosisId' => $diagnosisId,
+            'status'      => 'processed',
             'createdAt'   => $diagnosis->created_at->toISOString(),
-        ]), now()->addHours(24));
+            'image_path'  => $imagePath ? asset('storage/' . $imagePath) : null,
+            'treatmentPlan' => [
+                'immediateActions' => $payload['first_aid']
+                    ? [['action' => $payload['first_aid']]]
+                    : [],
+                'chemicalTreatments' => $payload['medication']
+                    ? [['product' => $payload['medication']]]
+                    : [],
+            ],
+            'aiResult' => [
+                'primaryDiagnosis' => $payload['disease'] ?? 'Unknown',
+                'confidence'       => $payload['confidence'] ?? 0,
+                'severity'         => strtolower($payload['urgency'] ?? 'low'),
+                'likelyCauses'     => $payload['cause'] ? [$payload['cause']] : [],
+            ],
+        ]);
+
+        cache()->put("diagnosis:{$diagnosisId}", $cachePayload, now()->addHours(24));
+
+        // Push notification — scan complete
+        $disease = $payload['disease'] ?? 'Scan complete';
+        MobileNotification::send(
+            $request->user()->id,
+            '🔬 Crop Scan Result Ready',
+            "Diagnosis: {$disease} · Tap to view treatment plan",
+            'scan',
+            ['diagnosis_id' => $diagnosisId]
+        );
+
+        $diagnosis->update(['status' => 'confirmed']);
 
         return response()->json(['diagnosisId' => $diagnosisId]);
     }
@@ -151,27 +182,86 @@ class DiagnoseApiController extends Controller
 
         $diagnosisId = $diagnosis->id;
 
-        cache()->put("diagnosis:{$diagnosisId}", array_merge($payload, [
+        $cachePayload = array_merge($payload, [
             'diagnosisId' => $diagnosisId,
+            'status'      => 'processed',
             'createdAt'   => $diagnosis->created_at->toISOString(),
-        ]), now()->addHours(24));
+            'image_path'  => $imagePath ? asset('storage/' . $imagePath) : null,
+            'treatmentPlan' => [
+                'immediateActions' => $payload['first_aid']
+                    ? [['action' => $payload['first_aid']]]
+                    : [],
+                'chemicalTreatments' => $payload['medication']
+                    ? [['product' => $payload['medication']]]
+                    : [],
+            ],
+            'aiResult' => [
+                'primaryDiagnosis' => $payload['disease'] ?? 'Unknown',
+                'confidence'       => $payload['confidence'] ?? 0,
+                'severity'         => strtolower($payload['urgency'] ?? 'low'),
+                'likelyCauses'     => $payload['cause'] ? [$payload['cause']] : [],
+            ],
+        ]);
+
+        cache()->put("diagnosis:{$diagnosisId}", $cachePayload, now()->addHours(24));
+
+        // Push notification — scan complete
+        $disease = $payload['disease'] ?? 'Scan complete';
+        MobileNotification::send(
+            $request->user()->id,
+            '🐄 Livestock Scan Result Ready',
+            "Diagnosis: {$disease} · Tap to view treatment plan",
+            'scan',
+            ['diagnosis_id' => $diagnosisId]
+        );
+
+        $diagnosis->update(['status' => 'confirmed']);
 
         return response()->json(['diagnosisId' => $diagnosisId]);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
+        // 1. Try hot cache first (populated immediately after scan)
         $result = cache()->get("diagnosis:{$id}");
 
-        if (! $result) {
-            return response()->json(['message' => 'Diagnosis not found or expired.'], 404);
+        if ($result) {
+            if ((int) $result['userId'] !== $request->user()->id) {
+                return response()->json(['message' => 'Forbidden.'], 403);
+            }
+            return response()->json(['diagnosis' => $result]);
         }
 
-        if ($result['userId'] !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden.'], 403);
+        // 2. Fall back to DB (cache TTL 24h; older scans live in DB)
+        $d = Diagnosis::where('id', $id)->where('user_id', $request->user()->id)->first();
+        if (! $d) {
+            return response()->json(['message' => 'Diagnosis not found.'], 404);
         }
 
-        return response()->json($result);
+        $diagnosis = [
+            'diagnosisId'    => $d->id,
+            'userId'         => $d->user_id,
+            'type'           => $d->type === 'plant' ? 'crop' : 'livestock',
+            'status'         => $d->status === 'confirmed' ? 'processed' : $d->status,
+            'createdAt'      => $d->created_at->toISOString(),
+            'image_path'     => $d->image_path ? asset('storage/' . $d->image_path) : null,
+            'aiResult' => [
+                'primaryDiagnosis' => $d->disease_name,
+                'confidence'       => $d->confidence_score,
+                'severity'         => $d->urgency_level ? strtolower($d->urgency_level) : 'low',
+                'likelyCauses'     => $d->cause ? [$d->cause] : [],
+            ],
+            'treatmentPlan' => [
+                'immediateActions' => $d->first_aid_steps
+                    ? [['action' => $d->first_aid_steps]]
+                    : [],
+                'chemicalTreatments' => $d->recommended_medication
+                    ? [['product' => $d->recommended_medication]]
+                    : [],
+            ],
+        ];
+
+        return response()->json(['diagnosis' => $diagnosis]);
     }
 
     public function history(Request $request): JsonResponse
@@ -180,25 +270,28 @@ class DiagnoseApiController extends Controller
             ->latest()
             ->paginate(20);
 
+        $shaped = $diagnoses->map(fn ($d) => [
+            'id'                    => $d->id,
+            'type'                  => $d->type === 'plant' ? 'crop' : 'livestock',
+            'disease_name'          => $d->disease_name,
+            'confidence_score'      => $d->confidence_score,
+            'urgency_level'         => $d->urgency_level,
+            'cause'                 => $d->cause,
+            'first_aid_steps'       => $d->first_aid_steps,
+            'recommended_medication'=> $d->recommended_medication,
+            'vet_referral_advice'   => $d->vet_referral_advice,
+            'status'                => $d->status === 'confirmed' ? 'processed' : $d->status,
+            'image_path'            => $d->image_path ? asset('storage/' . $d->image_path) : null,
+            'created_at'            => $d->created_at->toISOString(),
+        ]);
+
         return response()->json([
-            'data'  => $diagnoses->map(fn ($d) => [
-                'id'                    => $d->id,
-                'type'                  => $d->type,
-                'disease_name'          => $d->disease_name,
-                'confidence_score'      => $d->confidence_score,
-                'urgency_level'         => $d->urgency_level,
-                'cause'                 => $d->cause,
-                'first_aid_steps'       => $d->first_aid_steps,
-                'recommended_medication'=> $d->recommended_medication,
-                'vet_referral_advice'   => $d->vet_referral_advice,
-                'status'                => $d->status,
-                'image_path'            => $d->image_path ? asset('storage/' . $d->image_path) : null,
-                'created_at'            => $d->created_at->toISOString(),
-            ]),
-            'total' => $diagnoses->total(),
-            'per_page' => $diagnoses->perPage(),
+            'data'         => $shaped,
+            'diagnoses'    => $shaped, // alias for mobile compatibility
+            'total'        => $diagnoses->total(),
+            'per_page'     => $diagnoses->perPage(),
             'current_page' => $diagnoses->currentPage(),
-            'last_page' => $diagnoses->lastPage(),
+            'last_page'    => $diagnoses->lastPage(),
         ]);
     }
 

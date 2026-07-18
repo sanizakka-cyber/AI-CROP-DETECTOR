@@ -22,8 +22,9 @@ export default function RecordsScreen() {
   const load = async () => {
     try {
       const [d, a] = await Promise.all([diagnoseAPI.history(), animalsAPI.list()]);
-      setDiagnoses(d.diagnoses || []);
-      setAnimals(a.animals || []);
+      // API returns { data, diagnoses, ... } — use whichever key is present
+      setDiagnoses(d.diagnoses || d.data || []);
+      setAnimals(a.animals || a.data || []);
     } catch {}
     setLoading(false);
   };
@@ -61,20 +62,20 @@ export default function RecordsScreen() {
           {diagnoses.length === 0
             ? <EmptyState icon="🔬" title={t('noDiagnoses')} />
             : diagnoses.map(d => (
-                <TouchableOpacity key={d._id} onPress={() => router.push(`/diagnosis/${d._id}`)}>
+                <TouchableOpacity key={d.id} onPress={() => router.push(`/diagnosis/${d.id}`)}>
                   <Card style={styles.dxCard}>
                     <View style={styles.dxRow}>
                       <Text style={styles.dxIcon}>{d.type === 'crop' ? '🌽' : '🐄'}</Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.dxTitle}>{d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
+                        <Text style={styles.dxTitle}>{d.disease_name || d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
                         <Text style={styles.dxMeta}>
-                          {d.cropType || d.animalType} · {new Date(d.createdAt).toLocaleDateString()}
+                          {d.type === 'crop' ? 'Crop' : 'Livestock'} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}
                         </Text>
                         <Text style={[styles.dxStatus, { color: d.status === 'processed' ? Colors.success : Colors.warning }]}>
                           {d.status === 'processed' ? '✅ Processed' : d.status === 'pending' ? '⏳ Processing' : '❌ Failed'}
                         </Text>
                       </View>
-                      {d.aiResult?.severity && <SeverityBadge severity={d.aiResult.severity} />}
+                      {d.urgency_level && <SeverityBadge severity={d.urgency_level?.toLowerCase()} />}
                     </View>
                   </Card>
                 </TouchableOpacity>

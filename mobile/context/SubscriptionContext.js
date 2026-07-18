@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 
 // Shares the same root URL as api.js — strip the trailing /api if present
-const API_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'http://172.20.10.3:8000/api').replace(/\/api$/, '');
+const API_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api').replace(/\/api$/, '');
 
 const PLAN_LEVELS = { none: 0, basic: 1, pro: 2, premium: 3 };
 

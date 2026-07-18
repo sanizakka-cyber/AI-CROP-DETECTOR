@@ -71,8 +71,44 @@ class AuthApiController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->update(['api_token' => null]);
+        $request->user()->update(['api_token' => null, 'expo_push_token' => null]);
         return response()->json(['message' => 'Logged out']);
+    }
+
+    /** PATCH /auth/profile */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $request->validate([
+            'first_name'  => 'sometimes|string|max:100',
+            'last_name'   => 'sometimes|string|max:100',
+            'email'       => 'sometimes|nullable|email|unique:users,email,' . $request->user()->id,
+            'state'       => 'sometimes|nullable|string|max:100',
+            'lga'         => 'sometimes|nullable|string|max:100',
+            'village'     => 'sometimes|nullable|string|max:100',
+            'language'    => 'sometimes|nullable|string|max:10',
+        ]);
+
+        $request->user()->update($request->only([
+            'first_name', 'last_name', 'email', 'state', 'lga', 'village', 'language',
+        ]));
+
+        return response()->json(['user' => $this->userPayload($request->user()->fresh())]);
+    }
+
+    /** POST /auth/fcm-token */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'expo_push_token' => 'nullable|string|max:255',
+            'fcm_token'       => 'nullable|string|max:255',
+        ]);
+
+        $request->user()->update(array_filter([
+            'expo_push_token' => $request->expo_push_token,
+            'fcm_token'       => $request->fcm_token,
+        ], fn($v) => $v !== null));
+
+        return response()->json(['message' => 'Push token updated.']);
     }
 
     private function userPayload(User $user): array

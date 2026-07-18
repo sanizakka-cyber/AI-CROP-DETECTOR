@@ -2,7 +2,7 @@
 // EXPO_PUBLIC_API_URL is set per build profile in eas.json
 // For local dev: set in mobile/.env
 // For production: set EXPO_PUBLIC_API_URL=https://yourdomain.com/api in eas.json build.production.env
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://msas-api.onrender.com/api').replace(/\/$/, '');
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api').replace(/\/$/, '');
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -158,6 +158,31 @@ export const ordersAPI = {
   get:      (id)          => request(`/orders/${id}`),
   checkout: (body)        => request('/orders/checkout', { method: 'POST', body: JSON.stringify(body) }),
   cancel:   (id)          => request(`/orders/${id}/cancel`, { method: 'POST' }),
+};
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+export const profileAPI = {
+  update:       (body)  => request('/auth/profile',    { method: 'PATCH', body: JSON.stringify(body) }),
+  updateFcmToken:(body) => request('/auth/fcm-token',  { method: 'POST',  body: JSON.stringify(body) }),
+};
+
+// ── Weather ───────────────────────────────────────────────────────────────────
+export const weatherAPI = {
+  current: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/weather${qs ? '?' + qs : ''}`);
+  },
+};
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const notificationsAPI = {
+  list:       (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/notifications${qs ? '?' + qs : ''}`);
+  },
+  markRead:   (id)  => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllRead:()    => request('/notifications/read-all',   { method: 'POST' }),
+  delete:     (id)  => request(`/notifications/${id}`,      { method: 'DELETE' }),
 };
 
 // ── Connection health ─────────────────────────────────────────────────────────
