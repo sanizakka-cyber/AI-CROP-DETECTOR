@@ -59,7 +59,7 @@
         {{-- Paid By --}}
         <div style="margin-top:24px;background:#f8fafc;border-radius:10px;padding:16px;">
             <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Paid By</div>
-            <div style="font-size:14px;font-weight:700;color:#0f172a;">{{ auth()->user()->name }}</div>
+            <div style="font-size:14px;font-weight:700;color:#0f172a;">{{ auth()->user()->name ?: auth()->user()->email }}</div>
             <div style="font-size:13px;color:#64748b;">{{ auth()->user()->email }}</div>
         </div>
 

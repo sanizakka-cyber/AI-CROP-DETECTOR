@@ -5,7 +5,7 @@
             <h1 style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">Farm Reports</h1>
             <p style="font-size:13px;color:#64748b;margin:4px 0 0;">Download your farm data as CSV or print as PDF</p>
         </div>
-        <span style="background:{{ config('subscription.plans.'.$activeSub->plan.'.badge_color') }};color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;">
+        <span style="background:{{ config('subscription.plans.'.$activeSub->plan.'.badge_color', '#1FA84A') }};color:#fff;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;">
             {{ strtoupper($activeSub->plan) }} PLAN
         </span>
     </div>
