@@ -4,6 +4,7 @@ web/
 ai-engine/
 deploy/
 docs/
+server/
 
 # Exclude generated/installed files that EAS rebuilds server-side
 mobile/node_modules/
