@@ -11,6 +11,9 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\HRController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\Admin\SubscriptionManagementController;
+use App\Http\Controllers\Admin\PaymentManagementController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -168,14 +171,28 @@ Route::middleware(['auth', 'role:farmer'])->prefix('subscription')->name('subscr
     Route::get('/paystack/callback',  [SubscriptionController::class, 'paystackCallback'])->name('paystack.callback');
 });
 
-// Paystack webhook (no auth — HMAC signature verified in controller, CSRF excluded in bootstrap/app.php)
-Route::post('/webhooks/paystack', [SubscriptionController::class, 'paystackWebhook'])
+// ── Payment Routes (all authenticated users) ───────────────────────────────
+Route::middleware('auth')->prefix('payment')->name('payment.')->group(function () {
+    Route::get('/history',           [PaymentController::class, 'history'])->name('history');
+    Route::post('/initiate',         [PaymentController::class, 'initiate'])->name('initiate');
+    Route::post('/verify',           [PaymentController::class, 'verify'])->name('verify');
+    Route::get('/callback',          [PaymentController::class, 'callback'])->name('callback');
+    Route::get('/receipt/{payment}', [PaymentController::class, 'receipt'])->name('receipt');
+});
+
+// Paystack webhook — no auth, HMAC-verified, CSRF excluded in bootstrap/app.php
+Route::post('/webhooks/paystack', [WebhookController::class, 'paystack'])
     ->name('webhooks.paystack');
 
 // Consultation payment callback (auth only — farmer already logged in when Paystack redirects back)
 Route::middleware('auth')
     ->get('/consultation/payment/callback', [App\Http\Controllers\FarmerController::class, 'consultationPaymentCallback'])
     ->name('consultation.payment.callback');
+
+// ── Admin Payment Management ────────────────────────────────────────────────
+Route::middleware(['auth', 'role:admin,ceo,finance'])->prefix('admin/payments')->name('admin.payments.')->group(function () {
+    Route::get('/', [PaymentManagementController::class, 'index'])->name('index');
+});
 
 // ── Admin Subscription Management ──────────────────────────────────────────
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin/subscriptions')->name('admin.subscriptions.')->group(function () {
