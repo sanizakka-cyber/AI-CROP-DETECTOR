@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        if (!Schema::hasTable('egg_productions')) return;
         Schema::table('egg_productions', function (Blueprint $table) {
             if (!Schema::hasColumn('egg_productions', 'poultry_record_id')) {
                 $table->foreignId('poultry_record_id')

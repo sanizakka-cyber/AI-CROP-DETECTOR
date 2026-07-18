@@ -14,6 +14,7 @@ class Product extends Model
         'description', 'usage_instructions', 'dosage_instructions', 'storage_requirements',
         'unit', 'cost_price', 'selling_price', 'quantity_in_stock', 'low_stock_threshold',
         'expiry_date', 'image', 'tags', 'status', 'is_approved', 'is_featured',
+        'rating', 'rating_count',
     ];
 
     protected $casts = [
