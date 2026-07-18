@@ -10,6 +10,11 @@ class VetController extends Controller
     {
         $user = auth()->user();
 
+        if (! $user->is_verified) {
+            return redirect()->route('dashboard')
+                ->with('warning', 'Your account is pending verification by an administrator before you can access the consultation queue.');
+        }
+
         // Vet sees: unassigned pending cases + cases already assigned to them
         // Agronomist only sees crop cases; Vet only sees livestock cases
         $query = \App\Models\Consultation::where('status', 'pending')
@@ -34,6 +39,7 @@ class VetController extends Controller
 
     public function respond(Request $request, \App\Models\Consultation $consultation)
     {
+        abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
         $request->validate([
             'expert_response' => 'required|string|min:10',
         ]);
