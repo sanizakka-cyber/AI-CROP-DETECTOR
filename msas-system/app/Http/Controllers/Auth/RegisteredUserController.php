@@ -8,6 +8,7 @@ use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
@@ -91,37 +92,32 @@ class RegisteredUserController extends Controller
             $userData['phone'] = $normalizedPhone;
         }
 
-        $user  = User::create($userData);
-        $plain = $this->otp->generate($identifier, 'registration');
+        $user = User::create($userData);
 
-        // Send OTP and capture delivery result
-        $smsFailed   = false;
-        $emailFailed = false;
-
-        if ($isEmail) {
-            $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration');
-        } else {
-            $smsFailed = ! $this->otp->sendViaSms($normalizedPhone, $plain, $user->id, 'registration');
-
-            if ($smsFailed) {
-                Log::warning('Registration SMS delivery failed — user will see email-fallback prompt', [
-                    'user_id'    => $user->id,
-                    'phone_hint' => $this->maskPhone($normalizedPhone),
-                ]);
-            }
+        // Phone-only registration: skip SMS OTP entirely — activate immediately and log in.
+        // Rural users with no reliable SMS access can proceed without verification overhead.
+        if ($isPhone) {
+            $user->update(['phone_verified_at' => now()]);
+            Auth::login($user);
+            $request->session()->regenerate();
+            Log::info('Phone-only registration completed without SMS OTP', ['user_id' => $user->id]);
+            return redirect()->route('dashboard')
+                ->with('success', 'Welcome to MSAS FarmAI! Your account has been created.');
         }
 
-        // Store session context
-        $expiresAt = $this->otp->expiresAt($identifier, 'registration');
+        // Email registration: send OTP and wait for verification
+        $plain       = $this->otp->generate($identifier, 'registration');
+        $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration');
+        $expiresAt   = $this->otp->expiresAt($identifier, 'registration');
 
         $request->session()->put([
             'otp_context'         => 'registration',
             'otp_identifier'      => $identifier,
             'otp_user_id'         => $user->id,
-            'otp_sms_failed'      => $smsFailed,
+            'otp_sms_failed'      => false,
             'otp_email_failed'    => $emailFailed,
             'otp_expires_at'      => $expiresAt?->toISOString(),
-            'otp_delivery_method' => $isEmail ? 'email' : 'sms',
+            'otp_delivery_method' => 'email',
         ]);
 
         return redirect()->route('otp.verify');

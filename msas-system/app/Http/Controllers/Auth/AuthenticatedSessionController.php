@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\OtpService;
+use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,7 @@ use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
+    use NormalizesPhone;
     /**
      * Display the login view.
      */
@@ -30,26 +32,41 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // Block unverified accounts — re-send OTP and redirect to verify
+        // Block unverified accounts — phone-only users get verified immediately (no SMS OTP policy);
+        // email users are redirected to OTP verify with the full session payload.
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
-            $identifier = $user->email ?? $user->phone;
-            $otp        = app(OtpService::class);
-            $plain      = $otp->generate($identifier, 'registration');
+            // Phone-only account: activate in place — consistent with registration policy
+            if (! $user->email && $user->phone) {
+                $user->update(['phone_verified_at' => now()]);
+                return redirect()->intended(route('dashboard', absolute: false));
+            }
+
+            $identifier  = $user->email ?? $user->phone;
+            $otp         = app(OtpService::class);
+            $plain       = $otp->generate($identifier, 'registration');
+            $emailFailed = false;
+            $smsFailed   = false;
 
             if ($user->email) {
-                $otp->sendViaEmail($identifier, $plain, $user->first_name);
+                $emailFailed = ! $otp->sendViaEmail($identifier, $plain, $user->first_name);
             } else {
-                $otp->sendViaSms($identifier, $plain);
+                $smsFailed = ! $otp->sendViaSms($identifier, $plain);
             }
+
+            $expiresAt = $otp->expiresAt($identifier, 'registration');
 
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             session([
-                'otp_context'    => 'registration',
-                'otp_identifier' => $identifier,
-                'otp_user_id'    => $user->id,
+                'otp_context'         => 'registration',
+                'otp_identifier'      => $identifier,
+                'otp_user_id'         => $user->id,
+                'otp_sms_failed'      => $smsFailed,
+                'otp_email_failed'    => $emailFailed,
+                'otp_expires_at'      => $expiresAt?->toISOString(),
+                'otp_delivery_method' => $user->email ? 'email' : 'sms',
             ]);
 
             return redirect()->route('otp.verify')
