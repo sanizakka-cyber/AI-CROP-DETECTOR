@@ -1,0 +1,12 @@
+# Exclude installed/generated directories — EAS rebuilds these server-side
+node_modules/
+.expo/
+
+# Exclude entire android dir so EAS runs expo prebuild fresh (avoids stale CMake cache)
+android/
+
+# Exclude iOS build artifacts (iOS builds not used)
+ios/Pods/
+ios/build/
+
+.env.local
