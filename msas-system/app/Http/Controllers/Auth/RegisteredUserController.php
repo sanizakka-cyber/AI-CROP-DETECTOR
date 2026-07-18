@@ -5,14 +5,18 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\OtpService;
+use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
+    use NormalizesPhone;
+
     public function __construct(private OtpService $otp) {}
 
     public function create(): View
@@ -49,7 +53,7 @@ class RegisteredUserController extends Controller
 
         if (! $isEmail && ! $isPhone) {
             return back()->withInput()->withErrors([
-                'identifier' => 'Enter a valid email address or phone number.',
+                'identifier' => 'Enter a valid email address or phone number (e.g. 08012345678 or +2348012345678).',
             ]);
         }
 
@@ -59,12 +63,16 @@ class RegisteredUserController extends Controller
                 'identifier' => 'An account already exists with this email. Sign in instead.',
             ]);
         }
-        if ($isPhone && User::where('phone', $this->normalizePhone($identifier))->exists()) {
+
+        $normalizedPhone = $isPhone ? $this->normalizePhone($identifier) : null;
+
+        if ($isPhone && User::where('phone', $normalizedPhone)->exists()) {
             return back()->withInput()->withErrors([
-                'identifier' => 'Phone number already registered. Sign in instead.',
+                'identifier' => 'This phone number is already registered. Sign in instead.',
             ]);
         }
 
+        // Create user
         $userData = [
             'first_name'  => $request->first_name,
             'middle_name' => $request->middle_name,
@@ -80,39 +88,42 @@ class RegisteredUserController extends Controller
         if ($isEmail) {
             $userData['email'] = $identifier;
         } else {
-            $userData['phone'] = $this->normalizePhone($identifier);
+            $userData['phone'] = $normalizedPhone;
         }
 
         $user  = User::create($userData);
         $plain = $this->otp->generate($identifier, 'registration');
 
+        // Send OTP and capture delivery result
+        $smsFailed   = false;
+        $emailFailed = false;
+
         if ($isEmail) {
-            $this->otp->sendViaEmail($identifier, $plain, $user->first_name);
+            $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration');
         } else {
-            $this->otp->sendViaSms($this->normalizePhone($identifier), $plain);
+            $smsFailed = ! $this->otp->sendViaSms($normalizedPhone, $plain, $user->id, 'registration');
+
+            if ($smsFailed) {
+                Log::warning('Registration SMS delivery failed — user will see email-fallback prompt', [
+                    'user_id'    => $user->id,
+                    'phone_hint' => $this->maskPhone($normalizedPhone),
+                ]);
+            }
         }
 
+        // Store session context
+        $expiresAt = $this->otp->expiresAt($identifier, 'registration');
+
         $request->session()->put([
-            'otp_context'    => 'registration',
-            'otp_identifier' => $identifier,
-            'otp_user_id'    => $user->id,
+            'otp_context'         => 'registration',
+            'otp_identifier'      => $identifier,
+            'otp_user_id'         => $user->id,
+            'otp_sms_failed'      => $smsFailed,
+            'otp_email_failed'    => $emailFailed,
+            'otp_expires_at'      => $expiresAt?->toISOString(),
+            'otp_delivery_method' => $isEmail ? 'email' : 'sms',
         ]);
 
         return redirect()->route('otp.verify');
-    }
-
-    private function looksLikePhone(string $input): bool
-    {
-        $clean = preg_replace('/[\s\-\(\)]/', '', $input);
-        return (bool) preg_match('/^(\+?234|0)[789]\d{9}$/', $clean);
-    }
-
-    private function normalizePhone(string $phone): string
-    {
-        $clean = preg_replace('/\D/', '', $phone);
-        if (str_starts_with($clean, '0')) {
-            $clean = '234' . substr($clean, 1);
-        }
-        return '+' . ltrim($clean, '+');
     }
 }

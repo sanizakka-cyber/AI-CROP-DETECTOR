@@ -38,9 +38,10 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 
     // OTP Verification — accessible to guests (registration) and during password reset
-    Route::get('verify-otp',        [OtpVerificationController::class, 'show'])  ->name('otp.verify');
-    Route::post('verify-otp',       [OtpVerificationController::class, 'verify'])->name('otp.verify.post')->middleware('throttle:10,1');
-    Route::post('verify-otp/resend',[OtpVerificationController::class, 'resend'])->name('otp.resend')->middleware('throttle:3,1');
+    Route::get('verify-otp',                 [OtpVerificationController::class, 'show'])          ->name('otp.verify');
+    Route::post('verify-otp',                [OtpVerificationController::class, 'verify'])         ->name('otp.verify.post')    ->middleware('throttle:10,1');
+    Route::post('verify-otp/resend',         [OtpVerificationController::class, 'resend'])         ->name('otp.resend')         ->middleware('throttle:3,1');
+    Route::post('verify-otp/switch-to-email',[OtpVerificationController::class, 'switchToEmail'])  ->name('otp.switch.email')   ->middleware('throttle:3,1');
 });
 
 Route::middleware('auth')->group(function () {
