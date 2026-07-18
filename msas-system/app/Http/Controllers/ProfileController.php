@@ -82,10 +82,17 @@ class ProfileController extends Controller
 
     public function changePassword(Request $request): RedirectResponse
     {
-        $request->validate([
+        $rules = [
             'password'              => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['required'],
-        ]);
+        ];
+
+        // Require current password unless admin forced a reset
+        if (! $request->user()->force_password_reset) {
+            $rules['current_password'] = ['required', 'current_password'];
+        }
+
+        $request->validate($rules);
 
         $user = $request->user();
         $user->password             = Hash::make($request->password);

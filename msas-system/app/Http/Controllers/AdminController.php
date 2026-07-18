@@ -13,17 +13,19 @@ class AdminController extends Controller
         
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
-            $query->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name',  'like', "%{$search}%")
+                  ->orWhere('email',      'like', "%{$search}%")
+                  ->orWhere('phone',      'like', "%{$search}%");
+            });
         }
 
         if ($request->has('role') && $request->role != '') {
             $query->where('role', $request->role);
         }
 
-        $users = $query->latest()->paginate(10);
+        $users = $query->latest()->paginate(10)->withQueryString();
         return view('admin.users', compact('users'));
     }
 

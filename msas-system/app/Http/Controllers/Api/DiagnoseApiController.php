@@ -126,6 +126,8 @@ class DiagnoseApiController extends Controller
         $request->validate([
             'animalType'     => ['required', 'string'],
             'assessmentType' => ['required', 'string'],
+            'images'         => ['sometimes', 'array', 'max:5'],
+            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
         ]);
 
         try {

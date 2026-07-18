@@ -226,7 +226,7 @@ class DashboardController extends Controller
 
         try {
             $totalDiag = \App\Models\Diagnosis::count();
-            $confirmedDiag = \App\Models\Diagnosis::where('status','confirmed')->count();
+            $confirmedDiag = \App\Models\Diagnosis::where('status','reviewed')->count();
             $aiAccuracy = $totalDiag > 0 ? round(($confirmedDiag / $totalDiag) * 100) : 0;
         } catch (\Exception $e) { $aiAccuracy = 0; }
 
@@ -312,8 +312,8 @@ class DashboardController extends Controller
 
         // Satisfaction from diagnoses feedback as a proxy (no dedicated feedback table yet)
         try {
-            $positiveReviews = \App\Models\Diagnosis::where('status','confirmed')->count();
-            $totalReviewed   = \App\Models\Diagnosis::whereIn('status',['confirmed','needs_review'])->count();
+            $positiveReviews = \App\Models\Diagnosis::where('status','reviewed')->count();
+            $totalReviewed   = \App\Models\Diagnosis::count();
             $satisfactionScore = $totalReviewed > 0 ? round(($positiveReviews / $totalReviewed) * 100) : 0;
         } catch (\Exception $e) { $satisfactionScore = 0; }
 

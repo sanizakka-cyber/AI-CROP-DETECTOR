@@ -23,7 +23,7 @@ class VetController extends Controller
             $query->where('case_type', 'livestock');
         }
 
-        $consultations = $query->latest()->get();
+        $consultations = $query->with(['farmer'])->latest()->get();
         return view('vet.queue', compact('consultations'));
     }
 

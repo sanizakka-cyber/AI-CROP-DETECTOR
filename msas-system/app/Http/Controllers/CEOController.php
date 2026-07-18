@@ -68,8 +68,8 @@ class CEOController extends Controller
 
         // ── Diagnosis Type Split ────────────────────────────────────
         try {
-            $cropDiagnoses      = Consultation::where('consultation_type','crop')->count();
-            $livestockDiagnoses = Consultation::where('consultation_type','livestock')->count();
+            $cropDiagnoses      = Consultation::where('case_type','crop')->count();
+            $livestockDiagnoses = Consultation::where('case_type','livestock')->count();
         } catch (\Exception $e) {
             $cropDiagnoses = 0; $livestockDiagnoses = 0;
         }
@@ -106,7 +106,7 @@ class CEOController extends Controller
         try {
             $diseaseAlerts = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
                 ->where('created_at', '>=', now()->subDays(30))
-                ->whereIn('status', ['needs_review','pending'])
+                ->whereIn('status', ['pending','reviewed'])
                 ->whereNotNull('disease_name')
                 ->where('disease_name', '!=', 'Pending Expert Review')
                 ->groupBy('disease_name', 'type')
@@ -192,9 +192,9 @@ class CEOController extends Controller
             ],
             'diseases' => [
                 'title'   => 'Disease Incidence & Expert Interventions Report',
-                'columns' => ['Farmer', 'Subject', 'Status', 'Submitted', 'Updated'],
-                'records' => Consultation::with('user')->latest()->get(),
-                'row_keys'=> ['user.name', 'subject', 'status', 'created_at', 'updated_at'],
+                'columns' => ['Farmer', 'Case Type', 'Status', 'Submitted', 'Updated'],
+                'records' => Consultation::with('farmer')->latest()->get(),
+                'row_keys'=> ['farmer.name', 'case_type', 'status', 'created_at', 'updated_at'],
             ],
             'geographic' => [
                 'title'   => 'Geographic Distribution Report',

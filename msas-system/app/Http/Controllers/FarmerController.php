@@ -530,6 +530,13 @@ class FarmerController extends Controller
         $format = $request->input('format', 'csv');
         $type   = $request->input('type', 'livestock');
 
+        if (! in_array($format, ['csv', 'pdf'])) {
+            return back()->with('error', 'Unsupported format.');
+        }
+        if (! in_array($type, ['livestock', 'finance', 'consultations', 'poultry'])) {
+            return back()->with('error', 'Unsupported report type.');
+        }
+
         // Track usage
         SubscriptionUsage::increment($user->id, 'reports_generated');
 

@@ -20,9 +20,7 @@ Route::get('/health', function () {
     return response()->json([
         'status'  => 'ok',
         'app'     => config('app.name'),
-        'version' => '1.0',
         'time'    => now()->toIso8601String(),
-        'env'     => app()->environment(),
     ]);
 });
 

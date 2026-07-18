@@ -226,6 +226,9 @@ class PaymentService
      */
     public function validateWebhookSignature(string $payload, string $signature): bool
     {
-        return hash_hmac('sha512', $payload, $this->secretKey) === $signature;
+        return hash_equals(
+            hash_hmac('sha512', $payload, $this->secretKey),
+            $signature
+        );
     }
 }
