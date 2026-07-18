@@ -159,5 +159,7 @@ Route::middleware('auth.api')->group(function () {
     });
 });
 
-// Mobile payment callback (no auth — Paystack redirects here after in-app browser)
-Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCallback'])->name('api.payment.mobile-callback');
+// Mobile payment callback — Paystack redirects here after in-app browser; throttled to deter reference enumeration
+Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCallback'])
+    ->middleware('throttle:20,1')
+    ->name('api.payment.mobile-callback');
