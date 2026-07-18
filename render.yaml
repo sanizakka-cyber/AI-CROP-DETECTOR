@@ -91,7 +91,7 @@ services:
         value: smtp.gmail.com
       - key: MAIL_PORT
         value: "587"
-      - key: MAIL_ENCRYPTION
+      - key: MAIL_SCHEME
         value: tls
       - key: MAIL_USERNAME
         value: REPLACE_WITH_GMAIL
