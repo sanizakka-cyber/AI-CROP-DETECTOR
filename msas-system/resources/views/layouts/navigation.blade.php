@@ -61,6 +61,13 @@
                         </a>
                     @endif
 
+                    {{-- Finance / Admin / CEO payment management --}}
+                    @if(in_array($role, ['ceo', 'admin', 'finance']))
+                        <a href="{{ route('admin.payments.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payments.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            Payments
+                        </a>
+                    @endif
+
                     {{-- Farmer links --}}
                     @if($role === 'farmer')
                         <a href="{{ route('farmer.livestock') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition">
@@ -178,6 +185,11 @@
                             {{ __('Scan History') }}
                         </x-dropdown-link>
 
+                        <x-dropdown-link :href="route('payment.history')">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            {{ __('Payment History') }}
+                        </x-dropdown-link>
+
                         <div class="border-t border-slate-100 mt-1">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -226,6 +238,9 @@
                 <x-responsive-nav-link :href="route('ceo.users')">Users</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ceo.reports')">Reports</x-responsive-nav-link>
             @endif
+            @if(in_array($role, ['ceo', 'admin', 'finance']))
+                <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
+            @endif
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
@@ -246,6 +261,7 @@
 
             <div class="mt-3 space-y-1 px-2">
                 <x-responsive-nav-link :href="route('profile.edit')">My Profile</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('payment.history')">Payment History</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('notifications.index')">
                     Notifications
                     @if($unreadNotifications > 0)
