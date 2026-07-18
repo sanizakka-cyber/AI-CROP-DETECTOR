@@ -216,7 +216,7 @@ class PaymentController extends Controller
         if (!$payment->module_id) return;
 
         \App\Models\Order::where('id', $payment->module_id)
-            ->update(['status' => 'confirmed', 'paid_at' => now()]);
+            ->update(['status' => 'confirmed', 'confirmed_at' => now()]);
     }
 
     /**
@@ -229,7 +229,7 @@ class PaymentController extends Controller
             'subscription' => $clientAmount > 0 ? $clientAmount : false,
             'consultation' => $clientAmount > 0 ? $clientAmount : false,
             'marketplace'  => $moduleId
-                ? (\App\Models\Order::find($moduleId)?->total_amount ?? false)
+                ? (\App\Models\Order::find($moduleId)?->total ?? false)
                 : false,
             default => $clientAmount > 0 ? $clientAmount : false,
         };

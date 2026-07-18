@@ -8,11 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('consultations')) return;
         Schema::table('consultations', function (Blueprint $table) {
-            // Channel: how the farmer wants to be consulted
-            $table->string('channel')->default('in_app')->after('consultation_type');
-            // Paystack reference for consultation payment
-            $table->string('payment_reference')->nullable()->after('payment_status');
+            if (!Schema::hasColumn('consultations', 'channel')) {
+                $table->string('channel')->default('in_app')->after('consultation_type');
+            }
+            if (!Schema::hasColumn('consultations', 'payment_reference')) {
+                $table->string('payment_reference')->nullable()->after('payment_status');
+            }
         });
     }
 
