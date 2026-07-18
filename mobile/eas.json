@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 7.0.0"
+    "version": ">= 7.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -16,6 +17,9 @@
       "android": {
         "buildType": "apk"
       },
+      "cache": {
+        "disabled": true
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
         "EXPO_PUBLIC_ENV": "preview"
@@ -23,7 +27,7 @@
     },
     "production": {
       "android": {
-        "buildType": "aab"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
@@ -32,8 +36,7 @@
     },
     "production-apk": {
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:bundleRelease"
+        "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
