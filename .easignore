@@ -8,9 +8,6 @@ docs/
 # Exclude generated/installed files that EAS rebuilds server-side
 mobile/node_modules/
 mobile/.expo/
-mobile/android/.gradle/
-mobile/android/app/.cxx/
-mobile/android/app/build/
-mobile/android/build/
+mobile/android/
 mobile/ios/Pods/
 mobile/ios/build/
