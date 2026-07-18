@@ -40,47 +40,34 @@ class DiagnosticController extends Controller
         $aiResult = null;
 
         try {
-            $http = Http::timeout(30);
-            if ($aiKey) {
-                $http = $http->withToken($aiKey);
-            }
+            $imageData = file_get_contents($fullPath);
+            $imageName = basename($fullPath);
 
-            $multipart = $http->attach('images', file_get_contents($fullPath), basename($fullPath));
+            $base = Http::connectTimeout(8)->timeout(25)
+                ->when($aiKey, fn($h) => $h->withToken($aiKey));
 
-            // Add scan-specific context fields required by the AI engine
-            if ($request->scan_type === 'plant') {
-                $multipart = $multipart
-                    ->asMultipart()
-                    ->attach('cropType', $request->input('crop_type', 'Unknown crop'))
-                    ->attach('cropPart', $request->input('crop_part', 'plant'));
-                // Re-attach image since asMultipart resets
-                $response = Http::timeout(30)
-                    ->when($aiKey, fn($h) => $h->withToken($aiKey))
-                    ->attach('images', file_get_contents($fullPath), basename($fullPath))
+            $response = match($request->scan_type) {
+                'plant' => $base
+                    ->attach('images',   $imageData, $imageName)
                     ->attach('cropType', $request->input('crop_type', 'Unknown crop'))
                     ->attach('cropPart', $request->input('crop_part', 'plant'))
-                    ->post($aiEndpoint);
-            } elseif ($request->scan_type === 'animal') {
-                $response = Http::timeout(30)
-                    ->when($aiKey, fn($h) => $h->withToken($aiKey))
-                    ->attach('images', file_get_contents($fullPath), basename($fullPath))
-                    ->attach('animalType', $request->input('animal_type', 'Unknown animal'))
+                    ->post($aiEndpoint),
+                'animal' => $base
+                    ->attach('images',         $imageData, $imageName)
+                    ->attach('animalType',     $request->input('animal_type', 'Unknown animal'))
                     ->attach('assessmentType', $request->input('assessment_type', 'general'))
-                    ->post($aiEndpoint);
-            } else {
-                // soil
-                $response = Http::timeout(30)
-                    ->when($aiKey, fn($h) => $h->withToken($aiKey))
-                    ->attach('images', file_get_contents($fullPath), basename($fullPath))
+                    ->post($aiEndpoint),
+                default => $base
+                    ->attach('images',      $imageData, $imageName)
                     ->attach('soilContext', $request->input('soil_context', ''))
-                    ->post($aiEndpoint);
-            }
+                    ->post($aiEndpoint),
+            };
 
             if ($response->successful()) {
                 $aiResult = $response->json();
             }
         } catch (\Throwable) {
-            // AI engine offline — handled below
+            // AI engine offline or timed out — fall through to pending-review path
         }
 
         if ($aiResult) {
@@ -92,7 +79,7 @@ class DiagnosticController extends Controller
                 'first_aid_steps'        => $aiResult['first_aid'] ?? $aiResult['recommendation'] ?? null,
                 'recommended_medication' => $aiResult['medication'] ?? $aiResult['suitable_crops'] ?? null,
                 'vet_referral_advice'    => $aiResult['referral'] ?? null,
-                'status'                 => (int) ($aiResult['confidence'] ?? 0) < 60 ? 'needs_review' : 'pending',
+                'status'                 => 'pending',
             ];
         } else {
             $diagnosisData = [
