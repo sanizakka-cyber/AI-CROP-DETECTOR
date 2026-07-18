@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionUsage;
+use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -242,6 +244,30 @@ class SubscriptionController extends Controller
             'upgraded_from'      => $activeSub?->plan,
             'upgraded_at'        => $activeSub ? now() : null,
         ]);
+
+        // Record in unified payments table if a real payment was made
+        if ($method === 'paystack' && $amount > 0) {
+            $planName = config("subscription.plans.{$plan}.name");
+            $exists = Payment::where('reference', $reference)->exists();
+            if (!$exists) {
+                Payment::create([
+                    'user_id'             => $user->id,
+                    'user_type'           => $user->role,
+                    'reference'           => $reference,
+                    'amount'              => $amount,
+                    'currency'            => 'NGN',
+                    'status'              => 'success',
+                    'payment_method'      => 'paystack',
+                    'module'              => 'subscription',
+                    'description'         => "{$planName} - " . ucfirst($cycle) . " subscription",
+                    'verification_status' => 'verified',
+                    'verified_at'         => now(),
+                    'paid_at'             => now(),
+                    'receipt_number'      => Payment::generateReceiptNumber(),
+                    'metadata'            => ['plan' => $plan, 'billing_cycle' => $cycle],
+                ]);
+            }
+        }
 
         return redirect()->route('subscription.dashboard')
             ->with('success', "Successfully subscribed to the " . config("subscription.plans.{$plan}.name") . "!");

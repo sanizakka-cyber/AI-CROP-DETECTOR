@@ -128,6 +128,13 @@ class User extends Authenticatable
         return $this->hasMany(Finance::class);
     }
 
+    // ── Payment Relationships ───────────────────────────────────────────────
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class)->latest();
+    }
+
     // ── Subscription Relationships ──────────────────────────────────────────
 
     public function subscriptions()

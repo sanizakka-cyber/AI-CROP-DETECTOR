@@ -9,6 +9,9 @@ use App\Http\Controllers\Api\AnalyticsApiController;
 use App\Http\Controllers\Api\FarmApiController;
 use App\Http\Controllers\Api\AnimalApiController;
 use App\Http\Controllers\Api\PoultryApiController;
+use App\Http\Controllers\Api\WeatherApiController;
+use App\Http\Controllers\Api\NotificationApiController;
+use App\Http\Controllers\Api\PaymentApiController;
 use App\Models\SubscriptionUsage;
 use Illuminate\Support\Facades\Route;
 
@@ -33,8 +36,19 @@ Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
 Route::middleware('auth.api')->group(function () {
 
     // Auth
-    Route::get('/auth/me',   [AuthApiController::class, 'me']);
+    Route::get('/auth/me',      [AuthApiController::class, 'me']);
     Route::post('/auth/logout', [AuthApiController::class, 'logout']);
+    Route::patch('/auth/profile',   [AuthApiController::class, 'updateProfile']);
+    Route::post('/auth/fcm-token',  [AuthApiController::class, 'updateFcmToken']);
+
+    // Weather (cached, uses Open-Meteo)
+    Route::get('/weather', [WeatherApiController::class, 'current']);
+
+    // Notifications
+    Route::get('/notifications',                [NotificationApiController::class, 'index']);
+    Route::patch('/notifications/{id}/read',    [NotificationApiController::class, 'markRead']);
+    Route::post('/notifications/read-all',      [NotificationApiController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}',        [NotificationApiController::class, 'destroy']);
 
     // AI Diagnosis (rate-limited: 20 scans per minute per user)
     Route::middleware('throttle:20,1')->group(function () {
@@ -137,4 +151,15 @@ Route::middleware('auth.api')->group(function () {
         $sub = $user->startTrial($plan);
         return response()->json(['subscription' => $sub, 'message' => '14-day free trial started!'], 201);
     });
+
+    // ── Payments ────────────────────────────────────────────────────────────
+    Route::prefix('payment')->name('api.payment.')->group(function () {
+        Route::post('/initiate',         [PaymentApiController::class, 'initiate'])->name('initiate');
+        Route::post('/verify',           [PaymentApiController::class, 'verify'])->name('verify');
+        Route::get('/history',           [PaymentApiController::class, 'history'])->name('history');
+        Route::get('/receipt/{payment}', [PaymentApiController::class, 'receipt'])->name('receipt');
+    });
 });
+
+// Mobile payment callback (no auth — Paystack redirects here after in-app browser)
+Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCallback'])->name('api.payment.mobile-callback');
