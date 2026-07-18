@@ -21,7 +21,7 @@
     $activeSub = $user->activeSubscription();
     $subPlan   = $activeSub?->plan ?? 'none';
     $subStatus = $activeSub?->status ?? 'none';
-    $planCfg   = $activeSub ? config('subscription.plans.'.$subPlan) : null;
+    $planCfg   = $activeSub ? (config('subscription.plans.'.$subPlan) ?? []) : null;
 @endphp
 
 {{-- ── Subscription Status Banner ───────────────────────────────────── --}}
@@ -48,7 +48,7 @@
     <div style="display:flex;align-items:center;gap:12px;">
         <span style="background:rgba(45,156,219,0.25);color:#7dd3fc;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;border:1px solid rgba(45,156,219,0.3);">FREE TRIAL</span>
         <div>
-            <span style="color:#fff;font-weight:800;font-size:14px;">{{ $planCfg['name'] }}</span>
+            <span style="color:#fff;font-weight:800;font-size:14px;">{{ $planCfg['name'] ?? ucfirst($subPlan) }}</span>
             <span style="color:rgba(255,255,255,0.55);font-size:12px;margin-left:8px;">{{ $activeSub->daysRemaining() }} days remaining</span>
         </div>
     </div>
@@ -63,10 +63,10 @@
 <div style="background:linear-gradient(135deg,#0B2447,#0F6B3E);border-radius:16px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:relative;overflow:hidden;">
     <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.04);top:-40px;right:60px;"></div>
     <div style="display:flex;align-items:center;gap:12px;position:relative;">
-        <div style="width:40px;height:40px;border-radius:10px;background:{{ $planCfg['badge_color'] }};display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
+        <div style="width:40px;height:40px;border-radius:10px;background:{{ $planCfg['badge_color'] ?? '#1FA84A' }};display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
         <div>
             <div style="color:rgba(255,255,255,0.6);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Active Plan</div>
-            <div style="color:#fff;font-size:16px;font-weight:800;">{{ $planCfg['name'] }}</div>
+            <div style="color:#fff;font-size:16px;font-weight:800;">{{ $planCfg['name'] ?? ucfirst($subPlan) }}</div>
         </div>
     </div>
     <div style="display:flex;gap:20px;position:relative;">
@@ -397,7 +397,7 @@
             <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8fafc;">
                 <div>
                     <div style="font-size:12px;font-weight:600;color:#0f172a;">{{ $fin->category ?? 'Uncategorised' }}</div>
-                    <div style="font-size:11px;color:#94a3b8;">{{ \Carbon\Carbon::parse($fin->transaction_date)->format('M d') }}</div>
+                    <div style="font-size:11px;color:#94a3b8;">{{ $fin->transaction_date ? \Carbon\Carbon::parse($fin->transaction_date)->format('M d') : '—' }}</div>
                 </div>
                 <div style="font-size:13px;font-weight:800;color:{{ $fin->type === 'Income' ? '#0F6B3E' : '#dc2626' }};">
                     {{ $fin->type === 'Income' ? '+' : '-' }}₦{{ number_format($fin->amount) }}

@@ -14,12 +14,12 @@
 
             @if(session('success'))
                 <div class="mb-4 bg-green-100 border border-green-300 text-green-800 p-4 rounded-xl font-semibold shadow-sm">
-                    {!! session('success') !!}
+                    {{ session('success') }}
                 </div>
             @endif
             @if(session('error'))
                 <div class="mb-4 bg-red-100 border border-red-300 text-red-800 p-4 rounded-xl font-semibold shadow-sm">
-                    {!! session('error') !!}
+                    {{ session('error') }}
                 </div>
             @endif
             @if($errors->any())
@@ -64,7 +64,7 @@
                                         </td>
                                         <td class="px-4 py-3">{{ number_format($flock->quantity) }}</td>
                                         <td class="px-4 py-3 font-bold">{{ number_format($flock->quantity - ($flock->mortality ?? 0)) }}</td>
-                                        <td class="px-4 py-3">{{ \Carbon\Carbon::parse($flock->date_acquired)->format('M d, Y') }}</td>
+                                        <td class="px-4 py-3">{{ $flock->date_acquired ? \Carbon\Carbon::parse($flock->date_acquired)->format('M d, Y') : '—' }}</td>
                                         <td class="px-4 py-3 text-right space-x-1">
                                             @if(in_array(strtolower($flock->bird_type), ['layers', 'chicken', 'duck', 'quail']))
                                                 <button onclick="openEggModal({{ $flock->id }}, '{{ addslashes($flock->batch_number) }}')"
