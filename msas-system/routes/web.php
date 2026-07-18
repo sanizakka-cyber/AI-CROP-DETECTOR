@@ -64,10 +64,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/change-password', [ProfileController::class, 'changePasswordForm'])->name('password.change');
     Route::post('/change-password', [ProfileController::class, 'changePassword'])->name('password.change.update');
 
-    // Diagnostics (Smart Scan)
-    Route::get('/diagnostics/scan', [DiagnosticController::class, 'scan'])->name('diagnostics.scan');
-    Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])->name('diagnostics.analyze');
-    Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
+    // Diagnostics (Smart Scan) — farmers only; analyze is throttled to protect AI engine
+    Route::middleware(['role:farmer,admin,ceo'])->group(function () {
+        Route::get('/diagnostics/scan', [DiagnosticController::class, 'scan'])->name('diagnostics.scan');
+        Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])
+            ->middleware('throttle:10,1')
+            ->name('diagnostics.analyze');
+        Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
+    });
 });
 
 // Role-Specific Dashboards
