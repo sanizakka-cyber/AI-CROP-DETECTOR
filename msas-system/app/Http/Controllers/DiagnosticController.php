@@ -52,83 +52,82 @@ class DiagnosticController extends Controller
             $failureReason = 'AI_ENGINE_URL not configured';
             Log::error('AI scan: missing AI_ENGINE_URL');
         } else {
-            // ── 4. Build multipart parts ──────────────────────────────────────
-            // Using Guzzle directly (not Laravel Http facade) so the multipart
-            // body is built exactly as Guzzle expects — no Laravel wrapper
-            // injecting a competing json:[] option.
-            $fileHandle = fopen($fullPath, 'r');
+            // ── 4. Build raw multipart body ───────────────────────────────────
+            // Manually construct the multipart/form-data body so every byte is
+            // exactly what python-multipart expects — no library surprises.
+            // Text fields come first (no filename/Content-Type), file last.
+            $imageData = file_get_contents($fullPath);
+            $boundary  = '----MSASFormBoundary' . bin2hex(random_bytes(12));
+            $body      = '';
 
-            $multipart = match($request->scan_type) {
+            $textFields = match($request->scan_type) {
                 'plant' => [
-                    [
-                        'name'     => 'images',
-                        'contents' => $fileHandle,
-                        'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType],
-                    ],
-                    ['name' => 'cropType', 'contents' => $request->input('crop_type', 'Unknown crop')],
-                    ['name' => 'cropPart', 'contents' => $request->input('crop_part', 'plant')],
+                    'cropType' => $request->input('crop_type') ?: 'Unknown crop',
+                    'cropPart' => $request->input('crop_part') ?: 'plant',
                 ],
                 'animal' => [
-                    [
-                        'name'     => 'images',
-                        'contents' => $fileHandle,
-                        'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType],
-                    ],
-                    ['name' => 'animalType',     'contents' => $request->input('animal_type', 'Unknown animal')],
-                    ['name' => 'assessmentType', 'contents' => $request->input('assessment_type', 'general')],
+                    'animalType'     => $request->input('animal_type') ?: 'Unknown animal',
+                    'assessmentType' => $request->input('assessment_type') ?: 'general',
                 ],
                 default => [
-                    [
-                        'name'     => 'images',
-                        'contents' => $fileHandle,
-                        'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType],
-                    ],
-                    ['name' => 'soilContext', 'contents' => $request->input('soil_context', '')],
+                    'soilContext' => $request->input('soil_context') ?: '',
                 ],
             };
 
-            // ── 5. Call AI engine via Guzzle ──────────────────────────────────
+            foreach ($textFields as $fieldName => $fieldValue) {
+                $body .= "--{$boundary}\r\n";
+                $body .= "Content-Disposition: form-data; name=\"{$fieldName}\"\r\n\r\n";
+                $body .= $fieldValue . "\r\n";
+            }
+
+            $filename = basename($fullPath);
+            $body .= "--{$boundary}\r\n";
+            $body .= "Content-Disposition: form-data; name=\"images\"; filename=\"{$filename}\"\r\n";
+            $body .= "Content-Type: {$mimeType}\r\n\r\n";
+            $body .= $imageData . "\r\n";
+            $body .= "--{$boundary}--\r\n";
+
+            // ── 5. POST to AI engine ──────────────────────────────────────────
             try {
+                $headers = [
+                    'Content-Type'   => "multipart/form-data; boundary={$boundary}",
+                    'Content-Length' => strlen($body),
+                ];
+                if ($aiKey) {
+                    $headers['Authorization'] = "Bearer {$aiKey}";
+                }
+
+                Log::error('[AI] sending request', [
+                    'url'        => $aiEndpoint,
+                    'scan_type'  => $request->scan_type,
+                    'base_url'   => $baseUrl,
+                    'fields'     => array_keys($textFields),
+                    'image_size' => strlen($imageData),
+                ]);
+
                 $guzzle = new GuzzleClient([
                     'connect_timeout' => 30,
                     'timeout'         => 90,
-                    'http_errors'     => false,  // handle status codes manually
+                    'http_errors'     => false,
                 ]);
 
-                $guzzleOpts = ['multipart' => $multipart];
-                if ($aiKey) {
-                    $guzzleOpts['headers'] = ['Authorization' => "Bearer {$aiKey}"];
-                }
-
-                Log::error('[AI] sending request', ['url' => $aiEndpoint, 'scan_type' => $request->scan_type, 'base_url' => $baseUrl]);
-
-                $resp   = $guzzle->post($aiEndpoint, $guzzleOpts);
+                $resp   = $guzzle->post($aiEndpoint, ['body' => $body, 'headers' => $headers]);
                 $status = $resp->getStatusCode();
-                $body   = (string) $resp->getBody();
+                $rbody  = (string) $resp->getBody();
 
-                Log::error('[AI] response received', ['status' => $status, 'body_preview' => substr($body, 0, 200)]);
+                Log::error('[AI] response', ['status' => $status, 'preview' => substr($rbody, 0, 300)]);
 
                 if ($status >= 200 && $status < 300) {
-                    $aiResult = json_decode($body, true);
+                    $aiResult = json_decode($rbody, true);
                     if (!$aiResult) {
-                        $failureReason = "200 OK but non-JSON body: " . substr($body, 0, 300);
+                        $failureReason = "200 OK but non-JSON: " . substr($rbody, 0, 200);
                     }
                 } else {
-                    $failureReason = "HTTP {$status}: " . substr($body, 0, 300);
+                    $failureReason = "HTTP {$status}: " . substr($rbody, 0, 300);
                 }
-            } catch (\GuzzleHttp\Exception\ConnectException $e) {
-                $failureReason = 'Connect error: ' . $e->getMessage();
-                Log::error('[AI] connect exception', ['error' => $e->getMessage()]);
             } catch (\Throwable $e) {
                 $failureReason = get_class($e) . ': ' . $e->getMessage();
                 Log::error('[AI] exception', ['error' => $e->getMessage()]);
-            } finally {
-                if (is_resource($fileHandle)) {
-                    fclose($fileHandle);
-                }
             }
         }
 
@@ -152,8 +151,6 @@ class DiagnosticController extends Controller
                 'urgency_level'          => 'Medium',
                 'first_aid_steps'        => null,
                 'recommended_medication' => null,
-                // Temporarily surface failure reason for debugging.
-                // Replace with generic message once scan is confirmed working.
                 'vet_referral_advice'    => $failureReason
                     ? '[DBG] ' . substr($failureReason, 0, 300)
                     : 'AI engine unavailable. An expert will review your scan shortly.',
