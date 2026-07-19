@@ -14,7 +14,7 @@ echo "sys_temp_dir = /var/www/html/storage/tmp" > /usr/local/etc/php/conf.d/temp
 echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/tempdir.ini
 
 # Route PHP-FPM logs through the container's main stderr so Render captures them
-echo "error_log = /proc/1/fd/2" >> /usr/local/etc/php-fpm.d/www.conf
+echo "error_log = /proc/1/fd/2" >> /usr/local/etc/php-fpm.conf
 echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/www.conf
 echo "decorate_workers_output = no" >> /usr/local/etc/php-fpm.d/www.conf
 
