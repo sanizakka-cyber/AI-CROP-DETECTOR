@@ -18,6 +18,23 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
+// TEMP DEBUG — remove after diagnosing AI engine connection
+Route::get('/debug-ai', function () {
+    $url = config('services.ai_engine.url');
+    $key = config('services.ai_engine.key', '');
+    try {
+        $health = \Illuminate\Support\Facades\Http::timeout(5)->get(rtrim($url, '/') . '/health')->json();
+    } catch (\Throwable $e) {
+        $health = ['error' => $e->getMessage()];
+    }
+    return response()->json([
+        'ai_engine_url'    => $url,
+        'key_prefix'       => substr($key, 0, 10) . '...',
+        'key_length'       => strlen($key),
+        'engine_health'    => $health,
+    ]);
+});
+
 // Language / Locale switcher (works logged in or out)
 Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
 
