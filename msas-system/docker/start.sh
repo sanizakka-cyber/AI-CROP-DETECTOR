@@ -23,6 +23,9 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Create storage symlink so uploaded files are publicly accessible
+php artisan storage:link --force 2>/dev/null || true
+
 # Seed if the products table is empty (first deploy)
 php artisan db:seed --class=ProductSeeder --force 2>/dev/null || true
 
