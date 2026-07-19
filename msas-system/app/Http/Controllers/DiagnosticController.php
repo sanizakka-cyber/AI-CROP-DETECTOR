@@ -43,7 +43,7 @@ class DiagnosticController extends Controller
             $imageData = file_get_contents($fullPath);
             $imageName = basename($fullPath);
 
-            $base = Http::connectTimeout(8)->timeout(25)
+            $base = Http::connectTimeout(8)->timeout(60)
                 ->when($aiKey, fn($h) => $h->withToken($aiKey));
 
             $response = match($request->scan_type) {
@@ -65,9 +65,15 @@ class DiagnosticController extends Controller
 
             if ($response->successful()) {
                 $aiResult = $response->json();
+            } else {
+                \Log::warning('AI engine non-2xx', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                    'url'    => $aiEndpoint,
+                ]);
             }
-        } catch (\Throwable) {
-            // AI engine offline or timed out — fall through to pending-review path
+        } catch (\Throwable $e) {
+            \Log::warning('AI engine exception', ['error' => $e->getMessage(), 'url' => $aiEndpoint]);
         }
 
         if ($aiResult) {
