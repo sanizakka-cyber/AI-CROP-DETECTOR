@@ -11,7 +11,7 @@
             <div class="text-3xl shrink-0">✨</div>
             <div>
                 <h3 class="font-bold text-base mb-0.5">Auto-Detection Enabled</h3>
-                <p class="text-sm text-emerald-100">Our AI automatically identifies the plant species, animal breed, detected organ, and condition — no manual selection required. Hints below are optional and help improve accuracy.</p>
+                <p class="text-sm text-emerald-100">Our AI automatically identifies the plant species, animal breed, detected organ, and condition. Optional fields below can improve accuracy if you already know the type.</p>
             </div>
         </div>
 
@@ -66,24 +66,20 @@
                     </div>
                 </div>
 
-                <!-- Optional Hint Fields -->
+                <!-- Optional Context Fields -->
                 <div id="ctx-plant" class="mb-6">
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Optional Hints</span>
-                        <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full">AI auto-detects if left blank</span>
-                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Crop Type (hint)</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Crop Type <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                             <input type="text" name="crop_type" placeholder="e.g., Maize, Tomato, Cassava"
                                    class="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-400 focus:border-emerald-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Part / Area (hint)</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Plant Part <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                             <select name="crop_part" class="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-400 focus:border-emerald-400">
-                                <option value="">— Let AI detect —</option>
+                                <option value="">Let AI Detect</option>
                                 <option value="leaf">Leaf</option>
-                                <option value="stem">Stem / Stalk</option>
+                                <option value="stem">Stem</option>
                                 <option value="root">Root</option>
                                 <option value="fruit">Fruit / Pod</option>
                                 <option value="whole plant">Whole Plant</option>
@@ -95,22 +91,18 @@
                 </div>
 
                 <div id="ctx-animal" class="mb-6 hidden">
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Optional Hints</span>
-                        <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full">AI auto-detects if left blank</span>
-                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Animal Type (hint)</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Animal Type <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                             <input type="text" name="animal_type" placeholder="e.g., Cattle, Chicken, Goat"
                                    class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-400 focus:border-amber-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Area You're Showing (hint)</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Body Area <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                             <select name="assessment_type" class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-400 focus:border-amber-400">
-                                <option value="">— Let AI detect —</option>
+                                <option value="">Let AI Detect</option>
                                 <option value="skin/coat">Skin / Coat</option>
-                                <option value="droppings">Droppings / Stool</option>
+                                <option value="droppings">Droppings</option>
                                 <option value="eyes">Eyes</option>
                                 <option value="hooves">Hooves / Feet</option>
                                 <option value="wound">Wound / Lesion</option>
@@ -121,11 +113,11 @@
                 </div>
 
                 <div id="ctx-soil" class="mb-6 hidden">
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Optional Context</span>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Additional Context <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                        <input type="text" name="soil_context" placeholder="e.g., Farm location, current crop, known issues"
+                               class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-700 focus:border-amber-700">
                     </div>
-                    <input type="text" name="soil_context" placeholder="e.g., Farm location, current crop, known issues"
-                           class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-700 focus:border-amber-700">
                 </div>
 
                 <!-- Image Upload Area -->

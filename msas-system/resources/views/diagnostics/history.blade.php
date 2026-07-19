@@ -447,9 +447,22 @@
 
     // ── TTS Engine ─────────────────────────────────────────────────────────────
     (function(){
-        var states  = {};   // id → 'stopped' | 'playing' | 'paused'
-        var speeds  = {};   // id → float
-        var cached  = {};   // id+lang → translated text
+        var states     = {};   // id → 'stopped' | 'playing' | 'paused'
+        var speeds     = {};   // id → float
+        var cached     = {};   // id+lang → translated text
+        var translating = {};  // id → bool — prevents Play while fetch is in flight
+
+        // Pre-cache voices as soon as possible (Chrome loads async)
+        var voiceCache = [];
+        function loadVoices() {
+            var v = window.speechSynthesis.getVoices();
+            if (v.length) voiceCache = v;
+            return voiceCache;
+        }
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = function(){ loadVoices(); };
+            loadVoices();
+        }
 
         function el(id){ return document.getElementById(id); }
 
@@ -459,11 +472,11 @@
             return (el(id + '-text') || {textContent:''}).textContent.trim();
         }
 
-        function getVoiceLang(id) {
+        function getLangCode(id) {
             var sel = el(id + '-lang');
-            if (!sel) return 'en-NG';
-            var map = { en:'en-NG', ha:'ha-NG', fr:'fr-FR', yo:'yo-NG', ig:'ig-NG', ar:'ar-SA', sw:'sw-KE' };
-            return map[sel.value] || 'en-NG';
+            if (!sel) return 'en-US';
+            var map = { en:'en-US', ha:'ha-NG', fr:'fr-FR', yo:'yo-NG', ig:'ig-NG', ar:'ar-SA', sw:'sw-KE' };
+            return map[sel.value] || 'en-US';
         }
 
         function updateUI(id, state) {
@@ -473,7 +486,7 @@
             var replayBtn= el(id + '-replay');
             if (!playBtn) return;
             if (state === 'playing') {
-                playBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[9px]"></i> Playing...';
+                playBtn.innerHTML = '<i class="fa-solid fa-volume-high fa-beat text-[9px]"></i> Playing...';
                 playBtn.classList.add('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.remove('hidden');
                 if (stopBtn)   stopBtn.classList.remove('hidden');
@@ -499,30 +512,41 @@
             var text = getDisplayText(id);
             if (!text) return;
 
+            var langCode = getLangCode(id);
             var u    = new SpeechSynthesisUtterance(text);
-            u.lang   = getVoiceLang(id);
+            u.lang   = langCode;
             u.rate   = parseFloat(speeds[id] || 1);
             u.pitch  = 1.0;
             u.volume = 1.0;
 
-            // Prefer matching voice
-            var voices = window.speechSynthesis.getVoices();
+            // Match a native voice for the target language — do NOT fall back to English
+            // so the browser honours the lang attribute instead of overriding with an English voice
+            var voices = loadVoices();
             if (voices.length) {
-                var code  = u.lang.split('-')[0];
-                var match = voices.find(function(v){ return v.lang.startsWith(code); })
-                         || voices.find(function(v){ return v.lang.startsWith('en'); });
+                var code  = langCode.split('-')[0];
+                var match = voices.find(function(v){ return v.lang.startsWith(code); });
                 if (match) u.voice = match;
+                // If no native voice found, leave u.voice unset — browser will try to use u.lang
             }
 
             u.onstart = function(){ states[id]='playing'; updateUI(id,'playing'); };
             u.onend   = function(){ states[id]='stopped'; updateUI(id,'stopped'); };
-            u.onerror = function(e){ console.warn('TTS',e); states[id]='stopped'; updateUI(id,'stopped'); };
+            u.onerror = function(e){ console.warn('TTS error', e); states[id]='stopped'; updateUI(id,'stopped'); };
 
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(u);
         }
 
         window.ttsPlay = function(id) {
+            // Block play while translation is fetching
+            if (translating[id]) {
+                var btn = el(id + '-playbtn');
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[9px]"></i> Translating...';
+                    setTimeout(function(){ if (states[id] !== 'playing') updateUI(id, 'stopped'); }, 3000);
+                }
+                return;
+            }
             if (states[id] === 'paused') {
                 window.speechSynthesis.resume();
                 states[id] = 'playing';
@@ -559,17 +583,18 @@
             }
         };
 
-        // ── Language change: translate then speak ──────────────────────────
+        // ── Language change: translate then speak ──────────────────────────────
         window.ttsChangeLang = function(id, langCode, translateUrl) {
-            // Switch back to English — clear translation
+            // English — clear any existing translation and revert to original text
             if (langCode === 'en') {
                 var t = el(id + '-translated');
                 if (t) t.textContent = '';
+                translating[id] = false;
                 if (states[id] === 'playing') { window.ttsStop(id); setTimeout(function(){ startSpeaking(id); }, 150); }
                 return;
             }
 
-            // Check in-session cache first
+            // Serve from in-session cache if available
             var cacheKey = id + '-' + langCode;
             if (cached[cacheKey]) {
                 var t = el(id + '-translated');
@@ -578,12 +603,14 @@
                 return;
             }
 
-            // Show translating indicator
+            // Mark as translating — Play will wait for this to finish
+            translating[id] = true;
             var indicator = el(id + '-translating');
             if (indicator) indicator.classList.remove('hidden');
 
             var originalText = (el(id + '-text') || {textContent:''}).textContent.trim();
             if (!originalText || !translateUrl) {
+                translating[id] = false;
                 if (indicator) indicator.classList.add('hidden');
                 return;
             }
@@ -601,11 +628,13 @@
             })
             .then(function(r){ return r.json(); })
             .then(function(data) {
+                translating[id] = false;
                 if (indicator) indicator.classList.add('hidden');
                 if (data.translated_text) {
                     cached[cacheKey] = data.translated_text;
                     var t = el(id + '-translated');
                     if (t) t.textContent = data.translated_text;
+                    // If already playing, restart in the new language immediately
                     if (states[id] === 'playing') {
                         window.ttsStop(id);
                         setTimeout(function(){ startSpeaking(id); }, 150);
@@ -615,16 +644,11 @@
                 }
             })
             .catch(function(err) {
-                console.warn('Translation failed:', err);
+                translating[id] = false;
                 if (indicator) indicator.classList.add('hidden');
+                console.warn('Translation fetch failed:', err);
             });
         };
-
-        // Preload voices (Chrome async)
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = function(){};
-            window.speechSynthesis.getVoices();
-        }
     })();
     </script>
 </x-app-layout>
