@@ -199,15 +199,26 @@ class DiagnosticController extends Controller
 
     public function history()
     {
-        $feedbackReady = Schema::hasTable('diagnosis_feedbacks');
+        try {
+            $feedbackReady = Schema::hasTable('diagnosis_feedbacks');
 
-        $query = Diagnosis::where('user_id', auth()->id())->latest();
+            $query = Diagnosis::where('user_id', auth()->id())->latest();
 
-        if ($feedbackReady) {
-            $query->with('myFeedback');
+            if ($feedbackReady) {
+                $query->with('myFeedback');
+            }
+
+            $diagnoses = $query->get();
+        } catch (\Throwable $e) {
+            Log::error('DiagnosticController::history error', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+            // Fallback: show history without feedback so page doesn't 500
+            $feedbackReady = false;
+            $diagnoses     = Diagnosis::where('user_id', auth()->id())->latest()->get();
         }
-
-        $diagnoses = $query->get();
 
         return view('diagnostics.history', compact('diagnoses', 'feedbackReady'));
     }
