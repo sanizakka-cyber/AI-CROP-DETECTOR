@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:10,1')
             ->name('diagnostics.analyze');
         Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
+        Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
     });
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Diagnosis;
+use App\Models\DiagnosisFeedback;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -44,7 +45,6 @@ class DiagnosticController extends Controller
         $aiResult      = null;
         $failureReason = null;
 
-        // ── 3. Guard: file must be readable ───────────────────────────────────
         if (!file_exists($fullPath) || !is_readable($fullPath)) {
             $failureReason = "File unreadable: {$fullPath}";
             Log::error('AI scan: file unreadable', ['path' => $fullPath]);
@@ -52,26 +52,24 @@ class DiagnosticController extends Controller
             $failureReason = 'AI_ENGINE_URL not configured';
             Log::error('AI scan: missing AI_ENGINE_URL');
         } else {
-            // ── 4. Build raw multipart body ───────────────────────────────────
-            // Manually construct the multipart/form-data body so every byte is
-            // exactly what python-multipart expects — no library surprises.
-            // Text fields come first (no filename/Content-Type), file last.
+            // ── 3. Build raw RFC 2046 multipart body ──────────────────────────
             $imageData = file_get_contents($fullPath);
             $boundary  = '----MSASFormBoundary' . bin2hex(random_bytes(12));
             $body      = '';
 
+            // Only send fields that carry actual hint values — all now optional
             $textFields = match($request->scan_type) {
-                'plant' => [
-                    'cropType' => $request->input('crop_type') ?: 'Unknown crop',
-                    'cropPart' => $request->input('crop_part') ?: 'plant',
-                ],
-                'animal' => [
-                    'animalType'     => $request->input('animal_type') ?: 'Unknown animal',
-                    'assessmentType' => $request->input('assessment_type') ?: 'general',
-                ],
-                default => [
-                    'soilContext' => $request->input('soil_context') ?: '',
-                ],
+                'plant' => array_filter([
+                    'cropType' => $request->input('crop_type'),
+                    'cropPart' => $request->input('crop_part'),
+                ]),
+                'animal' => array_filter([
+                    'animalType'     => $request->input('animal_type'),
+                    'assessmentType' => $request->input('assessment_type'),
+                ]),
+                default => array_filter([
+                    'soilContext' => $request->input('soil_context'),
+                ]),
             };
 
             foreach ($textFields as $fieldName => $fieldValue) {
@@ -87,7 +85,7 @@ class DiagnosticController extends Controller
             $body .= $imageData . "\r\n";
             $body .= "--{$boundary}--\r\n";
 
-            // ── 5. POST to AI engine ──────────────────────────────────────────
+            // ── 4. POST to AI engine ──────────────────────────────────────────
             try {
                 $headers = [
                     'Content-Type'   => "multipart/form-data; boundary={$boundary}",
@@ -101,7 +99,7 @@ class DiagnosticController extends Controller
 
                 $guzzle = new GuzzleClient([
                     'connect_timeout' => 30,
-                    'timeout'         => 90,
+                    'timeout'         => 120,
                     'http_errors'     => false,
                 ]);
 
@@ -125,27 +123,61 @@ class DiagnosticController extends Controller
             }
         }
 
-        // ── 6. Build diagnosis record ─────────────────────────────────────────
+        // ── 5. Build diagnosis record ─────────────────────────────────────────
         if ($aiResult) {
             $diagnosisData = [
-                'disease_name'           => $aiResult['disease']    ?? $aiResult['condition'] ?? 'Requires expert review',
-                'confidence_score'       => (int) ($aiResult['confidence'] ?? 0),
-                'cause'                  => $aiResult['cause']      ?? null,
-                'urgency_level'          => $aiResult['urgency']    ?? 'Medium',
-                'first_aid_steps'        => $aiResult['first_aid']  ?? $aiResult['recommendation'] ?? null,
-                'recommended_medication' => $aiResult['medication'] ?? $aiResult['suitable_crops'] ?? null,
-                'vet_referral_advice'    => $aiResult['referral']   ?? null,
-                'status'                 => 'reviewed',
+                // Subject identification (auto-detected)
+                'subject_name'             => $aiResult['subject_name']          ?? null,
+                'scientific_name'          => $aiResult['scientific_name']        ?? null,
+                'detected_part'            => $aiResult['detected_part']          ?? null,
+                'health_status'            => $aiResult['health_status']          ?? null,
+                'severity_level'           => $aiResult['severity']               ?? null,
+                // Core
+                'disease_name'             => $aiResult['disease']                ?? $aiResult['condition'] ?? 'Requires expert review',
+                'confidence_score'         => (float) ($aiResult['confidence']    ?? 0),
+                'urgency_level'            => $aiResult['urgency']                ?? 'Medium',
+                // Findings
+                'symptoms_identified'      => $aiResult['symptoms_identified']    ?? null,
+                'cause'                    => $aiResult['cause']                  ?? null,
+                'environmental_factors'    => $aiResult['environmental_factors']  ?? null,
+                'nutrient_deficiencies'    => $aiResult['nutrient_deficiencies']  ?? null,
+                'pest_detection'           => $aiResult['pest_detection']         ?? null,
+                // Treatment
+                'first_aid_steps'          => $aiResult['first_aid']              ?? null,
+                'recommended_medication'   => $aiResult['medication']             ?? $aiResult['fertilizer_recommendation'] ?? $aiResult['amendment_recommendation'] ?? null,
+                'preventive_measures'      => $aiResult['preventive_measures']    ?? null,
+                'fertilizer_recommendation'=> $aiResult['fertilizer_recommendation'] ?? null,
+                'recovery_period'          => $aiResult['recovery_period']        ?? null,
+                'best_practices'           => $aiResult['best_practices']         ?? null,
+                'vet_referral_advice'      => $aiResult['referral']               ?? $aiResult['vet_recommendation'] ?? null,
+                // Explainability
+                'explanation'              => $aiResult['explanation']            ?? null,
+                'status'                   => 'reviewed',
             ];
         } else {
+            Log::warning('AI scan failed, falling back to expert review', ['reason' => $failureReason]);
             $diagnosisData = [
+                'subject_name'           => null,
+                'scientific_name'        => null,
+                'detected_part'          => null,
+                'health_status'          => null,
+                'severity_level'         => null,
                 'disease_name'           => 'Pending Expert Review',
                 'confidence_score'       => 0,
-                'cause'                  => null,
                 'urgency_level'          => 'Medium',
+                'symptoms_identified'    => null,
+                'cause'                  => null,
+                'environmental_factors'  => null,
+                'nutrient_deficiencies'  => null,
+                'pest_detection'         => null,
                 'first_aid_steps'        => null,
                 'recommended_medication' => null,
+                'preventive_measures'    => null,
+                'fertilizer_recommendation' => null,
+                'recovery_period'        => null,
+                'best_practices'         => null,
                 'vet_referral_advice'    => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
+                'explanation'            => null,
                 'status'                 => 'needs_review',
             ];
         }
@@ -157,7 +189,7 @@ class DiagnosticController extends Controller
         ]));
 
         $message = $aiResult
-            ? 'Scan complete! Your AI diagnosis is ready — view it below.'
+            ? 'Scan complete! Your full AI diagnosis is ready — view it below.'
             : 'Image saved. Our experts will review your scan and respond shortly.';
 
         return redirect()->route('diagnostics.history')->with('success', $message);
@@ -165,7 +197,33 @@ class DiagnosticController extends Controller
 
     public function history()
     {
-        $diagnoses = Diagnosis::where('user_id', auth()->id())->latest()->get();
+        $diagnoses = Diagnosis::where('user_id', auth()->id())
+            ->with('myFeedback')
+            ->latest()
+            ->get();
+
         return view('diagnostics.history', compact('diagnoses'));
+    }
+
+    public function storeFeedback(Request $request, Diagnosis $diagnosis)
+    {
+        abort_if($diagnosis->user_id !== auth()->id(), 403);
+
+        $request->validate([
+            'rating'          => 'required|in:thumbs_up,thumbs_down',
+            'correct_disease' => 'nullable|string|max:200',
+            'notes'           => 'nullable|string|max:500',
+        ]);
+
+        DiagnosisFeedback::updateOrCreate(
+            ['diagnosis_id' => $diagnosis->id, 'user_id' => auth()->id()],
+            [
+                'rating'          => $request->rating,
+                'correct_disease' => $request->correct_disease,
+                'notes'           => $request->notes,
+            ]
+        );
+
+        return back()->with('success', 'Thank you for your feedback — it helps improve our AI.');
     }
 }

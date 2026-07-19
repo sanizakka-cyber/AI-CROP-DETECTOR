@@ -14,16 +14,38 @@ return new class extends Migration
             $table->string('type'); // 'plant' or 'animal'
             $table->string('image_path')->nullable();
             
-            // AI Analysis Results
+            // Subject identification (auto-detected by AI)
+            $table->string('subject_name')->nullable();
+            $table->string('scientific_name')->nullable();
+            $table->string('detected_part')->nullable();
+            $table->string('health_status')->nullable();
+            $table->string('severity_level')->nullable();
+
+            // Core diagnosis
             $table->string('disease_name');
             $table->decimal('confidence_score', 5, 2);
-            $table->text('cause');
-            $table->string('urgency_level'); // 'High', 'Medium', 'Low'
-            $table->text('first_aid_steps');
-            $table->text('recommended_medication');
-            $table->text('vet_referral_advice');
-            
-            $table->string('status')->default('pending'); // 'pending', 'reviewed'
+            $table->string('urgency_level')->default('Medium');
+
+            // Detailed findings
+            $table->text('symptoms_identified')->nullable();
+            $table->text('cause')->nullable();
+            $table->text('environmental_factors')->nullable();
+            $table->text('nutrient_deficiencies')->nullable();
+            $table->text('pest_detection')->nullable();
+
+            // Treatment & prevention
+            $table->text('first_aid_steps')->nullable();
+            $table->text('recommended_medication')->nullable();
+            $table->text('preventive_measures')->nullable();
+            $table->text('fertilizer_recommendation')->nullable();
+            $table->string('recovery_period')->nullable();
+            $table->text('best_practices')->nullable();
+            $table->text('vet_referral_advice')->nullable();
+
+            // Explainable AI
+            $table->text('explanation')->nullable();
+
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }
