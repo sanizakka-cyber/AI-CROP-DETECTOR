@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -55,20 +56,16 @@ return new class extends Migration
             if (!Schema::hasColumn('diagnoses', 'explanation')) {
                 $table->text('explanation')->nullable()->after('vet_referral_advice');
             }
-            // Allow cause to be nullable (previously was NOT NULL)
-            if (Schema::hasColumn('diagnoses', 'cause')) {
-                $table->text('cause')->nullable()->change();
-            }
-            if (Schema::hasColumn('diagnoses', 'first_aid_steps')) {
-                $table->text('first_aid_steps')->nullable()->change();
-            }
-            if (Schema::hasColumn('diagnoses', 'recommended_medication')) {
-                $table->text('recommended_medication')->nullable()->change();
-            }
-            if (Schema::hasColumn('diagnoses', 'vet_referral_advice')) {
-                $table->text('vet_referral_advice')->nullable()->change();
-            }
         });
+
+        // Drop NOT NULL constraints using raw SQL (avoids doctrine/dbal dependency).
+        // Safe to run multiple times — DROP NOT NULL on a nullable column is a no-op.
+        $cols = ['cause', 'first_aid_steps', 'recommended_medication', 'vet_referral_advice'];
+        foreach ($cols as $col) {
+            if (Schema::hasColumn('diagnoses', $col)) {
+                DB::statement("ALTER TABLE diagnoses ALTER COLUMN \"{$col}\" DROP NOT NULL");
+            }
+        }
     }
 
     public function down(): void
