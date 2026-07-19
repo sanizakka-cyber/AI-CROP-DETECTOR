@@ -294,16 +294,18 @@ $startStep = $oldRole ? 3 : 1;
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
                         <input id="password" class="form-input {{ $errors->has('password') ? 'error' : '' }}" style="padding-left:32px;"
                             type="password" name="password" required autocomplete="new-password" readonly
+                            placeholder="Minimum 8 characters"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                     </div>
                     @error('password')<div class="fe">{{ $message }}</div>@enderror
                 </div>
                 <div>
-                    <label class="fl">Confirm *</label>
+                    <label class="fl">Confirm Password *</label>
                     <div style="position:relative;">
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
                         <input id="password_confirmation" class="form-input" style="padding-left:32px;"
                             type="password" name="password_confirmation" required autocomplete="new-password" readonly
+                            placeholder="Re-enter your password"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                     </div>
                 </div>
