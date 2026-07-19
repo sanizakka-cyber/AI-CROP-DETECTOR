@@ -97,13 +97,7 @@ class DiagnosticController extends Controller
                     $headers['Authorization'] = "Bearer {$aiKey}";
                 }
 
-                Log::error('[AI] sending request', [
-                    'url'        => $aiEndpoint,
-                    'scan_type'  => $request->scan_type,
-                    'base_url'   => $baseUrl,
-                    'fields'     => array_keys($textFields),
-                    'image_size' => strlen($imageData),
-                ]);
+                Log::info('AI scan request', ['url' => $aiEndpoint, 'scan_type' => $request->scan_type]);
 
                 $guzzle = new GuzzleClient([
                     'connect_timeout' => 30,
@@ -115,7 +109,7 @@ class DiagnosticController extends Controller
                 $status = $resp->getStatusCode();
                 $rbody  = (string) $resp->getBody();
 
-                Log::error('[AI] response', ['status' => $status, 'preview' => substr($rbody, 0, 300)]);
+                Log::info('AI scan response', ['status' => $status]);
 
                 if ($status >= 200 && $status < 300) {
                     $aiResult = json_decode($rbody, true);
@@ -151,9 +145,7 @@ class DiagnosticController extends Controller
                 'urgency_level'          => 'Medium',
                 'first_aid_steps'        => null,
                 'recommended_medication' => null,
-                'vet_referral_advice'    => $failureReason
-                    ? '[DBG] ' . substr($failureReason, 0, 300)
-                    : 'AI engine unavailable. An expert will review your scan shortly.',
+                'vet_referral_advice'    => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
                 'status'                 => 'needs_review',
             ];
         }
