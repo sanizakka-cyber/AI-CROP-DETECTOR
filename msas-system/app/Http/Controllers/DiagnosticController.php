@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Diagnosis;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DiagnosticController extends Controller
 {
@@ -34,9 +33,9 @@ class DiagnosticController extends Controller
         $mimeType     = $uploadedFile->getMimeType() ?? 'image/jpeg';
 
         // ── 2. Resolve AI engine connection ───────────────────────────────────
-        $baseUrl     = rtrim(config('services.ai_engine.url', ''), '/');
-        $aiKey       = config('services.ai_engine.key', '');
-        $aiEndpoint  = match($request->scan_type) {
+        $baseUrl    = rtrim(config('services.ai_engine.url', ''), '/');
+        $aiKey      = config('services.ai_engine.key', '');
+        $aiEndpoint = match($request->scan_type) {
             'plant'  => "{$baseUrl}/predict/crop",
             'soil'   => "{$baseUrl}/predict/soil",
             default  => "{$baseUrl}/predict/livestock",
@@ -47,17 +46,17 @@ class DiagnosticController extends Controller
 
         // ── 3. Guard: file must be readable ───────────────────────────────────
         if (!file_exists($fullPath) || !is_readable($fullPath)) {
-            $failureReason = "Image file unreadable at {$fullPath}";
+            $failureReason = "File unreadable: {$fullPath}";
             Log::error('AI scan: file unreadable', ['path' => $fullPath]);
         } elseif (!$baseUrl) {
             $failureReason = 'AI_ENGINE_URL not configured';
             Log::error('AI scan: missing AI_ENGINE_URL');
         } else {
-            // ── 4. Build multipart body ───────────────────────────────────────
-            // Use raw Guzzle multipart (not ->attach()) so text fields carry no
-            // filename and FastAPI's Form() parser accepts them correctly.
+            // ── 4. Build multipart parts ──────────────────────────────────────
+            // Using Guzzle directly (not Laravel Http facade) so the multipart
+            // body is built exactly as Guzzle expects — no Laravel wrapper
+            // injecting a competing json:[] option.
             $fileHandle = fopen($fullPath, 'r');
-            $fileSize   = filesize($fullPath);
 
             $multipart = match($request->scan_type) {
                 'plant' => [
@@ -65,7 +64,7 @@ class DiagnosticController extends Controller
                         'name'     => 'images',
                         'contents' => $fileHandle,
                         'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType, 'Content-Length' => $fileSize],
+                        'headers'  => ['Content-Type' => $mimeType],
                     ],
                     ['name' => 'cropType', 'contents' => $request->input('crop_type', 'Unknown crop')],
                     ['name' => 'cropPart', 'contents' => $request->input('crop_part', 'plant')],
@@ -75,7 +74,7 @@ class DiagnosticController extends Controller
                         'name'     => 'images',
                         'contents' => $fileHandle,
                         'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType, 'Content-Length' => $fileSize],
+                        'headers'  => ['Content-Type' => $mimeType],
                     ],
                     ['name' => 'animalType',     'contents' => $request->input('animal_type', 'Unknown animal')],
                     ['name' => 'assessmentType', 'contents' => $request->input('assessment_type', 'general')],
@@ -85,43 +84,47 @@ class DiagnosticController extends Controller
                         'name'     => 'images',
                         'contents' => $fileHandle,
                         'filename' => basename($fullPath),
-                        'headers'  => ['Content-Type' => $mimeType, 'Content-Length' => $fileSize],
+                        'headers'  => ['Content-Type' => $mimeType],
                     ],
                     ['name' => 'soilContext', 'contents' => $request->input('soil_context', '')],
                 ],
             };
 
-            // ── 5. Call AI engine ─────────────────────────────────────────────
-            // asMultipart() sets bodyFormat='multipart' so ->post($url, $data)
-            // sends multipart/form-data (not JSON) — withOptions() doesn't work
-            // because ->post() would still inject json:[] which Guzzle prioritises.
+            // ── 5. Call AI engine via Guzzle ──────────────────────────────────
             try {
-                $client = Http::connectTimeout(30)
-                    ->timeout(90)
-                    ->asMultipart();
+                $guzzle = new GuzzleClient([
+                    'connect_timeout' => 30,
+                    'timeout'         => 90,
+                    'http_errors'     => false,  // handle status codes manually
+                ]);
 
+                $guzzleOpts = ['multipart' => $multipart];
                 if ($aiKey) {
-                    $client = $client->withToken($aiKey);
+                    $guzzleOpts['headers'] = ['Authorization' => "Bearer {$aiKey}"];
                 }
 
-                Log::error('AI engine request', ['url' => $aiEndpoint, 'type' => $request->scan_type]);
+                Log::error('[AI] sending request', ['url' => $aiEndpoint, 'scan_type' => $request->scan_type, 'base_url' => $baseUrl]);
 
-                $response = $client->post($aiEndpoint, $multipart);
+                $resp   = $guzzle->post($aiEndpoint, $guzzleOpts);
+                $status = $resp->getStatusCode();
+                $body   = (string) $resp->getBody();
 
-                if ($response->successful()) {
-                    $aiResult = $response->json();
-                    Log::error('AI engine success', ['disease' => $aiResult['disease'] ?? $aiResult['condition'] ?? '?', 'keys' => array_keys($aiResult ?? [])]);
+                Log::error('[AI] response received', ['status' => $status, 'body_preview' => substr($body, 0, 200)]);
+
+                if ($status >= 200 && $status < 300) {
+                    $aiResult = json_decode($body, true);
+                    if (!$aiResult) {
+                        $failureReason = "200 OK but non-JSON body: " . substr($body, 0, 300);
+                    }
                 } else {
-                    $failureReason = "HTTP {$response->status()}: " . substr($response->body(), 0, 500);
-                    Log::error('AI engine non-2xx', [
-                        'status'   => $response->status(),
-                        'body'     => $response->body(),
-                        'endpoint' => $aiEndpoint,
-                    ]);
+                    $failureReason = "HTTP {$status}: " . substr($body, 0, 300);
                 }
+            } catch (\GuzzleHttp\Exception\ConnectException $e) {
+                $failureReason = 'Connect error: ' . $e->getMessage();
+                Log::error('[AI] connect exception', ['error' => $e->getMessage()]);
             } catch (\Throwable $e) {
                 $failureReason = get_class($e) . ': ' . $e->getMessage();
-                Log::error('AI engine exception', ['error' => $e->getMessage(), 'endpoint' => $aiEndpoint]);
+                Log::error('[AI] exception', ['error' => $e->getMessage()]);
             } finally {
                 if (is_resource($fileHandle)) {
                     fclose($fileHandle);
@@ -132,13 +135,13 @@ class DiagnosticController extends Controller
         // ── 6. Build diagnosis record ─────────────────────────────────────────
         if ($aiResult) {
             $diagnosisData = [
-                'disease_name'           => $aiResult['disease']   ?? $aiResult['condition'] ?? 'Requires expert review',
+                'disease_name'           => $aiResult['disease']    ?? $aiResult['condition'] ?? 'Requires expert review',
                 'confidence_score'       => (int) ($aiResult['confidence'] ?? 0),
-                'cause'                  => $aiResult['cause']     ?? null,
-                'urgency_level'          => $aiResult['urgency']   ?? 'Medium',
-                'first_aid_steps'        => $aiResult['first_aid'] ?? $aiResult['recommendation'] ?? null,
+                'cause'                  => $aiResult['cause']      ?? null,
+                'urgency_level'          => $aiResult['urgency']    ?? 'Medium',
+                'first_aid_steps'        => $aiResult['first_aid']  ?? $aiResult['recommendation'] ?? null,
                 'recommended_medication' => $aiResult['medication'] ?? $aiResult['suitable_crops'] ?? null,
-                'vet_referral_advice'    => $aiResult['referral']  ?? null,
+                'vet_referral_advice'    => $aiResult['referral']   ?? null,
                 'status'                 => 'reviewed',
             ];
         } else {
@@ -149,7 +152,11 @@ class DiagnosticController extends Controller
                 'urgency_level'          => 'Medium',
                 'first_aid_steps'        => null,
                 'recommended_medication' => null,
-                'vet_referral_advice'    => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
+                // Temporarily surface failure reason for debugging.
+                // Replace with generic message once scan is confirmed working.
+                'vet_referral_advice'    => $failureReason
+                    ? '[DBG] ' . substr($failureReason, 0, 300)
+                    : 'AI engine unavailable. An expert will review your scan shortly.',
                 'status'                 => 'needs_review',
             ];
         }
