@@ -18,53 +18,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
-// TEMP DEBUG — remove after diagnosing AI engine connection
-Route::get('/debug-ai', function () {
-    $url = config('services.ai_engine.url');
-    $key = config('services.ai_engine.key', '');
-    $base = rtrim($url, '/');
-
-    // Test /health
-    try {
-        $health = \Illuminate\Support\Facades\Http::timeout(5)->get("{$base}/health")->json();
-    } catch (\Throwable $e) {
-        $health = ['error' => $e->getMessage()];
-    }
-
-    // Test /predict/crop with a 1x1 red JPEG (smallest valid JPEG)
-    $minJpeg = base64_decode(
-        '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U' .
-        'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN' .
-        'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy' .
-        'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAA' .
-        'AAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA' .
-        '/9oADAMBAAIRAxEAPwCwABmX/9k='
-    );
-
-    try {
-        $http = \Illuminate\Support\Facades\Http::connectTimeout(8)->timeout(90)
-            ->when($key, fn($h) => $h->withToken($key));
-        $response = $http
-            ->attach('images',   $minJpeg, 'test.jpg')
-            ->attach('cropType', 'Test',   'cropType')
-            ->attach('cropPart', 'leaf',   'cropPart')
-            ->post("{$base}/predict/crop");
-        $predict = [
-            'status' => $response->status(),
-            'body'   => $response->json() ?? $response->body(),
-        ];
-    } catch (\Throwable $e) {
-        $predict = ['error' => $e->getMessage()];
-    }
-
-    return response()->json([
-        'ai_engine_url' => $url,
-        'key_prefix'    => substr($key, 0, 10) . '...',
-        'key_length'    => strlen($key),
-        'health'        => $health,
-        'predict_test'  => $predict,
-    ]);
-});
 
 // Language / Locale switcher (works logged in or out)
 Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
