@@ -13,8 +13,7 @@ mkdir -p /var/www/html/bootstrap/cache
 echo "sys_temp_dir = /var/www/html/storage/tmp" > /usr/local/etc/php/conf.d/tempdir.ini
 echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/tempdir.ini
 
-# Route PHP-FPM logs through the container's main stderr so Render captures them
-echo "error_log = /proc/1/fd/2" >> /usr/local/etc/php-fpm.conf
+# Route PHP-FPM worker output through container stderr so Render captures it
 echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/www.conf
 echo "decorate_workers_output = no" >> /usr/local/etc/php-fpm.d/www.conf
 
@@ -42,7 +41,7 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 echo "==> Starting PHP-FPM..."
-php-fpm -D
+php-fpm --nodaemonize &
 
 # Give PHP-FPM a moment to bind
 sleep 1
