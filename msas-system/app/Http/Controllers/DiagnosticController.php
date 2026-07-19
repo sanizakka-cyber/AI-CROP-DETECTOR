@@ -223,6 +223,62 @@ class DiagnosticController extends Controller
         return view('diagnostics.history', compact('diagnoses', 'feedbackReady'));
     }
 
+    public function translate(Request $request)
+    {
+        $request->validate([
+            'text'            => 'required|string|max:4000',
+            'target_language' => 'required|string|max:10',
+        ]);
+
+        if ($request->target_language === 'en') {
+            return response()->json(['translated_text' => $request->text]);
+        }
+
+        $baseUrl = rtrim(config('services.ai_engine.url', ''), '/');
+        $aiKey   = config('services.ai_engine.key', '');
+
+        if (!$baseUrl) {
+            return response()->json(['error' => 'Translation service unavailable'], 503);
+        }
+
+        try {
+            $boundary  = '----MSASTranslateBoundary' . bin2hex(random_bytes(8));
+            $body      = "--{$boundary}\r\n";
+            $body     .= "Content-Disposition: form-data; name=\"text\"\r\n\r\n";
+            $body     .= $request->text . "\r\n";
+            $body     .= "--{$boundary}\r\n";
+            $body     .= "Content-Disposition: form-data; name=\"target_language\"\r\n\r\n";
+            $body     .= $request->target_language . "\r\n";
+            $body     .= "--{$boundary}--\r\n";
+
+            $headers = ['Content-Type' => "multipart/form-data; boundary={$boundary}"];
+            if ($aiKey) {
+                $headers['Authorization'] = "Bearer {$aiKey}";
+            }
+
+            $guzzle = new GuzzleClient(['timeout' => 45, 'http_errors' => false]);
+            $resp   = $guzzle->post("{$baseUrl}/translate", ['body' => $body, 'headers' => $headers]);
+            $data   = json_decode((string) $resp->getBody(), true);
+
+            if ($resp->getStatusCode() >= 200 && $resp->getStatusCode() < 300 && !empty($data['translated_text'])) {
+                return response()->json(['translated_text' => $data['translated_text']]);
+            }
+
+            Log::warning('Translation response error', ['status' => $resp->getStatusCode()]);
+            return response()->json(['error' => 'Translation failed'], 502);
+        } catch (\Throwable $e) {
+            Log::error('Translation exception', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Translation service error'], 503);
+        }
+    }
+
+    public function downloadReport(Diagnosis $diagnosis)
+    {
+        abort_if($diagnosis->user_id !== auth()->id(), 403);
+        $user = auth()->user();
+        return view('diagnostics.report', compact('diagnosis', 'user'));
+    }
+
     public function storeFeedback(Request $request, Diagnosis $diagnosis)
     {
         abort_if($diagnosis->user_id !== auth()->id(), 403);
