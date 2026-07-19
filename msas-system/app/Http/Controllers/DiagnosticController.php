@@ -92,22 +92,25 @@ class DiagnosticController extends Controller
             };
 
             // ── 5. Call AI engine ─────────────────────────────────────────────
+            // asMultipart() sets bodyFormat='multipart' so ->post($url, $data)
+            // sends multipart/form-data (not JSON) — withOptions() doesn't work
+            // because ->post() would still inject json:[] which Guzzle prioritises.
             try {
-                $client = Http::connectTimeout(10)
+                $client = Http::connectTimeout(30)
                     ->timeout(90)
-                    ->withOptions(['multipart' => $multipart]);
+                    ->asMultipart();
 
                 if ($aiKey) {
                     $client = $client->withToken($aiKey);
                 }
 
-                Log::info('AI engine request', ['url' => $aiEndpoint, 'type' => $request->scan_type]);
+                Log::error('AI engine request', ['url' => $aiEndpoint, 'type' => $request->scan_type]);
 
-                $response = $client->post($aiEndpoint);
+                $response = $client->post($aiEndpoint, $multipart);
 
                 if ($response->successful()) {
                     $aiResult = $response->json();
-                    Log::info('AI engine success', ['disease' => $aiResult['disease'] ?? $aiResult['condition'] ?? '?']);
+                    Log::error('AI engine success', ['disease' => $aiResult['disease'] ?? $aiResult['condition'] ?? '?', 'keys' => array_keys($aiResult ?? [])]);
                 } else {
                     $failureReason = "HTTP {$response->status()}: " . substr($response->body(), 0, 500);
                     Log::error('AI engine non-2xx', [
