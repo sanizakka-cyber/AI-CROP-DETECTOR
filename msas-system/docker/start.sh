@@ -20,8 +20,8 @@ php artisan migrate --force
 # Cache configuration, routes and views (runs as root; chown follows below)
 echo "==> Caching config, routes & views..."
 php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan route:cache  2>/dev/null || echo "Route cache skipped (closure routes present)"
+php artisan view:cache   2>/dev/null || echo "View cache skipped"
 
 # Create storage symlink so uploaded files are publicly accessible
 php artisan storage:link --force 2>/dev/null || true

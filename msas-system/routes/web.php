@@ -16,20 +16,18 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 // Language / Locale switcher (works logged in or out)
 Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
 
 // Services Public Routes (Redirects to register/login for now to prevent 404s)
-Route::prefix('services')->group(function() {
-    Route::get('/livestock', function() { return redirect()->route('register'); })->name('services.livestock');
-    Route::get('/poultry', function() { return redirect()->route('register'); })->name('services.poultry');
-    Route::get('/crops', function() { return redirect()->route('register'); })->name('services.crops');
-    Route::get('/vet', function() { return redirect()->route('register'); })->name('services.vet');
-    Route::get('/finance', function() { return redirect()->route('register'); })->name('services.finance');
+Route::prefix('services')->name('services.')->group(function () {
+    Route::redirect('/livestock', '/register')->name('livestock');
+    Route::redirect('/poultry',   '/register')->name('poultry');
+    Route::redirect('/crops',     '/register')->name('crops');
+    Route::redirect('/vet',       '/register')->name('vet');
+    Route::redirect('/finance',   '/register')->name('finance');
 });
 
 Route::get('/dashboard', function () {
