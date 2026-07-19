@@ -37,6 +37,8 @@ class DiagnosticController extends Controller
             default => "{$baseUrl}/predict/livestock",
         };
 
+        \Log::error('AI engine call', ['url' => $aiEndpoint, 'has_key' => !empty($aiKey)]);
+
         $aiResult = null;
 
         try {
@@ -66,14 +68,14 @@ class DiagnosticController extends Controller
             if ($response->successful()) {
                 $aiResult = $response->json();
             } else {
-                \Log::warning('AI engine non-2xx', [
+                \Log::error('AI engine non-2xx', [
                     'status' => $response->status(),
                     'body'   => $response->body(),
                     'url'    => $aiEndpoint,
                 ]);
             }
         } catch (\Throwable $e) {
-            \Log::warning('AI engine exception', ['error' => $e->getMessage(), 'url' => $aiEndpoint]);
+            \Log::error('AI engine exception', ['error' => $e->getMessage(), 'url' => $aiEndpoint]);
         }
 
         if ($aiResult) {
