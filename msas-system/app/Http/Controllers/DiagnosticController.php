@@ -7,6 +7,7 @@ use App\Models\DiagnosisFeedback;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class DiagnosticController extends Controller
 {
@@ -157,28 +158,29 @@ class DiagnosticController extends Controller
         } else {
             Log::warning('AI scan failed, falling back to expert review', ['reason' => $failureReason]);
             $diagnosisData = [
-                'subject_name'           => null,
-                'scientific_name'        => null,
-                'detected_part'          => null,
-                'health_status'          => null,
-                'severity_level'         => null,
-                'disease_name'           => 'Pending Expert Review',
-                'confidence_score'       => 0,
-                'urgency_level'          => 'Medium',
-                'symptoms_identified'    => null,
-                'cause'                  => null,
-                'environmental_factors'  => null,
-                'nutrient_deficiencies'  => null,
-                'pest_detection'         => null,
-                'first_aid_steps'        => null,
-                'recommended_medication' => null,
-                'preventive_measures'    => null,
+                'subject_name'              => null,
+                'scientific_name'           => null,
+                'detected_part'             => null,
+                'health_status'             => null,
+                'severity_level'            => null,
+                'disease_name'              => 'Pending Expert Review',
+                'confidence_score'          => 0,
+                'urgency_level'             => 'Medium',
+                'symptoms_identified'       => null,
+                // these three were NOT NULL in original schema — safe empty string until migration runs
+                'cause'                     => '',
+                'first_aid_steps'           => '',
+                'recommended_medication'    => '',
+                'environmental_factors'     => null,
+                'nutrient_deficiencies'     => null,
+                'pest_detection'            => null,
+                'preventive_measures'       => null,
                 'fertilizer_recommendation' => null,
-                'recovery_period'        => null,
-                'best_practices'         => null,
-                'vet_referral_advice'    => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
-                'explanation'            => null,
-                'status'                 => 'needs_review',
+                'recovery_period'           => null,
+                'best_practices'            => null,
+                'vet_referral_advice'       => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
+                'explanation'               => null,
+                'status'                    => 'needs_review',
             ];
         }
 
@@ -197,12 +199,17 @@ class DiagnosticController extends Controller
 
     public function history()
     {
-        $diagnoses = Diagnosis::where('user_id', auth()->id())
-            ->with('myFeedback')
-            ->latest()
-            ->get();
+        $feedbackReady = Schema::hasTable('diagnosis_feedbacks');
 
-        return view('diagnostics.history', compact('diagnoses'));
+        $query = Diagnosis::where('user_id', auth()->id())->latest();
+
+        if ($feedbackReady) {
+            $query->with('myFeedback');
+        }
+
+        $diagnoses = $query->get();
+
+        return view('diagnostics.history', compact('diagnoses', 'feedbackReady'));
     }
 
     public function storeFeedback(Request $request, Diagnosis $diagnosis)

@@ -68,7 +68,7 @@
             $ttsId   = 'tts-' . $diagnosis->id;
 
             // ── Existing user feedback ────────────────────────────────────────
-            $myFeedback = $diagnosis->myFeedback;
+            $myFeedback = $feedbackReady ? $diagnosis->myFeedback : null;
         @endphp
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -381,7 +381,7 @@
                 </div>
 
                 {{-- ── Feedback Section ─────────────────────────────────────── --}}
-                @if($diagnosis->status === 'reviewed')
+                @if($feedbackReady && $diagnosis->status === 'reviewed')
                 <div class="mt-6 border-t border-slate-100 pt-5">
                     <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                         <span>💬</span> Was this diagnosis accurate?
