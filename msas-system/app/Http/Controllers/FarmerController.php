@@ -460,7 +460,7 @@ class FarmerController extends Controller
         }
 
         // Dev fallback: mark paid immediately
-        $consultation->update(['payment_status' => 'paid', 'status' => 'pending']);
+        $consultation->update(['payment_status' => 'paid', 'status' => 'open']);
         return redirect()->route($fallbackRoute)
             ->with('success', 'Request submitted successfully. A specialist will review it shortly.');
     }
@@ -484,7 +484,7 @@ class FarmerController extends Controller
         }
 
         if ($consultation->payment_status !== 'paid') {
-            $consultation->update(['payment_status' => 'paid', 'status' => 'pending']);
+            $consultation->update(['payment_status' => 'paid', 'status' => 'open']);
         }
 
         $route = $consultation->case_type === 'crop' ? 'farmer.agro' : 'farmer.vet';

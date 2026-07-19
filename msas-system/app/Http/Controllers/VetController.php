@@ -15,9 +15,9 @@ class VetController extends Controller
                 ->with('warning', 'Your account is pending verification by an administrator before you can access the consultation queue.');
         }
 
-        // Vet sees: unassigned pending cases + cases already assigned to them
+        // Vet sees: paid+unassigned cases ('open') + cases already assigned to them
         // Agronomist only sees crop cases; Vet only sees livestock cases
-        $query = \App\Models\Consultation::where('status', 'pending')
+        $query = \App\Models\Consultation::where('status', 'open')
             ->where(function ($q) use ($user) {
                 $q->whereNull('expert_id')->orWhere('expert_id', $user->id);
             });
