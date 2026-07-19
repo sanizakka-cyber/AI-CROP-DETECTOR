@@ -6,7 +6,7 @@ echo "==> Starting MSAS FarmAI..."
 # Ensure storage dirs exist
 mkdir -p /var/www/html/storage/framework/{sessions,views,cache}
 mkdir -p /var/www/html/storage/logs
-mkdir -p /var/www/html/storage/tmp
+mkdir -p /var/www/html/storage/tmp/nginx_body
 mkdir -p /var/www/html/bootstrap/cache
 
 # Point PHP's temp dir at our writable storage path
