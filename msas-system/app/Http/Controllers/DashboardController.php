@@ -277,7 +277,7 @@ class DashboardController extends Controller
         // ── Live ticket stats from support_tickets table ───────────
         try { $openTickets = DB::table('support_tickets')->where('status','open')->count(); } catch (\Exception $e) { $openTickets = 0; }
         try { $resolvedToday = DB::table('support_tickets')->where('status','resolved')->whereDate('updated_at', today())->count(); } catch (\Exception $e) { $resolvedToday = 0; }
-        try { $pendingTickets = DB::table('support_tickets')->where('status','pending')->count(); } catch (\Exception $e) { $pendingTickets = 0; }
+        try { $pendingTickets = DB::table('support_tickets')->where('status','in_progress')->count(); } catch (\Exception $e) { $pendingTickets = 0; }
         try { $totalTickets = DB::table('support_tickets')->count(); } catch (\Exception $e) { $totalTickets = 0; }
         try { $recentTickets = DB::table('support_tickets')->orderByDesc('created_at')->take(10)->get(); } catch (\Exception $e) { $recentTickets = collect(); }
 
@@ -343,7 +343,7 @@ class DashboardController extends Controller
     public function equipmentDealer()
     {
         $user = auth()->user();
-        try { $totalProducts  = DB::table('products')->where('user_id', $user->id)->count(); } catch (\Exception $e) { $totalProducts = 0; }
+        try { $totalProducts  = DB::table('products')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalProducts = 0; }
         try { $totalOrders    = DB::table('orders')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalOrders = 0; }
         try { $pendingOrders  = DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
         try { $totalRevenue   = DB::table('orders')->where('dealer_id', $user->id)->where('status','confirmed')->sum('total'); } catch (\Exception $e) { $totalRevenue = 0; }
@@ -401,7 +401,7 @@ class DashboardController extends Controller
         try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
         try { $totalRevenue     = \App\Models\Payment::where('status','success')->sum('amount'); } catch (\Exception $e) { $totalRevenue = 0; }
         try { $totalTransacts   = \App\Models\Payment::where('status','success')->count(); } catch (\Exception $e) { $totalTransacts = 0; }
-        try { $marketProducts   = DB::table('products')->where('is_active', true)->count(); } catch (\Exception $e) { $marketProducts = 0; }
+        try { $marketProducts   = DB::table('products')->where('is_approved', true)->count(); } catch (\Exception $e) { $marketProducts = 0; }
         try { $monthlyRevenue   = collect(range(5,0))->map(fn($i) => [
             'label'  => now()->subMonths($i)->format('M'),
             'amount' => \App\Models\Payment::where('status','success')->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->sum('amount'),

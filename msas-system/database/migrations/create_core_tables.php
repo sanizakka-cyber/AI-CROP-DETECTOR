@@ -50,6 +50,7 @@ return new class extends Migration {
         Schema::create('egg_productions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('poultry_record_id')->nullable()->constrained('poultry_records')->onDelete('set null');
             $table->date('production_date');
             $table->integer('quantity');
             $table->integer('broken')->default(0);

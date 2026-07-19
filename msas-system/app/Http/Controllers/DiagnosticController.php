@@ -136,12 +136,9 @@ class DiagnosticController extends Controller
                 'first_aid_steps'        => $aiResult['first_aid'] ?? $aiResult['recommendation'] ?? null,
                 'recommended_medication' => $aiResult['medication'] ?? $aiResult['suitable_crops'] ?? null,
                 'vet_referral_advice'    => $aiResult['referral']  ?? null,
-                'status'                 => 'completed',
+                'status'                 => 'reviewed',
             ];
         } else {
-            // Temporarily surface the real failure reason in vet_referral_advice
-            // so it's visible on the history page during debugging.
-            // Replace with a user-friendly message once the root cause is resolved.
             $diagnosisData = [
                 'disease_name'           => 'Pending Expert Review',
                 'confidence_score'       => 0,
@@ -149,9 +146,7 @@ class DiagnosticController extends Controller
                 'urgency_level'          => 'Medium',
                 'first_aid_steps'        => null,
                 'recommended_medication' => null,
-                'vet_referral_advice'    => $failureReason
-                    ? "[DEBUG] {$failureReason}"
-                    : 'AI engine unavailable. An expert will review this scan shortly.',
+                'vet_referral_advice'    => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
                 'status'                 => 'needs_review',
             ];
         }

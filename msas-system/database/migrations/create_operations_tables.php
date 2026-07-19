@@ -76,8 +76,10 @@ return new class extends Migration {
             $table->string('status')->default('pending'); // pending, in-progress, completed
             $table->text('expert_response')->nullable();
             $table->string('consultation_type')->default('chat'); // chat, voice, video
+            $table->string('channel')->default('in_app');
             $table->decimal('fee', 12, 2)->nullable();
             $table->string('payment_status')->default('unpaid');
+            $table->string('payment_reference')->nullable();
             $table->integer('rating')->nullable(); // 1-5
             $table->text('feedback')->nullable();
             $table->timestamp('completed_at')->nullable();
