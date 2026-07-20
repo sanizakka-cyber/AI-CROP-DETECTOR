@@ -191,7 +191,9 @@
                 <div class="md:col-span-1 space-y-3">
                     {{-- Image --}}
                     <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square">
-                        <img src="{{ Storage::url($diagnosis->image_path) }}" alt="Scanned Image"
+                        {{-- Prefer DB thumbnail (survives restarts); fall back to storage URL --}}
+                        <img src="{{ $diagnosis->image_thumbnail ?? Storage::url($diagnosis->image_path) }}"
+                             alt="Scanned Image"
                              class="w-full h-full object-cover" loading="lazy"
                              onerror="imgError(this)">
 
@@ -545,6 +547,13 @@
             return map[sel.value] || 'en-US';
         }
 
+        function setVoiceWarning(id, msg) {
+            var warn = el(id + '-voice-warning');
+            if (!warn) return;
+            if (msg) { warn.textContent = msg; warn.classList.remove('hidden'); }
+            else { warn.classList.add('hidden'); }
+        }
+
         function updateUI(id, state) {
             var playBtn   = el(id + '-playbtn');
             var pauseBtn  = el(id + '-pause');
@@ -606,9 +615,24 @@
             if (panel) panel.classList.toggle('hidden');
         };
 
+        // iOS/Android-safe cancel + speak: poll until synthesis actually stops
+        function cancelThenSpeak(id) {
+            window.speechSynthesis.cancel();
+            stopKeepalive();
+            var attempts = 0;
+            function tryNow() {
+                if (!window.speechSynthesis.speaking || attempts++ > 12) {
+                    setTimeout(function(){ startSpeaking(id); }, 120);
+                } else {
+                    setTimeout(tryNow, 60);
+                }
+            }
+            setTimeout(tryNow, 60);
+        }
+
         function startSpeaking(id) {
             if (!('speechSynthesis' in window)) {
-                alert('Voice playback is not supported in this browser. Please use Chrome or Edge.');
+                alert('Voice playback is not supported in this browser. Please use Chrome, Edge, or Safari.');
                 return;
             }
             var text = getDisplayText(id);
@@ -621,19 +645,15 @@
             u.pitch  = 1.0;
             u.volume = 1.0;
 
-            var voices    = loadVoices();
-            var voiceWarn = el(id + '-voice-warning');
+            var voices = loadVoices();
             if (voices.length) {
                 var code  = langCode.split('-')[0];
                 var match = voices.find(function(v){ return v.lang.startsWith(code); });
                 if (match) {
                     u.voice = match;
-                    if (voiceWarn) voiceWarn.classList.add('hidden');
+                    setVoiceWarning(id, null);
                 } else if (code !== 'en') {
-                    if (voiceWarn) {
-                        voiceWarn.textContent = '⚠ No native ' + langCode + ' voice found on this device — using default voice. Text is translated.';
-                        voiceWarn.classList.remove('hidden');
-                    }
+                    setVoiceWarning(id, '⚠ No ' + langCode + ' voice on this device — voice is English but text is translated');
                 }
             }
 
@@ -646,7 +666,8 @@
                 (wordMaps[id] || []).forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
             };
             u.onerror = function(e) {
-                console.warn('TTS error', e);
+                if (e.error === 'interrupted' || e.error === 'canceled') return;
+                console.warn('TTS error', e.error);
                 states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
             };
 
@@ -666,7 +687,6 @@
                 }
             };
 
-            window.speechSynthesis.cancel();
             window.speechSynthesis.speak(u);
         }
 
@@ -675,7 +695,7 @@
                 var btn = el(id + '-playbtn');
                 if (btn) {
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[9px]"></i> Translating...';
-                    setTimeout(function(){ if (states[id] !== 'playing') updateUI(id, 'stopped'); }, 3000);
+                    setTimeout(function(){ if (states[id] !== 'playing') updateUI(id, 'stopped'); }, 4000);
                 }
                 return;
             }
@@ -686,7 +706,9 @@
                 startKeepalive();
                 return;
             }
-            startSpeaking(id);
+            // Cancel any other card that may be playing
+            window.speechSynthesis.cancel();
+            setTimeout(function(){ startSpeaking(id); }, 80);
         };
 
         window.ttsPause = function(id) {
@@ -706,18 +728,45 @@
         };
 
         window.ttsReplay = function(id) {
-            window.speechSynthesis.cancel();
-            stopKeepalive();
-            setTimeout(function(){ startSpeaking(id); }, 120);
+            cancelThenSpeak(id);
         };
 
         window.ttsSetSpeed = function(id, rate) {
             speeds[id] = parseFloat(rate);
-            if (states[id] === 'playing') {
-                window.ttsStop(id);
-                setTimeout(function(){ startSpeaking(id); }, 150);
-            }
+            if (states[id] === 'playing') { cancelThenSpeak(id); }
         };
+
+        // ── MyMemory fallback translation (free, no API key needed) ────────────
+        function myMemoryTranslate(id, text, langCode, cacheKey, onDone) {
+            // MyMemory supports ha, yo, ig, fr, ar, sw with varying quality
+            // Chunked to 480 chars to stay within free-tier per-request limit
+            var chunks   = [];
+            var maxChunk = 480;
+            for (var i = 0; i < text.length; i += maxChunk) {
+                chunks.push(text.slice(i, i + maxChunk));
+            }
+            var results  = new Array(chunks.length).fill('');
+            var pending  = chunks.length;
+            if (!pending) { onDone(null); return; }
+
+            chunks.forEach(function(chunk, idx) {
+                var url = 'https://api.mymemory.translated.net/get?q='
+                    + encodeURIComponent(chunk) + '&langpair=en|' + langCode;
+                fetch(url)
+                    .then(function(r){ return r.json(); })
+                    .then(function(data) {
+                        if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
+                            results[idx] = data.responseData.translatedText;
+                        } else {
+                            results[idx] = chunk; // keep original on failure
+                        }
+                    })
+                    .catch(function() { results[idx] = chunk; })
+                    .finally(function() {
+                        if (--pending === 0) { onDone(results.join(' ')); }
+                    });
+            });
+        }
 
         window.ttsChangeLang = function(id, langCode, translateUrl) {
             // English — clear translation and revert to original text
@@ -725,27 +774,21 @@
                 var t = el(id + '-translated');
                 if (t) t.textContent = '';
                 translating[id] = false;
+                setVoiceWarning(id, null);
                 var origText = (el(id + '-text') || {textContent:''}).textContent.trim();
                 if (origText) { var m = buildTranscript(id, origText); if (m) wordMaps[id] = m; }
-                // Restart if currently active (playing or paused)
-                if (states[id] === 'playing' || states[id] === 'paused') {
-                    window.ttsStop(id);
-                    setTimeout(function(){ startSpeaking(id); }, 150);
-                }
+                if (states[id] === 'playing' || states[id] === 'paused') { cancelThenSpeak(id); }
                 return;
             }
 
             // Serve from in-session cache
             var cacheKey = id + '-' + langCode;
             if (cached[cacheKey]) {
-                var t = el(id + '-translated');
-                if (t) t.textContent = cached[cacheKey];
+                var tc = el(id + '-translated');
+                if (tc) tc.textContent = cached[cacheKey];
                 var cm = buildTranscript(id, cached[cacheKey]);
                 if (cm) wordMaps[id] = cm;
-                if (states[id] === 'playing' || states[id] === 'paused') {
-                    window.ttsStop(id);
-                    setTimeout(function(){ startSpeaking(id); }, 150);
-                }
+                if (states[id] === 'playing' || states[id] === 'paused') { cancelThenSpeak(id); }
                 return;
             }
 
@@ -757,51 +800,59 @@
             if (!originalText || !translateUrl) {
                 translating[id] = false;
                 if (indicator) indicator.classList.add('hidden');
+                if (states[id] === 'playing' || states[id] === 'paused') { cancelThenSpeak(id); }
                 return;
             }
 
             var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
+            function applyTranslation(text, source) {
+                cached[cacheKey] = text;
+                var t = el(id + '-translated');
+                if (t) t.textContent = text;
+                var newMap = buildTranscript(id, text);
+                if (newMap) wordMaps[id] = newMap;
+                if (source === 'mymemory') {
+                    setVoiceWarning(id, 'ℹ Translated via MyMemory (AI engine unavailable)');
+                } else {
+                    setVoiceWarning(id, null);
+                }
+            }
+
+            function onTranslationDone(wasActive) {
+                translating[id] = false;
+                if (indicator) indicator.classList.add('hidden');
+                if (wasActive) { cancelThenSpeak(id); }
+            }
+
+            var wasActive = states[id] === 'playing' || states[id] === 'paused';
+
+            // Try AI engine first
             fetch(translateUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: JSON.stringify({ text: originalText, target_language: langCode }),
             })
             .then(function(r){ return r.json(); })
             .then(function(data) {
-                translating[id] = false;
-                if (indicator) indicator.classList.add('hidden');
                 if (data.translated_text) {
-                    cached[cacheKey] = data.translated_text;
-                    var t = el(id + '-translated');
-                    if (t) t.textContent = data.translated_text;
-                    var newMap = buildTranscript(id, data.translated_text);
-                    if (newMap) wordMaps[id] = newMap;
-                }
-                // Restart if currently active, whether translation succeeded or not
-                if (states[id] === 'playing' || states[id] === 'paused') {
-                    window.ttsStop(id);
-                    setTimeout(function(){ startSpeaking(id); }, 150);
+                    applyTranslation(data.translated_text, 'ai');
+                    onTranslationDone(wasActive);
+                } else {
+                    throw new Error('no translated_text in response');
                 }
             })
-            .catch(function(err) {
-                translating[id] = false;
-                if (indicator) indicator.classList.add('hidden');
-                console.warn('Translation fetch failed:', err);
-                var warn = el(id + '-voice-warning');
-                if (warn) {
-                    warn.textContent = '⚠ Translation service unavailable — narrating in original English.';
-                    warn.classList.remove('hidden');
-                }
-                // Still restart with original text in selected language voice
-                if (states[id] === 'playing' || states[id] === 'paused') {
-                    window.ttsStop(id);
-                    setTimeout(function(){ startSpeaking(id); }, 150);
-                }
+            .catch(function() {
+                // AI engine failed → try MyMemory fallback
+                console.info('AI translation unavailable, trying MyMemory...');
+                myMemoryTranslate(id, originalText, langCode, cacheKey, function(translated) {
+                    if (translated) {
+                        applyTranslation(translated, 'mymemory');
+                    } else {
+                        setVoiceWarning(id, '⚠ Translation unavailable — narrating in English');
+                    }
+                    onTranslationDone(wasActive);
+                });
             });
         };
     })();
