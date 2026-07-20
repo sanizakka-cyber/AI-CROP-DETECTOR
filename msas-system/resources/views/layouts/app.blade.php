@@ -384,27 +384,27 @@
                 <!-- Language Switcher -->
                 <div class="relative" x-data="{ open: false }">
                     @php
-                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
+                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','fr'=>'Français'];
                         $cur = app()->getLocale();
-                        $flags = ['en'=>'🇬🇧','ha'=>'🟢','yo'=>'🟡','ig'=>'🔵','ff'=>'🔴'];
+                        $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
                     <button @click="open = !open" class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
-                        <span>{{ $flags[$cur] ?? '🌍' }}</span>
-                        <span class="hidden sm:inline">{{ strtoupper($cur) }}</span>
+                        <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
+                        <span class="hidden sm:inline" data-locale-current="code">{{ strtoupper($cur) }}</span>
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="open" @click.outside="open=false" x-cloak
                          class="absolute right-0 top-12 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden py-1">
                         @foreach($locales as $code => $name)
-                        <form method="POST" action="{{ route('locale.set') }}">
+                        <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">
                             @csrf
                             <input type="hidden" name="locale" value="{{ $code }}">
-                            <button type="submit"
+                            <button type="submit" data-locale-code="{{ $code }}"
                                 class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-slate-50 transition text-left {{ $cur === $code ? 'font-bold' : '' }}"
                                 style="{{ $cur === $code ? 'color:#0F6B3E;' : 'color:#475569;' }}">
                                 <span>{{ $flags[$code] }}</span>
                                 <span>{{ $name }}</span>
-                                @if($cur === $code)<span class="ml-auto text-xs" style="color:#0F6B3E;">✓</span>@endif
+                                @if($cur === $code)<span class="ml-auto text-xs" style="color:#0F6B3E;" data-locale-check="{{ $code }}">✓</span>@endif
                             </button>
                         </form>
                         @endforeach
@@ -473,5 +473,112 @@
     </div>
 
 </div>
+
+{{-- ── Language transition overlay ───────────────────────────────────── --}}
+<div id="locale-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,27,71,0.45);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;padding:20px 32px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+        <svg style="width:22px;height:22px;animation:spin 0.8s linear infinite;color:#0F6B3E;" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40 20"/></svg>
+        <span style="font-weight:700;font-size:14px;color:#0F3460;" id="locale-overlay-msg">Switching language…</span>
+    </div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+{{-- ── Translations bundle + instant-switch engine ──────────────────── --}}
+@php
+    $allTrans = [];
+    foreach (['en','ha','fr','yo','ig'] as $_loc) {
+        $p = lang_path($_loc.'.json');
+        $allTrans[$_loc] = file_exists($p) ? json_decode(file_get_contents($p), true) : [];
+    }
+@endphp
+<script>
+(function(){
+    window.MSAS_TRANS  = {!! json_encode($allTrans) !!};
+    window.MSAS_LOCALE = '{{ app()->getLocale() }}';
+
+    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬' };
+    var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo' };
+    var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…' };
+
+    /* Apply translations to all [data-i18n] elements */
+    function applyLocale(locale) {
+        var dict = window.MSAS_TRANS[locale] || window.MSAS_TRANS['en'] || {};
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            var key = el.getAttribute('data-i18n');
+            if (dict[key] !== undefined) el.textContent = dict[key];
+        });
+        /* Sync voice-narration language selectors on the page */
+        document.querySelectorAll('select[id$="-lang"]').forEach(function(sel) {
+            if (sel.querySelector('option[value="'+locale+'"]')) sel.value = locale;
+        });
+        /* Update current-locale indicators */
+        document.querySelectorAll('[data-locale-current]').forEach(function(el) {
+            var t = el.getAttribute('data-locale-current');
+            if (t === 'flag') el.textContent = flagMap[locale] || '🌍';
+            if (t === 'code') el.textContent = locale.toUpperCase();
+            if (t === 'name') el.textContent = nameMap[locale] || locale;
+        });
+        /* Sync the mobile nav selector value if present */
+        var mobileLocSel = document.getElementById('mobile-locale-select');
+        if (mobileLocSel) mobileLocSel.value = locale;
+        window.MSAS_LOCALE = locale;
+    }
+
+    /* Intercept locale form submits for instant client-side switch */
+    document.addEventListener('submit', function(e) {
+        var form = e.target;
+        if (!form.classList.contains('msas-locale-form')) return;
+        e.preventDefault();
+        var locale = (form.querySelector('[name=locale]') || {}).value || 'en';
+
+        /* Show overlay */
+        var ov = document.getElementById('locale-overlay');
+        var msg = document.getElementById('locale-overlay-msg');
+        if (ov) { ov.style.display = 'flex'; }
+        if (msg) msg.textContent = overlayMsgs[locale] || 'Switching language…';
+
+        /* Apply translations instantly */
+        applyLocale(locale);
+
+        /* Persist to server — no redirect needed */
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'locale=' + encodeURIComponent(locale) + '&_token=' + encodeURIComponent(document.querySelector('meta[name="csrf-token"]').content),
+        })
+        .then(function(){ setTimeout(function(){ if(ov) ov.style.display='none'; }, 300); })
+        .catch(function(){ if(ov) ov.style.display='none'; });
+    });
+
+    /* Close Alpine dropdown after selection */
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.msas-locale-form button[data-locale-code]');
+        if (!btn) return;
+        var locale = btn.getAttribute('data-locale-code');
+        /* Update checkmarks */
+        document.querySelectorAll('[data-locale-check]').forEach(function(el){ el.style.display='none'; });
+        var check = document.querySelector('[data-locale-check="'+locale+'"]');
+        if (!check) {
+            /* Create checkmark span if it doesn't exist yet */
+            var newCheck = document.createElement('span');
+            newCheck.setAttribute('data-locale-check', locale);
+            newCheck.style.cssText = 'margin-left:auto;font-size:12px;color:#0F6B3E;';
+            newCheck.textContent = '✓';
+            btn.appendChild(newCheck);
+        } else {
+            check.style.display = '';
+        }
+        /* Update button styles */
+        document.querySelectorAll('[data-locale-code]').forEach(function(b){
+            b.style.color = b.getAttribute('data-locale-code') === locale ? '#0F6B3E' : '#475569';
+            b.style.fontWeight = b.getAttribute('data-locale-code') === locale ? 'bold' : '';
+        });
+    });
+})();
+</script>
 </body>
 </html>
