@@ -192,7 +192,7 @@
                     {{-- Image --}}
                     <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square">
                         {{-- Prefer DB thumbnail (survives restarts); fall back to storage URL --}}
-                        <img src="{{ $diagnosis->image_thumbnail ?? Storage::url($diagnosis->image_path) }}"
+                        <img src="{{ $diagnosis->image_thumbnail ?? Storage::disk('public')->url($diagnosis->image_path) }}"
                              alt="Scanned Image"
                              class="w-full h-full object-cover" loading="lazy"
                              onerror="imgError(this)">
