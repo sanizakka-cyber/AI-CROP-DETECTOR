@@ -128,13 +128,13 @@ class DiagnosticController extends Controller
         if ($aiResult) {
             $diagnosisData = [
                 // Subject identification (auto-detected)
-                'subject_name'             => $aiResult['subject_name']          ?? null,
-                'scientific_name'          => $aiResult['scientific_name']        ?? null,
-                'detected_part'            => $aiResult['detected_part']          ?? null,
-                'health_status'            => $aiResult['health_status']          ?? null,
-                'severity_level'           => $aiResult['severity']               ?? null,
+                'subject_name'             => $aiResult['subject_name']     ?? $aiResult['species']     ?? $aiResult['crop']  ?? $aiResult['animal']  ?? null,
+                'scientific_name'          => $aiResult['scientific_name']   ?? $aiResult['latin_name']  ?? null,
+                'detected_part'            => $aiResult['detected_part']     ?? $aiResult['body_part']   ?? null,
+                'health_status'            => $aiResult['health_status']     ?? $aiResult['status']      ?? null,
+                'severity_level'           => $aiResult['severity']          ?? $aiResult['severity_level'] ?? null,
                 // Core
-                'disease_name'             => $aiResult['disease']                ?? $aiResult['condition'] ?? 'Requires expert review',
+                'disease_name'             => $aiResult['disease']           ?? $aiResult['condition']   ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? 'Requires expert review',
                 'confidence_score'         => (float) ($aiResult['confidence']    ?? 0),
                 'urgency_level'            => $aiResult['urgency']                ?? 'Medium',
                 // Findings
@@ -276,7 +276,18 @@ class DiagnosticController extends Controller
     {
         abort_if($diagnosis->user_id !== auth()->id(), 403);
         $user = auth()->user();
-        return view('diagnostics.report', compact('diagnosis', 'user'));
+
+        // Embed image as base64 so the PDF renders correctly without needing the storage symlink
+        $imageB64 = null;
+        if ($diagnosis->image_path) {
+            $fullPath = storage_path('app/public/' . $diagnosis->image_path);
+            if (file_exists($fullPath) && is_readable($fullPath)) {
+                $mime     = mime_content_type($fullPath) ?: 'image/jpeg';
+                $imageB64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fullPath));
+            }
+        }
+
+        return view('diagnostics.report', compact('diagnosis', 'user', 'imageB64'));
     }
 
     public function storeFeedback(Request $request, Diagnosis $diagnosis)

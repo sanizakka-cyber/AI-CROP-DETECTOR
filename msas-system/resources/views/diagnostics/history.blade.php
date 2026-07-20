@@ -87,6 +87,21 @@
                 </div>
             </div>
 
+            {{-- ── AI Unavailable Banner (only for failed scans) ───────────────── --}}
+            @if($diagnosis->status === 'needs_review')
+            <div class="bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-start gap-3">
+                <span class="text-xl shrink-0">🔄</span>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-amber-800 text-sm">AI Engine was unavailable during this scan</p>
+                    <p class="text-xs text-amber-700 mt-0.5">Your image was saved. Please run a new scan — if this keeps happening, the AI service may be temporarily offline.</p>
+                </div>
+                <a href="{{ route('diagnostics.scan') }}"
+                   class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                    Try Again
+                </a>
+            </div>
+            @endif
+
             {{-- ── Voice Narration Bar ───────────────────────────────────────── --}}
             @php $sessionLang = session('locale', 'en'); $validTtsLangs = ['en','ha','fr','yo','ig','ar','sw']; $defaultTtsLang = in_array($sessionLang, $validTtsLangs) ? $sessionLang : 'en'; @endphp
             <div class="bg-slate-800 text-white px-5 py-2.5 flex flex-wrap items-center gap-3">
@@ -149,6 +164,8 @@
                 <span id="{{ $ttsId }}-translated" class="hidden"></span>
                 <span id="{{ $ttsId }}-state" class="hidden">stopped</span>
             </div>
+            {{-- Voice warning: shown when device lacks a native voice for the selected language --}}
+            <div id="{{ $ttsId }}-voice-warning" class="hidden bg-amber-900/20 border-t border-amber-700/20 px-5 py-1.5 text-[10px] text-amber-300"></div>
 
             {{-- ── Voice Transcript Panel ───────────────────────────────────────── --}}
             <div id="{{ $ttsId }}-transcript-panel" class="hidden bg-slate-900 border-t border-slate-700">
@@ -175,7 +192,8 @@
                     {{-- Image --}}
                     <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square">
                         <img src="{{ Storage::url($diagnosis->image_path) }}" alt="Scanned Image"
-                             class="w-full h-full object-cover" loading="lazy">
+                             class="w-full h-full object-cover" loading="lazy"
+                             onerror="imgError(this)">
 
                         {{-- Confidence overlay --}}
                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
@@ -452,6 +470,15 @@
     </style>
 
     <script>
+    // ── Image error fallback ───────────────────────────────────────────────────
+    function imgError(img) {
+        img.onerror = null;
+        img.style.objectFit = 'contain';
+        img.style.padding = '16px';
+        img.style.opacity = '0.35';
+        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='42%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='26'%3E%F0%9F%93%B7%3C/text%3E%3Ctext x='50%25' y='68%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='8'%3ENo image%3C/text%3E%3C/svg%3E";
+    }
+
     // ── Toggle accordion ───────────────────────────────────────────────────────
     function toggleSection(id) {
         var el = document.getElementById(id);
@@ -472,20 +499,34 @@
 
     // ── TTS Engine ─────────────────────────────────────────────────────────────
     (function(){
-        var states     = {};   // id → 'stopped' | 'playing' | 'paused'
-        var speeds     = {};   // id → float
-        var cached     = {};   // id+lang → translated text
-        var translating = {};  // id → bool — prevents Play while fetch is in flight
+        var states      = {};  // id → 'stopped' | 'playing' | 'paused'
+        var speeds      = {};  // id → float
+        var cached      = {};  // id+lang → translated text
+        var translating = {};  // id → bool
+        var keepalive   = null; // Chrome 15-second silence bug workaround
 
-        // Pre-cache voices as soon as possible (Chrome loads async)
+        // Chrome silently stops speaking after ~15s — pause/resume keeps it alive
+        function startKeepalive() {
+            if (keepalive) return;
+            keepalive = setInterval(function() {
+                if ('speechSynthesis' in window && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+                    window.speechSynthesis.pause();
+                    window.speechSynthesis.resume();
+                }
+            }, 14000);
+        }
+        function stopKeepalive() {
+            if (keepalive) { clearInterval(keepalive); keepalive = null; }
+        }
+
         var voiceCache = [];
         function loadVoices() {
-            var v = window.speechSynthesis.getVoices();
+            var v = 'speechSynthesis' in window ? window.speechSynthesis.getVoices() : [];
             if (v.length) voiceCache = v;
             return voiceCache;
         }
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = function(){ loadVoices(); };
+            window.speechSynthesis.onvoiceschanged = loadVoices;
             loadVoices();
         }
 
@@ -505,10 +546,10 @@
         }
 
         function updateUI(id, state) {
-            var playBtn  = el(id + '-playbtn');
-            var pauseBtn = el(id + '-pause');
-            var stopBtn  = el(id + '-stop');
-            var replayBtn= el(id + '-replay');
+            var playBtn   = el(id + '-playbtn');
+            var pauseBtn  = el(id + '-pause');
+            var stopBtn   = el(id + '-stop');
+            var replayBtn = el(id + '-replay');
             if (!playBtn) return;
             var dict = (window.MSAS_TRANS && window.MSAS_LOCALE) ? (window.MSAS_TRANS[window.MSAS_LOCALE] || {}) : {};
             var lPlay    = dict['Play']       || 'Play';
@@ -530,11 +571,11 @@
                 if (pauseBtn)  pauseBtn.classList.add('hidden');
                 if (stopBtn)   stopBtn.classList.add('hidden');
                 if (replayBtn) replayBtn.classList.add('hidden');
+                stopKeepalive();
             }
         }
 
-        /* ── Transcript word-map per utterance ─────────────────────────────── */
-        var wordMaps = {};  // id → [{start, end, el}]
+        var wordMaps = {};
 
         function buildTranscript(id, text) {
             var box = el(id + '-transcript-box');
@@ -562,8 +603,7 @@
 
         window.ttsToggleTranscript = function(id) {
             var panel = el(id + '-transcript-panel');
-            if (!panel) return;
-            panel.classList.toggle('hidden');
+            if (panel) panel.classList.toggle('hidden');
         };
 
         function startSpeaking(id) {
@@ -575,39 +615,47 @@
             if (!text) return;
 
             var langCode = getLangCode(id);
-            var u    = new SpeechSynthesisUtterance(text);
+            var u = new SpeechSynthesisUtterance(text);
             u.lang   = langCode;
             u.rate   = parseFloat(speeds[id] || 1);
             u.pitch  = 1.0;
             u.volume = 1.0;
 
-            // Match a native voice for the target language — do NOT fall back to English
-            var voices = loadVoices();
+            var voices    = loadVoices();
+            var voiceWarn = el(id + '-voice-warning');
             if (voices.length) {
                 var code  = langCode.split('-')[0];
                 var match = voices.find(function(v){ return v.lang.startsWith(code); });
-                if (match) u.voice = match;
+                if (match) {
+                    u.voice = match;
+                    if (voiceWarn) voiceWarn.classList.add('hidden');
+                } else if (code !== 'en') {
+                    if (voiceWarn) {
+                        voiceWarn.textContent = '⚠ No native ' + langCode + ' voice found on this device — using default voice. Text is translated.';
+                        voiceWarn.classList.remove('hidden');
+                    }
+                }
             }
 
-            /* Build/rebuild transcript */
             var map = buildTranscript(id, text);
             wordMaps[id] = map || [];
 
-            u.onstart = function(){ states[id]='playing'; updateUI(id,'playing'); };
-            u.onend   = function(){
-                states[id]='stopped'; updateUI(id,'stopped');
-                /* Clear highlights when done */
-                (wordMaps[id] || []).forEach(function(w){ w.el.style.background=''; w.el.style.color=''; });
+            u.onstart = function() { states[id] = 'playing'; updateUI(id, 'playing'); startKeepalive(); };
+            u.onend   = function() {
+                states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
+                (wordMaps[id] || []).forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
             };
-            u.onerror = function(e){ console.warn('TTS error', e); states[id]='stopped'; updateUI(id,'stopped'); };
+            u.onerror = function(e) {
+                console.warn('TTS error', e);
+                states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
+            };
 
-            /* Word-boundary highlighting (Chrome/Edge/Safari — Firefox fires no boundary events) */
             u.onboundary = function(e) {
                 if (e.name !== 'word') return;
                 var map = wordMaps[id];
                 if (!map || !map.length) return;
                 var ci = e.charIndex;
-                map.forEach(function(w){ w.el.style.background=''; w.el.style.color=''; });
+                map.forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
                 for (var i = 0; i < map.length; i++) {
                     if (map[i].start <= ci && ci < map[i].end) {
                         map[i].el.style.background = '#10b981';
@@ -623,7 +671,6 @@
         }
 
         window.ttsPlay = function(id) {
-            // Block play while translation is fetching
             if (translating[id]) {
                 var btn = el(id + '-playbtn');
                 if (btn) {
@@ -636,6 +683,7 @@
                 window.speechSynthesis.resume();
                 states[id] = 'playing';
                 updateUI(id, 'playing');
+                startKeepalive();
                 return;
             }
             startSpeaking(id);
@@ -646,6 +694,7 @@
                 window.speechSynthesis.pause();
                 states[id] = 'paused';
                 updateUI(id, 'paused');
+                stopKeepalive();
             }
         };
 
@@ -653,10 +702,12 @@
             window.speechSynthesis.cancel();
             states[id] = 'stopped';
             updateUI(id, 'stopped');
+            stopKeepalive();
         };
 
         window.ttsReplay = function(id) {
             window.speechSynthesis.cancel();
+            stopKeepalive();
             setTimeout(function(){ startSpeaking(id); }, 120);
         };
 
@@ -668,29 +719,36 @@
             }
         };
 
-        // ── Language change: translate then speak ──────────────────────────────
         window.ttsChangeLang = function(id, langCode, translateUrl) {
-            // English — clear any existing translation and revert to original text
+            // English — clear translation and revert to original text
             if (langCode === 'en') {
                 var t = el(id + '-translated');
                 if (t) t.textContent = '';
                 translating[id] = false;
                 var origText = (el(id + '-text') || {textContent:''}).textContent.trim();
                 if (origText) { var m = buildTranscript(id, origText); if (m) wordMaps[id] = m; }
-                if (states[id] === 'playing') { window.ttsStop(id); setTimeout(function(){ startSpeaking(id); }, 150); }
+                // Restart if currently active (playing or paused)
+                if (states[id] === 'playing' || states[id] === 'paused') {
+                    window.ttsStop(id);
+                    setTimeout(function(){ startSpeaking(id); }, 150);
+                }
                 return;
             }
 
-            // Serve from in-session cache if available
+            // Serve from in-session cache
             var cacheKey = id + '-' + langCode;
             if (cached[cacheKey]) {
                 var t = el(id + '-translated');
                 if (t) t.textContent = cached[cacheKey];
-                if (states[id] === 'playing') { window.ttsStop(id); setTimeout(function(){ startSpeaking(id); }, 150); }
+                var cm = buildTranscript(id, cached[cacheKey]);
+                if (cm) wordMaps[id] = cm;
+                if (states[id] === 'playing' || states[id] === 'paused') {
+                    window.ttsStop(id);
+                    setTimeout(function(){ startSpeaking(id); }, 150);
+                }
                 return;
             }
 
-            // Mark as translating — Play will wait for this to finish
             translating[id] = true;
             var indicator = el(id + '-translating');
             if (indicator) indicator.classList.remove('hidden');
@@ -721,22 +779,29 @@
                     cached[cacheKey] = data.translated_text;
                     var t = el(id + '-translated');
                     if (t) t.textContent = data.translated_text;
-                    /* Rebuild transcript with translated text */
                     var newMap = buildTranscript(id, data.translated_text);
                     if (newMap) wordMaps[id] = newMap;
-                    // If already playing, restart in the new language immediately
-                    if (states[id] === 'playing') {
-                        window.ttsStop(id);
-                        setTimeout(function(){ startSpeaking(id); }, 150);
-                    }
-                } else {
-                    console.warn('Translation returned no text:', data);
+                }
+                // Restart if currently active, whether translation succeeded or not
+                if (states[id] === 'playing' || states[id] === 'paused') {
+                    window.ttsStop(id);
+                    setTimeout(function(){ startSpeaking(id); }, 150);
                 }
             })
             .catch(function(err) {
                 translating[id] = false;
                 if (indicator) indicator.classList.add('hidden');
                 console.warn('Translation fetch failed:', err);
+                var warn = el(id + '-voice-warning');
+                if (warn) {
+                    warn.textContent = '⚠ Translation service unavailable — narrating in original English.';
+                    warn.classList.remove('hidden');
+                }
+                // Still restart with original text in selected language voice
+                if (states[id] === 'playing' || states[id] === 'paused') {
+                    window.ttsStop(id);
+                    setTimeout(function(){ startSpeaking(id); }, 150);
+                }
             });
         };
     })();

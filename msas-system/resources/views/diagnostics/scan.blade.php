@@ -122,22 +122,44 @@
 
                 <!-- Image Upload Area -->
                 <div class="mb-8">
-                    <label class="block text-sm font-bold text-slate-700 mb-3">Upload Image or Take Photo</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Choose Image Source</label>
 
-                    <div id="drop-area" class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
-                        <input type="file" name="image" id="file-upload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                               accept="image/*" capture="environment" required onchange="previewImage(event)">
+                    {{-- Source picker buttons --}}
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <button type="button" onclick="triggerCamera()"
+                            class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-slate-900 hover:bg-slate-700 text-white rounded-xl font-bold transition shadow-sm">
+                            <span class="text-3xl">📷</span>
+                            <span class="text-xs leading-tight text-center">Take Photo<br><span class="font-normal opacity-60 text-[10px]">Camera</span></span>
+                        </button>
+                        <button type="button" onclick="triggerGallery()"
+                            class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-sm">
+                            <span class="text-3xl">🖼️</span>
+                            <span class="text-xs leading-tight text-center">Select Photo<br><span class="font-normal opacity-60 text-[10px]">Gallery</span></span>
+                        </button>
+                        <button type="button" onclick="triggerBrowse()"
+                            class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition shadow-sm">
+                            <span class="text-3xl">📁</span>
+                            <span class="text-xs leading-tight text-center">Browse Files<br><span class="font-normal opacity-60 text-[10px]">Desktop / Cloud</span></span>
+                        </button>
+                    </div>
 
+                    {{-- Hidden file input — capture attribute toggled by JS --}}
+                    <input type="file" name="image" id="file-upload" class="hidden"
+                           accept="image/*" required onchange="previewImage(event)">
+
+                    {{-- Drop zone for desktop drag-and-drop --}}
+                    <div id="drop-area" class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 transition cursor-pointer"
+                         onclick="triggerBrowse()">
                         <div id="upload-prompt">
-                            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl mx-auto shadow-sm text-slate-400 mb-4">📷</div>
-                            <h4 class="font-bold text-slate-700 mb-1">Click to Upload or Take Photo</h4>
-                            <p class="text-xs text-slate-500">JPG, PNG — Max 5 MB — For best results use a clear, well-lit, close-up image</p>
+                            <div class="text-4xl text-slate-300 mb-2">⬆️</div>
+                            <h4 class="font-bold text-slate-600 mb-1 text-sm">or drag &amp; drop here</h4>
+                            <p class="text-xs text-slate-400">JPG, PNG, HEIC — Max 5 MB</p>
                         </div>
-
                         <div id="image-preview-container" class="hidden">
                             <img id="image-preview" src="#" alt="Preview" class="max-h-64 mx-auto rounded-lg shadow-md">
-                            <p class="text-emerald-600 font-bold mt-3 text-sm flex items-center justify-center gap-1"><span>✅</span> Image Selected</p>
-                            <button type="button" onclick="resetUpload()" class="mt-2 text-xs text-red-500 hover:underline relative z-10">Remove and select another</button>
+                            <p class="text-emerald-600 font-bold mt-3 text-sm flex items-center justify-center gap-1"><span>✅</span> Image Ready</p>
+                            <button type="button" onclick="resetUpload(); event.stopPropagation();"
+                                class="mt-2 text-xs text-red-500 hover:underline relative z-10">Remove &amp; try again</button>
                         </div>
                     </div>
                     @error('image')
@@ -182,10 +204,61 @@
         document.getElementById('ctx-animal').classList.toggle('hidden', type !== 'animal');
         document.getElementById('ctx-soil').classList.toggle('hidden', type !== 'soil');
     }
+
+    // ── Image source triggers ──────────────────────────────────────────────────
+    function triggerCamera() {
+        var input = document.getElementById('file-upload');
+        input.setAttribute('capture', 'environment');
+        input.click();
+    }
+    function triggerGallery() {
+        var input = document.getElementById('file-upload');
+        input.removeAttribute('capture');
+        input.click();
+    }
+    function triggerBrowse() {
+        var input = document.getElementById('file-upload');
+        input.removeAttribute('capture');
+        input.click();
+    }
+
+    // ── Drag-and-drop support ──────────────────────────────────────────────────
+    (function() {
+        var da = document.getElementById('drop-area');
+        ['dragenter', 'dragover'].forEach(function(ev) {
+            da.addEventListener(ev, function(e) {
+                e.preventDefault();
+                da.classList.add('border-emerald-400', 'bg-emerald-50');
+            });
+        });
+        ['dragleave', 'dragend'].forEach(function(ev) {
+            da.addEventListener(ev, function() {
+                da.classList.remove('border-emerald-400', 'bg-emerald-50');
+            });
+        });
+        da.addEventListener('drop', function(e) {
+            e.preventDefault();
+            da.classList.remove('border-emerald-400', 'bg-emerald-50');
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files[0] && files[0].type.startsWith('image/')) {
+                try {
+                    var dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    var input = document.getElementById('file-upload');
+                    input.removeAttribute('capture');
+                    input.files = dt.files;
+                    previewImage({ target: input });
+                } catch (err) {
+                    console.warn('Drag-and-drop file assignment failed:', err);
+                }
+            }
+        });
+    })();
+
     function previewImage(event) {
-        const input = event.target;
+        var input = event.target;
         if (input.files && input.files[0]) {
-            const reader = new FileReader();
+            var reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('image-preview').src = e.target.result;
                 document.getElementById('upload-prompt').classList.add('hidden');
@@ -195,8 +268,10 @@
         }
     }
     function resetUpload() {
-        document.getElementById('file-upload').value = "";
-        document.getElementById('image-preview').src = "#";
+        var input = document.getElementById('file-upload');
+        input.value = '';
+        input.removeAttribute('capture');
+        document.getElementById('image-preview').src = '#';
         document.getElementById('image-preview-container').classList.add('hidden');
         document.getElementById('upload-prompt').classList.remove('hidden');
     }
