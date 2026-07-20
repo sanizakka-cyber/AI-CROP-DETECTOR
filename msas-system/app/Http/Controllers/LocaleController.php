@@ -16,6 +16,10 @@ class LocaleController extends Controller
         session(['locale' => $locale]);
         app()->setLocale($locale);
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['locale' => $locale, 'success' => true]);
+        }
+
         return back();
     }
 }

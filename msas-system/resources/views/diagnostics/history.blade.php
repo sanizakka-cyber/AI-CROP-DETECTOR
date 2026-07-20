@@ -5,7 +5,7 @@
                 <span class="text-2xl">📋</span> {{ __('AI Diagnostic Reports') }}
             </h2>
             <a href="{{ route('diagnostics.scan') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-camera text-xs"></i> New Scan
+                <i class="fa-solid fa-camera text-xs"></i> <span data-i18n="New Scan">{{ __('New Scan') }}</span>
             </a>
         </div>
     </x-slot>
@@ -88,28 +88,29 @@
             </div>
 
             {{-- ── Voice Narration Bar ───────────────────────────────────────── --}}
+            @php $sessionLang = session('locale', 'en'); $validTtsLangs = ['en','ha','fr','yo','ig','ar','sw']; $defaultTtsLang = in_array($sessionLang, $validTtsLangs) ? $sessionLang : 'en'; @endphp
             <div class="bg-slate-800 text-white px-5 py-2.5 flex flex-wrap items-center gap-3">
                 <i class="fa-solid fa-volume-high text-emerald-400 text-sm shrink-0"></i>
-                <span class="text-xs text-slate-300 font-medium shrink-0">Voice Narration</span>
+                <span class="text-xs text-slate-300 font-medium shrink-0" data-i18n="Voice Narration">{{ __('Voice Narration') }}</span>
 
-                {{-- Language selector --}}
+                {{-- Language selector — pre-set to the user's current locale --}}
                 <select id="{{ $ttsId }}-lang"
                     onchange="ttsChangeLang('{{ $ttsId }}', this.value, '{{ route('diagnostics.translate') }}')"
                     class="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400">
-                    <option value="en">🇺🇸 English</option>
-                    <option value="ha">🇳🇬 Hausa</option>
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="yo">🇳🇬 Yorùbá</option>
-                    <option value="ig">🇳🇬 Igbo</option>
-                    <option value="ar">🇸🇦 Arabic</option>
-                    <option value="sw">🌍 Swahili</option>
+                    <option value="en"  {{ $defaultTtsLang === 'en' ? 'selected' : '' }}>🇺🇸 English</option>
+                    <option value="ha"  {{ $defaultTtsLang === 'ha' ? 'selected' : '' }}>🇳🇬 Hausa</option>
+                    <option value="fr"  {{ $defaultTtsLang === 'fr' ? 'selected' : '' }}>🇫🇷 Français</option>
+                    <option value="yo"  {{ $defaultTtsLang === 'yo' ? 'selected' : '' }}>🇳🇬 Yorùbá</option>
+                    <option value="ig"  {{ $defaultTtsLang === 'ig' ? 'selected' : '' }}>🇳🇬 Igbo</option>
+                    <option value="ar"  {{ $defaultTtsLang === 'ar' ? 'selected' : '' }}>🇸🇦 Arabic</option>
+                    <option value="sw"  {{ $defaultTtsLang === 'sw' ? 'selected' : '' }}>🌍 Swahili</option>
                 </select>
 
                 {{-- Controls --}}
                 <div class="flex items-center gap-1.5" id="{{ $ttsId }}-controls">
                     <button onclick="ttsPlay('{{ $ttsId }}')" id="{{ $ttsId }}-playbtn"
                         class="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg text-xs font-bold transition">
-                        <i class="fa-solid fa-play text-[9px]"></i> Play
+                        <i class="fa-solid fa-play text-[9px]"></i> <span data-i18n="Play">{{ __('Play') }}</span>
                     </button>
                     <button onclick="ttsPause('{{ $ttsId }}')" id="{{ $ttsId }}-pause"
                         class="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs transition hidden">
@@ -130,16 +131,40 @@
                         <option value="1.25">1.25×</option>
                         <option value="1.5">1.5×</option>
                     </select>
+                    {{-- Transcript toggle --}}
+                    <button onclick="ttsToggleTranscript('{{ $ttsId }}')" id="{{ $ttsId }}-transcript-btn"
+                        class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-600 hover:bg-slate-500 text-slate-200 rounded-lg text-xs font-medium transition" title="Show/hide transcript">
+                        <i class="fa-solid fa-closed-captioning text-[9px]"></i>
+                        <span data-i18n="Transcript">{{ __('Transcript') }}</span>
+                    </button>
                 </div>
 
                 <div id="{{ $ttsId }}-translating" class="hidden text-xs text-amber-300 flex items-center gap-1 ml-auto">
-                    <i class="fa-solid fa-spinner fa-spin text-[10px]"></i> Translating...
+                    <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                    <span data-i18n="Translating...">{{ __('Translating...') }}</span>
                 </div>
 
                 {{-- Hidden data stores --}}
                 <span id="{{ $ttsId }}-text" class="hidden">{{ $ttsText }}</span>
                 <span id="{{ $ttsId }}-translated" class="hidden"></span>
                 <span id="{{ $ttsId }}-state" class="hidden">stopped</span>
+            </div>
+
+            {{-- ── Voice Transcript Panel ───────────────────────────────────────── --}}
+            <div id="{{ $ttsId }}-transcript-panel" class="hidden bg-slate-900 border-t border-slate-700">
+                <div class="px-5 py-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-closed-captioning text-emerald-400"></i>
+                            <span data-i18n="Transcript">{{ __('Transcript') }}</span>
+                        </span>
+                        <button onclick="ttsToggleTranscript('{{ $ttsId }}')" class="text-[10px] text-slate-500 hover:text-slate-300 transition">✕ Hide</button>
+                    </div>
+                    <div id="{{ $ttsId }}-transcript-box"
+                         class="text-xs text-slate-300 leading-relaxed max-h-36 overflow-y-auto p-2 bg-slate-800 rounded-lg">
+                        <span class="text-slate-500 italic">Press Play to start narration — transcript will appear here.</span>
+                    </div>
+                </div>
             </div>
 
             {{-- ── Main Report Grid ──────────────────────────────────────────── --}}
@@ -154,7 +179,7 @@
 
                         {{-- Confidence overlay --}}
                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                            <div class="text-white text-[10px] font-bold uppercase opacity-70">AI Confidence</div>
+                            <div class="text-white text-[10px] font-bold uppercase opacity-70" data-i18n="AI Confidence">{{ __('AI Confidence') }}</div>
                             <div class="flex items-baseline gap-1">
                                 <span class="text-white font-extrabold text-2xl leading-none">{{ number_format($diagnosis->confidence_score, 0) }}</span>
                                 <span class="text-white/70 text-xs font-bold">%</span>
@@ -174,24 +199,24 @@
                     <div class="space-y-1.5">
                         @if($sev)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}">
-                            <span class="font-bold uppercase tracking-wide text-[10px]">Severity</span>
+                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Severity">{{ __('Severity') }}</span>
                             <span class="font-extrabold">{{ $theme['icon'] }} {{ $sev }}</span>
                         </div>
                         @endif
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border
                             {{ $urgency === 'Emergency' || $urgency === 'High' ? 'bg-red-100 text-red-800 border-red-200' : ($urgency === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}">
-                            <span class="font-bold uppercase tracking-wide text-[10px]">Urgency</span>
+                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Urgency">{{ __('Urgency') }}</span>
                             <span class="font-extrabold">{{ $urgency }}</span>
                         </div>
                         @if($diagnosis->detected_part)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-700">
-                            <span class="font-bold uppercase tracking-wide text-[10px]">Detected Part</span>
+                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Detected Part">{{ __('Detected Part') }}</span>
                             <span class="font-bold">{{ $diagnosis->detected_part }}</span>
                         </div>
                         @endif
                         @if($diagnosis->health_status)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-700">
-                            <span class="font-bold uppercase tracking-wide text-[10px]">Health</span>
+                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Health">{{ __('Health') }}</span>
                             <span class="font-bold">{{ $diagnosis->health_status }}</span>
                         </div>
                         @endif
@@ -200,7 +225,7 @@
                     {{-- Download button --}}
                     <a href="{{ route('diagnostics.report', $diagnosis) }}" target="_blank"
                         class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition">
-                        <i class="fa-solid fa-file-pdf text-red-400"></i> Download Report
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> <span data-i18n="Download Report">{{ __('Download Report') }}</span>
                     </a>
                 </div>
 
@@ -211,7 +236,7 @@
                     <div class="{{ $theme['ibg'] }} border border-opacity-30 rounded-xl px-4 py-3 flex items-start justify-between gap-3 flex-wrap"
                          style="border-color: inherit">
                         <div>
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Diagnosis</div>
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5" data-i18n="Diagnosis">{{ __('Diagnosis') }}</div>
                             <h3 class="text-lg font-extrabold text-slate-800 leading-tight">{{ $diagnosis->disease_name }}</h3>
                             @if($diagnosis->recovery_period)
                             <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
@@ -222,7 +247,7 @@
                         @if($diagnosis->confidence_score < 60)
                         <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg max-w-xs">
                             <i class="fa-solid fa-triangle-exclamation"></i>
-                            Confidence is limited. Please capture a clearer image or consult an expert.
+                            <span data-i18n="Confidence is limited. Please capture a clearer image or consult an expert.">{{ __('Confidence is limited. Please capture a clearer image or consult an expert.') }}</span>
                         </div>
                         @endif
                     </div>
@@ -232,7 +257,7 @@
                         @if($diagnosis->symptoms_identified)
                         <div class="bg-red-50 border border-red-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-microscope text-[9px]"></i> Symptoms
+                                <i class="fa-solid fa-microscope text-[9px]"></i> <span data-i18n="Symptoms">{{ __('Symptoms') }}</span>
                             </div>
                             <p class="text-xs text-red-800 leading-relaxed">{{ $diagnosis->symptoms_identified }}</p>
                         </div>
@@ -240,7 +265,7 @@
                         @if($diagnosis->cause)
                         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-magnifying-glass text-[9px]"></i> Root Cause
+                                <i class="fa-solid fa-magnifying-glass text-[9px]"></i> <span data-i18n="Root Cause">{{ __('Root Cause') }}</span>
                             </div>
                             <p class="text-xs text-slate-700 leading-relaxed">{{ $diagnosis->cause }}</p>
                         </div>
@@ -248,7 +273,7 @@
                         @if($diagnosis->environmental_factors)
                         <div class="bg-sky-50 border border-sky-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-sky-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-cloud-sun text-[9px]"></i> Environment
+                                <i class="fa-solid fa-cloud-sun text-[9px]"></i> <span data-i18n="Environment">{{ __('Environment') }}</span>
                             </div>
                             <p class="text-xs text-sky-800 leading-relaxed">{{ $diagnosis->environmental_factors }}</p>
                         </div>
@@ -262,7 +287,7 @@
                         @if($diagnosis->nutrient_deficiencies && $diagnosis->nutrient_deficiencies !== 'None detected')
                         <div class="bg-lime-50 border border-lime-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-lime-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-flask text-[9px]"></i> Nutrient Deficiency
+                                <i class="fa-solid fa-flask text-[9px]"></i> <span data-i18n="Nutrient Deficiency">{{ __('Nutrient Deficiency') }}</span>
                             </div>
                             <p class="text-xs text-lime-900 leading-relaxed">{{ $diagnosis->nutrient_deficiencies }}</p>
                         </div>
@@ -270,7 +295,7 @@
                         @if($diagnosis->pest_detection && $diagnosis->pest_detection !== 'No pest detected')
                         <div class="bg-orange-50 border border-orange-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-bug text-[9px]"></i> Pest Detection
+                                <i class="fa-solid fa-bug text-[9px]"></i> <span data-i18n="Pest Detection">{{ __('Pest Detection') }}</span>
                             </div>
                             <p class="text-xs text-orange-800 leading-relaxed">{{ $diagnosis->pest_detection }}</p>
                         </div>
@@ -282,7 +307,7 @@
                     @if($diagnosis->first_aid_steps)
                     <div class="bg-blue-600 text-white rounded-xl p-4">
                         <div class="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-80 flex items-center gap-1">
-                            <i class="fa-solid fa-kit-medical text-[9px]"></i> Immediate Action Required
+                            <i class="fa-solid fa-kit-medical text-[9px]"></i> <span data-i18n="Immediate Action Required">{{ __('Immediate Action Required') }}</span>
                         </div>
                         <p class="text-sm leading-relaxed font-medium whitespace-pre-line">{{ $diagnosis->first_aid_steps }}</p>
                     </div>
@@ -293,7 +318,7 @@
                         @if($diagnosis->recommended_medication)
                         <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-pills text-[9px]"></i> Recommended Treatment
+                                <i class="fa-solid fa-pills text-[9px]"></i> <span data-i18n="Recommended Treatment">{{ __('Recommended Treatment') }}</span>
                             </div>
                             <p class="text-xs text-emerald-900 leading-relaxed">{{ $diagnosis->recommended_medication }}</p>
                         </div>
@@ -301,7 +326,7 @@
                         @if($diagnosis->fertilizer_recommendation)
                         <div class="bg-teal-50 border border-teal-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-seedling text-[9px]"></i> Fertilizer
+                                <i class="fa-solid fa-seedling text-[9px]"></i> <span data-i18n="Fertilizer">{{ __('Fertilizer') }}</span>
                             </div>
                             <p class="text-xs text-teal-900 leading-relaxed">{{ $diagnosis->fertilizer_recommendation }}</p>
                         </div>
@@ -314,7 +339,7 @@
                         @if($diagnosis->preventive_measures)
                         <div class="bg-violet-50 border border-violet-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-violet-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-shield-halved text-[9px]"></i> Prevention
+                                <i class="fa-solid fa-shield-halved text-[9px]"></i> <span data-i18n="Prevention">{{ __('Prevention') }}</span>
                             </div>
                             <p class="text-xs text-violet-900 leading-relaxed">{{ $diagnosis->preventive_measures }}</p>
                         </div>
@@ -322,7 +347,7 @@
                         @if($diagnosis->best_practices)
                         <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
                             <div class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <i class="fa-solid fa-book-open text-[9px]"></i> Best Practices
+                                <i class="fa-solid fa-book-open text-[9px]"></i> <span data-i18n="Best Practices">{{ __('Best Practices') }}</span>
                             </div>
                             <p class="text-xs text-indigo-900 leading-relaxed">{{ $diagnosis->best_practices }}</p>
                         </div>
@@ -335,7 +360,7 @@
                     <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
                         <i class="fa-solid fa-user-doctor text-amber-600 mt-0.5 shrink-0"></i>
                         <div>
-                            <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1">Expert Recommendation</div>
+                            <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1" data-i18n="Expert Recommendation">{{ __('Expert Recommendation') }}</div>
                             <p class="text-xs text-amber-900">{{ $diagnosis->vet_referral_advice }}</p>
                         </div>
                     </div>
@@ -347,8 +372,8 @@
                         <button onclick="toggleSection('explain-{{ $diagnosis->id }}')"
                             class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition text-left">
                             <span class="text-xs font-bold text-slate-700 flex items-center gap-2">
-                                <i class="fa-solid fa-brain text-purple-500"></i> Why this diagnosis?
-                                <span class="text-slate-400 font-normal">(Explainable AI)</span>
+                                <i class="fa-solid fa-brain text-purple-500"></i> <span data-i18n="Why this diagnosis?">{{ __('Why this diagnosis?') }}</span>
+                                <span class="text-slate-400 font-normal">(<span data-i18n="Explainable AI">{{ __('Explainable AI') }}</span>)</span>
                             </span>
                             <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform" id="icon-explain-{{ $diagnosis->id }}"></i>
                         </button>
@@ -371,7 +396,7 @@
                     @if($feedbackReady && $diagnosis->status === 'reviewed')
                     <div class="border-t border-slate-100 pt-4">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Was this accurate?</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider" data-i18n="Was this accurate?">{{ __('Was this accurate?') }}</span>
 
                             @if($myFeedback)
                             <span class="px-3 py-1 rounded-full text-xs font-bold {{ $myFeedback->rating === 'thumbs_up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
@@ -380,9 +405,9 @@
                             <button onclick="toggleSection('fb-{{ $diagnosis->id }}')" class="text-[10px] text-slate-400 hover:text-slate-600 ml-auto">Edit</button>
                             @else
                             <button onclick="submitFeedback('{{ $diagnosis->id }}','thumbs_up')"
-                                class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold transition">👍 Accurate</button>
+                                class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold transition">👍 <span data-i18n="Accurate">{{ __('Accurate') }}</span></button>
                             <button onclick="submitFeedback('{{ $diagnosis->id }}','thumbs_down')"
-                                class="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-full text-xs font-bold transition">👎 Not Accurate</button>
+                                class="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-full text-xs font-bold transition">👎 <span data-i18n="Not Accurate">{{ __('Not Accurate') }}</span></button>
                             @endif
                         </div>
 
@@ -410,10 +435,10 @@
         @empty
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
             <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-5xl mx-auto mb-4">🗂️</div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">No Scans Yet</h3>
-            <p class="text-slate-500 mb-6 max-w-sm mx-auto text-sm">Upload a photo of a plant, animal, or soil sample to get an instant AI-powered diagnosis.</p>
+            <h3 class="text-xl font-bold text-slate-800 mb-2" data-i18n="No Scans Yet">{{ __('No Scans Yet') }}</h3>
+            <p class="text-slate-500 mb-6 max-w-sm mx-auto text-sm" data-i18n="Upload a photo of a plant, animal, or soil sample to get an instant AI-powered diagnosis.">{{ __('Upload a photo of a plant, animal, or soil sample to get an instant AI-powered diagnosis.') }}</p>
             <a href="{{ route('diagnostics.scan') }}" class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-700 hover:-translate-y-0.5 transition text-sm">
-                <i class="fa-solid fa-camera"></i> Run Your First Scan
+                <i class="fa-solid fa-camera"></i> <span data-i18n="Run Your First Scan">{{ __('Run Your First Scan') }}</span>
             </a>
         </div>
         @endforelse
@@ -485,24 +510,61 @@
             var stopBtn  = el(id + '-stop');
             var replayBtn= el(id + '-replay');
             if (!playBtn) return;
+            var dict = (window.MSAS_TRANS && window.MSAS_LOCALE) ? (window.MSAS_TRANS[window.MSAS_LOCALE] || {}) : {};
+            var lPlay    = dict['Play']       || 'Play';
+            var lResume  = dict['Resume']     || 'Resume';
+            var lPlaying = dict['Playing...'] || 'Playing...';
             if (state === 'playing') {
-                playBtn.innerHTML = '<i class="fa-solid fa-volume-high fa-beat text-[9px]"></i> Playing...';
+                playBtn.innerHTML = '<i class="fa-solid fa-volume-high fa-beat text-[9px]"></i> ' + lPlaying;
                 playBtn.classList.add('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.remove('hidden');
                 if (stopBtn)   stopBtn.classList.remove('hidden');
                 if (replayBtn) replayBtn.classList.remove('hidden');
             } else if (state === 'paused') {
-                playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> Resume';
+                playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> ' + lResume;
                 playBtn.classList.remove('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.add('hidden');
             } else {
-                playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> Play';
+                playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> ' + lPlay;
                 playBtn.classList.remove('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.add('hidden');
                 if (stopBtn)   stopBtn.classList.add('hidden');
                 if (replayBtn) replayBtn.classList.add('hidden');
             }
         }
+
+        /* ── Transcript word-map per utterance ─────────────────────────────── */
+        var wordMaps = {};  // id → [{start, end, el}]
+
+        function buildTranscript(id, text) {
+            var box = el(id + '-transcript-box');
+            if (!box) return null;
+            box.innerHTML = '';
+            var map = [];
+            var charIdx = 0;
+            text.split(/(\s+)/).forEach(function(part) {
+                if (!part.length) return;
+                if (/^\s+$/.test(part)) {
+                    box.appendChild(document.createTextNode(part));
+                    charIdx += part.length;
+                } else {
+                    var span = document.createElement('span');
+                    span.textContent = part;
+                    span.className = 'tts-word';
+                    span.style.cssText = 'border-radius:3px;padding:0 1px;transition:background .1s,color .1s;';
+                    box.appendChild(span);
+                    map.push({ start: charIdx, end: charIdx + part.length, el: span });
+                    charIdx += part.length;
+                }
+            });
+            return map;
+        }
+
+        window.ttsToggleTranscript = function(id) {
+            var panel = el(id + '-transcript-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+        };
 
         function startSpeaking(id) {
             if (!('speechSynthesis' in window)) {
@@ -520,18 +582,41 @@
             u.volume = 1.0;
 
             // Match a native voice for the target language — do NOT fall back to English
-            // so the browser honours the lang attribute instead of overriding with an English voice
             var voices = loadVoices();
             if (voices.length) {
                 var code  = langCode.split('-')[0];
                 var match = voices.find(function(v){ return v.lang.startsWith(code); });
                 if (match) u.voice = match;
-                // If no native voice found, leave u.voice unset — browser will try to use u.lang
             }
 
+            /* Build/rebuild transcript */
+            var map = buildTranscript(id, text);
+            wordMaps[id] = map || [];
+
             u.onstart = function(){ states[id]='playing'; updateUI(id,'playing'); };
-            u.onend   = function(){ states[id]='stopped'; updateUI(id,'stopped'); };
+            u.onend   = function(){
+                states[id]='stopped'; updateUI(id,'stopped');
+                /* Clear highlights when done */
+                (wordMaps[id] || []).forEach(function(w){ w.el.style.background=''; w.el.style.color=''; });
+            };
             u.onerror = function(e){ console.warn('TTS error', e); states[id]='stopped'; updateUI(id,'stopped'); };
+
+            /* Word-boundary highlighting (Chrome/Edge/Safari — Firefox fires no boundary events) */
+            u.onboundary = function(e) {
+                if (e.name !== 'word') return;
+                var map = wordMaps[id];
+                if (!map || !map.length) return;
+                var ci = e.charIndex;
+                map.forEach(function(w){ w.el.style.background=''; w.el.style.color=''; });
+                for (var i = 0; i < map.length; i++) {
+                    if (map[i].start <= ci && ci < map[i].end) {
+                        map[i].el.style.background = '#10b981';
+                        map[i].el.style.color = '#fff';
+                        map[i].el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        break;
+                    }
+                }
+            };
 
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(u);
@@ -590,6 +675,8 @@
                 var t = el(id + '-translated');
                 if (t) t.textContent = '';
                 translating[id] = false;
+                var origText = (el(id + '-text') || {textContent:''}).textContent.trim();
+                if (origText) { var m = buildTranscript(id, origText); if (m) wordMaps[id] = m; }
                 if (states[id] === 'playing') { window.ttsStop(id); setTimeout(function(){ startSpeaking(id); }, 150); }
                 return;
             }
@@ -634,6 +721,9 @@
                     cached[cacheKey] = data.translated_text;
                     var t = el(id + '-translated');
                     if (t) t.textContent = data.translated_text;
+                    /* Rebuild transcript with translated text */
+                    var newMap = buildTranscript(id, data.translated_text);
+                    if (newMap) wordMaps[id] = newMap;
                     // If already playing, restart in the new language immediately
                     if (states[id] === 'playing') {
                         window.ttsStop(id);
