@@ -953,9 +953,9 @@
                             <i class="fa-solid fa-phone shrink-0" style="color:var(--green);font-size:10px"></i>
                             <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">+234 8032459879</span>
                         </a>
-                        <a href="mailto:msaslivestockagroservices@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
+                        <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
                             <i class="fa-solid fa-envelope shrink-0" style="color:var(--green);font-size:10px"></i>
-                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">msaslivestockagroservices@gmail.com</span>
+                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">sanizakka@gmail.com</span>
                         </a>
                     </div>
 
@@ -973,7 +973,7 @@
                             @endforeach
                         </div>
                         <div class="flex gap-2">
-                            <a href="mailto:msaslivestockagroservices@gmail.com" class="btn-primary" style="font-size:11px;padding:6px 12px;gap:4px">
+                            <a href="mailto:sanizakka@gmail.com" class="btn-primary" style="font-size:11px;padding:6px 12px;gap:4px">
                                 <i class="fa-solid fa-envelope" style="font-size:9px"></i> Message
                             </a>
                             <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer"
@@ -1074,9 +1074,9 @@
                         <div class="cinfo-label">Email Address</div>
                         <div class="cinfo-name">Send Us a Mail</div>
                         <div class="cinfo-val" style="word-break:break-all;">
-                            <a href="mailto:msaslivestockagroservices@gmail.com">msaslivestockagroservices@gmail.com</a>
+                            <a href="mailto:sanizakka@gmail.com">sanizakka@gmail.com</a>
                         </div>
-                        <a href="mailto:msaslivestockagroservices@gmail.com" class="cinfo-btn o">
+                        <a href="mailto:sanizakka@gmail.com" class="cinfo-btn o">
                             <i class="fa-solid fa-envelope" style="font-size:.65rem;"></i> Send Email
                         </a>
                     </div>
@@ -1230,7 +1230,7 @@
                 <div class="space-y-2.5 text-xs md:text-sm">
                     <p class="flex gap-2 items-start"><i class="fa-solid fa-location-dot text-green-500 mt-0.5 shrink-0"></i><span>No. 21 Sarkin Maska Street, Dutsin Safe Lowcost, Katsina State, Nigeria</span></p>
                     <p><a href="tel:+2348032459879" class="flex gap-2 hover:text-green-400 transition"><i class="fa-solid fa-phone text-green-500 shrink-0"></i>08032459879</a></p>
-                    <p><a href="mailto:msaslivestockagroservices@gmail.com" class="flex gap-2 hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 shrink-0"></i>msaslivestockagroservices@gmail.com</a></p>
+                    <p><a href="mailto:sanizakka@gmail.com" class="flex gap-2 hover:text-green-400 transition break-all"><i class="fa-solid fa-envelope text-green-500 shrink-0"></i>sanizakka@gmail.com</a></p>
                     <p><a href="https://wa.me/2348129582957" class="flex gap-2 hover:text-green-400 transition" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-whatsapp text-green-500 shrink-0"></i>08129582957</a></p>
                 </div>
             </div>
