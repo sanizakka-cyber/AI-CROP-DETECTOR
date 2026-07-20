@@ -99,6 +99,26 @@ $serverExpiry = $expiresAt ?? null;
     </div>
     @endif
 
+    {{-- ── Email delivery failure banner ── --}}
+    @if($emailFailed && !session('status'))
+    <div style="margin:12px 0;padding:16px 18px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;text-align:left;">
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">⚠️ Verification email could not be sent</p>
+        <p style="margin:0 0 12px;font-size:13px;color:#78350f;line-height:1.5;">
+            We were unable to deliver the code to <strong>{{ $masked }}</strong>. This is usually a temporary issue.
+        </p>
+        <form method="POST" action="{{ route('otp.resend') }}" style="display:inline;">
+            @csrf
+            <button type="submit" style="background:#0F6B3E;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+                Resend verification email
+            </button>
+        </form>
+        <p style="margin:10px 0 0;font-size:12px;color:#92400e;">
+            Still not arriving? Check your spam folder, or
+            <a href="{{ route('register') }}" style="color:#0F6B3E;font-weight:700;">try a different email address</a>.
+        </p>
+    </div>
+    @endif
+
     {{-- ── SMS delivery failure banner + email fallback form ── --}}
     @if($smsFailed)
     <div class="fallback-panel">

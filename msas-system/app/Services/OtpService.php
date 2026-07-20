@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\OtpDeliveryLog;
 use App\Models\User;
@@ -111,14 +112,28 @@ class OtpService
      */
     public function sendViaEmail(string $email, string $plain, string $firstName = 'User', ?int $userId = null, string $otpType = 'registration'): bool
     {
-        try {
-            Mail::send([], [], function ($message) use ($email, $plain, $firstName) {
-                $message->to($email)
-                    ->subject('Verify your MSAS Account')
-                    ->html($this->emailBody($firstName, $plain));
-            });
+        // Guard: catch misconfigured mail settings before attempting send
+        $username = config('mail.mailers.smtp.username', '');
+        if (empty($username) || str_contains(strtolower($username), 'your_gmail') || str_contains($username, 'YOUR_GMAIL')) {
+            Log::error('OTP email not sent: MAIL_USERNAME is not configured in .env', [
+                'email_hint' => $this->hint($email),
+            ]);
+            OtpDeliveryLog::record(
+                userId:         $userId ?? User::where('email', $email)->value('id'),
+                identifierHint: $this->hint($email),
+                type:           $otpType,
+                channel:        'email',
+                delivered:      false,
+                provider:       'smtp',
+                error:          'MAIL_USERNAME not configured — placeholder value detected in .env',
+            );
+            return false;
+        }
 
-            Log::info('OTP email sent', ['email_hint' => $this->hint($email)]);
+        try {
+            Mail::to($email)->send(new OtpMail($firstName, $plain, self::TTL_MINUTES, $otpType));
+
+            Log::info('OTP email sent', ['email_hint' => $this->hint($email), 'type' => $otpType]);
 
             OtpDeliveryLog::record(
                 userId:         $userId ?? User::where('email', $email)->value('id'),
@@ -126,13 +141,19 @@ class OtpService
                 type:           $otpType,
                 channel:        'email',
                 delivered:      true,
-                provider:       'smtp',
+                provider:       config('mail.mailers.' . config('mail.default') . '.transport', 'smtp'),
             );
 
             return true;
 
         } catch (\Throwable $e) {
-            Log::error('OTP email send failed', ['email_hint' => $this->hint($email), 'error' => $e->getMessage()]);
+            Log::error('OTP email send failed', [
+                'email_hint' => $this->hint($email),
+                'error'      => $e->getMessage(),
+                'mailer'     => config('mail.default'),
+                'host'       => config('mail.mailers.smtp.host'),
+                'scheme'     => config('mail.mailers.smtp.scheme') ?: '(empty — correct for port 587)',
+            ]);
 
             OtpDeliveryLog::record(
                 userId:         $userId ?? User::where('email', $email)->value('id'),
@@ -192,40 +213,5 @@ class OtpService
         }
         $clean = preg_replace('/\D/', '', $identifier);
         return substr($clean, 0, 3) . '***' . substr($clean, -3);
-    }
-
-    private function emailBody(string $name, string $code): string
-    {
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 0;">
-  <tr><td align="center">
-    <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.07);overflow:hidden;">
-      <tr><td style="background:linear-gradient(135deg,#0F6B3E,#1FA84A);padding:28px 36px;">
-        <h1 style="color:#fff;font-size:20px;margin:0;font-weight:800;">MSAS FarmAI</h1>
-        <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Livestock &amp; Agro Services</p>
-      </td></tr>
-      <tr><td style="padding:36px;">
-        <p style="margin:0 0 8px;font-size:15px;color:#374151;">Hello <strong>{$name}</strong>,</p>
-        <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.6;">Use the verification code below to confirm your account:</p>
-        <div style="text-align:center;margin:28px 0;">
-          <div style="display:inline-block;background:#f0fdf4;border:2px dashed #16a34a;border-radius:12px;padding:20px 36px;">
-            <span style="font-size:36px;font-weight:900;letter-spacing:12px;color:#0F6B3E;font-family:'Courier New',monospace;">{$code}</span>
-          </div>
-        </div>
-        <p style="margin:0 0 8px;font-size:13px;color:#6b7280;text-align:center;">This code expires in <strong>5 minutes</strong>.</p>
-        <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;text-align:center;">If you did not create this account, ignore this email.</p>
-      </td></tr>
-      <tr><td style="background:#f8fafc;padding:16px 36px;border-top:1px solid #f1f5f9;text-align:center;">
-        <p style="margin:0;font-size:11px;color:#9ca3af;">© 2026 MSAS Livestock &amp; Agro Services &bull; msasagro.com</p>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>
-HTML;
     }
 }
