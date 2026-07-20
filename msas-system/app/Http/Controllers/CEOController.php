@@ -107,15 +107,21 @@ class CEOController extends Controller
         $recentUsers = User::latest()->take(8)->get();
 
         // ── Attendance Today ────────────────────────────────────────
-        $presentToday = Attendance::whereDate('date', today())->where('status','present')->count();
-        $staffCount   = User::whereNotIn('role', ['farmer','agro-dealer'])->count();
+        try {
+            $presentToday = Attendance::whereDate('date', today())->where('status','present')->count();
+            $staffCount   = User::whereNotIn('role', ['farmer','agro-dealer'])->count();
+        } catch (\Exception $e) { $presentToday = 0; $staffCount = 0; }
 
         // ── Pending Leave Requests ──────────────────────────────────
-        $pendingLeaves = LeaveRequest::where('status','pending')->count();
+        try {
+            $pendingLeaves = LeaveRequest::where('status','pending')->count();
+        } catch (\Exception $e) { $pendingLeaves = 0; }
 
         // ── Marketplace Stats ───────────────────────────────────────
-        $marketItems     = Product::where('status','active')->where('is_approved', true)->count();
-        $pendingListings = Product::where('is_approved', false)->count();
+        try {
+            $marketItems     = Product::where('status','active')->where('is_approved', true)->count();
+            $pendingListings = Product::where('is_approved', false)->count();
+        } catch (\Exception $e) { $marketItems = 0; $pendingListings = 0; }
 
         // ── Disease Alerts (live — top diseases needing review, last 30 days) ──
         try {
