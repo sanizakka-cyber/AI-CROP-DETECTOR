@@ -16,6 +16,11 @@ class LocaleController extends Controller
         session(['locale' => $locale]);
         app()->setLocale($locale);
 
+        // Persist to the user's profile so preference survives logout/login
+        if (auth()->check()) {
+            auth()->user()->update(['language' => $locale]);
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['locale' => $locale, 'success' => true]);
         }
