@@ -325,7 +325,7 @@ a { color: inherit; text-decoration: none; }
     <div class="scan-row">
         <div class="scan-img-wrap">
             <img id="rpt-scan-img"
-                 src="{{ $imageB64 ?? Storage::url($diagnosis->image_path) }}"
+                 src="{{ $imageB64 ?? Storage::disk('public')->url($diagnosis->image_path) }}"
                  alt="Scanned Image"
                  onerror="this.onerror=null;this.style.opacity='0.3';">
             <div class="conf-pill">AI Confidence: {{ number_format($diagnosis->confidence_score, 0) }}%</div>

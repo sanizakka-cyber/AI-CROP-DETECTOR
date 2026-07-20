@@ -16,7 +16,7 @@ class SubscriptionUsage extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function increment(int $userId, string $featureKey, int $by = 1): void
+    public static function track(int $userId, string $featureKey, int $by = 1): void
     {
         $period = now()->format('Y-m');
         static::updateOrCreate(

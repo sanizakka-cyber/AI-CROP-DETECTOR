@@ -141,7 +141,7 @@ class FarmerController extends Controller
         }
 
         try {
-            SubscriptionUsage::increment($user->id, 'livestock_records');
+            SubscriptionUsage::track($user->id, 'livestock_records');
         } catch (\Exception $e) {
             // Usage tracking failure should not block the farmer
         }
@@ -538,7 +538,7 @@ class FarmerController extends Controller
         }
 
         // Track usage
-        SubscriptionUsage::increment($user->id, 'reports_generated');
+        SubscriptionUsage::track($user->id, 'reports_generated');
 
         if ($format === 'csv') {
             return $this->downloadCsv($user, $type);
