@@ -32,6 +32,29 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // Block pending/rejected applicants from accessing the platform
+        $appStatus = $user->application_status ?? 'approved';
+        if ($appStatus === 'pending') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Your application is currently under review. You will receive an email once a decision has been made.',
+            ]);
+        }
+
+        if ($appStatus === 'rejected') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            $reason = $user->rejection_reason
+                ? ' Reason: ' . $user->rejection_reason
+                : ' Please contact support for more information.';
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Your application was not approved.' . $reason,
+            ]);
+        }
+
         // Block unverified accounts — phone-only users get verified immediately (no SMS OTP policy);
         // email users are redirected to OTP verify with the full session payload.
         if (! $user->email_verified_at && ! $user->phone_verified_at) {

@@ -13,12 +13,15 @@ use App\Http\Controllers\HRController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\Admin\SubscriptionManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
+use App\Http\Controllers\Admin\ApplicationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
+// Application submitted confirmation page (no auth required)
+Route::view('/application-submitted', 'auth.application-submitted')->name('application.submitted');
 
 // Language / Locale switcher (works logged in or out)
 Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
@@ -146,6 +149,13 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::get('/staff', [AdminController::class, 'staff'])->name('staff');
     Route::get('/settings', [AdminController::class, 'settings'])->middleware('permission:admin:manage_settings')->name('settings');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+
+    // Application review
+    Route::get('/applications',                     [ApplicationController::class, 'index'])   ->name('applications.index');
+    Route::get('/applications/document/{document}', [ApplicationController::class, 'document'])->name('applications.document');
+    Route::get('/applications/{user}',              [ApplicationController::class, 'show'])    ->name('applications.show');
+    Route::post('/applications/{user}/approve',     [ApplicationController::class, 'approve']) ->name('applications.approve');
+    Route::post('/applications/{user}/reject',      [ApplicationController::class, 'reject'])  ->name('applications.reject');
 });
 
 // Farmer Routes

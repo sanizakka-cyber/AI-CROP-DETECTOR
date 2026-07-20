@@ -21,7 +21,29 @@ class User extends Authenticatable
         'is_active', 'is_verified', 'force_password_reset',
         'email_verified_at', 'phone_verified_at',
         'expo_push_token', 'fcm_token', 'api_token',
+        'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
+        'is_test_account',
     ];
+
+    public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(UserDocument::class);
+    }
+
+    public function isPending(): bool
+    {
+        return ($this->application_status ?? 'approved') === 'pending';
+    }
+
+    public function isApproved(): bool
+    {
+        return ($this->application_status ?? 'approved') === 'approved';
+    }
+
+    public function requiresApproval(): bool
+    {
+        return !in_array($this->role ?? 'farmer', ['farmer', 'general-user', 'ceo', 'admin']);
+    }
 
     public function getNameAttribute(): string
     {
