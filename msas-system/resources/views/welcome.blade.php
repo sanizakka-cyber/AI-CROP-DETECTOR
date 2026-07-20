@@ -953,9 +953,9 @@
                             <i class="fa-solid fa-phone shrink-0" style="color:var(--green);font-size:10px"></i>
                             <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">+234 8032459879</span>
                         </a>
-                        <a href="mailto:sanizakka@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
+                        <a href="mailto:msaslivestockagroservices@gmail.com" class="flex items-center gap-2 bg-white hover:bg-green-50 border border-gray-100 hover:border-green-200 rounded-lg px-3 py-2 transition group">
                             <i class="fa-solid fa-envelope shrink-0" style="color:var(--green);font-size:10px"></i>
-                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">sanizakka@gmail.com</span>
+                            <span class="font-semibold text-gray-700 group-hover:text-green-700" style="font-size:11px">msaslivestockagroservices@gmail.com</span>
                         </a>
                     </div>
 
@@ -973,7 +973,7 @@
                             @endforeach
                         </div>
                         <div class="flex gap-2">
-                            <a href="mailto:sanizakka@gmail.com" class="btn-primary" style="font-size:11px;padding:6px 12px;gap:4px">
+                            <a href="mailto:msaslivestockagroservices@gmail.com" class="btn-primary" style="font-size:11px;padding:6px 12px;gap:4px">
                                 <i class="fa-solid fa-envelope" style="font-size:9px"></i> Message
                             </a>
                             <a href="https://wa.me/2348032459879" target="_blank" rel="noopener noreferrer"

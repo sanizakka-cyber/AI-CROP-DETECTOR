@@ -212,7 +212,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
         <div style="font-size:20px;margin-bottom:8px;">💬</div>
         <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:2px;">Need Help?</div>
         <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Contact our support team</div>
-        <a href="mailto:support@msas.ng" style="background:#f0fdf4;color:#0F6B3E;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">
+        <a href="mailto:msaslivestockagroservices@gmail.com" style="background:#f0fdf4;color:#0F6B3E;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">
             Contact Support
         </a>
     </div>
