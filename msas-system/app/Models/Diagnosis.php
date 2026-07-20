@@ -13,6 +13,7 @@ class Diagnosis extends Model
         'user_id',
         'type',
         'image_path',
+        'image_thumbnail',
         // Subject identification
         'subject_name',
         'scientific_name',

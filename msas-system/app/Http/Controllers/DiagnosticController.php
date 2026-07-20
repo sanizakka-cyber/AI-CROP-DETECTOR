@@ -124,7 +124,36 @@ class DiagnosticController extends Controller
             }
         }
 
-        // ── 5. Build diagnosis record ─────────────────────────────────────────
+        // ── 5. Generate base64 thumbnail for persistent display ──────────────
+        // Uploaded files live in ephemeral container storage. Storing a thumbnail
+        // in PostgreSQL ensures images survive container restarts and redeploys.
+        $thumbnail = null;
+        if (file_exists($fullPath) && function_exists('imagecreatefromstring')) {
+            try {
+                $imgData  = file_get_contents($fullPath);
+                $srcImage = imagecreatefromstring($imgData);
+                if ($srcImage !== false) {
+                    $srcW   = imagesx($srcImage);
+                    $srcH   = imagesy($srcImage);
+                    $maxDim = 400;
+                    $ratio  = min($maxDim / $srcW, $maxDim / $srcH, 1.0);
+                    $dstW   = max(1, (int) round($srcW * $ratio));
+                    $dstH   = max(1, (int) round($srcH * $ratio));
+                    $dst    = imagecreatetruecolor($dstW, $dstH);
+                    imagecopyresampled($dst, $srcImage, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
+                    ob_start();
+                    imagejpeg($dst, null, 83);
+                    $jpegBytes = ob_get_clean();
+                    $thumbnail = 'data:image/jpeg;base64,' . base64_encode($jpegBytes);
+                    imagedestroy($srcImage);
+                    imagedestroy($dst);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Thumbnail generation failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ── 6. Build diagnosis record ─────────────────────────────────────────
         if ($aiResult) {
             $diagnosisData = [
                 // Subject identification (auto-detected)
@@ -185,9 +214,10 @@ class DiagnosticController extends Controller
         }
 
         Diagnosis::create(array_merge($diagnosisData, [
-            'user_id'    => auth()->id(),
-            'type'       => $request->scan_type,
-            'image_path' => $path,
+            'user_id'         => auth()->id(),
+            'type'            => $request->scan_type,
+            'image_path'      => $path,
+            'image_thumbnail' => $thumbnail,
         ]));
 
         $message = $aiResult
@@ -277,9 +307,10 @@ class DiagnosticController extends Controller
         abort_if($diagnosis->user_id !== auth()->id(), 403);
         $user = auth()->user();
 
-        // Embed image as base64 so the PDF renders correctly without needing the storage symlink
-        $imageB64 = null;
-        if ($diagnosis->image_path) {
+        // Prefer the stored thumbnail (survives container restarts); fall back to
+        // reading the file from disk (works if storage symlink exists and file not deleted).
+        $imageB64 = $diagnosis->image_thumbnail;
+        if (!$imageB64 && $diagnosis->image_path) {
             $fullPath = storage_path('app/public/' . $diagnosis->image_path);
             if (file_exists($fullPath) && is_readable($fullPath)) {
                 $mime     = mime_content_type($fullPath) ?: 'image/jpeg';
