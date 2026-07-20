@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\CEOController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DiagnosticController;
@@ -81,6 +82,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/diagnostics/translate', [DiagnosticController::class, 'translate'])->name('diagnostics.translate');
         Route::get('/diagnostics/{diagnosis}/report', [DiagnosticController::class, 'downloadReport'])->name('diagnostics.report');
     });
+});
+
+// ── Impersonation (CEO/Admin only) ───────────────────────────────────────────
+Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
+    Route::get('/admin/impersonate/{user}', [ImpersonationController::class, 'impersonate'])->name('impersonate.start');
+    Route::get('/admin/impersonate/leave',  [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 });
 
 // Role-Specific Dashboards

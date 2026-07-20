@@ -44,8 +44,17 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 text-right">
-                                            <!-- Action Buttons (Add actual routes later) -->
-                                            <button class="text-xs text-[#0F6B3E] font-bold px-2 py-1 hover:bg-emerald-50 rounded">Edit</button>
+                                            <div class="flex items-center justify-end gap-2">
+                                                @if($user->id !== auth()->id() && !session('impersonate.original_id'))
+                                                    <a href="{{ route('impersonate.start', $user) }}"
+                                                       class="px-3 py-1 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition"
+                                                       onclick="return confirm('Login as {{ addslashes($user->first_name . ' ' . $user->last_name) }} ({{ $user->role }})?')">
+                                                        Login As
+                                                    </a>
+                                                @elseif($user->id === auth()->id())
+                                                    <span class="text-xs text-slate-400 italic">You</span>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
