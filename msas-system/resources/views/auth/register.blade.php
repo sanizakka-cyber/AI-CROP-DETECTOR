@@ -263,7 +263,7 @@ $startStep = $oldRole ? 3 : 1;
 
         <h2 style="font-family:'Poppins',sans-serif;font-size:17px;font-weight:800;color:#0f172a;margin:0 0 14px 0;">Create Password</h2>
 
-        <form method="POST" action="{{ route('register') }}" autocomplete="off" id="reg-form">
+        <form method="POST" action="{{ route('register') }}" autocomplete="off" id="reg-form" enctype="multipart/form-data">
             @csrf
 
             {{-- Hidden fields populated by JS from steps 1 & 2 --}}
@@ -286,6 +286,74 @@ $startStep = $oldRole ? 3 : 1;
                     <span>Location:</span><span style="color:#1e293b;font-weight:600;" x-text="(step2.lga ? step2.lga + ', ' : '') + step2.state + (step2.country !== 'Nigeria' ? ', ' + step2.country : '')"></span>
                 </div>
             </div>
+
+            {{-- ── Documents (professional roles only) ── --}}
+            <div x-show="!['farmer','general-user'].includes(role)" x-cloak style="margin-bottom:14px;">
+                <div style="padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:10px;">
+                    <p style="font-size:12px;font-weight:700;color:#1e40af;margin:0 0 2px;">Supporting Documents Required</p>
+                    <p style="font-size:11px;color:#3b82f6;margin:0;line-height:1.5;">
+                        Professional roles require verification documents before account activation. Upload PDFs or images (max 5MB each).
+                    </p>
+                </div>
+
+                {{-- Vet --}}
+                <div x-show="role === 'vet'">
+                    <div style="margin-bottom:8px;"><label class="fl">Veterinary License</label><input type="file" name="documents[vet_license]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Professional Accreditation</label><input type="file" name="documents[accreditation]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Agronomist --}}
+                <div x-show="role === 'agronomist'">
+                    <div style="margin-bottom:8px;"><label class="fl">Professional License</label><input type="file" name="documents[professional_license]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Proof of Qualification</label><input type="file" name="documents[proof_of_qualification]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Agro Dealer --}}
+                <div x-show="role === 'agro-dealer'">
+                    <div style="margin-bottom:8px;"><label class="fl">CAC / Business Registration</label><input type="file" name="documents[cac_registration]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Equipment Dealer --}}
+                <div x-show="role === 'equipment-dealer'">
+                    <div style="margin-bottom:8px;"><label class="fl">Business Registration Certificate</label><input type="file" name="documents[business_registration]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Agribusiness Owner --}}
+                <div x-show="role === 'agribusiness-owner'">
+                    <div style="margin-bottom:8px;"><label class="fl">Company Registration Certificate</label><input type="file" name="documents[company_registration]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Cooperative --}}
+                <div x-show="role === 'cooperative'">
+                    <div style="margin-bottom:8px;"><label class="fl">Cooperative Certificate</label><input type="file" name="documents[cooperative_certificate]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Members List (min. 5 members)</label><input type="file" name="documents[members_list]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Government Agency --}}
+                <div x-show="role === 'government-agency'">
+                    <div style="margin-bottom:8px;"><label class="fl">Official Government Documentation</label><input type="file" name="documents[official_documents]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- NGO --}}
+                <div x-show="role === 'ngo'">
+                    <div style="margin-bottom:8px;"><label class="fl">Registration Certificate</label><input type="file" name="documents[registration_cert]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Tax Exemption Certificate</label><input type="file" name="documents[tax_exemption]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Research Institution --}}
+                <div x-show="role === 'research-institution'">
+                    <div style="margin-bottom:8px;"><label class="fl">Institutional Affiliation Letter</label><input type="file" name="documents[institutional_affiliation]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Research Proposal</label><input type="file" name="documents[research_proposal]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Input Supplier --}}
+                <div x-show="role === 'input-supplier'">
+                    <div style="margin-bottom:8px;"><label class="fl">CAC / Business Registration</label><input type="file" name="documents[cac_registration]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Logistics --}}
+                <div x-show="role === 'logistics-provider'">
+                    <div style="margin-bottom:8px;"><label class="fl">Transport / Haulage License</label><input type="file" name="documents[transport_license]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+                {{-- Investor --}}
+                <div x-show="role === 'investor'">
+                    <div style="margin-bottom:8px;"><label class="fl">Valid ID</label><input type="file" name="documents[id_document]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                    <div style="margin-bottom:8px;"><label class="fl">Investment Profile / Portfolio</label><input type="file" name="documents[investment_profile]" accept=".pdf,.jpg,.jpeg,.png" class="form-input" style="padding:8px;"></div>
+                </div>
+
+                <p style="font-size:10px;color:#94a3b8;margin-top:4px;">You can still submit without documents — they can be added later, but approval may be delayed.</p>
+            </div>
+            {{-- ── END Documents ── --}}
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
                 <div>
@@ -322,7 +390,7 @@ $startStep = $oldRole ? 3 : 1;
                 <button type="submit" class="btn-primary">
                     <span style="display:flex;align-items:center;justify-content:center;gap:8px;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        Create My Account
+                        <span x-text="['farmer','general-user'].includes(role) ? 'Create My Account' : 'Submit Application'">Create My Account</span>
                     </span>
                 </button>
             </div>
