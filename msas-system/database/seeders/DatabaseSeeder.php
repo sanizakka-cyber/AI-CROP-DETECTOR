@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(ProductSeeder::class);
+        $this->call(SuperAdminSeeder::class);
 
         // 1. CEO ACCOUNT
         User::create([

@@ -466,8 +466,30 @@
         </header>
 
         <!-- Page Content -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto page-content p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto page-content">
+
+            {{-- ── Impersonation banner ────────────────────────────────────────────── --}}
+            @if(session()->has('impersonate.original_id'))
+            @php $imp = \App\Models\User::find(session('impersonate.original_id')); @endphp
+            <div class="sticky top-0 z-50 bg-amber-500 text-amber-950 text-xs font-bold px-4 py-2 flex items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">👁</span>
+                    <span>
+                        Viewing as <strong>{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</strong>
+                        ({{ auth()->user()->role }})
+                        &mdash; logged in as {{ $imp?->first_name }} {{ $imp?->last_name }}
+                    </span>
+                </div>
+                <a href="{{ route('impersonate.leave') }}"
+                   class="bg-amber-900 hover:bg-amber-800 text-amber-100 px-3 py-1 rounded-lg text-[11px] font-bold transition">
+                    ✕ Leave Impersonation
+                </a>
+            </div>
+            @endif
+
+            <div class="p-6">
             {{ $slot }}
+            </div>{{-- end p-6 --}}
         </main>
 
     </div>

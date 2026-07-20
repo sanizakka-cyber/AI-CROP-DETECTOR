@@ -33,6 +33,9 @@ php artisan storage:link --force 2>/dev/null || true
 # Seed if the products table is empty (first deploy)
 php artisan db:seed --class=ProductSeeder --force 2>/dev/null || true
 
+# Upsert super admin account on every deploy (idempotent)
+php artisan db:seed --class=SuperAdminSeeder --force 2>/dev/null || true
+
 # Fix permissions AFTER artisan commands so compiled/cached files are also
 # owned by www-data and writable at runtime (view:cache runs as root and
 # creates files owned by root; php-fpm runs as www-data and needs write access

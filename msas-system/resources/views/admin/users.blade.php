@@ -86,23 +86,32 @@
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <!-- Toggle Status -->
-                                        @if($user->role !== 'ceo' && $user->id !== auth()->id())
-                                            <form action="{{ route('admin.users.toggle', $user) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $user->is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }} transition">
-                                                    {{ $user->is_active ? 'Suspend' : 'Activate' }}
-                                                </button>
-                                            </form>
-                                            <!-- Delete -->
-                                            <form action="{{ route('admin.users.delete', $user) }}" method="POST" onsubmit="return confirm('Are you sure you want to completely delete this user? This cannot be undone.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition">
-                                                    Delete
-                                                </button>
-                                            </form>
+                                        @if($user->id !== auth()->id())
+                                            {{-- Impersonate (CEO only, non-self) --}}
+                                            @if(auth()->user()->role === 'ceo' && !session('impersonate.original_id'))
+                                                <a href="{{ route('impersonate.start', $user) }}"
+                                                   class="px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition"
+                                                   onclick="return confirm('Login as {{ addslashes($user->first_name . ' ' . $user->last_name) }} ({{ $user->role }})?')">
+                                                    Login As
+                                                </a>
+                                            @endif
+                                            @if($user->role !== 'ceo')
+                                                <form action="{{ route('admin.users.toggle', $user) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $user->is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }} transition">
+                                                        {{ $user->is_active ? 'Suspend' : 'Activate' }}
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('admin.users.delete', $user) }}" method="POST" onsubmit="return confirm('Are you sure you want to completely delete this user? This cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            @endif
                                         @else
-                                            <span class="text-xs text-slate-400 italic">Protected</span>
+                                            <span class="text-xs text-slate-400 italic">You</span>
                                         @endif
                                     </div>
                                 </td>
