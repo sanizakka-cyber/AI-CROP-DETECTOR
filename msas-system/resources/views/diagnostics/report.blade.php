@@ -324,7 +324,10 @@ a { color: inherit; text-decoration: none; }
     {{-- ── Scan Image + Diagnosis Headline ────────────────────────────── --}}
     <div class="scan-row">
         <div class="scan-img-wrap">
-            <img src="{{ Storage::url($diagnosis->image_path) }}" alt="Scanned Image">
+            <img id="rpt-scan-img"
+                 src="{{ $imageB64 ?? Storage::url($diagnosis->image_path) }}"
+                 alt="Scanned Image"
+                 onerror="this.onerror=null;this.style.opacity='0.3';">
             <div class="conf-pill">AI Confidence: {{ number_format($diagnosis->confidence_score, 0) }}%</div>
         </div>
         <div>
@@ -500,14 +503,24 @@ a { color: inherit; text-decoration: none; }
 </div>
 
 <script>
-// Auto-open print dialog after a short delay so the page renders fully
 window.addEventListener('load', function() {
-    setTimeout(function() {
-        // Only auto-print if opened as a popup/new tab (not directly navigated)
+    var img = document.getElementById('rpt-scan-img');
+
+    function doPrint() {
         if (window.opener || window.history.length <= 1) {
             window.print();
         }
-    }, 800);
+    }
+
+    if (img && !img.complete) {
+        // Wait for image to load before triggering print — avoids blank image in PDF
+        img.addEventListener('load',  function() { setTimeout(doPrint, 400); });
+        img.addEventListener('error', function() { setTimeout(doPrint, 400); });
+        // Absolute fallback in case neither event fires (e.g., data URI already decoded)
+        setTimeout(doPrint, 3000);
+    } else {
+        setTimeout(doPrint, 600);
+    }
 });
 </script>
 
