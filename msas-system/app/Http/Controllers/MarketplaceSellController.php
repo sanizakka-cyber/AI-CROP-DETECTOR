@@ -9,21 +9,14 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Str;
 
-class DealerProductController extends Controller implements HasMiddleware
+class MarketplaceSellController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
             'auth',
-            new Middleware('role:agro-dealer,equipment-dealer'),
+            new Middleware('role:agribusiness-owner,input-supplier,farmer'),
         ];
-    }
-
-    private function productsIndexRoute(): string
-    {
-        return auth()->user()->role === 'equipment-dealer'
-            ? 'equipment-dealer.products.index'
-            : 'dealer.products.index';
     }
 
     public function index(Request $request)
@@ -40,10 +33,10 @@ class DealerProductController extends Controller implements HasMiddleware
 
         if ($request->category) $query->where('category', $request->category);
         if ($request->stock === 'out_of_stock') $query->where('quantity_in_stock', 0);
-        elseif ($request->stock === 'low_stock') $query->whereBetween('quantity_in_stock', [1, 10]);
-        elseif ($request->stock === 'in_stock')  $query->where('quantity_in_stock', '>', 10);
+        elseif ($request->stock === 'low_stock')  $query->whereBetween('quantity_in_stock', [1, 10]);
+        elseif ($request->stock === 'in_stock')   $query->where('quantity_in_stock', '>', 10);
 
-        $products = $query->latest()->paginate(20)->withQueryString();
+        $products   = $query->latest()->paginate(20)->withQueryString();
         $categories = array_keys(Product::categories());
 
         $base = Product::where('dealer_id', auth()->id());
@@ -54,14 +47,13 @@ class DealerProductController extends Controller implements HasMiddleware
             'out_stock' => (clone $base)->where('quantity_in_stock', 0)->count(),
         ];
 
-        // Both roles use the same view (role-aware $rp variable inside)
-        return view('dealer.products.index', compact('products', 'categories', 'stats'));
+        return view('marketplace.sell', compact('products', 'categories', 'stats'));
     }
 
     public function create()
     {
         $categories = array_keys(Product::categories());
-        return view('dealer.products.form', ['product' => null, 'categories' => $categories]);
+        return view('marketplace.sell-form', ['product' => null, 'categories' => $categories]);
     }
 
     public function store(Request $request)
@@ -81,8 +73,7 @@ class DealerProductController extends Controller implements HasMiddleware
             'sku'                => 'nullable|string|unique:products,sku',
             'tags'               => 'nullable|string',
             'usage_instructions' => 'nullable|string',
-            'dosage_instructions'=> 'nullable|string',
-            'storage_requirements'=>'nullable|string',
+            'storage_requirements'=> 'nullable|string',
             'expiry_date'        => 'nullable|date',
             'status'             => 'nullable|in:active,inactive,draft',
         ]);
@@ -94,15 +85,14 @@ class DealerProductController extends Controller implements HasMiddleware
 
         Product::create($data);
 
-        return redirect()->route($this->productsIndexRoute())
-            ->with('success', 'Product "' . $data['name'] . '" added successfully.');
+        return redirect()->route('marketplace.sell')->with('success', 'Product "' . $data['name'] . '" listed on marketplace.');
     }
 
     public function edit(Product $product)
     {
         abort_if($product->dealer_id !== auth()->id(), 403);
         $categories = array_keys(Product::categories());
-        return view('dealer.products.form', compact('product', 'categories'));
+        return view('marketplace.sell-form', compact('product', 'categories'));
     }
 
     public function update(Request $request, Product $product)
@@ -122,8 +112,7 @@ class DealerProductController extends Controller implements HasMiddleware
             'quantity_in_stock'  => 'required|integer|min:0',
             'low_stock_threshold'=> 'nullable|integer|min:0',
             'usage_instructions' => 'nullable|string',
-            'dosage_instructions'=> 'nullable|string',
-            'storage_requirements'=>'nullable|string',
+            'storage_requirements'=> 'nullable|string',
             'expiry_date'        => 'nullable|date',
             'tags'               => 'nullable|string',
             'status'             => 'nullable|in:active,inactive,draft',
@@ -132,21 +121,20 @@ class DealerProductController extends Controller implements HasMiddleware
         $data['tags'] = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
         $product->update($data);
 
-        return redirect()->route($this->productsIndexRoute())
-            ->with('success', 'Product updated successfully.');
+        return redirect()->route('marketplace.sell')->with('success', 'Product updated successfully.');
     }
 
     public function destroy(Product $product)
     {
         abort_if($product->dealer_id !== auth()->id(), 403);
         $product->delete();
-        return back()->with('success', 'Product deleted.');
+        return back()->with('success', 'Product removed from marketplace.');
     }
 
     public function adjustStock(Request $request, Product $product)
     {
         abort_if($product->dealer_id !== auth()->id(), 403);
-        $request->validate(['adjustment' => 'required|integer', 'reason' => 'nullable|string']);
+        $request->validate(['adjustment' => 'required|integer']);
 
         $newQty = max(0, $product->quantity_in_stock + $request->adjustment);
         $product->update(['quantity_in_stock' => $newQty]);
@@ -169,8 +157,7 @@ class DealerProductController extends Controller implements HasMiddleware
             'revenue'   => Order::where('dealer_id', auth()->id())->where('payment_status', 'paid')->sum('total'),
         ];
 
-        $view = auth()->user()->role === 'equipment-dealer' ? 'equipment-dealer.orders' : 'dealer.orders';
-        return view($view, compact('orders', 'stats'));
+        return view('marketplace.sell-orders', compact('orders', 'stats'));
     }
 
     public function updateOrderStatus(Request $request, Order $order)

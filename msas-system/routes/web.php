@@ -14,6 +14,8 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\Admin\SubscriptionManagementController;
 use App\Http\Controllers\Admin\PaymentManagementController;
 use App\Http\Controllers\Admin\ApplicationController;
+use App\Http\Controllers\LogisticsController;
+use App\Http\Controllers\MarketplaceSellController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +53,10 @@ Route::get('/dashboard', function () {
         'research-institution'  => redirect()->route('research-institution.dashboard'),
         'investor'              => redirect()->route('investor.dashboard'),
         'financial-institution' => redirect()->route('financial-institution.dashboard'),
+        'logistics-provider'    => redirect()->route('logistics.dashboard'),
+        'agribusiness-owner'    => redirect()->route('agribusiness.dashboard'),
+        'input-supplier'        => redirect()->route('input-supplier.dashboard'),
+        'government-agency'     => redirect()->route('government.dashboard'),
         'extension-officer'     => redirect()->route('extension.dashboard'),
         'finance'               => redirect()->route('finance.dashboard'),
         'hr'                    => redirect()->route('hr.dashboard'),
@@ -108,6 +114,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/agronomist/dashboard', [DashboardController::class, 'agronomist'])->middleware('role:agronomist,ceo,admin')->name('agronomist.dashboard');
     Route::get('/dealer/dashboard', [DashboardController::class, 'dealer'])->middleware('role:agro-dealer')->name('dealer.dashboard');
 
+    // Equipment Dealer Product Catalog & Orders
+    Route::middleware(['role:equipment-dealer'])->prefix('equipment-dealer')->name('equipment-dealer.')->group(function () {
+        Route::get('/products',                  [DealerProductController::class, 'index'])->name('products.index');
+        Route::get('/products/create',           [DealerProductController::class, 'create'])->name('products.create');
+        Route::post('/products',                 [DealerProductController::class, 'store'])->name('products.store');
+        Route::get('/products/{product}/edit',   [DealerProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{product}',        [DealerProductController::class, 'update'])->name('products.update');
+        Route::delete('/products/{product}',     [DealerProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('/products/{product}/stock', [DealerProductController::class, 'adjustStock'])->name('products.stock');
+        Route::get('/orders',                    [DealerProductController::class, 'orders'])->name('orders');
+        Route::patch('/orders/{order}/status',   [DealerProductController::class, 'updateOrderStatus'])->name('orders.status');
+    });
+
     // Dealer Product Catalog & Orders (web)
     Route::middleware(['role:agro-dealer'])->prefix('dealer')->name('dealer.')->group(function () {
         Route::get('/products',                        [DealerProductController::class, 'index'])->name('products.index');
@@ -120,6 +139,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/orders',                          [DealerProductController::class, 'orders'])->name('orders');
         Route::patch('/orders/{order}/status',         [DealerProductController::class, 'updateOrderStatus'])->name('orders.status');
     });
+    // New role dashboards
+    Route::get('/logistics/dashboard',        [DashboardController::class, 'logistics'])      ->middleware('role:logistics-provider')   ->name('logistics.dashboard');
+    Route::get('/agribusiness/dashboard',     [DashboardController::class, 'agribusiness'])   ->middleware('role:agribusiness-owner')   ->name('agribusiness.dashboard');
+    Route::get('/input-supplier/dashboard',   [DashboardController::class, 'inputSupplier'])  ->middleware('role:input-supplier')       ->name('input-supplier.dashboard');
+
+    // Logistics sub-pages
+    Route::middleware(['role:logistics-provider'])->prefix('logistics')->name('logistics.')->group(function () {
+        Route::get('/vehicles',                     [LogisticsController::class, 'vehicles'])             ->name('vehicles');
+        Route::post('/vehicles',                    [LogisticsController::class, 'storeVehicle'])          ->name('vehicles.store');
+        Route::put('/vehicles/{vehicle}',           [LogisticsController::class, 'updateVehicle'])         ->name('vehicles.update');
+        Route::delete('/vehicles/{vehicle}',        [LogisticsController::class, 'deleteVehicle'])         ->name('vehicles.delete');
+        Route::get('/drivers',                      [LogisticsController::class, 'drivers'])               ->name('drivers');
+        Route::post('/drivers',                     [LogisticsController::class, 'storeDriver'])            ->name('drivers.store');
+        Route::put('/drivers/{driver}',             [LogisticsController::class, 'updateDriver'])           ->name('drivers.update');
+        Route::delete('/drivers/{driver}',          [LogisticsController::class, 'deleteDriver'])           ->name('drivers.delete');
+        Route::get('/deliveries',                   [LogisticsController::class, 'deliveries'])             ->name('deliveries');
+        Route::post('/deliveries',                  [LogisticsController::class, 'storeDelivery'])          ->name('deliveries.store');
+        Route::patch('/deliveries/{delivery}/status',[LogisticsController::class, 'updateDeliveryStatus']) ->name('deliveries.status');
+    });
+
     Route::get('/extension/dashboard', [DashboardController::class, 'extension'])->middleware('role:extension-officer')->name('extension.dashboard');
     Route::get('/finance/dashboard', [DashboardController::class, 'finance'])->middleware('role:finance,admin,ceo')->name('finance.dashboard');
     Route::get('/operations/dashboard', [DashboardController::class, 'operations'])->middleware('role:operations,admin,ceo')->name('operations.dashboard');
@@ -247,6 +286,21 @@ Route::middleware(['auth', 'role:vet,agronomist'])->prefix('vet')->name('vet.')-
     Route::get('/queue', [\App\Http\Controllers\VetController::class, 'queue'])->name('queue');
     Route::get('/consultation/{consultation}', [\App\Http\Controllers\VetController::class, 'show'])->name('show');
     Route::post('/consultation/{consultation}/respond', [\App\Http\Controllers\VetController::class, 'respond'])->name('respond');
+    Route::view('/vaccinations',   'vet.vaccinations')->name('vaccinations');
+    Route::view('/disease-alerts', 'vet.disease-alerts')->name('disease-alerts');
+});
+
+// Marketplace Seller Routes (agribusiness-owner, input-supplier, farmer)
+Route::middleware(['auth'])->prefix('marketplace/sell')->name('marketplace.')->group(function () {
+    Route::get('/',                        [MarketplaceSellController::class, 'index'])->name('sell');
+    Route::get('/create',                  [MarketplaceSellController::class, 'create'])->name('sell.create');
+    Route::post('/',                       [MarketplaceSellController::class, 'store'])->name('sell.store');
+    Route::get('/{product}/edit',          [MarketplaceSellController::class, 'edit'])->name('sell.edit');
+    Route::put('/{product}',               [MarketplaceSellController::class, 'update'])->name('sell.update');
+    Route::delete('/{product}',            [MarketplaceSellController::class, 'destroy'])->name('sell.destroy');
+    Route::post('/{product}/stock',        [MarketplaceSellController::class, 'adjustStock'])->name('sell.stock');
+    Route::get('/orders',                  [MarketplaceSellController::class, 'orders'])->name('sell.orders');
+    Route::patch('/orders/{order}/status', [MarketplaceSellController::class, 'updateOrderStatus'])->name('sell.orders.status');
 });
 
 

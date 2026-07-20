@@ -419,4 +419,48 @@ class DashboardController extends Controller
         try { $stateBreakdown   = \App\Models\User::where('role','farmer')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(8)->get(); } catch (\Exception $e) { $stateBreakdown = collect(); }
         return view('financial-institution.dashboard', compact('totalFarmers','totalAnimals','verifiedFarmers','recentFarmers','stateBreakdown'));
     }
+
+    // ── Logistics Provider Dashboard ───────────────────────────────
+    public function logistics()
+    {
+        $user = auth()->user();
+        try { $totalVehicles   = \App\Models\LogisticsVehicle::where('user_id', $user->id)->count(); } catch (\Exception $e) { $totalVehicles = 0; }
+        try { $activeVehicles  = \App\Models\LogisticsVehicle::where('user_id', $user->id)->where('status','active')->count(); } catch (\Exception $e) { $activeVehicles = 0; }
+        try { $totalDrivers    = \App\Models\LogisticsDriver::where('user_id', $user->id)->count(); } catch (\Exception $e) { $totalDrivers = 0; }
+        try { $availableDrivers= \App\Models\LogisticsDriver::where('user_id', $user->id)->where('status','available')->count(); } catch (\Exception $e) { $availableDrivers = 0; }
+        try { $pendingDeliveries  = \App\Models\DeliveryRequest::where('logistics_provider_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingDeliveries = 0; }
+        try { $inTransit          = \App\Models\DeliveryRequest::where('logistics_provider_id', $user->id)->whereIn('status',['assigned','picked_up','in_transit'])->count(); } catch (\Exception $e) { $inTransit = 0; }
+        try { $completedToday     = \App\Models\DeliveryRequest::where('logistics_provider_id', $user->id)->where('status','delivered')->whereDate('delivered_at', today())->count(); } catch (\Exception $e) { $completedToday = 0; }
+        try { $totalRevenue       = \App\Models\DeliveryRequest::where('logistics_provider_id', $user->id)->where('status','delivered')->sum('delivery_fee'); } catch (\Exception $e) { $totalRevenue = 0; }
+        try { $recentDeliveries   = \App\Models\DeliveryRequest::where('logistics_provider_id', $user->id)->with(['vehicle','driver'])->orderByDesc('created_at')->take(8)->get(); } catch (\Exception $e) { $recentDeliveries = collect(); }
+        return view('logistics.dashboard', compact('totalVehicles','activeVehicles','totalDrivers','availableDrivers','pendingDeliveries','inTransit','completedToday','totalRevenue','recentDeliveries'));
+    }
+
+    // ── Agribusiness Owner Dashboard ───────────────────────────────
+    public function agribusiness()
+    {
+        $user = auth()->user();
+        try { $myListings      = DB::table('products')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $myListings = 0; }
+        try { $activeListings  = DB::table('products')->where('dealer_id', $user->id)->where('status','active')->count(); } catch (\Exception $e) { $activeListings = 0; }
+        try { $totalOrders     = DB::table('orders')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalOrders = 0; }
+        try { $pendingOrders   = DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
+        try { $totalRevenue    = DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $totalRevenue = 0; }
+        try { $farmersInState  = \App\Models\User::where('role','farmer')->where('state', $user->state)->count(); } catch (\Exception $e) { $farmersInState = 0; }
+        try { $recentOrders    = DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(8)->get(); } catch (\Exception $e) { $recentOrders = collect(); }
+        return view('agribusiness-owner.dashboard', compact('myListings','activeListings','totalOrders','pendingOrders','totalRevenue','farmersInState','recentOrders'));
+    }
+
+    // ── Input Supplier Dashboard ───────────────────────────────────
+    public function inputSupplier()
+    {
+        $user = auth()->user();
+        try { $myListings     = DB::table('products')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $myListings = 0; }
+        try { $activeListings = DB::table('products')->where('dealer_id', $user->id)->where('status','active')->count(); } catch (\Exception $e) { $activeListings = 0; }
+        try { $totalOrders    = DB::table('orders')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalOrders = 0; }
+        try { $pendingOrders  = DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
+        try { $totalRevenue   = DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $totalRevenue = 0; }
+        try { $topCategories  = DB::table('products')->where('dealer_id', $user->id)->select('category', DB::raw('count(*) as count'))->groupBy('category')->orderByDesc('count')->take(5)->get(); } catch (\Exception $e) { $topCategories = collect(); }
+        try { $recentOrders   = DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(8)->get(); } catch (\Exception $e) { $recentOrders = collect(); }
+        return view('input-supplier.dashboard', compact('myListings','activeListings','totalOrders','pendingOrders','totalRevenue','topCategories','recentOrders'));
+    }
 }
