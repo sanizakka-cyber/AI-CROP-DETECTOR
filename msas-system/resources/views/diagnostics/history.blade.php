@@ -468,7 +468,7 @@
     {{-- ─── Global Scripts ──────────────────────────────────────────────────── --}}
     <style>
         .tts-speaking { animation: tts-pulse 1.4s ease-in-out infinite; }
-        @keyframes tts-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+        @@keyframes tts-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
     </style>
 
     <script>
