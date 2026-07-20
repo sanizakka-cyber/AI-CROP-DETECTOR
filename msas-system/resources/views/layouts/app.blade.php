@@ -216,15 +216,15 @@
             {{-- Vet --}}
             @if($role === 'vet')
             <div x-show="sidebarOpen" class="nav-section" data-i18n="Veterinary">{{ __('Veterinary') }}</div>
-            <a href="#" class="nav-link">
+            <a href="{{ route('vet.queue') }}" class="nav-link {{ request()->routeIs('vet.queue','vet.show','vet.respond') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Consultations">{{ __('Consultations') }}</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('vet.vaccinations') }}" class="nav-link {{ request()->routeIs('vet.vaccinations') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Vaccinations">{{ __('Vaccinations') }}</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('vet.disease-alerts') }}" class="nav-link {{ request()->routeIs('vet.disease-alerts') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Disease Alerts">{{ __('Disease Alerts') }}</span>
             </a>
@@ -275,14 +275,62 @@
 
             {{-- Agro Dealer --}}
             @if($role === 'agro-dealer')
-            <div x-show="sidebarOpen" class="nav-section" data-i18n="Inventory">{{ __('Inventory') }}</div>
-            <a href="#" class="nav-link">
+            <div x-show="sidebarOpen" class="nav-section">Inventory</div>
+            <a href="{{ route('dealer.products.index') }}" class="nav-link {{ request()->routeIs('dealer.products.*') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
-                <span x-show="sidebarOpen" data-i18n="Product Catalog">{{ __('Product Catalog') }}</span>
+                <span x-show="sidebarOpen">Product Catalog</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('dealer.orders') }}" class="nav-link {{ request()->routeIs('dealer.orders') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></span>
-                <span x-show="sidebarOpen" data-i18n="Sales & Orders">{{ __('Sales & Orders') }}</span>
+                <span x-show="sidebarOpen">Sales & Orders</span>
+            </a>
+            @endif
+
+            {{-- Equipment Dealer --}}
+            @if($role === 'equipment-dealer')
+            <div x-show="sidebarOpen" class="nav-section">Inventory</div>
+            <a href="{{ route('equipment-dealer.products.index') }}" class="nav-link {{ request()->routeIs('equipment-dealer.products.*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+                <span x-show="sidebarOpen">My Inventory</span>
+            </a>
+            <a href="{{ route('equipment-dealer.orders') }}" class="nav-link {{ request()->routeIs('equipment-dealer.orders') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></span>
+                <span x-show="sidebarOpen">Sales & Orders</span>
+            </a>
+            @endif
+
+            {{-- Logistics Provider --}}
+            @if($role === 'logistics-provider')
+            <div x-show="sidebarOpen" class="nav-section">Fleet</div>
+            <a href="{{ route('logistics.vehicles') }}" class="nav-link {{ request()->routeIs('logistics.vehicles') ? 'active' : '' }}">
+                <span class="nav-icon">🚛</span>
+                <span x-show="sidebarOpen">My Vehicles</span>
+            </a>
+            <a href="{{ route('logistics.drivers') }}" class="nav-link {{ request()->routeIs('logistics.drivers') ? 'active' : '' }}">
+                <span class="nav-icon">👨‍✈️</span>
+                <span x-show="sidebarOpen">Drivers</span>
+            </a>
+            <a href="{{ route('logistics.deliveries') }}" class="nav-link {{ request()->routeIs('logistics.deliveries') ? 'active' : '' }}">
+                <span class="nav-icon">📦</span>
+                <span x-show="sidebarOpen">Deliveries</span>
+            </a>
+            @endif
+
+            {{-- Agribusiness Owner --}}
+            @if($role === 'agribusiness-owner')
+            <div x-show="sidebarOpen" class="nav-section">Business</div>
+            <a href="{{ route('marketplace.sell') }}" class="nav-link {{ request()->routeIs('marketplace.sell*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+                <span x-show="sidebarOpen">My Products</span>
+            </a>
+            @endif
+
+            {{-- Input Supplier --}}
+            @if($role === 'input-supplier')
+            <div x-show="sidebarOpen" class="nav-section">Supply</div>
+            <a href="{{ route('marketplace.sell') }}" class="nav-link {{ request()->routeIs('marketplace.sell*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+                <span x-show="sidebarOpen">My Inputs</span>
             </a>
             @endif
 

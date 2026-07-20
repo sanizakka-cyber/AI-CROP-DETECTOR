@@ -1,21 +1,20 @@
 <x-app-layout>
-    <x-slot name="header">Product Catalog</x-slot>
-    @php $rp = auth()->user()->role === 'equipment-dealer' ? 'equipment-dealer.' : 'dealer.'; @endphp
+    <x-slot name="header">My Marketplace Listings</x-slot>
 
     <div class="space-y-6">
 
         {{-- Header + Actions --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-                <h2 class="text-2xl font-extrabold text-slate-800">My Products</h2>
-                <p class="text-slate-500 text-sm mt-0.5">Manage your marketplace listings and inventory</p>
+                <h2 class="text-2xl font-extrabold text-slate-800">My Listings</h2>
+                <p class="text-slate-500 text-sm mt-0.5">Manage your products on the MSAS marketplace</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route($rp . 'orders') }}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">
-                    📦 Orders
+                <a href="{{ route('marketplace.sell.orders') }}" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">
+                    📦 My Orders
                 </a>
-                <a href="{{ route($rp . 'products.create') }}" class="px-5 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-bold hover:bg-[#047857] transition shadow-sm">
-                    + Add Product
+                <a href="{{ route('marketplace.sell.create') }}" class="px-5 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-bold hover:bg-[#047857] transition shadow-sm">
+                    + List Product
                 </a>
             </div>
         </div>
@@ -29,7 +28,7 @@
         {{-- Stats --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 border-l-4 border-l-[#0F6B3E]">
-                <p class="text-xs font-bold text-slate-500 uppercase">Total Products</p>
+                <p class="text-xs font-bold text-slate-500 uppercase">Total Listings</p>
                 <p class="text-3xl font-extrabold text-[#0F6B3E] mt-1">{{ $stats['total'] }}</p>
             </div>
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 border-l-4 border-l-emerald-400">
@@ -72,7 +71,7 @@
             </div>
             <button class="px-5 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-semibold hover:bg-[#047857] transition">Filter</button>
             @if(request()->hasAny(['search','category','stock']))
-            <a href="{{ route($rp . 'products.index') }}" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">Clear</a>
+            <a href="{{ route('marketplace.sell') }}" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">Clear</a>
             @endif
         </form>
 
@@ -116,8 +115,7 @@
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold {{ $color }}">
                                     {{ $qty }} units
                                 </span>
-                                {{-- Quick stock adjust --}}
-                                <form method="POST" action="{{ route($rp . 'products.stock', $product) }}" class="inline-flex items-center gap-1 ml-1">
+                                <form method="POST" action="{{ route('marketplace.sell.stock', $product) }}" class="inline-flex items-center gap-1 ml-1">
                                     @csrf
                                     <input type="number" name="adjustment" placeholder="±" class="w-14 text-xs border border-slate-200 rounded px-1 py-0.5 text-center" step="1">
                                     <button class="text-xs text-[#0F6B3E] font-bold hover:underline" title="Adjust stock">Apply</button>
@@ -132,10 +130,10 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <a href="{{ route($rp . 'products.edit', $product) }}" class="text-blue-600 hover:underline text-xs font-semibold">Edit</a>
-                                    <form method="POST" action="{{ route($rp . 'products.destroy', $product) }}" onsubmit="return confirm('Delete this product?')">
+                                    <a href="{{ route('marketplace.sell.edit', $product) }}" class="text-blue-600 hover:underline text-xs font-semibold">Edit</a>
+                                    <form method="POST" action="{{ route('marketplace.sell.destroy', $product) }}" onsubmit="return confirm('Remove this listing?')">
                                         @csrf @method('DELETE')
-                                        <button class="text-red-500 hover:underline text-xs font-semibold">Delete</button>
+                                        <button class="text-red-500 hover:underline text-xs font-semibold">Remove</button>
                                     </form>
                                 </div>
                             </td>
@@ -143,8 +141,8 @@
                         @empty
                         <tr>
                             <td colspan="6" class="py-12 text-center">
-                                <p class="text-slate-400 text-sm mb-2">No products yet.</p>
-                                <a href="{{ route($rp . 'products.create') }}" class="text-[#0F6B3E] text-sm font-semibold hover:underline">+ Add your first product</a>
+                                <p class="text-slate-400 text-sm mb-2">No products listed yet.</p>
+                                <a href="{{ route('marketplace.sell.create') }}" class="text-[#0F6B3E] text-sm font-semibold hover:underline">+ List your first product</a>
                             </td>
                         </tr>
                         @endforelse
