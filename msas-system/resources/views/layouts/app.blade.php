@@ -54,7 +54,7 @@
         .search-input:focus { border-color: #0F6B3E; width: 280px; background: #fff; box-shadow: 0 0 0 3px rgba(15,107,62,0.1); }
 
         /* ── Status pulse ─────────────────────────────── */
-        @keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(31,168,74,0.5); } 70% { box-shadow: 0 0 0 6px rgba(31,168,74,0); } }
+        @@keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(31,168,74,0.5); } 70% { box-shadow: 0 0 0 6px rgba(31,168,74,0); } }
         .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #1FA84A; border: 2px solid #fff; animation: pulse-green 2.5s infinite; }
 
         /* ── Notification badge ───────────────────────── */
@@ -136,13 +136,15 @@
                 <span x-show="sidebarOpen" data-i18n="Dashboard">{{ __('Dashboard') }}</span>
             </a>
 
-            <!-- AI Scan -->
+            <!-- AI Scan — only for roles that can reach /diagnostics/scan -->
+            @if(in_array(auth()->user()->role, ['farmer','admin','ceo','vet','agronomist']))
             <a href="{{ route('diagnostics.scan') }}" class="nav-link {{ request()->routeIs('diagnostics.*') ? 'active' : '' }}">
                 <span class="nav-icon" style="background:rgba(31,168,74,0.2);">
                     <svg width="16" height="16" fill="none" stroke="#1FA84A" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                 </span>
                 <span x-show="sidebarOpen" class="font-semibold" style="color:#1FA84A;" data-i18n="AI Smart Scan">{{ __('AI Smart Scan') }}</span>
             </a>
+            @endif
 
             @php $role = auth()->user()->role; @endphp
 
@@ -503,7 +505,7 @@
         <span style="font-weight:700;font-size:14px;color:#0F3460;" id="locale-overlay-msg">Switching language…</span>
     </div>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<style>@@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 {{-- ── Translations bundle + instant-switch engine ──────────────────── --}}
 @php
