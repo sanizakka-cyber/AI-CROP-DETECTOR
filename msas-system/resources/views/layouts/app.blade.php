@@ -194,6 +194,16 @@
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Agro Advisory">{{ __('Agro Advisory') }}</span>
             </a>
+            {{-- Farmer Selling + Orders --}}
+            <div x-show="sidebarOpen" class="nav-section">{{ __('Marketplace') }}</div>
+            <a href="{{ route('marketplace.sell') }}" class="nav-link {{ request()->routeIs('marketplace.sell*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+                <span x-show="sidebarOpen">{{ __('Sell Produce') }}</span>
+            </a>
+            <a href="{{ route('marketplace.orders') }}" class="nav-link {{ request()->routeIs('marketplace.orders*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></span>
+                <span x-show="sidebarOpen">{{ __('My Orders') }}</span>
+            </a>
             {{-- Subscription link for farmers --}}
             <div x-show="sidebarOpen" class="nav-section">Subscription</div>
             <a href="{{ route('subscription.dashboard') }}" class="nav-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}"

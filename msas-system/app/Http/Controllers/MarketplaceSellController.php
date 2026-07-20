@@ -78,10 +78,11 @@ class MarketplaceSellController extends Controller implements HasMiddleware
             'status'             => 'nullable|in:active,inactive,draft',
         ]);
 
-        $data['status']    = $data['status'] ?? 'active';
-        $data['dealer_id'] = auth()->id();
-        $data['tags']      = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
-        $data['sku']       = $data['sku'] ?: 'SKU-' . strtoupper(Str::random(8));
+        $data['status']      = $data['status'] ?? 'active';
+        $data['is_approved'] = true;
+        $data['dealer_id']   = auth()->id();
+        $data['tags']        = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
+        $data['sku']         = $data['sku'] ?: 'SKU-' . strtoupper(Str::random(8));
 
         Product::create($data);
 

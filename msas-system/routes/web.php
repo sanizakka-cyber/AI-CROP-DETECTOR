@@ -229,7 +229,17 @@ Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->g
 
 // Marketplace (Public/Authenticated)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/marketplace', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('marketplace');
+    Route::get('/marketplace',                               [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('marketplace');
+    Route::get('/marketplace/cart',                          [\App\Http\Controllers\MarketplaceController::class, 'cart'])->name('marketplace.cart');
+    Route::post('/marketplace/cart/add',                     [\App\Http\Controllers\MarketplaceController::class, 'addToCart'])->name('marketplace.cart.add');
+    Route::post('/marketplace/cart/update',                  [\App\Http\Controllers\MarketplaceController::class, 'updateCart'])->name('marketplace.cart.update');
+    Route::post('/marketplace/cart/remove/{productId}',      [\App\Http\Controllers\MarketplaceController::class, 'removeFromCart'])->name('marketplace.cart.remove');
+    Route::post('/marketplace/cart/clear',                   [\App\Http\Controllers\MarketplaceController::class, 'clearCart'])->name('marketplace.cart.clear');
+    Route::get('/marketplace/checkout',                      [\App\Http\Controllers\MarketplaceController::class, 'checkout'])->name('marketplace.checkout');
+    Route::post('/marketplace/order',                        [\App\Http\Controllers\MarketplaceController::class, 'placeOrder'])->name('marketplace.order.place');
+    Route::get('/marketplace/orders',                        [\App\Http\Controllers\MarketplaceController::class, 'myOrders'])->name('marketplace.orders');
+    Route::get('/marketplace/orders/{order}',                [\App\Http\Controllers\MarketplaceController::class, 'showOrder'])->name('marketplace.orders.show');
+    Route::get('/marketplace/{product}',                     [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show');
 });
 
 // Notifications
