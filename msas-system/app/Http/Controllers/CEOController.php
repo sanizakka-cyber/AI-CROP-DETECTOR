@@ -462,22 +462,30 @@ class CEOController extends Controller
         $baseUrl = rtrim(config('services.ai_engine.url', ''), '/');
         $aiKey   = config('services.ai_engine.key', '');
 
-        $health  = null;
-        $latency = null;
-        $error   = null;
-        $rawBody = null;
+        // ── Health check (no auth required) ───────────────────────────────────
+        $health     = null;
+        $latency    = null;
+        $error      = null;
+        $rawBody    = null;
         $httpStatus = null;
 
-        if ($baseUrl) {
-            try {
-                $guzzle = new GuzzleClient(['connect_timeout' => 10, 'timeout' => 15, 'http_errors' => false]);
-                $headers = [];
-                if ($aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY') {
-                    $headers['Authorization'] = "Bearer {$aiKey}";
-                }
+        // ── Auth test (POST to /predict/crop with 1×1 JPEG, checks Bearer key) ─
+        $authStatus  = null;
+        $authBody    = null;
+        $authError   = null;
+        $authLatency = null;
 
-                $t0     = microtime(true);
-                $resp   = $guzzle->get("{$baseUrl}/health", ['headers' => $headers]);
+        if ($baseUrl) {
+            $guzzle = new GuzzleClient(['connect_timeout' => 10, 'timeout' => 30, 'http_errors' => false]);
+            $authHeaders = [];
+            if ($aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY') {
+                $authHeaders['Authorization'] = "Bearer {$aiKey}";
+            }
+
+            // 1. Health check
+            try {
+                $t0      = microtime(true);
+                $resp    = $guzzle->get("{$baseUrl}/health", ['headers' => $authHeaders]);
                 $latency = round((microtime(true) - $t0) * 1000);
 
                 $httpStatus = $resp->getStatusCode();
@@ -485,6 +493,41 @@ class CEOController extends Controller
                 $health     = json_decode($rawBody, true);
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
+            }
+
+            // 2. Auth test — POST a minimal 1×1 white JPEG to /predict/crop
+            // This verifies the Bearer key is accepted by the prediction endpoint.
+            // The image is intentionally tiny; we only care about the HTTP status.
+            $minimalJpeg = base64_decode(
+                '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U'
+                . 'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN'
+                . 'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy'
+                . 'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUE/8QAHhAA'
+                . 'AgIDAQEBAAAAAAAAAAAAAQIDBAUREiH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAA'
+                . 'AAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8Asy3NR1e5tRVQHc3mzRkXcKiXJWFSVtQI'
+                . 'AAAAAAAAAB//2Q=='
+            );
+
+            try {
+                $boundary = '----MSASAuthTest' . bin2hex(random_bytes(8));
+                $body     = "--{$boundary}\r\n"
+                    . "Content-Disposition: form-data; name=\"images\"; filename=\"test.jpg\"\r\n"
+                    . "Content-Type: image/jpeg\r\n\r\n"
+                    . $minimalJpeg . "\r\n"
+                    . "--{$boundary}--\r\n";
+
+                $t0 = microtime(true);
+                $resp = $guzzle->post("{$baseUrl}/predict/crop", [
+                    'headers' => array_merge($authHeaders, [
+                        'Content-Type' => "multipart/form-data; boundary={$boundary}",
+                    ]),
+                    'body' => $body,
+                ]);
+                $authLatency = round((microtime(true) - $t0) * 1000);
+                $authStatus  = $resp->getStatusCode();
+                $authBody    = (string) $resp->getBody();
+            } catch (\Throwable $e) {
+                $authError = $e->getMessage();
             }
         }
 
@@ -496,7 +539,9 @@ class CEOController extends Controller
 
         return view('ceo.ai-status', compact(
             'baseUrl', 'aiKey', 'health', 'latency', 'error',
-            'rawBody', 'httpStatus', 'recentFailed'
+            'rawBody', 'httpStatus',
+            'authStatus', 'authBody', 'authError', 'authLatency',
+            'recentFailed'
         ));
     }
 }
