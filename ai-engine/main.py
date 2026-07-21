@@ -156,7 +156,6 @@ severity | None"""
         message = client.messages.create(
             model=AI_MODEL,
             max_tokens=1536,
-            temperature=0.2,
             messages=[{"role": "user", "content": content}],
         )
         text = message.content[0].text
@@ -266,7 +265,6 @@ If no image was provided, set confidence no higher than 30 and note the limitati
         message = client.messages.create(
             model=AI_MODEL,
             max_tokens=1536,
-            temperature=0.2,
             messages=[{"role": "user", "content": content}],
         )
         text = message.content[0].text
@@ -356,7 +354,6 @@ confidence | 0"""
         message = client.messages.create(
             model=AI_MODEL,
             max_tokens=1024,
-            temperature=0.2,
             messages=[{"role": "user", "content": content}],
         )
         text = message.content[0].text
