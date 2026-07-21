@@ -11,6 +11,7 @@ use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -454,5 +455,48 @@ class CEOController extends Controller
         };
 
         return view('ceo.report-preview', compact('data','type'));
+    }
+
+    public function aiStatus()
+    {
+        $baseUrl = rtrim(config('services.ai_engine.url', ''), '/');
+        $aiKey   = config('services.ai_engine.key', '');
+
+        $health  = null;
+        $latency = null;
+        $error   = null;
+        $rawBody = null;
+        $httpStatus = null;
+
+        if ($baseUrl) {
+            try {
+                $guzzle = new GuzzleClient(['connect_timeout' => 10, 'timeout' => 15, 'http_errors' => false]);
+                $headers = [];
+                if ($aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY') {
+                    $headers['Authorization'] = "Bearer {$aiKey}";
+                }
+
+                $t0     = microtime(true);
+                $resp   = $guzzle->get("{$baseUrl}/health", ['headers' => $headers]);
+                $latency = round((microtime(true) - $t0) * 1000);
+
+                $httpStatus = $resp->getStatusCode();
+                $rawBody    = (string) $resp->getBody();
+                $health     = json_decode($rawBody, true);
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        $recentFailed = \App\Models\Diagnosis::where('status', 'needs_review')
+            ->whereNull('subject_name')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('ceo.ai-status', compact(
+            'baseUrl', 'aiKey', 'health', 'latency', 'error',
+            'rawBody', 'httpStatus', 'recentFailed'
+        ));
     }
 }

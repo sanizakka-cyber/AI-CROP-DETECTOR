@@ -147,6 +147,7 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::delete('/ceo/users/{user}',   [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
     Route::get('/ceo/audit',   [CEOController::class, 'audit'])->name('ceo.audit');
+    Route::get('/ceo/ai-status', [CEOController::class, 'aiStatus'])->name('ceo.ai-status');
 });
 
 // ── CEO: Staff Role Management (CEO only) ─────────────────────────────────────
