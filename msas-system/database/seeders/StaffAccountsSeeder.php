@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\Hash;
 | StaffAccountsSeeder — PRODUCTION STAFF ACCOUNTS
 |--------------------------------------------------------------------------
 | Creates official @msasagro.com accounts for every staff role.
-| Every account has force_password_reset = true so the user must change
+| Every NEW account has force_password_reset = true so the user must change
 | their password on first login.
+|
+| Re-running this seeder is SAFE — it will NOT reset passwords or the
+| force_password_reset flag for accounts that already exist. Only profile
+| fields (name, role, department) are updated on existing accounts.
 |
 | Run:
 |   php artisan db:seed --class=StaffAccountsSeeder
@@ -33,8 +37,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08032459879',
             'role'        => 'ceo',
             'department'  => 'Executive',
-            'password'    => '89931028Sa@',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'Abdulkadir',
@@ -43,8 +45,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08035558846',
             'role'        => 'admin',
             'department'  => 'Administration',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'Aisha',
@@ -54,8 +54,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08137844133',
             'role'        => 'finance',
             'department'  => 'Finance',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'Surajo',
@@ -66,8 +64,6 @@ class StaffAccountsSeeder extends Seeder
             'role'        => 'vet',
             'department'  => 'Veterinary Services',
             'specialization' => 'Livestock Health',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'Rabi',
@@ -77,8 +73,6 @@ class StaffAccountsSeeder extends Seeder
             'role'        => 'agronomist',
             'department'  => 'Agronomy',
             'specialization' => 'Crop Protection',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'Abbas',
@@ -87,8 +81,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08160225001',
             'role'        => 'field-officer',
             'department'  => 'Field Operations',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -97,8 +89,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000010',
             'role'        => 'hr',
             'department'  => 'Human Resources',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -107,8 +97,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000011',
             'role'        => 'operations',
             'department'  => 'Operations',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -117,8 +105,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000012',
             'role'        => 'extension-officer',
             'department'  => 'Extension Services',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -127,9 +113,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000013',
             'role'        => 'agro-dealer',
             'department'  => 'Agro-Input Supply',
-            'organization'=> 'MSAS AgroShop',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -138,8 +121,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000014',
             'role'        => 'customer-support',
             'department'  => 'Customer Support',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -148,8 +129,6 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000015',
             'role'        => 'data-analyst',
             'department'  => 'Data & Analytics',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
         [
             'first_name'  => 'MSAS',
@@ -158,10 +137,12 @@ class StaffAccountsSeeder extends Seeder
             'phone'       => '08100000016',
             'role'        => 'm-e-officer',
             'department'  => 'Monitoring & Evaluation',
-            'password'    => 'password',
-            'force_reset' => true,
         ],
     ];
+
+    // Default initial password for new staff accounts (must be changed on first login).
+    // Distribute via password manager only — never in email or plain text.
+    private const INITIAL_PASSWORD = 'Welcome@123';
 
     public function run(): void
     {
@@ -169,35 +150,44 @@ class StaffAccountsSeeder extends Seeder
         $updated = 0;
 
         foreach (self::STAFF as $spec) {
-            $data = array_filter([
-                'first_name'           => $spec['first_name'],
-                'middle_name'          => $spec['middle_name'] ?? null,
-                'last_name'            => $spec['last_name'],
-                'phone'                => $spec['phone'],
-                'password'             => Hash::make($spec['password']),
-                'role'                 => $spec['role'],
-                'department'           => $spec['department'] ?? null,
-                'specialization'       => $spec['specialization'] ?? null,
-                'organization'         => $spec['organization'] ?? null,
-                'is_verified'          => true,
-                'is_active'            => true,
-                'force_password_reset' => $spec['force_reset'],
-                'state'                => 'Katsina',
-                'language'             => 'en',
+            $existing = User::where('email', $spec['email'])->first();
+
+            // Fields that are always safe to update (profile data only)
+            $profileData = array_filter([
+                'first_name'     => $spec['first_name'],
+                'middle_name'    => $spec['middle_name'] ?? null,
+                'last_name'      => $spec['last_name'],
+                'phone'          => $spec['phone'],
+                'role'           => $spec['role'],
+                'department'     => $spec['department'] ?? null,
+                'specialization' => $spec['specialization'] ?? null,
+                'is_verified'    => true,
+                'is_active'      => true,
+                'state'          => 'Katsina',
+                'language'       => 'en',
             ], fn($v) => $v !== null);
 
-            $existing = User::where('email', $spec['email'])->first();
             if ($existing) {
-                $existing->update($data);
+                // NEVER overwrite password or force_password_reset for existing accounts.
+                // Staff may have already changed their credentials — resetting would lock them out.
+                $existing->update($profileData);
                 $updated++;
             } else {
-                User::create(array_merge($data, ['email' => $spec['email']]));
+                User::create(array_merge($profileData, [
+                    'email'                => $spec['email'],
+                    'password'             => Hash::make(self::INITIAL_PASSWORD),
+                    'force_password_reset' => true,
+                    'is_test_account'      => false,
+                ]));
                 $created++;
             }
         }
 
-        $this->command->info("✅ Staff accounts: {$created} created, {$updated} updated.");
-        $this->command->warn('⚠  All accounts have force_password_reset = true. Staff must change password on first login.');
-        $this->command->warn('   Distribute credentials via your password manager — never by email or text.');
+        $this->command->info("Staff accounts: {$created} created, {$updated} updated.");
+        if ($created > 0) {
+            $this->command->warn("New accounts use initial password: " . self::INITIAL_PASSWORD);
+            $this->command->warn('All new accounts have force_password_reset = true. Staff must change password on first login.');
+            $this->command->warn('Distribute credentials via your password manager — never by email or text.');
+        }
     }
 }
