@@ -21,6 +21,18 @@ API_KEY       = os.environ.get("API_KEY", "")
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 AI_MODEL      = os.environ.get("AI_MODEL", "claude-sonnet-5")
 
+# Single async client instance — avoids creating a new client per request
+# and uses the non-blocking async HTTP transport so the event loop is never frozen.
+_async_client: Optional[anthropic.AsyncAnthropic] = None
+
+def _get_client() -> anthropic.AsyncAnthropic:
+    global _async_client
+    if not ANTHROPIC_KEY:
+        raise HTTPException(status_code=503, detail="AI engine not configured (missing ANTHROPIC_API_KEY).")
+    if _async_client is None:
+        _async_client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
+    return _async_client
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def _check_auth(request: Request):
@@ -29,11 +41,6 @@ def _check_auth(request: Request):
     auth = request.headers.get("Authorization", "")
     if auth != f"Bearer {API_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized.")
-
-def _ai_client() -> anthropic.Anthropic:
-    if not ANTHROPIC_KEY:
-        raise HTTPException(status_code=503, detail="AI engine not configured (missing ANTHROPIC_API_KEY).")
-    return anthropic.Anthropic(api_key=ANTHROPIC_KEY)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -93,12 +100,12 @@ async def health():
 @app.post("/predict/crop")
 async def predict_crop(
     request: Request,
-    cropType: Optional[str] = Form(None),   # optional hint — AI auto-detects
-    cropPart: Optional[str] = Form(None),   # optional hint — AI auto-detects
+    cropType: Optional[str] = Form(None),
+    cropPart: Optional[str] = Form(None),
     images: List[UploadFile] = File(...),
 ):
     _check_auth(request)
-    client = _ai_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images)
 
     hint = ""
@@ -153,7 +160,7 @@ severity | None"""
     content = image_blocks + [{"type": "text", "text": prompt}]
 
     try:
-        message = client.messages.create(
+        message = await client.messages.create(
             model=AI_MODEL,
             max_tokens=1536,
             messages=[{"role": "user", "content": content}],
@@ -200,12 +207,12 @@ severity | None"""
 @app.post("/predict/livestock")
 async def predict_livestock(
     request: Request,
-    animalType: Optional[str] = Form(None),      # optional hint — AI auto-detects
-    assessmentType: Optional[str] = Form(None),  # optional hint
+    animalType: Optional[str] = Form(None),
+    assessmentType: Optional[str] = Form(None),
     images: List[UploadFile] = File(default=[]),
 ):
     _check_auth(request)
-    client = _ai_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images) if images else []
 
     hint = ""
@@ -262,7 +269,7 @@ If no image was provided, set confidence no higher than 30 and note the limitati
     content = image_blocks + [{"type": "text", "text": prompt}]
 
     try:
-        message = client.messages.create(
+        message = await client.messages.create(
             model=AI_MODEL,
             max_tokens=1536,
             messages=[{"role": "user", "content": content}],
@@ -312,7 +319,7 @@ async def predict_soil(
     images: List[UploadFile] = File(...),
 ):
     _check_auth(request)
-    client = _ai_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images)
 
     context_note = f"\nFarmer context: {soilContext}" if soilContext else ""
@@ -351,7 +358,7 @@ confidence | 0"""
     content = image_blocks + [{"type": "text", "text": prompt}]
 
     try:
-        message = client.messages.create(
+        message = await client.messages.create(
             model=AI_MODEL,
             max_tokens=1024,
             messages=[{"role": "user", "content": content}],
@@ -384,7 +391,7 @@ confidence | 0"""
         "best_practices":            fields.get("best_practices",            ""),
         "referral":                  fields.get("referral",                  "Consult an extension officer for a soil test."),
         "explanation":               fields.get("explanation",               ""),
-        "condition":                 fields.get("subject_name",              "Unknown"),  # backward compat
+        "condition":                 fields.get("subject_name",              "Unknown"),
         "recommendation":            fields.get("fertilizer_recommendation", "Apply balanced NPK fertiliser."),
         "scan_type":                 "soil",
     }
@@ -399,7 +406,7 @@ async def translate_text(
 ):
     """Translate a diagnosis report text into the target language."""
     _check_auth(request)
-    client = _ai_client()
+    client = _get_client()
 
     language_map = {
         "ha": "Hausa",
@@ -425,7 +432,7 @@ Text to translate:
 Provide ONLY the translated text, no explanations or meta-commentary."""
 
     try:
-        message = client.messages.create(
+        message = await client.messages.create(
             model=AI_MODEL,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
