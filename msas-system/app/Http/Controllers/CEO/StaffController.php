@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\CEO;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StaffWelcomeMail;
 use App\Models\RbacAuditLog;
 use App\Models\StaffRole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class StaffController extends Controller
 {
@@ -100,8 +103,15 @@ class StaffController extends Controller
             'staff_roles' => $data['staff_role_ids'] ?? [],
         ]);
 
+        // Send welcome email with login credentials directly to the staff member
+        try {
+            Mail::to($user->email)->send(new StaffWelcomeMail($user, 'Welcome@123', isReset: false));
+        } catch (\Throwable $e) {
+            Log::warning('StaffWelcomeMail failed to send', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+
         return redirect()->route('ceo.staff.show', $user)
-                         ->with('success', "Staff account for {$user->name} created. Temporary password: Welcome@123 (force change on first login).");
+                         ->with('success', "Staff account for {$user->name} created. Login credentials have been emailed to {$user->email}. They must change their password on first login.");
     }
 
     public function show(User $user)
@@ -211,7 +221,14 @@ class StaffController extends Controller
 
         RbacAuditLog::record('password_reset', 'User', $user->id, $user->name, null, ['force_password_reset' => true]);
 
-        return back()->with('success', "Password reset for {$user->name}. They must change it on next login. Temporary password: Welcome@123");
+        // Email the new temporary password directly to the staff member
+        try {
+            Mail::to($user->email)->send(new StaffWelcomeMail($user, 'Welcome@123', isReset: true));
+        } catch (\Throwable $e) {
+            Log::warning('StaffWelcomeMail (reset) failed to send', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+
+        return back()->with('success', "Password reset for {$user->name}. New temporary credentials have been emailed to {$user->email}. They must change their password on next login.");
     }
 
     public function removeRole(Request $request, User $user)

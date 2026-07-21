@@ -103,7 +103,7 @@
             @endif
 
             {{-- ── Voice Narration Bar ───────────────────────────────────────── --}}
-            @php $sessionLang = session('locale', 'en'); $validTtsLangs = ['en','ha','fr','yo','ig','ar','sw']; $defaultTtsLang = in_array($sessionLang, $validTtsLangs) ? $sessionLang : 'en'; @endphp
+            @php $sessionLang = session('locale', 'en'); $validTtsLangs = ['en','ha','fr','yo','ig','ff','ar','sw']; $defaultTtsLang = in_array($sessionLang, $validTtsLangs) ? $sessionLang : 'en'; @endphp
             <div class="bg-slate-800 text-white px-5 py-2.5 flex flex-wrap items-center gap-3">
                 <i class="fa-solid fa-volume-high text-emerald-400 text-sm shrink-0"></i>
                 <span class="text-xs text-slate-300 font-medium shrink-0" data-i18n="Voice Narration">{{ __('Voice Narration') }}</span>
@@ -118,6 +118,7 @@
                     <option value="fr"  {{ $defaultTtsLang === 'fr' ? 'selected' : '' }}>🇫🇷 Français</option>
                     <option value="yo"  {{ $defaultTtsLang === 'yo' ? 'selected' : '' }}>🇳🇬 Yorùbá</option>
                     <option value="ig"  {{ $defaultTtsLang === 'ig' ? 'selected' : '' }}>🇳🇬 Igbo</option>
+                    <option value="ff"  {{ $defaultTtsLang === 'ff' ? 'selected' : '' }}>🇳🇬 Fulfulde</option>
                     <option value="ar"  {{ $defaultTtsLang === 'ar' ? 'selected' : '' }}>🇸🇦 Arabic</option>
                     <option value="sw"  {{ $defaultTtsLang === 'sw' ? 'selected' : '' }}>🌍 Swahili</option>
                 </select>
@@ -155,6 +156,15 @@
                         <option value="1.25">1.25×</option>
                         <option value="1.5">1.5×</option>
                     </select>
+                    {{-- Volume --}}
+                    <div class="flex items-center gap-1.5" title="Volume">
+                        <i class="fa-solid fa-volume-low text-slate-400 text-[9px]"></i>
+                        <input type="range" min="0" max="1" step="0.05" value="1"
+                            oninput="ttsSetVolume('{{ $ttsId }}', this.value)"
+                            class="w-16 accent-emerald-400 cursor-pointer"
+                            style="height:4px;">
+                        <span id="{{ $ttsId }}-vol-label" class="text-[10px] text-slate-400 w-7 text-right">100%</span>
+                    </div>
                     {{-- Transcript toggle --}}
                     <button onclick="ttsToggleTranscript('{{ $ttsId }}')" id="{{ $ttsId }}-transcript-btn"
                         class="flex items-center gap-1 px-2.5 py-1.5 bg-slate-600 hover:bg-slate-500 text-slate-200 rounded-lg text-xs font-medium transition" title="Show/hide transcript">
@@ -512,6 +522,7 @@
     (function(){
         var states         = {};  // id → 'stopped' | 'playing' | 'paused'
         var speeds         = {};  // id → float
+        var volumes        = {};  // id → float (0–1)
         var cached         = {};  // id+lang → translated text
         var translating    = {};  // id → bool
         var keepalive      = null; // Chrome 15-second silence bug workaround
@@ -534,14 +545,29 @@
         }
 
         var voiceCache = [];
+        var voicesReady = false;
         function loadVoices() {
             var v = 'speechSynthesis' in window ? window.speechSynthesis.getVoices() : [];
-            if (v.length) voiceCache = v;
+            if (v.length) { voiceCache = Array.from(v); voicesReady = true; }
             return voiceCache;
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
             loadVoices();
+        }
+
+        // Wait for voices to be available before speaking (async on most browsers)
+        function withVoices(callback) {
+            if (voicesReady) { callback(voiceCache); return; }
+            var attempts = 0;
+            var poll = setInterval(function() {
+                var v = window.speechSynthesis.getVoices();
+                if (v.length || attempts++ > 15) {
+                    if (v.length) { voiceCache = Array.from(v); voicesReady = true; }
+                    clearInterval(poll);
+                    callback(voiceCache);
+                }
+            }, 100);
         }
 
         function el(id){ return document.getElementById(id); }
@@ -555,7 +581,7 @@
         function getLangCode(id) {
             var sel = el(id + '-lang');
             if (!sel) return 'en-US';
-            var map = { en:'en-US', ha:'ha-NG', fr:'fr-FR', yo:'yo-NG', ig:'ig-NG', ar:'ar-SA', sw:'sw-KE' };
+            var map = { en:'en-US', ha:'ha-NG', fr:'fr-FR', yo:'yo-NG', ig:'ig-NG', ff:'ff-NG', ar:'ar-SA', sw:'sw-KE' };
             return map[sel.value] || 'en-US';
         }
 
@@ -658,64 +684,73 @@
             var fullText = getDisplayText(id);
             if (!fullText) return;
 
-            // Apply seek offset (set by ttsRewind / ttsFastForward)
-            var offset = pendingOffsets[id] || 0;
-            delete pendingOffsets[id];
-            seekBase[id] = offset;
-            var text = offset > 0 ? fullText.slice(offset) : fullText;
-            if (!text.trim()) return;
+            // Wait for voices list to load (async on Chrome/Android) then speak
+            withVoices(function(voices) {
+                // Re-fetch text in case translation finished while we waited
+                fullText = getDisplayText(id);
+                if (!fullText) return;
 
-            var langCode = getLangCode(id);
-            var u = new SpeechSynthesisUtterance(text);
-            u.lang   = langCode;
-            u.rate   = parseFloat(speeds[id] || 1);
-            u.pitch  = 1.0;
-            u.volume = 1.0;
+                // Apply seek offset (set by ttsRewind / ttsFastForward)
+                var offset = pendingOffsets[id] || 0;
+                delete pendingOffsets[id];
+                seekBase[id] = offset;
+                var text = offset > 0 ? fullText.slice(offset) : fullText;
+                if (!text.trim()) return;
 
-            var voices = loadVoices();
-            if (voices.length) {
-                var code  = langCode.split('-')[0];
-                var match = voices.find(function(v){ return v.lang.startsWith(code); });
-                if (match) {
-                    u.voice = match;
-                    setVoiceWarning(id, null);
-                } else if (code !== 'en') {
-                    setVoiceWarning(id, '⚠ No ' + langCode + ' voice on this device — voice is English but text is translated');
-                }
-            }
+                var langCode = getLangCode(id);
+                var u = new SpeechSynthesisUtterance(text);
+                u.lang   = langCode;
+                u.rate   = parseFloat(speeds[id] || 1);
+                u.pitch  = 1.0;
+                u.volume = parseFloat(volumes[id] !== undefined ? volumes[id] : 1.0);
 
-            var map = buildTranscript(id, text);
-            wordMaps[id] = map || [];
-
-            u.onstart = function() { states[id] = 'playing'; updateUI(id, 'playing'); startKeepalive(); };
-            u.onend   = function() {
-                states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
-                (wordMaps[id] || []).forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
-            };
-            u.onerror = function(e) {
-                if (e.error === 'interrupted' || e.error === 'canceled') return;
-                console.warn('TTS error', e.error);
-                states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
-            };
-
-            u.onboundary = function(e) {
-                if (e.name !== 'word') return;
-                var map = wordMaps[id];
-                if (!map || !map.length) return;
-                var ci = e.charIndex;
-                currentCharIdx[id] = (seekBase[id] || 0) + ci;  // track absolute position
-                map.forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
-                for (var i = 0; i < map.length; i++) {
-                    if (map[i].start <= ci && ci < map[i].end) {
-                        map[i].el.style.background = '#10b981';
-                        map[i].el.style.color = '#fff';
-                        map[i].el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        break;
+                if (voices.length) {
+                    var code  = langCode.split('-')[0];
+                    // Prefer exact lang match, then prefix match, then any voice for that language
+                    var match = voices.find(function(v){ return v.lang === langCode; })
+                             || voices.find(function(v){ return v.lang.startsWith(code + '-'); })
+                             || voices.find(function(v){ return v.lang.startsWith(code); });
+                    if (match) {
+                        u.voice = match;
+                        setVoiceWarning(id, null);
+                    } else if (code !== 'en') {
+                        setVoiceWarning(id, '⚠ No ' + langCode + ' voice installed on this device — narrating in default voice but text is translated');
                     }
                 }
-            };
 
-            window.speechSynthesis.speak(u);
+                var map = buildTranscript(id, text);
+                wordMaps[id] = map || [];
+
+                u.onstart = function() { states[id] = 'playing'; updateUI(id, 'playing'); startKeepalive(); };
+                u.onend   = function() {
+                    states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
+                    (wordMaps[id] || []).forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
+                };
+                u.onerror = function(e) {
+                    if (e.error === 'interrupted' || e.error === 'canceled') return;
+                    console.warn('TTS error', e.error);
+                    states[id] = 'stopped'; updateUI(id, 'stopped'); stopKeepalive();
+                };
+
+                u.onboundary = function(e) {
+                    if (e.name !== 'word') return;
+                    var map = wordMaps[id];
+                    if (!map || !map.length) return;
+                    var ci = e.charIndex;
+                    currentCharIdx[id] = (seekBase[id] || 0) + ci;
+                    map.forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
+                    for (var i = 0; i < map.length; i++) {
+                        if (map[i].start <= ci && ci < map[i].end) {
+                            map[i].el.style.background = '#10b981';
+                            map[i].el.style.color = '#fff';
+                            map[i].el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            break;
+                        }
+                    }
+                };
+
+                window.speechSynthesis.speak(u);
+            }); // end withVoices
         }
 
         window.ttsPlay = function(id) {
@@ -763,22 +798,35 @@
         };
 
         window.ttsRewind = function(id) {
+            // ~15 seconds at current playback rate (15 chars/s × 15s × rate)
+            var jump = Math.round(225 * (parseFloat(speeds[id] || 1)));
             var cur  = currentCharIdx[id] || 0;
-            var next = Math.max(0, cur - 400);
+            var next = Math.max(0, cur - jump);
             pendingOffsets[id] = next;
             cancelThenSpeak(id);
         };
 
         window.ttsFastForward = function(id) {
+            var jump     = Math.round(225 * (parseFloat(speeds[id] || 1)));
             var cur      = currentCharIdx[id] || 0;
             var fullText = getDisplayText(id);
-            var next     = Math.min((fullText ? fullText.length : 0), cur + 400);
+            var next     = Math.min((fullText ? fullText.length : 0), cur + jump);
             pendingOffsets[id] = next;
             cancelThenSpeak(id);
         };
 
         window.ttsSetSpeed = function(id, rate) {
             speeds[id] = parseFloat(rate);
+            if (states[id] === 'playing') { cancelThenSpeak(id); }
+        };
+
+        window.ttsSetVolume = function(id, val) {
+            volumes[id] = parseFloat(val);
+            // Update label next to slider
+            var lbl = el(id + '-vol-label');
+            if (lbl) lbl.textContent = Math.round(val * 100) + '%';
+            // Live-update volume without restarting — Web Speech API supports this
+            // by cancelling and resuming only if already playing
             if (states[id] === 'playing') { cancelThenSpeak(id); }
         };
 

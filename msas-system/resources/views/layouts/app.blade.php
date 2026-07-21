@@ -155,6 +155,16 @@
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Users & Staff">{{ __('Users & Staff') }}</span>
             </a>
+            @if($role === 'ceo')
+            <a href="{{ route('ceo.staff.index') }}" class="nav-link {{ request()->routeIs('ceo.staff*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></span>
+                <span x-show="sidebarOpen">Staff Management</span>
+            </a>
+            <a href="{{ route('ceo.staff-roles.index') }}" class="nav-link {{ request()->routeIs('ceo.staff-roles*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></span>
+                <span x-show="sidebarOpen">Staff Roles</span>
+            </a>
+            @endif
             <a href="{{ route('ceo.reports') }}" class="nav-link {{ request()->routeIs('ceo.reports*') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Reports & Analytics">{{ __('Reports & Analytics') }}</span>
@@ -470,9 +480,9 @@
                 <!-- Language Switcher -->
                 <div class="relative" x-data="{ open: false }">
                     @php
-                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','fr'=>'Français'];
+                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
                         $cur = app()->getLocale();
-                        $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','fr'=>'🇫🇷'];
+                        $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
                     <button @click="open = !open" class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
                         <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
@@ -612,7 +622,7 @@
 {{-- ── Translations bundle + instant-switch engine ──────────────────── --}}
 @php
     $allTrans = [];
-    foreach (['en','ha','fr','yo','ig'] as $_loc) {
+    foreach (['en','ha','fr','yo','ig','ff'] as $_loc) {
         $p = lang_path($_loc.'.json');
         $allTrans[$_loc] = file_exists($p) ? json_decode(file_get_contents($p), true) : [];
     }
@@ -622,9 +632,9 @@
     window.MSAS_TRANS  = {!! json_encode($allTrans) !!};
     window.MSAS_LOCALE = '{{ app()->getLocale() }}';
 
-    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬' };
-    var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo' };
-    var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…' };
+    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬', ff:'🇳🇬' };
+    var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo', ff:'Fulfulde' };
+    var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…', ff:'Binnditii hakkunde picce…' };
 
     /* Apply translations to all [data-i18n] and [data-i18n-placeholder] elements */
     function applyLocale(locale) {
