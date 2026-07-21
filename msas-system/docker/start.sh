@@ -24,7 +24,10 @@ php artisan migrate --force
 # Cache configuration, routes and views (runs as root; chown follows below)
 echo "==> Caching config, routes & views..."
 php artisan config:cache
-php artisan route:cache  2>/dev/null || echo "Route cache skipped (closure routes present)"
+# Clear any stale route cache first so closure-route failures never leave
+# the app serving an outdated list of named routes
+php artisan route:clear
+php artisan route:cache  2>/dev/null || echo "Route cache skipped (closure routes present — routes resolved dynamically)"
 php artisan view:cache   2>/dev/null || echo "View cache skipped"
 
 # Create storage symlink so uploaded files are publicly accessible

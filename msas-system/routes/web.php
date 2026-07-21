@@ -37,39 +37,7 @@ Route::prefix('services')->name('services.')->group(function () {
     Route::redirect('/finance',   '/register')->name('finance');
 });
 
-Route::get('/dashboard', function () {
-    $user = auth()->user();
-    return match($user->role) {
-        'ceo'                   => redirect()->route('ceo.dashboard'),
-        'admin'                 => redirect()->route('admin.dashboard'),
-        'farmer'                => redirect()->route('farmer.dashboard'),
-        'vet'                   => redirect()->route('vet.dashboard'),
-        'agronomist'            => redirect()->route('agronomist.dashboard'),
-        'agro-dealer'           => redirect()->route('dealer.dashboard'),
-        'equipment-dealer'      => redirect()->route('equipment-dealer.dashboard'),
-        'cooperative'           => redirect()->route('cooperative.dashboard'),
-        'ngo'                   => redirect()->route('ngo.dashboard'),
-        'government'            => redirect()->route('government.dashboard'),
-        'research-institution'  => redirect()->route('research-institution.dashboard'),
-        'investor'              => redirect()->route('investor.dashboard'),
-        'financial-institution' => redirect()->route('financial-institution.dashboard'),
-        'logistics-provider'    => redirect()->route('logistics.dashboard'),
-        'agribusiness-owner'    => redirect()->route('agribusiness.dashboard'),
-        'input-supplier'        => redirect()->route('input-supplier.dashboard'),
-        'government-agency'     => redirect()->route('government.dashboard'),
-        'extension-officer'     => redirect()->route('extension.dashboard'),
-        'finance'               => redirect()->route('finance.dashboard'),
-        'hr'                    => redirect()->route('hr.dashboard'),
-        'operations'            => redirect()->route('operations.dashboard'),
-        'data-analyst'          => redirect()->route('data-analyst.dashboard'),
-        'monitoring-evaluation' => redirect()->route('monitoring-evaluation.dashboard'),
-        'm-e-officer'           => redirect()->route('monitoring-evaluation.dashboard'),
-        'me-officer'            => redirect()->route('monitoring-evaluation.dashboard'),
-        'field-officer'         => redirect()->route('field-officer.dashboard'),
-        'customer-support'      => redirect()->route('customer-support.dashboard'),
-        default                 => view('dashboard'),
-    };
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'dispatch'])->middleware(['auth'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
