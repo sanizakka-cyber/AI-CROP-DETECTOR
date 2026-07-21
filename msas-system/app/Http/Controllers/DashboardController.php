@@ -9,6 +9,44 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    // ── Role-Based Dashboard Router ────────────────────────────────
+    public function dispatch()
+    {
+        $user = auth()->user();
+        $route = match($user->role ?? '') {
+            'ceo'                   => 'ceo.dashboard',
+            'admin'                 => 'admin.dashboard',
+            'farmer'                => 'farmer.dashboard',
+            'vet'                   => 'vet.dashboard',
+            'agronomist'            => 'agronomist.dashboard',
+            'agro-dealer'           => 'dealer.dashboard',
+            'equipment-dealer'      => 'equipment-dealer.dashboard',
+            'cooperative'           => 'cooperative.dashboard',
+            'ngo'                   => 'ngo.dashboard',
+            'government',
+            'government-agency'     => 'government.dashboard',
+            'research-institution'  => 'research-institution.dashboard',
+            'investor'              => 'investor.dashboard',
+            'financial-institution' => 'financial-institution.dashboard',
+            'logistics-provider'    => 'logistics.dashboard',
+            'agribusiness-owner'    => 'agribusiness.dashboard',
+            'input-supplier'        => 'input-supplier.dashboard',
+            'extension-officer'     => 'extension.dashboard',
+            'finance'               => 'finance.dashboard',
+            'hr'                    => 'hr.dashboard',
+            'operations'            => 'operations.dashboard',
+            'data-analyst'          => 'data-analyst.dashboard',
+            'monitoring-evaluation',
+            'm-e-officer',
+            'me-officer'            => 'monitoring-evaluation.dashboard',
+            'field-officer'         => 'field-officer.dashboard',
+            'customer-support'      => 'customer-support.dashboard',
+            default                 => null,
+        };
+
+        return $route ? redirect()->route($route) : view('dashboard');
+    }
+
     // ── Admin Dashboard ────────────────────────────────────────────
     public function admin()
     {
