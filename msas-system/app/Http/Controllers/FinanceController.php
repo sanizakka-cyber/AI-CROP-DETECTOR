@@ -84,37 +84,44 @@ class FinanceController extends Controller implements HasMiddleware
     {
         $year = $request->year ?? now()->year;
 
-        $annualIncome   = Finance::where('type', 'Income')->whereYear('transaction_date', $year)->sum('amount');
-        $annualExpenses = Finance::where('type', 'Expense')->whereYear('transaction_date', $year)->sum('amount');
-        $annualPayroll  = Payroll::whereYear('created_at', $year)->sum('net_salary');
+        try { $annualIncome   = Finance::where('type', 'Income')->whereYear('transaction_date', $year)->sum('amount'); } catch (\Exception $e) { $annualIncome = 0; }
+        try { $annualExpenses = Finance::where('type', 'Expense')->whereYear('transaction_date', $year)->sum('amount'); } catch (\Exception $e) { $annualExpenses = 0; }
+        try { $annualPayroll  = Payroll::whereYear('created_at', $year)->sum('net_salary'); } catch (\Exception $e) { $annualPayroll = 0; }
 
-        $monthlyData = collect(range(1, 12))->map(function ($m) use ($year) {
-            $income   = Finance::where('type', 'Income')->whereYear('transaction_date', $year)->whereMonth('transaction_date', $m)->sum('amount');
-            $expenses = Finance::where('type', 'Expense')->whereYear('transaction_date', $year)->whereMonth('transaction_date', $m)->sum('amount');
-            return [
-                'month'    => \Carbon\Carbon::create($year, $m, 1)->format('M Y'),
-                'income'   => $income,
-                'expenses' => $expenses,
-            ];
-        });
+        try {
+            $monthlyData = collect(range(1, 12))->map(function ($m) use ($year) {
+                $income   = Finance::where('type', 'Income')->whereYear('transaction_date', $year)->whereMonth('transaction_date', $m)->sum('amount');
+                $expenses = Finance::where('type', 'Expense')->whereYear('transaction_date', $year)->whereMonth('transaction_date', $m)->sum('amount');
+                return [
+                    'month'    => \Carbon\Carbon::create($year, $m, 1)->format('M Y'),
+                    'income'   => $income,
+                    'expenses' => $expenses,
+                ];
+            });
+        } catch (\Exception $e) { $monthlyData = collect(); }
 
-        $categoryData = Finance::whereYear('transaction_date', $year)
-            ->select('category', 'type', DB::raw('SUM(amount) as total'))
-            ->groupBy('category', 'type')
-            ->orderByDesc('total')
+        try {
+            $categoryData = Finance::whereYear('transaction_date', $year)
+                ->select('category', 'type', DB::raw('SUM(amount) as total'))
+                ->groupBy('category', 'type')
+                ->orderByDesc('total')
+                ->get();
+        } catch (\Exception $e) { $categoryData = collect(); }
+
+        // Use single-quoted string literals (PostgreSQL-compatible CASE WHEN)
+        try {
+            $payrollByMonth = Payroll::select(
+                'month',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(net_salary) as total'),
+                DB::raw("SUM(CASE WHEN status = 'paid'    THEN net_salary ELSE 0 END) as paid"),
+                DB::raw("SUM(CASE WHEN status = 'pending' THEN net_salary ELSE 0 END) as pending")
+            )
+            ->whereYear('created_at', $year)
+            ->groupBy('month')
+            ->orderBy('month')
             ->get();
-
-        $payrollByMonth = Payroll::select(
-            'month',
-            DB::raw('COUNT(*) as count'),
-            DB::raw('SUM(net_salary) as total'),
-            DB::raw('SUM(CASE WHEN status = "paid" THEN net_salary ELSE 0 END) as paid'),
-            DB::raw('SUM(CASE WHEN status = "pending" THEN net_salary ELSE 0 END) as pending')
-        )
-        ->whereYear('created_at', $year)
-        ->groupBy('month')
-        ->orderBy('month')
-        ->get();
+        } catch (\Exception $e) { $payrollByMonth = collect(); }
 
         return view('finance.reports', compact(
             'annualIncome', 'annualExpenses', 'annualPayroll',

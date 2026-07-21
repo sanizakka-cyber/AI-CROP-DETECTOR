@@ -17,10 +17,10 @@ class AdminController extends Controller
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name',  'like', "%{$search}%")
-                  ->orWhere('email',      'like', "%{$search}%")
-                  ->orWhere('phone',      'like', "%{$search}%");
+                $q->where('first_name', 'ilike', "%{$search}%")
+                  ->orWhere('last_name',  'ilike', "%{$search}%")
+                  ->orWhere('email',      'ilike', "%{$search}%")
+                  ->orWhere('phone',      'ilike', "%{$search}%");
             });
         }
 

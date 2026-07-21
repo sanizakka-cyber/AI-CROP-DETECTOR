@@ -20,7 +20,7 @@ class SupportController extends Controller implements HasMiddleware
         $query = DB::table('support_tickets')->orderByDesc('created_at');
         if ($request->status) $query->where('status', $request->status);
         if ($request->priority) $query->where('priority', $request->priority);
-        if ($request->search) $query->where('subject', 'like', "%{$request->search}%");
+        if ($request->search) $query->where('subject', 'ilike', "%{$request->search}%");
 
         try {
             $tickets = $query->paginate(20)->withQueryString();

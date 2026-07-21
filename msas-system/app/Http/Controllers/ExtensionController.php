@@ -20,9 +20,9 @@ class ExtensionController extends Controller implements HasMiddleware
         $query = User::where('role', 'farmer');
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name',  'like', "%{$request->search}%")
-                  ->orWhere('email',      'like', "%{$request->search}%");
+                $q->where('first_name', 'ilike', "%{$request->search}%")
+                  ->orWhere('last_name',  'ilike', "%{$request->search}%")
+                  ->orWhere('email',      'ilike', "%{$request->search}%");
             });
         }
         if ($request->state) $query->where('state', $request->state);

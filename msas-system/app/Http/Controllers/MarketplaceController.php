@@ -22,9 +22,9 @@ class MarketplaceController extends Controller
         }
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhere('brand', 'like', "%{$request->search}%");
+                $q->where('name',        'ilike', "%{$request->search}%")
+                  ->orWhere('description','ilike', "%{$request->search}%")
+                  ->orWhere('brand',      'ilike', "%{$request->search}%");
             });
         }
 
