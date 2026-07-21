@@ -213,6 +213,7 @@
                     $actions = [
                         ['href'=>route('ceo.users'),   'label'=>'Manage Users',     'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'bg'=>'bg-emerald-50','ic'=>'text-emerald-600'],
                         ['href'=>route('ceo.reports'), 'label'=>'Reports',          'icon'=>'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', 'bg'=>'bg-blue-50','ic'=>'text-blue-600'],
+                        ['href'=>route('ceo.audit'),   'label'=>'System Audit',     'icon'=>'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'bg'=>'bg-violet-50','ic'=>'text-violet-600'],
                         ['href'=>route('admin.users', ['role'=>'vet']), 'label'=>'Approvals ('.$pendingExperts.')', 'icon'=>'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'bg'=>'bg-amber-50','ic'=>'text-amber-600'],
                         ['href'=>route('marketplace'),  'label'=>'Market ('.$marketItems.')', 'icon'=>'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'bg'=>'bg-indigo-50','ic'=>'text-indigo-600'],
                     ];

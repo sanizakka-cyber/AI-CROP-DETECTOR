@@ -637,9 +637,17 @@
             var key = el.getAttribute('data-i18n-placeholder');
             if (dict[key] !== undefined) el.placeholder = dict[key];
         });
-        /* Sync voice-narration language selectors on the page */
+        /* Sync voice-narration language selectors and restart active narration in new language */
         document.querySelectorAll('select[id$="-lang"]').forEach(function(sel) {
-            if (sel.querySelector('option[value="'+locale+'"]')) sel.value = locale;
+            if (sel.querySelector('option[value="'+locale+'"]')) {
+                var prevLocale = sel.value;
+                sel.value = locale;
+                if (locale !== prevLocale && typeof window.ttsChangeLang === 'function') {
+                    var ttsId        = sel.id.replace(/-lang$/, '');
+                    var translateUrl = sel.getAttribute('data-translate-url') || '';
+                    window.ttsChangeLang(ttsId, locale, translateUrl);
+                }
+            }
         });
         /* Update current-locale indicators */
         document.querySelectorAll('[data-locale-current]').forEach(function(el) {

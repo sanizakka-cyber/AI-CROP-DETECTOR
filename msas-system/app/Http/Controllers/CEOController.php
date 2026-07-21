@@ -13,6 +13,8 @@ use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class CEOController extends Controller
@@ -274,6 +276,108 @@ class CEOController extends Controller
     {
         $user->update(['is_verified' => true]);
         return back()->with('success', "{$user->name} approved as {$user->role}.");
+    }
+
+    // ── System Audit ───────────────────────────────────────────────
+    public function audit()
+    {
+        $checks = [];
+
+        // 1. Database tables
+        $tables = [
+            'users', 'animals', 'consultations', 'diagnoses', 'finance',
+            'products', 'subscriptions', 'subscription_usages', 'notifications',
+            'attendances', 'leave_requests', 'egg_productions',
+        ];
+        $tableGroup = [];
+        foreach ($tables as $t) {
+            $exists = \Illuminate\Support\Facades\Schema::hasTable($t);
+            $tableGroup[] = ['name' => $t, 'ok' => $exists, 'detail' => $exists ? 'exists' : 'MISSING'];
+        }
+        $checks['Database Tables'] = $tableGroup;
+
+        // 2. Subscription plans
+        $plans = config('subscription.plans', []);
+        $planGroup = [];
+        $requiredPlans = ['basic', 'basic_pro', 'pro', 'premium'];
+        foreach ($requiredPlans as $p) {
+            $found = isset($plans[$p]);
+            $price = $found ? '₦' . number_format($plans[$p]['price']['monthly'] ?? 0) . '/mo' : '—';
+            $planGroup[] = ['name' => $p, 'ok' => $found, 'detail' => $found ? $price : 'MISSING from config'];
+        }
+        $checks['Subscription Plans'] = $planGroup;
+
+        // 3. Language files
+        $langGroup = [];
+        $locales = ['en' => 'English', 'ha' => 'Hausa', 'yo' => 'Yorùbá', 'ig' => 'Igbo', 'fr' => 'Français'];
+        $enKeys  = [];
+        foreach ($locales as $code => $name) {
+            $path   = lang_path($code . '.json');
+            $exists = file_exists($path);
+            $count  = 0;
+            if ($exists) {
+                $data  = json_decode(file_get_contents($path), true) ?: [];
+                $count = count($data);
+                if ($code === 'en') $enKeys = array_keys($data);
+            }
+            $missing = ($code !== 'en' && $enKeys) ? count(array_diff($enKeys, array_keys(json_decode(file_exists($path) ? file_get_contents($path) : '{}', true) ?: []))) : 0;
+            $ok      = $exists && $count > 0 && $missing === 0;
+            $detail  = $exists ? "{$count} keys" . ($missing > 0 ? ", {$missing} missing" : '') : 'FILE MISSING';
+            $langGroup[] = ['name' => $name . " ({$code})", 'ok' => $ok, 'detail' => $detail];
+        }
+        $checks['Language Files'] = $langGroup;
+
+        // 4. Key routes
+        $routeGroup = [];
+        $namedRoutes = [
+            'ceo.dashboard', 'ceo.users', 'ceo.audit', 'ceo.reports',
+            'farmer.dashboard', 'subscription.plans', 'subscription.dashboard',
+            'diagnostics.history', 'diagnostics.translate',
+            'locale.set', 'login', 'register',
+        ];
+        foreach ($namedRoutes as $r) {
+            $ok = \Illuminate\Support\Facades\Route::has($r);
+            $routeGroup[] = ['name' => $r, 'ok' => $ok, 'detail' => $ok ? 'registered' : 'MISSING'];
+        }
+        $checks['Named Routes'] = $routeGroup;
+
+        // 5. App environment
+        $envGroup = [];
+        $envChecks = [
+            'APP_KEY'      => config('app.key') !== null && config('app.key') !== '',
+            'APP_URL'      => config('app.url') !== 'http://localhost',
+            'DB_HOST'      => config('database.connections.pgsql.host') !== null,
+            'PAYSTACK_KEY' => config('services.paystack.secret_key') && !str_contains(config('services.paystack.secret_key', ''), 'REPLACE'),
+        ];
+        foreach ($envChecks as $key => $ok) {
+            $envGroup[] = ['name' => $key, 'ok' => $ok, 'detail' => $ok ? 'set' : 'not configured'];
+        }
+        $checks['Environment'] = $envGroup;
+
+        // 6. Recent errors from log (last 20 lines)
+        $logPath   = storage_path('logs/laravel.log');
+        $logErrors = [];
+        if (file_exists($logPath)) {
+            $lines = array_slice(file($logPath), -80);
+            foreach ($lines as $line) {
+                if (str_contains($line, '.ERROR') || str_contains($line, '.CRITICAL')) {
+                    $logErrors[] = trim($line);
+                    if (count($logErrors) >= 10) break;
+                }
+            }
+        }
+
+        // 7. User stats
+        $userStats = [
+            'total'    => \App\Models\User::count(),
+            'active'   => \App\Models\User::where('is_active', true)->count(),
+            'trial'    => \App\Models\User::whereHas('subscriptions', fn($q) => $q->where('status','trial'))->count(),
+            'paid'     => \App\Models\User::whereHas('subscriptions', fn($q) => $q->where('status','active'))->count(),
+        ];
+
+        $auditAt = now()->format('d M Y H:i:s T');
+
+        return view('ceo.audit', compact('checks', 'logErrors', 'userStats', 'auditAt'));
     }
 
     // ── Reports ────────────────────────────────────────────────────
