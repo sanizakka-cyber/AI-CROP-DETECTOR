@@ -32,9 +32,9 @@ class DealerProductController extends Controller implements HasMiddleware
 
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('category', 'like', "%{$request->search}%")
-                  ->orWhere('sku', 'like', "%{$request->search}%");
+                $q->where('name',     'ilike', "%{$request->search}%")
+                  ->orWhere('category','ilike', "%{$request->search}%")
+                  ->orWhere('sku',     'ilike', "%{$request->search}%");
             });
         }
 

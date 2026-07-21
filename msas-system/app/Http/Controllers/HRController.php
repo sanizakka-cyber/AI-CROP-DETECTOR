@@ -33,9 +33,9 @@ class HRController extends Controller implements HasMiddleware
         $query = User::whereNotIn('role', ['farmer', 'agro-dealer']);
         if ($request->search) {
             $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
+                $q->where('first_name', 'ilike', "%{$request->search}%")
+                  ->orWhere('last_name',  'ilike', "%{$request->search}%")
+                  ->orWhere('email',      'ilike', "%{$request->search}%");
             });
         }
         if ($request->role) $query->where('role', $request->role);

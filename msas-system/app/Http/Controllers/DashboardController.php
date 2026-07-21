@@ -330,21 +330,21 @@ class DashboardController extends Controller
             $techIssues = $loginIssues = $marketplaceIssues = $aiQueryIssues = $generalIssues = 0;
         }
 
-        // Average first-reply time in hours (created_at → first reply created_at)
+        // Average first-reply time in hours (PostgreSQL-compatible)
         try {
             $avgResponseTime = DB::table('ticket_replies as r')
                 ->join('support_tickets as t', 't.id', '=', 'r.ticket_id')
                 ->whereRaw('r.created_at = (SELECT MIN(r2.created_at) FROM ticket_replies r2 WHERE r2.ticket_id = t.id)')
                 ->whereColumn('r.user_id', '!=', 't.user_id')
-                ->selectRaw('ROUND(AVG(TIMESTAMPDIFF(HOUR, t.created_at, r.created_at)), 1) as avg_hours')
+                ->selectRaw('ROUND(AVG(EXTRACT(EPOCH FROM (r.created_at::timestamp - t.created_at::timestamp)) / 3600)::numeric, 1) as avg_hours')
                 ->value('avg_hours') ?? 0;
         } catch (\Exception $e) { $avgResponseTime = 0; }
 
-        // SLA compliance: tickets resolved within 24 h / all resolved tickets
+        // SLA compliance: tickets resolved within 24 h / all resolved tickets (PostgreSQL-compatible)
         try {
             $resolvedTotal = DB::table('support_tickets')->where('status','resolved')->count();
             $withinSla     = DB::table('support_tickets')->where('status','resolved')
-                ->whereRaw('TIMESTAMPDIFF(HOUR, created_at, updated_at) <= 24')->count();
+                ->whereRaw('EXTRACT(EPOCH FROM (updated_at::timestamp - created_at::timestamp)) / 3600 <= 24')->count();
             $slaCompliance = $resolvedTotal > 0 ? round(($withinSla / $resolvedTotal) * 100) : 100;
         } catch (\Exception $e) { $slaCompliance = 0; }
 
