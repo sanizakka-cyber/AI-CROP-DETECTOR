@@ -147,6 +147,32 @@ class User extends Authenticatable
         return (object) ['plainTextToken' => $plain];
     }
 
+    // ── RBAC Relationships ─────────────────────────────────────────────────────
+
+    public function staffRoles()
+    {
+        return $this->belongsToMany(StaffRole::class, 'staff_role_assignments')
+                    ->withPivot('assigned_by', 'assigned_at')
+                    ->withTimestamps();
+    }
+
+    public function activeStaffRoles()
+    {
+        return $this->staffRoles()->where('is_active', true);
+    }
+
+    public function hasRbacPermission(string $module, string $ability): bool
+    {
+        return $this->activeStaffRoles->some(fn ($r) => $r->hasPermission($module, $ability));
+    }
+
+    public function getActiveStaffRolesAttribute()
+    {
+        return $this->staffRoles()->where('is_active', true)->get();
+    }
+
+    // ── Other Relationships ────────────────────────────────────────────────────
+
     public function animals()
     {
         return $this->hasMany(Animal::class);

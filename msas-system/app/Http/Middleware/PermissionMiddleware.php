@@ -69,9 +69,22 @@ class PermissionMiddleware
             return true;
         }
 
+        // Legacy role_permissions table check.
         $granted = $this->getPermissionsForRole($role);
+        if (in_array($permission, $granted, true)) {
+            return true;
+        }
 
-        return in_array($permission, $granted, true);
+        // RBAC staff-role check — permissions are module:ability pairs (e.g. "marketplace:view").
+        $user = Auth::user();
+        if ($user && str_contains($permission, ':')) {
+            [$module, $ability] = explode(':', $permission, 2);
+            if ($user->hasRbacPermission($module, $ability)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function getPermissionsForRole(string $role): array
