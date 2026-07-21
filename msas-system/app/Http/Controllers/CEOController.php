@@ -495,17 +495,17 @@ class CEOController extends Controller
                 $error = $e->getMessage();
             }
 
-            // 2. Auth test — POST a minimal 1×1 white JPEG to /predict/crop
-            // This verifies the Bearer key is accepted by the prediction endpoint.
-            // The image is intentionally tiny; we only care about the HTTP status.
+            // 2. Auth test — POST a small but valid green-leaf JPEG to /predict/crop.
+            // This verifies the Bearer key is accepted AND that Claude can process an image.
+            // 8×8 solid green JPEG — small enough to be fast, large enough for Claude.
             $minimalJpeg = base64_decode(
-                '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U'
-                . 'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN'
-                . 'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy'
-                . 'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUE/8QAHhAA'
-                . 'AgIDAQEBAAAAAAAAAAAAAQIDBAUREiH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAA'
-                . 'AAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8Asy3NR1e5tRVQHc3mzRkXcKiXJWFSVtQI'
-                . 'AAAAAAAAAB//2Q=='
+                '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoH'
+                . 'BwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQME'
+                . 'BAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU'
+                . 'FBQUFBQUFBT/wAARCAAIAAgDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAA'
+                . 'CAUD/8QAIhAAAQQCAgMBAAAAAAAAAAAAAQIDBBESITFBUWH/xAAUAQEAAAAAAAAA'
+                . 'AAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCt2tpVW'
+                . 'ZqJibLXHGxrGNDWtaMAD2AHoiICIiAiIgIiIP/9k='
             );
 
             try {
