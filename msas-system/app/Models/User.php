@@ -246,8 +246,12 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'phone_verified_at' => 'datetime',
+            'email_verified_at'    => 'datetime',
+            'phone_verified_at'    => 'datetime',
+            'force_password_reset' => 'boolean',
+            'is_active'            => 'boolean',
+            'is_verified'          => 'boolean',
+            'is_test_account'      => 'boolean',
         ];
     }
 }
