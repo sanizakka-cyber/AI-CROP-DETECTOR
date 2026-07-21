@@ -162,7 +162,13 @@
             <a href="{{ route('admin.applications.index') }}" class="nav-link {{ request()->routeIs('admin.applications.*') ? 'active' : '' }}">
                 <span class="nav-icon" style="position:relative;">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    @php $pendingCount = \App\Models\User::where('application_status','pending')->whereNotIn('role',['farmer','general-user','ceo','admin'])->count(); @endphp
+                    @php
+                        try {
+                            $pendingCount = \App\Models\User::where('application_status','pending')->whereNotIn('role',['farmer','general-user','ceo','admin'])->count();
+                        } catch (\Exception $e) {
+                            $pendingCount = 0;
+                        }
+                    @endphp
                     @if($pendingCount > 0)
                     <span style="position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;padding:0 2px;">{{ $pendingCount > 9 ? '9+' : $pendingCount }}</span>
                     @endif
