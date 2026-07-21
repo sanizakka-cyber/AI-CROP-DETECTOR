@@ -123,8 +123,8 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
     @endif
 </div>
 
-<!-- ── Usage Meters (Basic plan only) ───────────────────────────────── -->
-@if($activeSub && $activeSub->plan === 'basic')
+<!-- ── Usage Meters (Basic & Basic Pro) ──────────────────────────────── -->
+@if($activeSub && in_array($activeSub->plan, ['basic', 'basic_pro']))
 <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px 24px;margin-bottom:24px;">
     <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
         <svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -133,10 +133,14 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
         @php
         $meters = [
-            'livestock_records'   => ['label' => 'Livestock Records', 'icon' => '🐄', 'color' => '#1FA84A'],
-            'reports_per_month'   => ['label' => 'Reports Generated', 'icon' => '📊', 'color' => '#2D9CDB'],
-            'ai_scans_per_month'  => ['label' => 'AI Scans Used',     'icon' => '🔬', 'color' => '#F4A300'],
+            'livestock_records'  => ['label' => 'Livestock Records', 'icon' => '🐄', 'color' => '#1FA84A'],
+            'reports_per_month'  => ['label' => 'Reports Generated', 'icon' => '📊', 'color' => '#2D9CDB'],
+            'ai_scans_per_month' => ['label' => 'AI Scans Used',     'icon' => '🔬', 'color' => '#F4A300'],
         ];
+        if ($activeSub->plan === 'basic_pro') {
+            $meters['vet_consultations_per_cycle']        = ['label' => 'Vet Consultations',  'icon' => '🩺', 'color' => '#0D9488'];
+            $meters['agronomist_consultations_per_cycle'] = ['label' => 'Agro Consultations', 'icon' => '🌱', 'color' => '#7C3AED'];
+        }
         @endphp
         @foreach($meters as $key => $m)
         @php
@@ -173,7 +177,14 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
 
     @if($activeSub)
     <!-- Upgrade -->
-    @php $nextPlan = $activeSub->plan === 'basic' ? 'pro' : ($activeSub->plan === 'pro' ? 'premium' : null); @endphp
+    @php
+    $nextPlan = match($activeSub->plan) {
+        'basic'     => 'basic_pro',
+        'basic_pro' => 'pro',
+        'pro'       => 'premium',
+        default     => null,
+    };
+    @endphp
     @if($nextPlan)
     @php $nc = config('subscription.plans.'.$nextPlan); @endphp
     <a href="{{ route('subscription.plans') }}" style="background:linear-gradient(135deg,{{ $nc['badge_color'] }},{{ $nc['badge_color'] }}cc);color:#fff;border-radius:12px;padding:16px;text-decoration:none;display:block;">

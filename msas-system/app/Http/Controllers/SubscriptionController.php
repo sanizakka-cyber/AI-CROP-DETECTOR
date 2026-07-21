@@ -36,6 +36,10 @@ class SubscriptionController extends Controller
         $usage  = [];
         if ($activeSub) {
             $keys = ['livestock_records', 'reports_per_month', 'ai_scans_per_month'];
+            if ($activeSub->plan === 'basic_pro') {
+                $keys[] = 'vet_consultations_per_cycle';
+                $keys[] = 'agronomist_consultations_per_cycle';
+            }
             foreach ($keys as $key) {
                 $limit       = $activeSub->getLimit($key);
                 $current     = SubscriptionUsage::getCount($user->id, $key, $period);
