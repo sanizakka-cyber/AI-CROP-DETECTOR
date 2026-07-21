@@ -289,9 +289,9 @@
                     </div>
                     <div>
                         <p class="font-bold text-amber-900 text-sm">{{ $a['disease'] }}</p>
-                        <p class="text-xs text-amber-700 mt-0.5">Region: {{ $a['region'] }}</p>
-                        <span class="inline-block mt-1 text-xs font-semibold bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
-                            {{ isset($a['crop']) ? 'Crop: '.$a['crop'] : 'Animal: '.$a['animal'] }}
+                        <p class="text-xs text-amber-700 mt-0.5">{{ $a['cases'] }} {{ Str::plural('case', $a['cases']) }} reported (last 30 days)</p>
+                        <span class="inline-block mt-1 text-xs font-semibold bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full capitalize">
+                            {{ $a['type'] ?? 'Unknown' }} disease
                         </span>
                     </div>
                     <span class="ml-auto text-xs font-bold px-2 py-1 rounded-full {{ $a['severity'] === 'high' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600' }} capitalize">{{ $a['severity'] }}</span>
