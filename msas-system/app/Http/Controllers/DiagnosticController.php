@@ -98,11 +98,21 @@ class DiagnosticController extends Controller
 
                 Log::info('AI scan request', ['url' => $aiEndpoint, 'scan_type' => $request->scan_type]);
 
+                // Pre-warm: ping /health first so Render.com starts waking up the
+                // service while we finish building the request. On a cold start this
+                // buys ~30 s of spin-up time before the heavy prediction POST fires.
                 $guzzle = new GuzzleClient([
-                    'connect_timeout' => 30,
-                    'timeout'         => 120,
+                    'connect_timeout' => 90,
+                    'timeout'         => 180,
                     'http_errors'     => false,
                 ]);
+
+                try {
+                    $warmHeaders = $aiKey ? ['Authorization' => "Bearer {$aiKey}"] : [];
+                    $guzzle->get("{$baseUrl}/health", ['headers' => $warmHeaders, 'timeout' => 5]);
+                } catch (\Throwable) {
+                    // Non-fatal — proceed even if warm-up ping fails
+                }
 
                 $resp   = $guzzle->post($aiEndpoint, ['body' => $body, 'headers' => $headers]);
                 $status = $resp->getStatusCode();
@@ -117,6 +127,7 @@ class DiagnosticController extends Controller
                     }
                 } else {
                     $failureReason = "HTTP {$status}: " . substr($rbody, 0, 300);
+                    Log::warning('[AI] non-200 response', ['status' => $status, 'body' => substr($rbody, 0, 300)]);
                 }
             } catch (\Throwable $e) {
                 $failureReason = get_class($e) . ': ' . $e->getMessage();
