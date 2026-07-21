@@ -13,6 +13,7 @@ use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -22,9 +23,14 @@ class CEOController extends Controller
     public function index()
     {
         // ── KPI Metrics ────────────────────────────────────────────
-        $totalUsers      = User::count();
-        $activeUsers     = User::where('is_active', true)->count();
-        $pendingExperts  = User::whereIn('role', ['vet','agronomist'])->where('is_verified', false)->count();
+        try {
+            $totalUsers     = User::count();
+            $activeUsers    = User::where('is_active', true)->count();
+            $pendingExperts = User::whereIn('role', ['vet','agronomist'])->where('is_verified', false)->count();
+        } catch (\Exception $e) {
+            Log::error('[CEO] KPI user counts failed: ' . $e->getMessage());
+            $totalUsers = $activeUsers = $pendingExperts = 0;
+        }
         try {
             $totalAnimals = Animal::count();
         } catch (\Exception $e) { $totalAnimals = 0; }
@@ -52,9 +58,14 @@ class CEOController extends Controller
                            : 0;
 
         // ── Users by Role ──────────────────────────────────────────
-        $usersByRole = User::select('role', DB::raw('count(*) as count'))
-                          ->groupBy('role')
-                          ->pluck('count', 'role');
+        try {
+            $usersByRole = User::select('role', DB::raw('count(*) as count'))
+                              ->groupBy('role')
+                              ->pluck('count', 'role');
+        } catch (\Exception $e) {
+            Log::error('[CEO] usersByRole query failed: ' . $e->getMessage());
+            $usersByRole = collect();
+        }
 
         // ── Monthly Revenue Chart (last 6 months) — cached 5 min ──
         try {
@@ -76,22 +87,29 @@ class CEOController extends Controller
         } catch (\Exception $e) { $revenueChart = collect(); }
 
         // ── Monthly User Growth (last 6 months) — cached 5 min ────
-        $monthlyGrowth = Cache::remember('ceo:monthly_growth', 300, function () {
-            return collect(range(5, 0))->map(function ($i) {
-                $month = now()->subMonths($i);
-                $rows  = User::selectRaw("role, COUNT(*) as count")
-                    ->whereMonth('created_at', $month->month)
-                    ->whereYear('created_at', $month->year)
-                    ->groupBy('role')
-                    ->pluck('count', 'role');
-                return [
-                    'label'   => $month->format('M'),
-                    'farmers' => $rows['farmer'] ?? 0,
-                    'experts' => ($rows['vet'] ?? 0) + ($rows['agronomist'] ?? 0),
-                    'total'   => $rows->sum(),
-                ];
+        try {
+            $monthlyGrowth = Cache::remember('ceo:monthly_growth', 300, function () {
+                return collect(range(5, 0))->map(function ($i) {
+                    $month = now()->subMonths($i);
+                    $rows  = User::selectRaw("role, COUNT(*) as count")
+                        ->whereMonth('created_at', $month->month)
+                        ->whereYear('created_at', $month->year)
+                        ->groupBy('role')
+                        ->pluck('count', 'role');
+                    return [
+                        'label'   => $month->format('M'),
+                        'farmers' => $rows['farmer'] ?? 0,
+                        'experts' => ($rows['vet'] ?? 0) + ($rows['agronomist'] ?? 0),
+                        'total'   => $rows->sum(),
+                    ];
+                });
             });
-        });
+        } catch (\Exception $e) {
+            Log::error('[CEO] monthlyGrowth cache/query failed: ' . $e->getMessage());
+            $monthlyGrowth = collect(range(5, 0))->map(fn($i) => [
+                'label' => now()->subMonths($i)->format('M'), 'farmers' => 0, 'experts' => 0, 'total' => 0,
+            ]);
+        }
 
         // ── Diagnosis Type Split ────────────────────────────────────
         try {
@@ -118,7 +136,12 @@ class CEOController extends Controller
         $platformHealth   = min(100, max(0, $platformHealth));
 
         // ── Recent User Activity ────────────────────────────────────
-        $recentUsers = User::latest()->take(8)->get();
+        try {
+            $recentUsers = User::latest()->take(8)->get();
+        } catch (\Exception $e) {
+            Log::error('[CEO] recentUsers query failed: ' . $e->getMessage());
+            $recentUsers = collect();
+        }
 
         // ── Attendance Today ────────────────────────────────────────
         try {
