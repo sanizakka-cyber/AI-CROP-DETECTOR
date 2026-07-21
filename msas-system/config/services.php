@@ -52,6 +52,11 @@ return [
         'key' => env('AI_ENGINE_KEY'),
     ],
 
+    'anthropic' => [
+        'key'   => env('ANTHROPIC_API_KEY'),
+        'model' => env('AI_MODEL', 'claude-sonnet-5'),
+    ],
+
     'sms' => [
         'driver' => env('SMS_DRIVER', 'log'), // log | termii | africas_talking | twilio
         'termii' => [
