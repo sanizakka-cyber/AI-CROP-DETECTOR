@@ -171,20 +171,108 @@ class CEOController extends Controller
     // ── User Management ────────────────────────────────────────────
     public function users()
     {
-        $users = User::latest()->paginate(20);
-        return view('ceo.users', compact('users'));
+        $query = User::latest();
+
+        if ($search = request('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name',  'ilike', "%{$search}%")
+                  ->orWhere('last_name',  'ilike', "%{$search}%")
+                  ->orWhere('email',      'ilike', "%{$search}%")
+                  ->orWhere('phone',      'ilike', "%{$search}%");
+            });
+        }
+        if ($role = request('role')) {
+            $query->where('role', $role);
+        }
+        if (request('status') !== null && request('status') !== '') {
+            $query->where('is_active', (bool) request('status'));
+        }
+
+        $users = $query->paginate(20)->withQueryString();
+        $roles = User::select('role')->distinct()->orderBy('role')->pluck('role');
+
+        return view('ceo.users', compact('users', 'roles'));
+    }
+
+    public function showUser(User $user)
+    {
+        return view('ceo.users.show', compact('user'));
+    }
+
+    public function editUser(User $user)
+    {
+        $allRoles = [
+            'farmer','vet','agronomist','agro-dealer','equipment-dealer','logistics-provider',
+            'agribusiness-owner','input-supplier','cooperative','government-agency','ngo',
+            'research-institution','investor','extension-officer','field-officer',
+            'data-analyst','m-e-officer','customer-support','hr','finance','operations',
+            'general-user','admin','ceo',
+        ];
+        return view('ceo.users.edit', compact('user', 'allRoles'));
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $request->validate([
+            'first_name'         => 'required|string|max:100',
+            'last_name'          => 'required|string|max:100',
+            'middle_name'        => 'nullable|string|max:100',
+            'email'              => 'required|email|max:200|unique:users,email,'.$user->id,
+            'phone'              => 'nullable|string|max:30',
+            'role'               => 'required|string',
+            'state'              => 'nullable|string|max:100',
+            'lga'                => 'nullable|string|max:100',
+            'is_active'          => 'boolean',
+            'is_verified'        => 'boolean',
+            'application_status' => 'nullable|in:pending,approved,rejected',
+        ]);
+
+        // Prevent demoting the only CEO
+        if ($user->role === 'ceo' && $request->role !== 'ceo') {
+            $ceoCount = User::where('role', 'ceo')->count();
+            if ($ceoCount <= 1) {
+                return back()->with('error', 'Cannot change role: this is the only CEO account.');
+            }
+        }
+
+        $user->update($request->only([
+            'first_name','last_name','middle_name','email','phone',
+            'role','state','lga','is_active','is_verified','application_status',
+        ]));
+
+        return redirect()->route('ceo.users.show', $user)
+            ->with('success', "Profile for {$user->name} updated successfully.");
     }
 
     public function toggleUser(User $user)
     {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot suspend your own account.');
+        }
         $user->update(['is_active' => !$user->is_active]);
-        return back()->with('success', 'User status updated.');
+        $state = $user->is_active ? 'activated' : 'suspended';
+        return back()->with('success', "{$user->name} has been {$state}.");
+    }
+
+    public function deleteUser(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+        if ($user->role === 'ceo') {
+            $ceoCount = User::where('role', 'ceo')->count();
+            if ($ceoCount <= 1) {
+                return back()->with('error', 'Cannot delete the only CEO account.');
+            }
+        }
+        $name = $user->name;
+        $user->delete();
+        return redirect()->route('ceo.users')->with('success', "User \"{$name}\" has been permanently deleted.");
     }
 
     public function approveExpert(User $user)
     {
         $user->update(['is_verified' => true]);
-        // TODO: Send notification
         return back()->with('success', "{$user->name} approved as {$user->role}.");
     }
 

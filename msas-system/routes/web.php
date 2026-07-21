@@ -170,8 +170,13 @@ Route::middleware(['auth'])->group(function () {
 
 // CEO Routes
 Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
-    Route::get('/ceo', [CEOController::class, 'index'])->name('ceo.dashboard');
-    Route::get('/ceo/users', [CEOController::class, 'users'])->name('ceo.users');
+    Route::get('/ceo',              [CEOController::class, 'index'])->name('ceo.dashboard');
+    Route::get('/ceo/users',        [CEOController::class, 'users'])->name('ceo.users');
+    Route::get('/ceo/users/{user}',      [CEOController::class, 'showUser'])->name('ceo.users.show');
+    Route::get('/ceo/users/{user}/edit', [CEOController::class, 'editUser'])->name('ceo.users.edit');
+    Route::patch('/ceo/users/{user}',    [CEOController::class, 'updateUser'])->name('ceo.users.update');
+    Route::post('/ceo/users/{user}/toggle', [CEOController::class, 'toggleUser'])->name('ceo.users.toggle');
+    Route::delete('/ceo/users/{user}',   [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
 });
 // Report generation also accessible by data-analyst and M&E roles
