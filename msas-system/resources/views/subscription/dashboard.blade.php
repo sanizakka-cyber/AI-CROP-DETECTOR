@@ -27,10 +27,17 @@
 
 <!-- ── No Subscription ──────────────────────────────────────────────── -->
 @if(!$activeSub && !$latestSub)
+@php $isProfessional = !in_array(auth()->user()->role, ['farmer', 'ceo', 'admin', 'general-user']); @endphp
 <div style="text-align:center;padding:60px 24px;background:#fff;border-radius:16px;border:2px dashed #e2e8f0;">
-    <div style="font-size:56px;margin-bottom:16px;">🌾</div>
+    <div style="font-size:56px;margin-bottom:16px;">{{ $isProfessional ? '💼' : '🌾' }}</div>
     <div style="font-size:22px;font-weight:800;color:#0f172a;margin-bottom:8px;">No Active Subscription</div>
-    <div style="font-size:14px;color:#64748b;max-width:400px;margin:0 auto 24px;">Choose a plan to unlock powerful farm management tools designed to help you grow.</div>
+    <div style="font-size:14px;color:#64748b;max-width:420px;margin:0 auto 24px;">
+        @if($isProfessional)
+            Choose a Professional plan to unlock your full role features on the MSAS platform.
+        @else
+            Choose a plan to unlock powerful farm management tools designed to help you grow.
+        @endif
+    </div>
     <a href="{{ route('subscription.plans') }}" style="background:#0F6B3E;color:#fff;padding:13px 28px;border-radius:10px;font-size:14px;font-weight:800;text-decoration:none;">
         Start Your 14-Day Free Trial →
     </a>

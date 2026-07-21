@@ -115,7 +115,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dealer/dashboard', [DashboardController::class, 'dealer'])->middleware('role:agro-dealer')->name('dealer.dashboard');
 
     // Equipment Dealer Product Catalog & Orders
-    Route::middleware(['role:equipment-dealer'])->prefix('equipment-dealer')->name('equipment-dealer.')->group(function () {
+    Route::middleware(['role:equipment-dealer', 'subscription'])->prefix('equipment-dealer')->name('equipment-dealer.')->group(function () {
         Route::get('/products',                  [DealerProductController::class, 'index'])->name('products.index');
         Route::get('/products/create',           [DealerProductController::class, 'create'])->name('products.create');
         Route::post('/products',                 [DealerProductController::class, 'store'])->name('products.store');
@@ -128,7 +128,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Dealer Product Catalog & Orders (web)
-    Route::middleware(['role:agro-dealer'])->prefix('dealer')->name('dealer.')->group(function () {
+    Route::middleware(['role:agro-dealer', 'subscription'])->prefix('dealer')->name('dealer.')->group(function () {
         Route::get('/products',                        [DealerProductController::class, 'index'])->name('products.index');
         Route::get('/products/create',                 [DealerProductController::class, 'create'])->name('products.create');
         Route::post('/products',                       [DealerProductController::class, 'store'])->name('products.store');
@@ -145,7 +145,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/input-supplier/dashboard',   [DashboardController::class, 'inputSupplier'])  ->middleware('role:input-supplier')       ->name('input-supplier.dashboard');
 
     // Logistics sub-pages
-    Route::middleware(['role:logistics-provider'])->prefix('logistics')->name('logistics.')->group(function () {
+    Route::middleware(['role:logistics-provider', 'subscription'])->prefix('logistics')->name('logistics.')->group(function () {
         Route::get('/vehicles',                     [LogisticsController::class, 'vehicles'])             ->name('vehicles');
         Route::post('/vehicles',                    [LogisticsController::class, 'storeVehicle'])          ->name('vehicles.store');
         Route::put('/vehicles/{vehicle}',           [LogisticsController::class, 'updateVehicle'])         ->name('vehicles.update');
@@ -248,8 +248,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/notifications/mark-read',[\App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.markRead');
 });
 
-// ── Subscription Routes (farmer-facing) ────────────────────────────────────
-Route::middleware(['auth', 'role:farmer'])->prefix('subscription')->name('subscription.')->group(function () {
+// ── Subscription Routes (all authenticated roles) ──────────────────────────
+Route::middleware(['auth'])->prefix('subscription')->name('subscription.')->group(function () {
     Route::get('/plans',              [SubscriptionController::class, 'plans'])->name('plans');
     Route::get('/dashboard',          [SubscriptionController::class, 'dashboard'])->name('dashboard');
     Route::post('/subscribe',         [SubscriptionController::class, 'subscribe'])->name('subscribe');
@@ -292,7 +292,7 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin/subscriptions')->na
 });
 
 // Vet Routes
-Route::middleware(['auth', 'role:vet,agronomist'])->prefix('vet')->name('vet.')->group(function () {
+Route::middleware(['auth', 'role:vet,agronomist', 'subscription'])->prefix('vet')->name('vet.')->group(function () {
     Route::get('/queue', [\App\Http\Controllers\VetController::class, 'queue'])->name('queue');
     Route::get('/consultation/{consultation}', [\App\Http\Controllers\VetController::class, 'show'])->name('show');
     Route::post('/consultation/{consultation}/respond', [\App\Http\Controllers\VetController::class, 'respond'])->name('respond');
@@ -301,7 +301,7 @@ Route::middleware(['auth', 'role:vet,agronomist'])->prefix('vet')->name('vet.')-
 });
 
 // Marketplace Seller Routes (agribusiness-owner, input-supplier, farmer)
-Route::middleware(['auth'])->prefix('marketplace/sell')->name('marketplace.')->group(function () {
+Route::middleware(['auth', 'subscription'])->prefix('marketplace/sell')->name('marketplace.')->group(function () {
     Route::get('/',                        [MarketplaceSellController::class, 'index'])->name('sell');
     Route::get('/create',                  [MarketplaceSellController::class, 'create'])->name('sell.create');
     Route::post('/',                       [MarketplaceSellController::class, 'store'])->name('sell.store');
