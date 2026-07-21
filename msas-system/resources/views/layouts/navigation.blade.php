@@ -59,6 +59,9 @@
                         <a href="{{ route('admin.users') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.users') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
                             Admin
                         </a>
+                        <a href="{{ route('ceo.ai-status') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.ai-status') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            AI Status
+                        </a>
                     @endif
 
                     {{-- Finance / Admin / CEO payment management --}}
@@ -238,6 +241,7 @@
             @if(in_array($role, ['ceo', 'admin']))
                 <x-responsive-nav-link :href="route('ceo.users')">Users</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ceo.reports')">Reports</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('ceo.ai-status')">AI Status</x-responsive-nav-link>
             @endif
             @if(in_array($role, ['ceo', 'admin', 'finance']))
                 <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
