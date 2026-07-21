@@ -111,6 +111,7 @@
                 {{-- Language selector — pre-set to the user's current locale --}}
                 <select id="{{ $ttsId }}-lang"
                     onchange="ttsChangeLang('{{ $ttsId }}', this.value, '{{ route('diagnostics.translate') }}')"
+                    data-translate-url="{{ route('diagnostics.translate') }}"
                     class="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400">
                     <option value="en"  {{ $defaultTtsLang === 'en' ? 'selected' : '' }}>🇺🇸 English</option>
                     <option value="ha"  {{ $defaultTtsLang === 'ha' ? 'selected' : '' }}>🇳🇬 Hausa</option>
@@ -135,8 +136,16 @@
                         class="p-1.5 bg-red-900 hover:bg-red-800 text-red-200 rounded-lg text-xs transition hidden">
                         <i class="fa-solid fa-stop text-[9px]"></i>
                     </button>
+                    <button onclick="ttsRewind('{{ $ttsId }}')" id="{{ $ttsId }}-rewind"
+                        class="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs transition hidden" title="Rewind 15s">
+                        <i class="fa-solid fa-backward text-[9px]"></i>
+                    </button>
+                    <button onclick="ttsFastForward('{{ $ttsId }}')" id="{{ $ttsId }}-ff"
+                        class="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs transition hidden" title="Fast Forward 15s">
+                        <i class="fa-solid fa-forward text-[9px]"></i>
+                    </button>
                     <button onclick="ttsReplay('{{ $ttsId }}')" id="{{ $ttsId }}-replay"
-                        class="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs transition hidden" title="Replay">
+                        class="p-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-xs transition hidden" title="Replay from beginning">
                         <i class="fa-solid fa-rotate-right text-[9px]"></i>
                     </button>
                     <select onchange="ttsSetSpeed('{{ $ttsId }}', this.value)"
@@ -501,11 +510,14 @@
 
     // ── TTS Engine ─────────────────────────────────────────────────────────────
     (function(){
-        var states      = {};  // id → 'stopped' | 'playing' | 'paused'
-        var speeds      = {};  // id → float
-        var cached      = {};  // id+lang → translated text
-        var translating = {};  // id → bool
-        var keepalive   = null; // Chrome 15-second silence bug workaround
+        var states         = {};  // id → 'stopped' | 'playing' | 'paused'
+        var speeds         = {};  // id → float
+        var cached         = {};  // id+lang → translated text
+        var translating    = {};  // id → bool
+        var keepalive      = null; // Chrome 15-second silence bug workaround
+        var currentCharIdx = {};  // id → last known absolute charIndex (for seek)
+        var seekBase       = {};  // id → char offset used in the current utterance
+        var pendingOffsets = {};  // id → char offset to seek to on next startSpeaking call
 
         // Chrome silently stops speaking after ~15s — pause/resume keeps it alive
         function startKeepalive() {
@@ -558,6 +570,8 @@
             var playBtn   = el(id + '-playbtn');
             var pauseBtn  = el(id + '-pause');
             var stopBtn   = el(id + '-stop');
+            var rewindBtn = el(id + '-rewind');
+            var ffBtn     = el(id + '-ff');
             var replayBtn = el(id + '-replay');
             if (!playBtn) return;
             var dict = (window.MSAS_TRANS && window.MSAS_LOCALE) ? (window.MSAS_TRANS[window.MSAS_LOCALE] || {}) : {};
@@ -569,15 +583,21 @@
                 playBtn.classList.add('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.remove('hidden');
                 if (stopBtn)   stopBtn.classList.remove('hidden');
+                if (rewindBtn) rewindBtn.classList.remove('hidden');
+                if (ffBtn)     ffBtn.classList.remove('hidden');
                 if (replayBtn) replayBtn.classList.remove('hidden');
             } else if (state === 'paused') {
                 playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> ' + lResume;
                 playBtn.classList.remove('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.add('hidden');
+                if (rewindBtn) rewindBtn.classList.remove('hidden');
+                if (ffBtn)     ffBtn.classList.remove('hidden');
             } else {
                 playBtn.innerHTML = '<i class="fa-solid fa-play text-[9px]"></i> ' + lPlay;
                 playBtn.classList.remove('tts-speaking', '!bg-emerald-400');
                 if (pauseBtn)  pauseBtn.classList.add('hidden');
+                if (rewindBtn) rewindBtn.classList.add('hidden');
+                if (ffBtn)     ffBtn.classList.add('hidden');
                 if (stopBtn)   stopBtn.classList.add('hidden');
                 if (replayBtn) replayBtn.classList.add('hidden');
                 stopKeepalive();
@@ -635,8 +655,15 @@
                 alert('Voice playback is not supported in this browser. Please use Chrome, Edge, or Safari.');
                 return;
             }
-            var text = getDisplayText(id);
-            if (!text) return;
+            var fullText = getDisplayText(id);
+            if (!fullText) return;
+
+            // Apply seek offset (set by ttsRewind / ttsFastForward)
+            var offset = pendingOffsets[id] || 0;
+            delete pendingOffsets[id];
+            seekBase[id] = offset;
+            var text = offset > 0 ? fullText.slice(offset) : fullText;
+            if (!text.trim()) return;
 
             var langCode = getLangCode(id);
             var u = new SpeechSynthesisUtterance(text);
@@ -676,6 +703,7 @@
                 var map = wordMaps[id];
                 if (!map || !map.length) return;
                 var ci = e.charIndex;
+                currentCharIdx[id] = (seekBase[id] || 0) + ci;  // track absolute position
                 map.forEach(function(w){ w.el.style.background = ''; w.el.style.color = ''; });
                 for (var i = 0; i < map.length; i++) {
                     if (map[i].start <= ci && ci < map[i].end) {
@@ -728,6 +756,24 @@
         };
 
         window.ttsReplay = function(id) {
+            delete pendingOffsets[id];
+            seekBase[id] = 0;
+            currentCharIdx[id] = 0;
+            cancelThenSpeak(id);
+        };
+
+        window.ttsRewind = function(id) {
+            var cur  = currentCharIdx[id] || 0;
+            var next = Math.max(0, cur - 400);
+            pendingOffsets[id] = next;
+            cancelThenSpeak(id);
+        };
+
+        window.ttsFastForward = function(id) {
+            var cur      = currentCharIdx[id] || 0;
+            var fullText = getDisplayText(id);
+            var next     = Math.min((fullText ? fullText.length : 0), cur + 400);
+            pendingOffsets[id] = next;
             cancelThenSpeak(id);
         };
 

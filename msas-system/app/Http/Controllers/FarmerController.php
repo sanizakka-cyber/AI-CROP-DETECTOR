@@ -346,8 +346,18 @@ class FarmerController extends Controller
 
         if (!$activeSub || !$activeSub->hasFeature('vet_service_requests')) {
             return back()->with('error',
-                'Veterinary consultation requests require the Pro Plan or higher. '
+                'Veterinary consultation requests require the Basic Pro Plan or higher. '
                 . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade now</a>.'
+            );
+        }
+
+        // Check monthly vet consultation limit (applies to Basic Pro; Pro/Premium are unlimited)
+        if ($activeSub->getLimit('vet_consultations_per_cycle') > 0
+            && $activeSub->hasReachedLimit('vet_consultations_per_cycle')) {
+            $limit = $activeSub->getLimit('vet_consultations_per_cycle');
+            return back()->with('error',
+                "You have used all {$limit} veterinary consultations for this month. "
+                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade to Pro</a> for unlimited consultations.'
             );
         }
 
@@ -373,6 +383,9 @@ class FarmerController extends Controller
             'payment_status' => 'unpaid',
             'payment_reference' => $ref,
         ]);
+
+        // Track monthly usage for plans with consultation caps
+        SubscriptionUsage::track(Auth::id(), 'vet_consultations_per_cycle');
 
         return $this->redirectToConsultationPayment($user, $consultation, $fee, $ref, 'farmer.vet');
     }
@@ -403,8 +416,18 @@ class FarmerController extends Controller
 
         if (!$activeSub || !$activeSub->hasFeature('vet_service_requests')) {
             return back()->with('error',
-                'Agronomist advisory requests require the Pro Plan or higher. '
+                'Agronomist advisory requests require the Basic Pro Plan or higher. '
                 . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade now</a>.'
+            );
+        }
+
+        // Check monthly agronomist consultation limit (applies to Basic Pro; Pro/Premium are unlimited)
+        if ($activeSub->getLimit('agronomist_consultations_per_cycle') > 0
+            && $activeSub->hasReachedLimit('agronomist_consultations_per_cycle')) {
+            $limit = $activeSub->getLimit('agronomist_consultations_per_cycle');
+            return back()->with('error',
+                "You have used all {$limit} agronomist consultations for this month. "
+                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade to Pro</a> for unlimited consultations.'
             );
         }
 
@@ -430,6 +453,9 @@ class FarmerController extends Controller
             'payment_status'    => 'unpaid',
             'payment_reference' => $ref,
         ]);
+
+        // Track monthly usage for plans with consultation caps
+        SubscriptionUsage::track(Auth::id(), 'agronomist_consultations_per_cycle');
 
         return $this->redirectToConsultationPayment($user, $consultation, $fee, $ref, 'farmer.agro');
     }

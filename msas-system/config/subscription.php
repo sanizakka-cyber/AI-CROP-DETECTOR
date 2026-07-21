@@ -51,9 +51,58 @@ return [
             ],
         ],
 
+        'basic_pro' => [
+            'name'        => 'Basic Pro Plan',
+            'plan_level'  => 2,
+            'badge_color' => '#0D9488',
+            'price'       => [
+                'monthly' => 5000,
+                'yearly'  => 50000,
+            ],
+            'trial_days'  => 14,
+            'limits'      => [
+                'livestock_records'                  => 100,
+                'reports_per_month'                  => 15,
+                'farm_staff'                         => 2,
+                'farms'                              => 2,
+                'ai_scans_per_month'                 => 25,
+                'vet_consultations_per_cycle'        => 3,
+                'agronomist_consultations_per_cycle' => 3,
+            ],
+            'features' => [
+                'livestock_registration',
+                'basic_health_records',
+                'feeding_schedule',
+                'vaccination_reminders',
+                'farm_activity_log',
+                'advisory_content',
+                'basic_dashboard',
+                'faq_chatbot_support',
+                'monthly_reports',
+                'mobile_access',
+                'vet_service_requests',
+                'agronomist_service_requests',
+                'ai_scan',
+                'marketplace_access',
+                'digital_farm_records',
+                'performance_dashboard',
+                'disease_alerts',
+            ],
+            'description' => 'For farmers who want AI scanning, marketplace access, and expert consultations at an affordable price.',
+            'highlights'  => [
+                'Up to 100 livestock records',
+                'AI Smart Scan (25/month)',
+                'Marketplace access',
+                '3 Vet consultations per month',
+                '3 Agronomist consultations per month',
+                'Disease alerts',
+                'Monthly reports (15/month)',
+            ],
+        ],
+
         'pro' => [
             'name'        => 'Pro Plan',
-            'plan_level'  => 2,
+            'plan_level'  => 3,
             'badge_color' => '#2D9CDB',
             'price'       => [
                 'monthly' => 10000,
@@ -114,7 +163,7 @@ return [
 
         'premium' => [
             'name'        => 'Premium Plan',
-            'plan_level'  => 3,
+            'plan_level'  => 4,
             'badge_color' => '#F4A300',
             'price'       => [
                 'monthly' => 35000,

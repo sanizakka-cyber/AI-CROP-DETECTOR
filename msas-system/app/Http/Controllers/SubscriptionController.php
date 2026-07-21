@@ -64,7 +64,8 @@ class SubscriptionController extends Controller
         $cycle     = $request->billing_cycle;
         $activeSub = $user->activeSubscription();
 
-        if ($activeSub && $activeSub->plan === $plan && $activeSub->billing_cycle === $cycle) {
+        // Only block if the identical plan is already active and PAID (not trial)
+        if ($activeSub && $activeSub->plan === $plan && $activeSub->billing_cycle === $cycle && $activeSub->status !== 'trial') {
             return back()->with('info', "You already have an active {$plan} plan.");
         }
 

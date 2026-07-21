@@ -178,6 +178,7 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::post('/ceo/users/{user}/toggle', [CEOController::class, 'toggleUser'])->name('ceo.users.toggle');
     Route::delete('/ceo/users/{user}',   [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
+    Route::get('/ceo/audit',   [CEOController::class, 'audit'])->name('ceo.audit');
 });
 // Report generation also accessible by data-analyst and M&E roles
 Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-e-officer'])->group(function () {
