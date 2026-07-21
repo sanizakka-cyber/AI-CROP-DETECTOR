@@ -53,8 +53,9 @@ class SubscriptionController extends Controller
     // Initiate subscription / upgrade → redirect to Paystack
     public function subscribe(Request $request)
     {
+        $validPlans = implode(',', array_keys(config('subscription.plans', [])));
         $request->validate([
-            'plan'          => 'required|in:basic,pro,premium',
+            'plan'          => "required|in:{$validPlans}",
             'billing_cycle' => 'required|in:monthly,yearly',
         ]);
 

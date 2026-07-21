@@ -18,8 +18,9 @@ class RequireSubscription
     {
         $user = $request->user();
 
-        // Non-farmer roles bypass subscription checks
-        if ($user && $user->role !== 'farmer') {
+        // Internal/staff roles always bypass subscription checks
+        $bypassRoles = ['ceo', 'admin', 'general-user'];
+        if ($user && in_array($user->role, $bypassRoles)) {
             return $next($request);
         }
 

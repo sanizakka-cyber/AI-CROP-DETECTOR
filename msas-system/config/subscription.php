@@ -197,6 +197,89 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Professional Role Plans (vets, dealers, logistics, agribusiness, etc.)
+    |--------------------------------------------------------------------------
+    */
+    'professional_starter' => [
+        'name'        => 'Professional Starter',
+        'plan_level'  => 1,
+        'badge_color' => '#1FA84A',
+        'price'       => [
+            'monthly' => 15000,
+            'yearly'  => 150000,
+        ],
+        'trial_days'  => 14,
+        'limits'      => [
+            'product_listings'    => 50,
+            'orders_per_month'    => 100,
+            'team_members'        => 2,
+            'analytics_history'   => 90,
+        ],
+        'features' => [
+            'role_dashboard',
+            'product_listings',
+            'order_management',
+            'marketplace_presence',
+            'basic_analytics',
+            'email_support',
+            'mobile_access',
+        ],
+        'description' => 'For professionals and small businesses getting started on the MSAS platform.',
+        'highlights'  => [
+            'Up to 50 product/service listings',
+            'Order & request management',
+            'Marketplace presence & discoverability',
+            'Basic analytics dashboard',
+            'Email & in-app support',
+            'Mobile app access',
+        ],
+    ],
+
+    'professional_business' => [
+        'name'        => 'Professional Business',
+        'plan_level'  => 2,
+        'badge_color' => '#2D9CDB',
+        'price'       => [
+            'monthly' => 35000,
+            'yearly'  => 350000,
+        ],
+        'trial_days'  => 14,
+        'limits'      => [
+            'product_listings'    => -1,
+            'orders_per_month'    => -1,
+            'team_members'        => 10,
+            'analytics_history'   => -1,
+        ],
+        'features' => [
+            'role_dashboard',
+            'product_listings',
+            'order_management',
+            'marketplace_presence',
+            'basic_analytics',
+            'email_support',
+            'mobile_access',
+            'unlimited_listings',
+            'priority_placement',
+            'advanced_analytics',
+            'pdf_excel_reports',
+            'api_integration',
+            'priority_support',
+            'dedicated_account_manager',
+        ],
+        'description' => 'Full-featured plan for growing businesses and established professionals.',
+        'highlights'  => [
+            'Unlimited listings & orders',
+            'Priority marketplace placement',
+            'Advanced analytics & PDF/Excel reports',
+            'Up to 10 team members',
+            'API integration access',
+            'Dedicated account manager',
+            '24/7 priority support',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Statuses
     |--------------------------------------------------------------------------
     */

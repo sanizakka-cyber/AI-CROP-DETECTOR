@@ -204,23 +204,6 @@
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></span>
                 <span x-show="sidebarOpen">{{ __('My Orders') }}</span>
             </a>
-            {{-- Subscription link for farmers --}}
-            <div x-show="sidebarOpen" class="nav-section">Subscription</div>
-            <a href="{{ route('subscription.dashboard') }}" class="nav-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}"
-               style="{{ !auth()->user()->activeSubscription() ? 'border-left:3px solid #F4A300;' : '' }}">
-                <span class="nav-icon">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                </span>
-                <span x-show="sidebarOpen" style="display:flex;align-items:center;gap:6px;">
-                    <span data-i18n="My Plan">{{ __('My Plan') }}</span>
-                    @php $sub = auth()->user()->activeSubscription(); @endphp
-                    @if($sub)
-                        <span style="background:{{ config('subscription.plans.'.$sub->plan.'.badge_color','#1FA84A') }};color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;">{{ strtoupper($sub->plan) }}</span>
-                    @else
-                        <span style="background:#F4A300;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;">FREE</span>
-                    @endif
-                </span>
-            </a>
             @endif
 
             {{-- Vet --}}
@@ -341,6 +324,26 @@
             <a href="{{ route('marketplace.sell') }}" class="nav-link {{ request()->routeIs('marketplace.sell*') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
                 <span x-show="sidebarOpen">My Inputs</span>
+            </a>
+            @endif
+
+            {{-- Subscription link — all roles that need a subscription --}}
+            @if(!in_array($role, ['ceo', 'admin', 'general-user']))
+            @php $sub = auth()->user()->activeSubscription(); @endphp
+            <div x-show="sidebarOpen" class="nav-section">Subscription</div>
+            <a href="{{ route('subscription.dashboard') }}" class="nav-link {{ request()->routeIs('subscription.*') ? 'active' : '' }}"
+               style="{{ !$sub ? 'border-left:3px solid #F4A300;' : '' }}">
+                <span class="nav-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                </span>
+                <span x-show="sidebarOpen" style="display:flex;align-items:center;gap:6px;">
+                    <span data-i18n="My Plan">{{ __('My Plan') }}</span>
+                    @if($sub)
+                        <span style="background:{{ config('subscription.plans.'.$sub->plan.'.badge_color','#1FA84A') }};color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;">{{ strtoupper(str_replace(['professional_', '_'], ['', ' '], $sub->plan)) }}</span>
+                    @else
+                        <span style="background:#F4A300;color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;">FREE</span>
+                    @endif
+                </span>
             </a>
             @endif
 
@@ -553,6 +556,24 @@
                 <a href="{{ route('impersonate.leave') }}"
                    class="bg-amber-900 hover:bg-amber-800 text-amber-100 px-3 py-1 rounded-lg text-[11px] font-bold transition">
                     ✕ Leave Impersonation
+                </a>
+            </div>
+            @endif
+
+            {{-- ── Subscription nag for professional roles without active plan ─── --}}
+            @php
+                $__authUser = auth()->user();
+                $__isProfRole = $__authUser && !in_array($__authUser->role, ['farmer', 'ceo', 'admin', 'general-user']);
+                $__hasSub = $__isProfRole && $__authUser->activeSubscription();
+            @endphp
+            @if($__isProfRole && !$__hasSub)
+            <div style="background:#fffbeb;border-bottom:2px solid #fcd34d;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <svg width="18" height="18" fill="none" stroke="#b45309" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    <span style="font-size:13px;font-weight:600;color:#92400e;">No active subscription — some features are restricted until you subscribe.</span>
+                </div>
+                <a href="{{ route('subscription.plans') }}" style="background:#F4A300;color:#fff;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap;">
+                    View Plans →
                 </a>
             </div>
             @endif
