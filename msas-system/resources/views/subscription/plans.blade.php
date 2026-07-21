@@ -68,8 +68,9 @@ $proPlans = ['professional_starter', 'professional_business'];
                     <select name="plan" x-model="qplan"
                         style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;outline:none;">
                         <option value="basic">🏠 Basic Plan — ₦2,500/month</option>
-                        <option value="pro">⚡ Pro Plan — ₦8,000/month</option>
-                        <option value="premium">👑 Premium Plan — ₦25,000/month</option>
+                        <option value="basic_pro">🌿 Basic Pro Plan — ₦5,000/month</option>
+                        <option value="pro">⚡ Pro Plan — ₦10,000/month</option>
+                        <option value="premium">👑 Premium Plan — ₦35,000/month</option>
                     </select>
                     <div style="position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;">
                         <svg width="14" height="14" fill="none" stroke="#64748b" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -96,9 +97,10 @@ $proPlans = ['professional_starter', 'professional_business'];
             <div style="min-width:120px;padding:10px 14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:9px;text-align:center;">
                 <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">You pay</div>
                 <div style="font-size:16px;font-weight:900;color:#0F6B3E;" x-text="
-                    qplan === 'basic'   ? (qcycle === 'yearly' ? '₦30,000/yr'  : '₦2,500/mo')  :
-                    qplan === 'pro'     ? (qcycle === 'yearly' ? '₦100,000/yr' : '₦10,000/mo') :
-                                          (qcycle === 'yearly' ? '₦350,000/yr' : '₦35,000/mo')
+                    qplan === 'basic'     ? (qcycle === 'yearly' ? '₦25,000/yr'  : '₦2,500/mo')  :
+                    qplan === 'basic_pro' ? (qcycle === 'yearly' ? '₦50,000/yr'  : '₦5,000/mo')  :
+                    qplan === 'pro'       ? (qcycle === 'yearly' ? '₦100,000/yr' : '₦10,000/mo') :
+                                           (qcycle === 'yearly' ? '₦350,000/yr' : '₦35,000/mo')
                 "></div>
             </div>
 
@@ -244,26 +246,37 @@ $proPlans = ['professional_starter', 'professional_business'];
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
 
 @php
-$planKeys = ['basic', 'pro', 'premium'];
+$planKeys = ['basic', 'basic_pro', 'pro', 'premium'];
 $planIcons = [
-    'basic'   => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>',
-    'pro'     => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
-    'premium' => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l3.057-3 3.943 4 3.943-4L19 3l-1 8H6L5 3zM6 11v10h12V11"/></svg>',
+    'basic'     => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>',
+    'basic_pro' => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>',
+    'pro'       => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+    'premium'   => '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l3.057-3 3.943 4 3.943-4L19 3l-1 8H6L5 3zM6 11v10h12V11"/></svg>',
 ];
 @endphp
 
 @foreach($planKeys as $key)
 @php
     $p = $plans[$key];
-    $isCurrent = $activeSub && $activeSub->plan === $key;
-    $isPro = $key === 'pro';
+    $isCurrent  = $activeSub && $activeSub->plan === $key;
+    $isPro      = $key === 'pro';
+    $isBasicPro = $key === 'basic_pro';
+    $isPremium  = $key === 'premium';
+    $highlightCard = $isPro || $isBasicPro;
+    $headerBg = $isPremium  ? 'linear-gradient(135deg,#0B2447,#1a3a6e)'
+              : ($isPro     ? 'linear-gradient(135deg,#f0f9ff,#e0f2fe)'
+              : ($isBasicPro? 'linear-gradient(135deg,#f0fdfa,#ccfbf1)'
+              : '#f8fafc'));
 @endphp
 
-<div class="plan-card" style="background:#fff;border-radius:16px;border:2px solid {{ $isCurrent ? $p['badge_color'] : ($isPro ? '#2D9CDB' : '#e2e8f0') }};overflow:hidden;position:relative;{{ $isPro ? 'box-shadow:0 8px 32px rgba(45,156,219,0.18);' : '' }}">
+<div class="plan-card" style="background:#fff;border-radius:16px;border:2px solid {{ $isCurrent ? $p['badge_color'] : ($highlightCard ? $p['badge_color'] : '#e2e8f0') }};overflow:hidden;position:relative;{{ $highlightCard ? 'box-shadow:0 8px 32px '.$p['badge_color'].'33;' : '' }}">
 
-    @if($isPro)
+    @if($isPro && !$isCurrent)
     <div style="position:absolute;top:0;left:0;right:0;background:linear-gradient(90deg,#2D9CDB,#0F6B3E);height:3px;"></div>
     <div style="position:absolute;top:14px;right:14px;background:#2D9CDB;color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:0.05em;">MOST POPULAR</div>
+    @elseif($isBasicPro && !$isCurrent)
+    <div style="position:absolute;top:0;left:0;right:0;background:linear-gradient(90deg,#0D9488,#1FA84A);height:3px;"></div>
+    <div style="position:absolute;top:14px;right:14px;background:#0D9488;color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:0.05em;">BEST VALUE</div>
     @endif
 
     @if($isCurrent)
@@ -271,21 +284,21 @@ $planIcons = [
     @endif
 
     <!-- Card Header -->
-    <div style="padding:24px 24px 20px;background:{{ $key === 'premium' ? 'linear-gradient(135deg,#0B2447,#1a3a6e)' : ($isPro ? 'linear-gradient(135deg,#f0f9ff,#e0f2fe)' : '#f8fafc') }};">
-        <div style="width:44px;height:44px;border-radius:11px;background:{{ $p['badge_color'] }};display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:{{ $key === 'premium' ? '#0B2447' : '#fff' }};">
+    <div style="padding:24px 24px 20px;background:{{ $headerBg }};">
+        <div style="width:44px;height:44px;border-radius:11px;background:{{ $p['badge_color'] }};display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:{{ $isPremium ? '#0B2447' : '#fff' }};">
             {!! $planIcons[$key] !!}
         </div>
-        <div style="font-size:18px;font-weight:800;color:{{ $key === 'premium' ? '#fff' : '#0f172a' }};margin-bottom:4px;">{{ $p['name'] }}</div>
-        <div style="font-size:12px;color:{{ $key === 'premium' ? 'rgba(255,255,255,0.65)' : '#64748b' }};line-height:1.5;margin-bottom:16px;">{{ $p['description'] }}</div>
+        <div style="font-size:18px;font-weight:800;color:{{ $isPremium ? '#fff' : '#0f172a' }};margin-bottom:4px;">{{ $p['name'] }}</div>
+        <div style="font-size:12px;color:{{ $isPremium ? 'rgba(255,255,255,0.65)' : '#64748b' }};line-height:1.5;margin-bottom:16px;">{{ $p['description'] }}</div>
 
         <!-- Price -->
         <div x-show="!yearly">
-            <span style="font-size:32px;font-weight:900;color:{{ $key === 'premium' ? '#F4A300' : $p['badge_color'] }};">₦{{ number_format($p['price']['monthly']) }}</span>
-            <span style="font-size:13px;color:{{ $key === 'premium' ? 'rgba(255,255,255,0.55)' : '#94a3b8' }};font-weight:500;">/month</span>
+            <span style="font-size:32px;font-weight:900;color:{{ $isPremium ? '#F4A300' : $p['badge_color'] }};">₦{{ number_format($p['price']['monthly']) }}</span>
+            <span style="font-size:13px;color:{{ $isPremium ? 'rgba(255,255,255,0.55)' : '#94a3b8' }};font-weight:500;">/month</span>
         </div>
         <div x-show="yearly" style="display:none;">
-            <span style="font-size:32px;font-weight:900;color:{{ $key === 'premium' ? '#F4A300' : $p['badge_color'] }};">₦{{ number_format($p['price']['yearly']) }}</span>
-            <span style="font-size:13px;color:{{ $key === 'premium' ? 'rgba(255,255,255,0.55)' : '#94a3b8' }};font-weight:500;">/year</span>
+            <span style="font-size:32px;font-weight:900;color:{{ $isPremium ? '#F4A300' : $p['badge_color'] }};">₦{{ number_format($p['price']['yearly']) }}</span>
+            <span style="font-size:13px;color:{{ $isPremium ? 'rgba(255,255,255,0.55)' : '#94a3b8' }};font-weight:500;">/year</span>
             <div style="font-size:11px;color:#1FA84A;font-weight:700;margin-top:2px;">
                 Save ₦{{ number_format(($p['price']['monthly'] * 12) - $p['price']['yearly']) }} per year
             </div>
@@ -306,24 +319,35 @@ $planIcons = [
     </div>
 
     <!-- Limits Summary -->
-    <div style="margin:0 24px 20px;background:{{ $key === 'premium' ? '#f0fdf4' : '#f8fafc' }};border-radius:10px;padding:12px 14px;">
+    <div style="margin:0 24px 20px;background:#f8fafc;border-radius:10px;padding:12px 14px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div>
                 <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Livestock Records</div>
-                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ $p['limits']['livestock_records'] === -1 ? 'Unlimited' : number_format($p['limits']['livestock_records']) }}</div>
-            </div>
-            <div>
-                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Monthly Reports</div>
-                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ $p['limits']['reports_per_month'] === -1 ? 'Unlimited' : $p['limits']['reports_per_month'] }}</div>
-            </div>
-            <div>
-                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Farm Staff</div>
-                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ $p['limits']['farm_staff'] === -1 ? 'Unlimited' : $p['limits']['farm_staff'] }}</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ ($p['limits']['livestock_records'] ?? 0) === -1 ? 'Unlimited' : number_format($p['limits']['livestock_records'] ?? 0) }}</div>
             </div>
             <div>
                 <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">AI Scans/Month</div>
-                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ $p['limits']['ai_scans_per_month'] === -1 ? 'Unlimited' : $p['limits']['ai_scans_per_month'] }}</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ ($p['limits']['ai_scans_per_month'] ?? 0) === -1 ? 'Unlimited' : ($p['limits']['ai_scans_per_month'] ?? '—') }}</div>
             </div>
+            @if(isset($p['limits']['vet_consultations_per_cycle']))
+            <div>
+                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Vet Consults</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ $p['limits']['vet_consultations_per_cycle'] === -1 ? 'Unlimited' : $p['limits']['vet_consultations_per_cycle'].'/cycle' }}</div>
+            </div>
+            <div>
+                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Agro Consults</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ ($p['limits']['agronomist_consultations_per_cycle'] ?? 0) === -1 ? 'Unlimited' : ($p['limits']['agronomist_consultations_per_cycle'] ?? '—').'/cycle' }}</div>
+            </div>
+            @else
+            <div>
+                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Monthly Reports</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ ($p['limits']['reports_per_month'] ?? 0) === -1 ? 'Unlimited' : ($p['limits']['reports_per_month'] ?? '—') }}</div>
+            </div>
+            <div>
+                <div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;">Farm Staff</div>
+                <div style="font-size:14px;font-weight:800;color:#0f172a;">{{ ($p['limits']['farm_staff'] ?? 0) === -1 ? 'Unlimited' : ($p['limits']['farm_staff'] ?? '—') }}</div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -375,62 +399,67 @@ $planIcons = [
         <table style="width:100%;border-collapse:collapse;">
             <thead>
                 <tr style="background:#f8fafc;">
-                    <th style="text-align:left;padding:14px 20px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;width:40%;">Feature</th>
-                    <th style="text-align:center;padding:14px 16px;font-size:13px;font-weight:800;color:#1FA84A;width:20%;">Basic</th>
-                    <th style="text-align:center;padding:14px 16px;font-size:13px;font-weight:800;color:#2D9CDB;width:20%;background:#f0f9ff;">Pro</th>
-                    <th style="text-align:center;padding:14px 16px;font-size:13px;font-weight:800;color:#F4A300;width:20%;background:#fffbeb;">Premium</th>
+                    <th style="text-align:left;padding:14px 20px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;width:34%;">Feature</th>
+                    <th style="text-align:center;padding:14px 12px;font-size:13px;font-weight:800;color:#1FA84A;width:16%;">Basic</th>
+                    <th style="text-align:center;padding:14px 12px;font-size:13px;font-weight:800;color:#0D9488;width:17%;background:#f0fdfa;">Basic Pro</th>
+                    <th style="text-align:center;padding:14px 12px;font-size:13px;font-weight:800;color:#2D9CDB;width:16%;background:#f0f9ff;">Pro</th>
+                    <th style="text-align:center;padding:14px 12px;font-size:13px;font-weight:800;color:#F4A300;width:17%;background:#fffbeb;">Premium</th>
                 </tr>
             </thead>
             <tbody>
 @php
 $comparisonRows = [
     ['category' => 'Core Features', 'rows' => [
-        ['label' => 'Livestock Registration & Management', 'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Basic Animal Health Records',         'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Feeding Schedule Tracking',           'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Vaccination Reminders',               'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Farm Activity Logging',               'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Mobile Application Access',           'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'FAQ & Chatbot Support',               'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Monthly Farm Summary Reports',        'basic' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Livestock Registration & Management', 'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Basic Animal Health Records',         'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Feeding Schedule Tracking',           'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Vaccination Reminders',               'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Farm Activity Logging',               'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Mobile Application Access',           'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'FAQ & Chatbot Support',               'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Monthly Farm Summary Reports',        'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'AI Smart Scan',                       'basic' => false, 'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Marketplace Access',                  'basic' => false, 'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Early Disease Alerts',                'basic' => false, 'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Vet Consultations (3/month)',         'basic' => false, 'basic_pro' => true,  'pro' => false, 'premium' => false],
+        ['label' => 'Agronomist Consultations (3/month)',  'basic' => false, 'basic_pro' => true,  'pro' => false, 'premium' => false],
     ]],
     ['category' => 'Advanced Management (Pro+)', 'rows' => [
-        ['label' => 'Unlimited Livestock Records',         'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Advanced Health & Treatment Records', 'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Breeding & Reproduction Management',  'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Production Tracking (milk, meat, eggs)', 'basic' => false, 'pro' => true, 'premium' => true],
-        ['label' => 'Veterinary Service Requests',         'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Inventory Management',                'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Financial Record Tracking',           'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Geo-tagged Farm Profiling',           'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'PDF & Excel Report Downloads',        'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Direct Messaging (Vets & Extension)', 'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Farm Profitability Analysis',         'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Early Disease Alerts',                'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Benchmarking Against Similar Farms',  'basic' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Unlimited Livestock Records',            'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Advanced Health & Treatment Records',    'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Breeding & Reproduction Management',     'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Production Tracking (milk, meat, eggs)', 'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Veterinary Service Requests',            'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Inventory Management',                   'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Financial Record Tracking',              'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Geo-tagged Farm Profiling',              'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'PDF & Excel Report Downloads',           'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Direct Messaging (Vets & Extension)',    'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Farm Profitability Analysis',            'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Benchmarking Against Similar Farms',     'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
     ]],
     ['category' => 'Enterprise Features (Premium Only)', 'rows' => [
-        ['label' => 'AI-Powered Management Recommendations', 'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Predictive Disease Monitoring',        'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Advanced Farm Intelligence Dashboard', 'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Market Price Intelligence',            'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Supply Chain Management',              'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Multi-Farm Management',                'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Multi-User Farm Staff Access',         'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Digital Livestock Traceability',       'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Custom KPI Dashboards',                'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Advanced Forecasting & Planning',      'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Dedicated Account Manager',            'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'API Integration Capabilities',         'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => '24/7 Priority Support',                'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Quarterly Business Performance Reviews','basic'=> false, 'pro' => false, 'premium' => true],
+        ['label' => 'AI-Powered Management Recommendations', 'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Predictive Disease Monitoring',         'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Advanced Farm Intelligence Dashboard',  'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Market Price Intelligence',             'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Supply Chain Management',               'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Multi-Farm Management',                 'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Multi-User Farm Staff Access',          'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Digital Livestock Traceability',        'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Custom KPI Dashboards',                 'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Advanced Forecasting & Planning',       'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Dedicated Account Manager',             'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'API Integration Capabilities',          'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => '24/7 Priority Support',                 'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Quarterly Business Performance Reviews','basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
     ]],
     ['category' => 'Support', 'rows' => [
-        ['label' => 'FAQ & Chatbot',              'basic' => true,  'pro' => true,  'premium' => true],
-        ['label' => 'Priority Customer Support',  'basic' => false, 'pro' => true,  'premium' => true],
-        ['label' => 'Priority Vet Consultation',  'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => '24/7 Dedicated Support',     'basic' => false, 'pro' => false, 'premium' => true],
-        ['label' => 'Personalized Training',      'basic' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'FAQ & Chatbot',             'basic' => true,  'basic_pro' => true,  'pro' => true,  'premium' => true],
+        ['label' => 'Priority Customer Support', 'basic' => false, 'basic_pro' => false, 'pro' => true,  'premium' => true],
+        ['label' => 'Priority Vet Consultation', 'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => '24/7 Dedicated Support',    'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
+        ['label' => 'Personalized Training',     'basic' => false, 'basic_pro' => false, 'pro' => false, 'premium' => true],
     ]],
 ];
 $rowIdx = 0;
@@ -438,7 +467,7 @@ $rowIdx = 0;
 
 @foreach($comparisonRows as $section)
 <tr>
-    <td colspan="4" style="padding:10px 20px 6px;background:#f1f5f9;font-size:11px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:0.08em;">
+    <td colspan="5" style="padding:10px 20px 6px;background:#f1f5f9;font-size:11px;font-weight:800;color:#374151;text-transform:uppercase;letter-spacing:0.08em;">
         {{ $section['category'] }}
     </td>
 </tr>
@@ -446,21 +475,28 @@ $rowIdx = 0;
 @php $rowIdx++; @endphp
 <tr style="border-bottom:1px solid #f1f5f9;{{ $rowIdx % 2 === 0 ? 'background:#fafafa;' : '' }}">
     <td style="padding:11px 20px;font-size:13px;color:#374151;font-weight:500;">{{ $row['label'] }}</td>
-    <td style="text-align:center;padding:11px 16px;">
+    <td style="text-align:center;padding:11px 12px;">
         @if($row['basic'])
             <svg width="16" height="16" fill="none" stroke="#1FA84A" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         @else
             <svg width="16" height="16" fill="none" stroke="#cbd5e1" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         @endif
     </td>
-    <td style="text-align:center;padding:11px 16px;background:{{ $row['pro'] ? '#f0f9ff' : '#f8fafc' }};">
+    <td style="text-align:center;padding:11px 12px;background:{{ $row['basic_pro'] ? '#f0fdfa' : '#f8fafc' }};">
+        @if($row['basic_pro'])
+            <svg width="16" height="16" fill="none" stroke="#0D9488" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        @else
+            <svg width="16" height="16" fill="none" stroke="#cbd5e1" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        @endif
+    </td>
+    <td style="text-align:center;padding:11px 12px;background:{{ $row['pro'] ? '#f0f9ff' : '#f8fafc' }};">
         @if($row['pro'])
             <svg width="16" height="16" fill="none" stroke="#2D9CDB" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         @else
             <svg width="16" height="16" fill="none" stroke="#cbd5e1" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         @endif
     </td>
-    <td style="text-align:center;padding:11px 16px;background:{{ $row['premium'] ? '#fffbeb' : '#f8fafc' }};">
+    <td style="text-align:center;padding:11px 12px;background:{{ $row['premium'] ? '#fffbeb' : '#f8fafc' }};">
         @if($row['premium'])
             <svg width="16" height="16" fill="none" stroke="#F4A300" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         @else
