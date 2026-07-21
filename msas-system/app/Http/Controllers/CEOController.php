@@ -20,26 +20,34 @@ class CEOController extends Controller
     public function index()
     {
         // ── KPI Metrics ────────────────────────────────────────────
-        $totalUsers       = User::count();
-        $activeUsers      = User::where('is_active', true)->count();
-        $pendingExperts   = User::whereIn('role', ['vet','agronomist'])->where('is_verified', false)->count();
-        $totalAnimals     = Animal::count();
-        $totalDiagnoses   = Consultation::count();
-        $pendingConsults  = Consultation::where('status','pending')->count();
+        $totalUsers      = User::count();
+        $activeUsers     = User::where('is_active', true)->count();
+        $pendingExperts  = User::whereIn('role', ['vet','agronomist'])->where('is_verified', false)->count();
+        try {
+            $totalAnimals = Animal::count();
+        } catch (\Exception $e) { $totalAnimals = 0; }
+        try {
+            $totalDiagnoses  = Consultation::count();
+            $pendingConsults = Consultation::where('status','pending')->count();
+        } catch (\Exception $e) { $totalDiagnoses = 0; $pendingConsults = 0; }
 
         // ── Revenue ────────────────────────────────────────────────
-        $totalRevenue     = Finance::where('type','Income')->sum('amount');
-        $totalExpenses    = Finance::where('type','Expense')->sum('amount');
-        $netProfit        = $totalRevenue - $totalExpenses;
-        $thisMonthRevenue = Finance::where('type','Income')
-                              ->whereMonth('transaction_date', now()->month)
-                              ->sum('amount');
-        $lastMonthRevenue = Finance::where('type','Income')
-                              ->whereMonth('transaction_date', now()->subMonth()->month)
-                              ->sum('amount');
-        $revenueGrowth    = $lastMonthRevenue > 0
-                              ? round((($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100, 1)
-                              : 0;
+        try {
+            $totalRevenue     = Finance::where('type','Income')->sum('amount');
+            $totalExpenses    = Finance::where('type','Expense')->sum('amount');
+            $thisMonthRevenue = Finance::where('type','Income')
+                                  ->whereMonth('transaction_date', now()->month)
+                                  ->sum('amount');
+            $lastMonthRevenue = Finance::where('type','Income')
+                                  ->whereMonth('transaction_date', now()->subMonth()->month)
+                                  ->sum('amount');
+        } catch (\Exception $e) {
+            $totalRevenue = $totalExpenses = $thisMonthRevenue = $lastMonthRevenue = 0;
+        }
+        $netProfit     = $totalRevenue - $totalExpenses;
+        $revenueGrowth = $lastMonthRevenue > 0
+                           ? round((($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100, 1)
+                           : 0;
 
         // ── Users by Role ──────────────────────────────────────────
         $usersByRole = User::select('role', DB::raw('count(*) as count'))
@@ -47,21 +55,23 @@ class CEOController extends Controller
                           ->pluck('count', 'role');
 
         // ── Monthly Revenue Chart (last 6 months) — cached 5 min ──
-        $revenueChart = Cache::remember('ceo:revenue_chart', 300, function () {
-            return collect(range(5, 0))->map(function ($i) {
-                $month = now()->subMonths($i);
-                $rows  = Finance::selectRaw("type, SUM(amount) as total")
-                    ->whereMonth('transaction_date', $month->month)
-                    ->whereYear('transaction_date', $month->year)
-                    ->groupBy('type')
-                    ->pluck('total', 'type');
-                return [
-                    'month'   => $month->format('M'),
-                    'income'  => $rows['Income']  ?? 0,
-                    'expense' => $rows['Expense'] ?? 0,
-                ];
+        try {
+            $revenueChart = Cache::remember('ceo:revenue_chart', 300, function () {
+                return collect(range(5, 0))->map(function ($i) {
+                    $month = now()->subMonths($i);
+                    $rows  = Finance::selectRaw("type, SUM(amount) as total")
+                        ->whereMonth('transaction_date', $month->month)
+                        ->whereYear('transaction_date', $month->year)
+                        ->groupBy('type')
+                        ->pluck('total', 'type');
+                    return [
+                        'month'   => $month->format('M'),
+                        'income'  => $rows['Income']  ?? 0,
+                        'expense' => $rows['Expense'] ?? 0,
+                    ];
+                });
             });
-        });
+        } catch (\Exception $e) { $revenueChart = collect(); }
 
         // ── Monthly User Growth (last 6 months) — cached 5 min ────
         $monthlyGrowth = Cache::remember('ceo:monthly_growth', 300, function () {
@@ -97,8 +107,10 @@ class CEOController extends Controller
         } catch (\Exception $e) { $stateActivity = []; }
 
         // ── Platform Health Score (composite) ──────────────────────
-        $resolvedCases    = Consultation::where('status','resolved')->count();
-        $resolutionRate   = $totalDiagnoses > 0 ? round(($resolvedCases / $totalDiagnoses) * 100) : 0;
+        try {
+            $resolvedCases = Consultation::where('status','resolved')->count();
+        } catch (\Exception $e) { $resolvedCases = 0; }
+        $resolutionRate = $totalDiagnoses > 0 ? round(($resolvedCases / $totalDiagnoses) * 100) : 0;
         $activePct        = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100) : 0;
         $platformHealth   = (int) round(($resolutionRate * 0.4) + ($activePct * 0.4) + 20);
         $platformHealth   = min(100, max(0, $platformHealth));
