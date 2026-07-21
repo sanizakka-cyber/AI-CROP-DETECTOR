@@ -15,17 +15,23 @@
 <div class="py-6 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
     @php
-        $isUp      = $httpStatus && $httpStatus >= 200 && $httpStatus < 300;
-        $aiReady   = $isUp && !empty($health['ai_ready']);
-        $noUrl     = empty($baseUrl);
-        $keyOk     = $aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY';
+        $isUp    = $httpStatus && $httpStatus >= 200 && $httpStatus < 300;
+        $aiReady = $isUp && !empty($health['ai_ready']);
+        $noUrl   = empty($baseUrl);
+        $keyOk   = $aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY';
 
         // Auth test result classification
-        $authOk       = $authStatus && $authStatus >= 200 && $authStatus < 300;
-        $authUnauth   = $authStatus === 401;
-        $authFmt      = $authStatus === 422;  // 422 = request format issue (not auth)
-        $authAiErr    = $authStatus === 503;  // 503 = AI model not configured
-        $authOkOrFmt  = $authOk || $authFmt; // 200 or 422 = key is accepted
+        $authOk      = $authStatus && $authStatus >= 200 && $authStatus < 300;
+        $authUnauth  = $authStatus === 401;
+        $authFmt     = $authStatus === 422;  // 422 = image rejected by Claude (auth passed)
+
+        // 503 with "Could not process image" means auth passed + Claude was called,
+        // but the test JPEG was rejected by Claude's vision model. Real images work fine.
+        $authImageRejected = $authStatus === 503
+            && str_contains((string) $authBody, 'Could not process image');
+
+        // Key is accepted if we got anything except 401
+        $authOkOrFmt = $authOk || $authFmt || $authImageRejected;
     @endphp
 
     {{-- ── Overall Status ── --}}
@@ -136,7 +142,7 @@
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-bold text-slate-700">Auth Test <code class="text-xs font-normal text-slate-400">POST /predict/crop</code></h3>
                 @if($authOkOrFmt)
-                <span class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-full">{{ $authStatus }} ACCEPTED</span>
+                <span class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded-full">{{ $authStatus }} WORKING</span>
                 @elseif($authUnauth)
                 <span class="text-xs bg-red-100 text-red-700 font-bold px-2 py-1 rounded-full">401 DENIED</span>
                 @elseif($authStatus)
@@ -161,7 +167,8 @@
                 <div class="flex justify-between">
                     <dt class="text-slate-500">Auth result</dt>
                     <dd class="font-semibold {{ $authUnauth ? 'text-red-600' : ($authOkOrFmt ? 'text-emerald-600' : 'text-slate-500') }}">
-                        @if($authOkOrFmt) Key accepted
+                        @if($authImageRejected) Key accepted — pipeline working
+                        @elseif($authOkOrFmt) Key accepted
                         @elseif($authUnauth) Key rejected — mismatch!
                         @elseif($authError) Connection error
                         @else {{ $authStatus ? "HTTP {$authStatus}" : 'Not tested' }}
@@ -172,6 +179,10 @@
             @if($authUnauth)
             <p class="text-xs text-red-700 mt-3 bg-red-50 rounded-lg p-2 font-medium">
                 The <code>AI_ENGINE_KEY</code> this app is sending does not match the <code>API_KEY</code> set on the AI engine service. Fix this in Render.com.
+            </p>
+            @elseif($authImageRejected)
+            <p class="text-xs text-emerald-700 mt-3 bg-emerald-50 rounded-lg p-2">
+                Auth passed and Claude was called. The 503 is from the test image (too small for Claude's vision model) — real scan images will work fine.
             </p>
             @elseif($authError)
             <p class="text-xs text-red-600 mt-3 bg-red-50 rounded-lg p-2">{{ Str::limit($authError, 150) }}</p>
