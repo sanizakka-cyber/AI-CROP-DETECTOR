@@ -148,6 +148,31 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
     Route::get('/ceo/audit',   [CEOController::class, 'audit'])->name('ceo.audit');
 });
+
+// ── CEO: Staff Role Management (CEO only) ─────────────────────────────────────
+Route::middleware(['auth', 'role:ceo'])->prefix('ceo')->name('ceo.')->group(function () {
+    // Custom RBAC role CRUD
+    Route::get('/staff-roles',              [\App\Http\Controllers\CEO\StaffRoleController::class, 'index'])       ->name('staff-roles.index');
+    Route::get('/staff-roles/create',       [\App\Http\Controllers\CEO\StaffRoleController::class, 'create'])      ->name('staff-roles.create');
+    Route::post('/staff-roles',             [\App\Http\Controllers\CEO\StaffRoleController::class, 'store'])       ->name('staff-roles.store');
+    Route::get('/staff-roles/{staffRole}',  [\App\Http\Controllers\CEO\StaffRoleController::class, 'show'])        ->name('staff-roles.show');
+    Route::get('/staff-roles/{staffRole}/edit', [\App\Http\Controllers\CEO\StaffRoleController::class, 'edit'])   ->name('staff-roles.edit');
+    Route::patch('/staff-roles/{staffRole}',    [\App\Http\Controllers\CEO\StaffRoleController::class, 'update']) ->name('staff-roles.update');
+    Route::patch('/staff-roles/{staffRole}/toggle', [\App\Http\Controllers\CEO\StaffRoleController::class, 'toggleActive'])->name('staff-roles.toggle');
+    Route::delete('/staff-roles/{staffRole}',   [\App\Http\Controllers\CEO\StaffRoleController::class, 'destroy'])->name('staff-roles.destroy');
+
+    // Staff account management
+    Route::get('/staff',                        [\App\Http\Controllers\CEO\StaffController::class, 'index'])           ->name('staff.index');
+    Route::get('/staff/create',                 [\App\Http\Controllers\CEO\StaffController::class, 'create'])          ->name('staff.create');
+    Route::post('/staff',                       [\App\Http\Controllers\CEO\StaffController::class, 'store'])           ->name('staff.store');
+    Route::get('/staff/{user}',                 [\App\Http\Controllers\CEO\StaffController::class, 'show'])            ->name('staff.show');
+    Route::get('/staff/{user}/edit',            [\App\Http\Controllers\CEO\StaffController::class, 'edit'])            ->name('staff.edit');
+    Route::patch('/staff/{user}',               [\App\Http\Controllers\CEO\StaffController::class, 'update'])          ->name('staff.update');
+    Route::patch('/staff/{user}/toggle',        [\App\Http\Controllers\CEO\StaffController::class, 'toggle'])          ->name('staff.toggle');
+    Route::patch('/staff/{user}/reset-password',[\App\Http\Controllers\CEO\StaffController::class, 'resetPassword'])   ->name('staff.reset-password');
+    Route::post('/staff/{user}/assign-roles',   [\App\Http\Controllers\CEO\StaffController::class, 'assignRoles'])     ->name('staff.assign-roles');
+    Route::delete('/staff/{user}/remove-role',  [\App\Http\Controllers\CEO\StaffController::class, 'removeRole'])      ->name('staff.remove-role');
+});
 // Report generation also accessible by data-analyst and M&E roles
 Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-e-officer'])->group(function () {
     Route::get('/ceo/reports/{type}', [CEOController::class, 'generateReport'])->name('ceo.reports.generate');
