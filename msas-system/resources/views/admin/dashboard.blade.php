@@ -49,6 +49,64 @@
             </div>
         </div>
 
+        {{-- Order Operations Panel --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-bold text-slate-800 text-base">Order Operations</h3>
+                <a href="{{ route('admin.orders.index') }}" class="text-xs text-[#0F6B3E] font-semibold hover:underline">Manage All →</a>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3 mb-5">
+                @foreach([
+                    ['l'=>'Today Orders', 'v'=>$ordersToday??0,     'c'=>'text-blue-600'],
+                    ['l'=>'Pending',      'v'=>$ordersPending??0,   'c'=>'text-amber-600'],
+                    ['l'=>'Unassigned',   'v'=>$ordersUnassigned??0,'c'=>'text-red-600'],
+                    ['l'=>'In Transit',   'v'=>$ordersInTransit??0, 'c'=>'text-purple-600'],
+                    ['l'=>'Delivered',    'v'=>$ordersDelivered??0, 'c'=>'text-green-600'],
+                    ['l'=>'Riders Free',  'v'=>$ridersAvailable??0, 'c'=>'text-green-600'],
+                    ['l'=>'Riders Busy',  'v'=>$ridersBusy??0,      'c'=>'text-amber-600'],
+                    ['l'=>'Rev Today',    'v'=>'₦'.number_format($revenueToday??0), 'c'=>'text-[#0F6B3E]'],
+                    ['l'=>'Riders',       'v'=>($ridersAvailable??0)+($ridersBusy??0), 'c'=>'text-slate-700'],
+                ] as $s)
+                <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <div class="text-lg font-extrabold {{ $s['c'] }}">{{ $s['v'] }}</div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase mt-0.5">{{ $s['l'] }}</div>
+                </div>
+                @endforeach
+            </div>
+            @if(isset($recentOrders) && $recentOrders->count())
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead><tr class="border-b border-slate-100">
+                        <th class="py-2 text-left font-bold text-slate-400 uppercase">Order</th>
+                        <th class="py-2 text-left font-bold text-slate-400 uppercase">Buyer</th>
+                        <th class="py-2 text-left font-bold text-slate-400 uppercase">Total</th>
+                        <th class="py-2 text-left font-bold text-slate-400 uppercase">Status</th>
+                        <th class="py-2 text-left font-bold text-slate-400 uppercase">Rider</th>
+                    </tr></thead>
+                    <tbody>
+                    @foreach($recentOrders as $order)
+                    @php $badge = $order->riderStatusBadge(); @endphp
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2 font-mono font-bold text-slate-700">{{ $order->order_number }}</td>
+                        <td class="py-2 text-slate-600">{{ $order->buyer?->first_name }} {{ $order->buyer?->last_name }}</td>
+                        <td class="py-2 font-semibold text-slate-700">₦{{ number_format($order->total,2) }}</td>
+                        <td class="py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">{{ ucfirst($order->status) }}</span></td>
+                        <td class="py-2">
+                            @if($order->rider)
+                            <span class="text-slate-700">{{ $order->rider->first_name }}</span>
+                            <span class="ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold {{ $badge['class'] }}">{{ $badge['label'] }}</span>
+                            @else
+                            <a href="{{ route('admin.orders.show', $order) }}" class="text-red-500 font-semibold">Assign →</a>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+        </div>
+
         {{-- Quick Actions --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
             <h3 class="font-bold text-slate-800 text-lg mb-4 border-b pb-3">Quick Actions</h3>

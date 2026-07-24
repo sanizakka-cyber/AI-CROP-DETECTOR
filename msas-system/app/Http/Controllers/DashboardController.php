@@ -41,6 +41,7 @@ class DashboardController extends Controller
             'me-officer'            => 'monitoring-evaluation.dashboard',
             'field-officer'         => 'field-officer.dashboard',
             'customer-support'      => 'customer-support.dashboard',
+            'rider'                 => 'rider.dashboard',
             default                 => null,
         };
 
@@ -65,10 +66,31 @@ class DashboardController extends Controller
             ]);
         } catch (\Exception $e) { $monthlyGrowth = collect(); }
 
+        // ── Order Operations Stats ──────────────────────────────────────────────
+        try { $ordersToday       = \App\Models\Order::whereDate('created_at', today())->count(); } catch (\Exception $e) { $ordersToday = 0; }
+        try { $ordersUnassigned  = \App\Models\Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count(); } catch (\Exception $e) { $ordersUnassigned = 0; }
+        try { $ordersInTransit   = \App\Models\Order::where('rider_status', 'in_transit')->count(); } catch (\Exception $e) { $ordersInTransit = 0; }
+        try { $ordersPending     = \App\Models\Order::where('status', 'pending')->count(); } catch (\Exception $e) { $ordersPending = 0; }
+        try { $ordersDelivered   = \App\Models\Order::where('status', 'delivered')->count(); } catch (\Exception $e) { $ordersDelivered = 0; }
+        try { $ridersAvailable   = \App\Models\User::where('role', 'rider')->where('rider_status', 'available')->count(); } catch (\Exception $e) { $ridersAvailable = 0; }
+        try { $ridersBusy        = \App\Models\User::where('role', 'rider')->where('rider_status', 'busy')->count(); } catch (\Exception $e) { $ridersBusy = 0; }
+        try { $revenueToday      = \App\Models\Order::whereDate('created_at', today())->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $revenueToday = 0; }
+        try {
+            $recentOrders = \App\Models\Order::with(['buyer:id,first_name,last_name','dealer:id,first_name,last_name','rider:id,first_name,last_name'])
+                ->latest()->take(8)->get();
+        } catch (\Exception $e) { $recentOrders = collect(); }
+
         return view('admin.dashboard', compact(
             'totalUsers','activeUsers','pendingApprovals','recentUsers',
-            'usersByRole','newThisMonth','totalAnimals','totalConsults','monthlyGrowth'
+            'usersByRole','newThisMonth','totalAnimals','totalConsults','monthlyGrowth',
+            'ordersToday','ordersUnassigned','ordersInTransit','ordersPending',
+            'ordersDelivered','ridersAvailable','ridersBusy','revenueToday','recentOrders'
         ));
+    }
+
+    public function rider()
+    {
+        return app(RiderController::class)->dashboard();
     }
 
     // ── Farmer Dashboard ───────────────────────────────────────────

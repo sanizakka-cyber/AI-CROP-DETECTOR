@@ -593,4 +593,77 @@ class CEOController extends Controller
             'recentFailed'
         ));
     }
+
+    // ── Order Oversight ──────────────────────────────────────────────────────────
+
+    public function orders(\Illuminate\Http\Request $request)
+    {
+        $query = \App\Models\Order::with([
+            'buyer:id,first_name,last_name,phone',
+            'dealer:id,first_name,last_name',
+            'rider:id,first_name,last_name,phone',
+            'assignedBy:id,first_name,last_name',
+        ])->latest();
+
+        if ($status = $request->status) {
+            $query->where('status', $status);
+        }
+        if ($riderStatus = $request->rider_status) {
+            $query->where('rider_status', $riderStatus);
+        }
+        if ($search = $request->search) {
+            $query->where('order_number', 'ilike', "%{$search}%");
+        }
+
+        $orders = $query->paginate(25)->withQueryString();
+
+        $stats = [
+            'total'      => \App\Models\Order::count(),
+            'pending'    => \App\Models\Order::where('status', 'pending')->count(),
+            'unassigned' => \App\Models\Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count(),
+            'in_transit' => \App\Models\Order::where('rider_status', 'in_transit')->count(),
+            'delivered'  => \App\Models\Order::where('status', 'delivered')->count(),
+            'cancelled'  => \App\Models\Order::where('status', 'cancelled')->count(),
+            'revenue'    => \App\Models\Order::where('payment_status', 'paid')->sum('total'),
+        ];
+
+        $riders = \App\Models\User::where('role', 'rider')->where('is_active', true)
+            ->orderBy('first_name')->get(['id','first_name','last_name','rider_status']);
+
+        return view('ceo.orders', compact('orders', 'stats', 'riders'));
+    }
+
+    public function assignOrderRider(\Illuminate\Http\Request $request, \App\Models\Order $order)
+    {
+        $request->validate(['rider_id' => 'required|exists:users,id']);
+        $rider = \App\Models\User::findOrFail($request->rider_id);
+
+        if ($order->rider_id && $order->rider_id !== $rider->id) {
+            optional($order->rider)->update(['rider_status' => 'available']);
+        }
+
+        $order->update([
+            'rider_id'          => $rider->id,
+            'assigned_by'       => auth()->id(),
+            'rider_status'      => 'assigned',
+            'rider_assigned_at' => now(),
+            'status'            => 'processing',
+        ]);
+
+        $rider->update(['rider_status' => 'busy']);
+
+        \App\Models\Notification::create([
+            'user_id' => $rider->id,
+            'title'   => 'CEO Assignment',
+            'message' => "Order {$order->order_number} has been assigned to you by the CEO.",
+            'type'    => 'info',
+            'link'    => '/rider/orders/' . $order->id,
+        ]);
+
+        \App\Models\AuditLog::record('order.rider_assigned_by_ceo', 'Order', $order->id, [
+            'rider_id' => $rider->id, 'ceo_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', "Order {$order->order_number} assigned to {$rider->first_name} {$rider->last_name}.");
+    }
 }

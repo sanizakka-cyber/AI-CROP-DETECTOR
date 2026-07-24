@@ -38,6 +38,7 @@
                             'finance'           => route('finance.dashboard'),
                             'hr'                => route('hr.dashboard'),
                             'operations'        => route('operations.dashboard'),
+                            'rider'             => route('rider.dashboard'),
                             default             => route('dashboard'),
                         };
                     @endphp
@@ -71,6 +72,23 @@
                         </a>
                         <a href="{{ route('admin.payouts.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payouts.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
                             Payouts
+                        </a>
+                    @endif
+
+                    {{-- Admin / CEO: Order & Rider management --}}
+                    @if(in_array($role, ['admin', 'ceo']))
+                        <a href="{{ route('admin.orders.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.orders.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            Orders
+                        </a>
+                        <a href="{{ route('admin.riders.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.riders.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            Riders
+                        </a>
+                    @endif
+
+                    {{-- Rider links --}}
+                    @if($role === 'rider')
+                        <a href="{{ route('rider.orders') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('rider.orders*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            My Deliveries
                         </a>
                     @endif
 
@@ -249,6 +267,13 @@
             @if(in_array($role, ['ceo', 'admin', 'finance']))
                 <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.payouts.index')">Payouts</x-responsive-nav-link>
+            @endif
+            @if(in_array($role, ['admin', 'ceo']))
+                <x-responsive-nav-link :href="route('admin.orders.index')">Orders</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.riders.index')">Riders</x-responsive-nav-link>
+            @endif
+            @if($role === 'rider')
+                <x-responsive-nav-link :href="route('rider.orders')">My Deliveries</x-responsive-nav-link>
             @endif
         </div>
 

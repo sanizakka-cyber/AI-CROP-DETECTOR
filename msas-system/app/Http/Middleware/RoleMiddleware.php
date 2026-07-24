@@ -49,6 +49,7 @@ class RoleMiddleware
                 'monitoring-evaluation'  => 'monitoring-evaluation.dashboard',
                 'field-officer'          => 'field-officer.dashboard',
                 'customer-support'       => 'customer-support.dashboard',
+                'rider'                  => 'rider.dashboard',
             ];
             $routeName = $redirectMap[$user->role] ?? null;
             if ($routeName) {
