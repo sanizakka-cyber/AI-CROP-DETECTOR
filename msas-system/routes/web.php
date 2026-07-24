@@ -197,6 +197,43 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::post('/applications/{user}/reject',      [ApplicationController::class, 'reject'])  ->name('applications.reject');
 });
 
+// ── Admin: Order & Rider Management ───────────────────────────────────────────
+Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {
+    // Orders
+    Route::get('/orders',                            [\App\Http\Controllers\Admin\OrderManagementController::class, 'index'])       ->name('orders.index');
+    Route::get('/orders/{order}',                    [\App\Http\Controllers\Admin\OrderManagementController::class, 'show'])        ->name('orders.show');
+    Route::post('/orders/{order}/assign-rider',      [\App\Http\Controllers\Admin\OrderManagementController::class, 'assignRider']) ->name('orders.assign');
+    Route::post('/orders/{order}/reassign',          [\App\Http\Controllers\Admin\OrderManagementController::class, 'reassignRider'])->name('orders.reassign');
+    Route::patch('/orders/{order}/status',           [\App\Http\Controllers\Admin\OrderManagementController::class, 'updateStatus'])->name('orders.status');
+    Route::post('/orders/{order}/note',              [\App\Http\Controllers\Admin\OrderManagementController::class, 'addNote'])     ->name('orders.note');
+
+    // Riders
+    Route::get('/riders',                            [\App\Http\Controllers\Admin\RiderManagementController::class, 'index'])       ->name('riders.index');
+    Route::get('/riders/create',                     [\App\Http\Controllers\Admin\RiderManagementController::class, 'create'])      ->name('riders.create');
+    Route::post('/riders',                           [\App\Http\Controllers\Admin\RiderManagementController::class, 'store'])       ->name('riders.store');
+    Route::get('/riders/{user}',                     [\App\Http\Controllers\Admin\RiderManagementController::class, 'show'])        ->name('riders.show');
+    Route::patch('/riders/{user}/toggle',            [\App\Http\Controllers\Admin\RiderManagementController::class, 'toggleStatus'])->name('riders.toggle');
+    Route::patch('/riders/{user}/status',            [\App\Http\Controllers\Admin\RiderManagementController::class, 'updateRiderStatus'])->name('riders.status');
+});
+
+// ── Rider Routes ───────────────────────────────────────────────────────────────
+Route::middleware(['auth', 'role:rider'])->prefix('rider')->name('rider.')->group(function () {
+    Route::get('/dashboard',                         [\App\Http\Controllers\RiderController::class, 'dashboard'])   ->name('dashboard');
+    Route::get('/orders',                            [\App\Http\Controllers\RiderController::class, 'orders'])      ->name('orders');
+    Route::get('/orders/{order}',                    [\App\Http\Controllers\RiderController::class, 'showOrder'])   ->name('orders.show');
+    Route::post('/orders/{order}/accept',            [\App\Http\Controllers\RiderController::class, 'accept'])      ->name('orders.accept');
+    Route::post('/orders/{order}/decline',           [\App\Http\Controllers\RiderController::class, 'decline'])     ->name('orders.decline');
+    Route::post('/orders/{order}/transit',           [\App\Http\Controllers\RiderController::class, 'markInTransit'])->name('orders.transit');
+    Route::post('/orders/{order}/delivered',         [\App\Http\Controllers\RiderController::class, 'markDelivered'])->name('orders.delivered');
+    Route::patch('/status',                          [\App\Http\Controllers\RiderController::class, 'updateStatus'])->name('status');
+});
+
+// ── CEO: Order Oversight ───────────────────────────────────────────────────────
+Route::middleware(['auth', 'role:ceo'])->group(function () {
+    Route::get('/ceo/orders',                        [\App\Http\Controllers\CEOController::class, 'orders'])            ->name('ceo.orders');
+    Route::post('/ceo/orders/{order}/assign',        [\App\Http\Controllers\CEOController::class, 'assignOrderRider'])  ->name('ceo.orders.assign');
+});
+
 // Farmer Routes
 Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->group(function () {
     // Basic plan features (any active subscription)
