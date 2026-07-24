@@ -57,8 +57,9 @@ class OtpVerificationController extends Controller
         }
 
         if ($context === 'registration') {
-            $userId = $request->session()->get('otp_user_id');
-            $user   = User::findOrFail($userId);
+            $userId      = $request->session()->get('otp_user_id');
+            $pendingPlan = $request->session()->get('pending_plan', '');
+            $user        = User::findOrFail($userId);
 
             if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
                 $user->update(['email_verified_at' => now()]);
@@ -69,6 +70,11 @@ class OtpVerificationController extends Controller
             $this->clearOtpSession($request);
             Auth::login($user);
             $request->session()->regenerate();
+
+            if ($pendingPlan && $user->role === 'farmer') {
+                return redirect()->route('subscription.plans')
+                    ->with('status', 'Account verified! Choose a plan to start your free 14-day trial.');
+            }
 
             return redirect()->route('dashboard')->with('status', 'Account verified! Welcome to MSAS.');
         }
@@ -191,7 +197,7 @@ class OtpVerificationController extends Controller
         $request->session()->forget([
             'otp_identifier', 'otp_context', 'otp_user_id',
             'otp_sms_failed', 'otp_email_failed',
-            'otp_expires_at', 'otp_delivery_method',
+            'otp_expires_at', 'otp_delivery_method', 'pending_plan',
         ]);
     }
 }

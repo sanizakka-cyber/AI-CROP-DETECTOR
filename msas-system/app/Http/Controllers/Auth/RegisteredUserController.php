@@ -25,7 +25,14 @@ class RegisteredUserController extends Controller
 
     public function create(): View
     {
-        return view('auth.register');
+        $plans           = config('subscription.plans');
+        $preselectedPlan = request('plan');
+        $validPlans      = array_keys($plans);
+        if (!in_array($preselectedPlan, $validPlans)) {
+            $preselectedPlan = '';
+        }
+
+        return view('auth.register', compact('plans', 'preselectedPlan'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -102,6 +109,13 @@ class RegisteredUserController extends Controller
 
         $user = User::create($userData);
 
+        // Preserve plan selection through the verification flow
+        $pendingPlan = $request->input('plan', '');
+        $validPlans  = array_keys(config('subscription.plans', []));
+        if (!in_array($pendingPlan, $validPlans)) {
+            $pendingPlan = '';
+        }
+
         // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
         if ($request->hasFile('documents')) {
             $docLabels = $this->getDocumentLabels($role);
@@ -145,6 +159,12 @@ class RegisteredUserController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
             Log::info('Phone-only registration completed', ['user_id' => $user->id]);
+
+            if ($pendingPlan && $role === 'farmer') {
+                return redirect()->route('subscription.plans')
+                    ->with('success', 'Welcome to MSAS FarmAI! Start your free 14-day trial below.');
+            }
+
             return redirect()->route('dashboard')
                 ->with('success', 'Welcome to MSAS FarmAI! Your account has been created.');
         }
@@ -162,6 +182,7 @@ class RegisteredUserController extends Controller
             'otp_email_failed'    => $emailFailed,
             'otp_expires_at'      => $expiresAt?->toISOString(),
             'otp_delivery_method' => 'email',
+            'pending_plan'        => $pendingPlan,
         ]);
 
         return redirect()->route('otp.verify');

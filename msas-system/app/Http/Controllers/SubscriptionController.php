@@ -35,8 +35,9 @@ class SubscriptionController extends Controller
         $period = now()->format('Y-m');
         $usage  = [];
         if ($activeSub) {
-            $keys = ['livestock_records', 'reports_per_month', 'ai_scans_per_month'];
-            if ($activeSub->plan === 'basic_pro') {
+            $keys = ['ai_scans_per_month', 'livestock_records', 'reports_per_month'];
+            // Plans with consultation limits
+            if (in_array($activeSub->plan, ['basic_pro', 'premium'])) {
                 $keys[] = 'vet_consultations_per_cycle';
                 $keys[] = 'agronomist_consultations_per_cycle';
             }
