@@ -47,12 +47,30 @@
                                 class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F6B3E]/30 resize-none"
                                 placeholder="Any special instructions for delivery…">{{ old('delivery_notes') }}</textarea>
                         </div>
-                    </form>
-                </div>
 
-                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                    <p class="font-bold mb-1">💡 Payment Note</p>
-                    <p>Orders are currently placed on a pay-on-delivery basis. The seller will contact you to confirm and arrange delivery.</p>
+                        {{-- Payment Method --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Payment Method</label>
+                            <div class="grid grid-cols-2 gap-3" x-data="{ pm: '{{ old('payment_method', 'cod') }}' }">
+                                <label :class="pm === 'cod' ? 'border-[#0F6B3E] bg-[#f0fdf4]' : 'border-slate-200 bg-white'"
+                                    class="flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition">
+                                    <input type="radio" name="payment_method" value="cod" x-model="pm" class="mt-0.5 accent-[#0F6B3E]">
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-700">Pay on Delivery</span>
+                                        <span class="block text-xs text-slate-400 mt-0.5">Pay cash when your order arrives</span>
+                                    </span>
+                                </label>
+                                <label :class="pm === 'paystack' ? 'border-[#0F6B3E] bg-[#f0fdf4]' : 'border-slate-200 bg-white'"
+                                    class="flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition">
+                                    <input type="radio" name="payment_method" value="paystack" x-model="pm" class="mt-0.5 accent-[#0F6B3E]">
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-700">Pay Online</span>
+                                        <span class="block text-xs text-slate-400 mt-0.5">Card, bank transfer via Paystack</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
 
