@@ -239,7 +239,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/marketplace/order',                        [\App\Http\Controllers\MarketplaceController::class, 'placeOrder'])->name('marketplace.order.place');
     Route::get('/marketplace/orders',                        [\App\Http\Controllers\MarketplaceController::class, 'myOrders'])->name('marketplace.orders');
     Route::get('/marketplace/orders/{order}',                [\App\Http\Controllers\MarketplaceController::class, 'showOrder'])->name('marketplace.orders.show');
-    Route::get('/marketplace/{product}',                     [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show');
+    Route::get('/marketplace/{product}',                     [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show')->whereNumber('product');
 });
 
 // Notifications
