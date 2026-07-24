@@ -103,7 +103,7 @@
         </div>
         <div class="header-right">
             <div class="date">Report Period: All Time</div>
-            <div class="plan">{{ strtoupper(auth()->user()->activeSubscription()?->plan ?? 'pro') }} PLAN</div>
+            <div class="plan">{{ strtoupper(auth()->user()->activeSubscription()?->plan ?? 'basic') }} PLAN</div>
         </div>
     </div>
 

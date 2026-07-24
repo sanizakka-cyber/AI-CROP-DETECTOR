@@ -372,7 +372,7 @@ class CEOController extends Controller
         // 2. Subscription plans
         $plans = config('subscription.plans', []);
         $planGroup = [];
-        $requiredPlans = ['basic', 'basic_pro', 'pro', 'premium'];
+        $requiredPlans = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_plus'];
         foreach ($requiredPlans as $p) {
             $found = isset($plans[$p]);
             $price = $found ? '₦' . number_format($plans[$p]['price']['monthly'] ?? 0) . '/mo' : '—';
