@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // Secret key for the external cron scheduler webhook (/scheduler/run?key=...)
+    'scheduler_key' => env('SCHEDULER_KEY'),
+
 ];
