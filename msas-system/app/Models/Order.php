@@ -13,16 +13,28 @@ class Order extends Model
         'order_number', 'buyer_id', 'dealer_id', 'status', 'payment_status',
         'payment_method', 'payment_channel', 'payment_reference', 'subtotal', 'discount', 'tax', 'total',
         'delivery_address', 'delivery_notes', 'confirmed_at', 'delivered_at',
+        'payout_status', 'payout_amount', 'payout_requested_at', 'payout_paid_at',
+        'payout_reference', 'payout_notes',
     ];
 
     protected $casts = [
-        'subtotal'     => 'float',
-        'discount'     => 'float',
-        'tax'          => 'float',
-        'total'        => 'float',
-        'confirmed_at' => 'datetime',
-        'delivered_at' => 'datetime',
+        'subtotal'            => 'float',
+        'discount'            => 'float',
+        'tax'                 => 'float',
+        'total'               => 'float',
+        'payout_amount'       => 'float',
+        'confirmed_at'        => 'datetime',
+        'delivered_at'        => 'datetime',
+        'payout_requested_at' => 'datetime',
+        'payout_paid_at'      => 'datetime',
     ];
+
+    public function isPayoutEligible(): bool
+    {
+        return $this->status === 'delivered'
+            && $this->payment_status === 'paid'
+            && $this->payout_status === null;
+    }
 
     public function buyer()   { return $this->belongsTo(User::class, 'buyer_id'); }
     public function dealer()  { return $this->belongsTo(User::class, 'dealer_id'); }

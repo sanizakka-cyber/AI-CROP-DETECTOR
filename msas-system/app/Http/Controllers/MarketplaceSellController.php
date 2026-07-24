@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
+use App\Models\AuditLog;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -165,7 +166,51 @@ class MarketplaceSellController extends Controller implements HasMiddleware
     {
         abort_if($order->dealer_id !== auth()->id(), 403);
         $request->validate(['status' => 'required|in:confirmed,processing,shipped,delivered,cancelled']);
-        $order->update(['status' => $request->status]);
+
+        $old = $order->status;
+        $order->update([
+            'status'       => $request->status,
+            'confirmed_at' => $request->status === 'confirmed' ? now() : $order->confirmed_at,
+            'delivered_at' => $request->status === 'delivered' ? now() : $order->delivered_at,
+        ]);
+
+        AuditLog::record('order.status_updated', 'Order', $order->id, [
+            'from' => $old, 'to' => $request->status,
+        ]);
+
         return back()->with('success', 'Order status updated to ' . ucfirst($request->status) . '.');
+    }
+
+    public function requestPayout(Request $request, Order $order)
+    {
+        abort_if($order->dealer_id !== auth()->id(), 403);
+
+        if ($order->status !== 'delivered') {
+            return back()->with('error', 'Payout can only be requested for delivered orders.');
+        }
+        if ($order->payment_status !== 'paid') {
+            return back()->with('error', 'Payout can only be requested for paid orders.');
+        }
+        if ($order->payout_status) {
+            return back()->with('info', 'A payout request already exists for this order.');
+        }
+
+        $request->validate(['payout_notes' => 'nullable|string|max:500']);
+
+        // Platform takes 5% commission; seller receives 95%
+        $payoutAmount = round($order->subtotal * 0.95, 2);
+
+        $order->update([
+            'payout_status'       => 'requested',
+            'payout_amount'       => $payoutAmount,
+            'payout_requested_at' => now(),
+            'payout_notes'        => $request->payout_notes,
+        ]);
+
+        AuditLog::record('order.payout_requested', 'Order', $order->id, [
+            'payout_amount' => $payoutAmount,
+        ]);
+
+        return back()->with('success', "Payout of ₦" . number_format($payoutAmount, 2) . " requested. Admin will process within 2–3 business days.");
     }
 }

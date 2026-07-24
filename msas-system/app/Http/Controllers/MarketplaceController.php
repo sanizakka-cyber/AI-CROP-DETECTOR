@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class MarketplaceController extends Controller
@@ -167,6 +170,7 @@ class MarketplaceController extends Controller
         $request->validate([
             'delivery_address' => 'required|string|max:500',
             'delivery_notes'   => 'nullable|string|max:500',
+            'payment_method'   => 'required|in:cod,paystack',
         ]);
 
         $cart = session('cart', []);
@@ -232,8 +236,80 @@ class MarketplaceController extends Controller
         session()->forget('cart');
 
         $firstOrder = $createdOrders[0];
+        $orderIds   = collect($createdOrders)->pluck('id')->toArray();
+
+        AuditLog::record('order.placed', 'Order', $firstOrder->id, [
+            'order_ids'      => $orderIds,
+            'total'          => collect($createdOrders)->sum('total'),
+            'payment_method' => $request->payment_method,
+        ]);
+
+        // Online payment via Paystack
+        if ($request->payment_method === 'paystack' && config('services.paystack.secret_key')) {
+            $grandTotal = collect($createdOrders)->sum('total');
+            $reference  = 'ORD-' . strtoupper(Str::random(12));
+
+            $response = Http::withToken(config('services.paystack.secret_key'))
+                ->post(config('services.paystack.payment_url') . '/transaction/initialize', [
+                    'email'        => auth()->user()->email,
+                    'amount'       => (int) round($grandTotal * 100),
+                    'reference'    => $reference,
+                    'currency'     => 'NGN',
+                    'callback_url' => route('marketplace.payment.callback'),
+                    'metadata'     => [
+                        'order_ids' => $orderIds,
+                        'user_id'   => auth()->id(),
+                    ],
+                ]);
+
+            if ($response->successful() && $response->json('status')) {
+                // Tag all orders with the pending payment reference
+                Order::whereIn('id', $orderIds)->update(['payment_reference' => $reference]);
+                return redirect($response->json('data.authorization_url'));
+            }
+
+            Log::error('[Marketplace] Paystack init failed', ['response' => $response->json()]);
+            // Fall through to COD if Paystack fails
+            Order::whereIn('id', $orderIds)->update(['payment_method' => 'cod']);
+        }
+
         return redirect()->route('marketplace.orders.show', $firstOrder)
-            ->with('success', count($createdOrders) . ' order(s) placed successfully! Order ' . $firstOrder->order_number . ' is now pending.');
+            ->with('success', count($createdOrders) . ' order(s) placed! Order ' . $firstOrder->order_number . ' awaits confirmation.');
+    }
+
+    public function paymentCallback(Request $request)
+    {
+        $reference = $request->query('reference');
+        if (!$reference) {
+            return redirect()->route('marketplace')->with('error', 'Invalid payment reference.');
+        }
+
+        $response = Http::withToken(config('services.paystack.secret_key'))
+            ->get(config('services.paystack.payment_url') . "/transaction/verify/{$reference}");
+
+        if (!$response->successful() || $response->json('data.status') !== 'success') {
+            return redirect()->route('marketplace.orders')
+                ->with('error', 'Payment verification failed. Contact support with ref: ' . $reference);
+        }
+
+        $orders = Order::where('payment_reference', $reference)
+            ->where('buyer_id', auth()->id())
+            ->get();
+
+        foreach ($orders as $order) {
+            $order->update([
+                'payment_status'  => 'paid',
+                'payment_method'  => 'paystack',
+                'payment_channel' => 'online',
+            ]);
+            AuditLog::record('order.payment_confirmed', 'Order', $order->id, [
+                'reference' => $reference,
+                'amount'    => $order->total,
+            ]);
+        }
+
+        return redirect()->route('marketplace.orders')
+            ->with('success', 'Payment confirmed! Your ' . $orders->count() . ' order(s) are now being processed.');
     }
 
     // ── Buyer Orders ────────────────────────────────────────────────────────────

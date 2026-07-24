@@ -118,20 +118,40 @@
                         <span class="text-slate-300 mx-1">·</span>
                         <span class="font-bold text-[#0F6B3E] text-base">Total: ₦{{ number_format($order->total) }}</span>
                     </div>
-                    @if(!in_array($order->status, ['delivered','cancelled']))
-                    <form method="POST" action="{{ route('marketplace.sell.orders.status', $order) }}">
-                        @csrf @method('PATCH')
-                        <div class="flex items-center gap-2">
-                            <select name="status" class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F6B3E]/30">
-                                @foreach(['confirmed','processing','shipped','delivered'] as $s)
-                                <option value="{{ $s }}" {{ $order->status == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
-                                @endforeach
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                            <button class="px-4 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-semibold hover:bg-[#047857] transition">Update</button>
-                        </div>
-                    </form>
-                    @endif
+                    <div class="flex flex-wrap gap-2 items-center">
+                        @if(!in_array($order->status, ['delivered','cancelled']))
+                        <form method="POST" action="{{ route('marketplace.sell.orders.status', $order) }}">
+                            @csrf @method('PATCH')
+                            <div class="flex items-center gap-2">
+                                <select name="status" class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0F6B3E]/30">
+                                    @foreach(['confirmed','processing','shipped','delivered'] as $s)
+                                    <option value="{{ $s }}" {{ $order->status == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                                    @endforeach
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                                <button class="px-4 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-semibold hover:bg-[#047857] transition">Update</button>
+                            </div>
+                        </form>
+                        @endif
+
+                        {{-- Payout Request --}}
+                        @if($order->isPayoutEligible())
+                        <form method="POST" action="{{ route('marketplace.sell.orders.payout', $order) }}">
+                            @csrf
+                            <button type="submit"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition"
+                                onclick="return confirm('Request payout of ₦{{ number_format($order->subtotal * 0.95, 2) }} for this order? (5% platform fee deducted)')">
+                                Request Payout ₦{{ number_format($order->subtotal * 0.95, 2) }}
+                            </button>
+                        </form>
+                        @elseif($order->payout_status)
+                        @php $pc = ['requested'=>'bg-yellow-100 text-yellow-700','approved'=>'bg-blue-100 text-blue-700','paid'=>'bg-green-100 text-green-700','rejected'=>'bg-red-100 text-red-700']; @endphp
+                        <span class="px-3 py-1 rounded-full text-xs font-bold {{ $pc[$order->payout_status] ?? 'bg-slate-100 text-slate-600' }}">
+                            Payout: {{ ucfirst($order->payout_status) }}
+                            @if($order->payout_status === 'paid') · ₦{{ number_format($order->payout_amount) }} @endif
+                        </span>
+                        @endif
+                    </div>
                 </div>
             </div>
             @empty

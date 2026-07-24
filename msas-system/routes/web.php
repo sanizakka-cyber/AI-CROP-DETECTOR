@@ -311,6 +311,20 @@ Route::middleware(['auth', 'subscription'])->prefix('marketplace/sell')->name('m
     Route::post('/{product}/stock',        [MarketplaceSellController::class, 'adjustStock'])->name('sell.stock');
     Route::get('/orders',                  [MarketplaceSellController::class, 'orders'])->name('sell.orders');
     Route::patch('/orders/{order}/status', [MarketplaceSellController::class, 'updateOrderStatus'])->name('sell.orders.status');
+    Route::post('/orders/{order}/payout',  [MarketplaceSellController::class, 'requestPayout'])->name('sell.orders.payout');
+});
+
+// Marketplace payment callback (auth, after Paystack redirect)
+Route::middleware('auth')
+    ->get('/marketplace/payment/callback', [\App\Http\Controllers\MarketplaceController::class, 'paymentCallback'])
+    ->name('marketplace.payment.callback');
+
+// Admin payout management
+Route::middleware(['auth', 'role:admin,ceo,finance'])->prefix('admin/payouts')->name('admin.payouts.')->group(function () {
+    Route::get('/',                         [\App\Http\Controllers\AdminPayoutController::class, 'index'])->name('index');
+    Route::post('/{order}/approve',         [\App\Http\Controllers\AdminPayoutController::class, 'approve'])->name('approve');
+    Route::post('/{order}/reject',          [\App\Http\Controllers\AdminPayoutController::class, 'reject'])->name('reject');
+    Route::post('/{order}/mark-paid',       [\App\Http\Controllers\AdminPayoutController::class, 'markPaid'])->name('markPaid');
 });
 
 

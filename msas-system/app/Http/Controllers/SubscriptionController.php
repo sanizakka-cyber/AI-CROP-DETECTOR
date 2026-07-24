@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\SubscriptionUsage;
@@ -237,9 +238,13 @@ class SubscriptionController extends Controller
                 'cancelled_at'        => now(),
                 'cancellation_reason' => 'Upgraded to ' . $plan,
             ]);
+            AuditLog::record('subscription.upgraded_from', 'Subscription', $activeSub->id, [
+                'from_plan' => $activeSub->plan,
+                'to_plan'   => $plan,
+            ]);
         }
 
-        $user->subscriptions()->create([
+        $newSub = $user->subscriptions()->create([
             'plan'               => $plan,
             'status'             => 'active',
             'billing_cycle'      => $cycle,
@@ -250,6 +255,13 @@ class SubscriptionController extends Controller
             'payment_method'     => $method,
             'upgraded_from'      => $activeSub?->plan,
             'upgraded_at'        => $activeSub ? now() : null,
+        ]);
+
+        AuditLog::record('subscription.activated', 'Subscription', $newSub->id, [
+            'plan'          => $plan,
+            'billing_cycle' => $cycle,
+            'amount'        => $amount,
+            'method'        => $method,
         ]);
 
         // Record in unified payments table if a real payment was made
@@ -297,6 +309,11 @@ class SubscriptionController extends Controller
             'cancelled_at'        => now(),
             'auto_renew'          => false,
             'cancellation_reason' => $request->reason ?? 'User requested cancellation',
+        ]);
+
+        AuditLog::record('subscription.cancelled', 'Subscription', $activeSub->id, [
+            'plan'   => $activeSub->plan,
+            'reason' => $request->reason ?? 'User requested cancellation',
         ]);
 
         return redirect()->route('subscription.dashboard')
