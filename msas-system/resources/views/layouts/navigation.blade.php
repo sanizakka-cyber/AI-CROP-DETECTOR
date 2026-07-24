@@ -69,6 +69,9 @@
                         <a href="{{ route('admin.payments.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payments.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
                             Payments
                         </a>
+                        <a href="{{ route('admin.payouts.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payouts.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                            Payouts
+                        </a>
                     @endif
 
                     {{-- Farmer links --}}
@@ -245,6 +248,7 @@
             @endif
             @if(in_array($role, ['ceo', 'admin', 'finance']))
                 <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.payouts.index')">Payouts</x-responsive-nav-link>
             @endif
         </div>
 

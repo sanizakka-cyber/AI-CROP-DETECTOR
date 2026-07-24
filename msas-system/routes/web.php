@@ -381,4 +381,16 @@ Route::middleware(['auth', 'role:extension-officer,field-officer,admin,ceo'])->p
     Route::post('/visits',                              [\App\Http\Controllers\ExtensionController::class, 'storeVisit'])->name('visits.store');
 });
 
+// ── Scheduler Webhook (external cron trigger) ──────────────────────────────
+// Protected by SCHEDULER_KEY env var. Hit this URL every minute from cron-job.org.
+Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {
+    $key = config('app.scheduler_key');
+    if (!$key || $request->query('key') !== $key) {
+        abort(403, 'Forbidden');
+    }
+    \Illuminate\Support\Facades\Artisan::call('schedule:run');
+    return response('OK ' . now()->toIso8601String(), 200)
+        ->header('Content-Type', 'text/plain');
+})->name('scheduler.run');
+
 require __DIR__.'/auth.php';
