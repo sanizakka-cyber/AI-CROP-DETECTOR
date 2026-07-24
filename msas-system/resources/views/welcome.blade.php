@@ -861,33 +861,117 @@
 
 {{-- ═══════════ PRICING ═══════════ --}}
 <section id="pricing" class="s-py bg-white">
-    <div class="max-w-6xl mx-auto px-4">
+    <div class="max-w-7xl mx-auto px-4">
         <div class="text-center s-header-mb">
             <div class="section-tag mx-auto"><i class="fa-solid fa-tag"></i> Pricing</div>
-            <h2 class="section-title">Simple, Transparent<br/><span style="color:var(--green)">Pricing Plans</span></h2>
-            <p class="section-sub">Start free, scale as you grow. No hidden charges.</p>
+            <h2 class="section-title">Professional Plans for<br/><span style="color:var(--green)">Every Farm Size</span></h2>
+            <p class="section-sub">Start with a 14-day free trial. No credit card required. Cancel anytime.</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            @foreach([
-                ['Free Farmer','₦0','month','Basic farm management, AI scans (3/month), Marketplace access','register',false,['Farm records','AI Scans ×3','Marketplace','Mobile app','Community forum']],
-                ['Premium','₦2,500','month','Unlimited AI scans, Vet consultations, Weather alerts, Priority support','register',true,['Everything in Free','Unlimited AI Scans','Vet consultation','Weather intelligence','SMS alerts','Priority support']],
-                ['Enterprise','₦15,000','month','All features + custom integrations, dedicated support, bulk user management','register',false,['Everything in Premium','Custom integrations','API access','Dedicated manager','White-label option','SLA guarantee']],
-                ['Government / NGO','Custom','project','Tailored for large-scale deployments, nationwide coverage, M&E dashboards','register',false,['All Enterprise features','GIS & satellite mapping','M&E dashboards','Bulk registration','Training & onboarding','Policy reporting']],
-            ] as [$plan,$price,$per,$desc,$route,$featured,$items])
-            <div class="price-card {{ $featured ? 'featured' : '' }} fade-up">
-                @if($featured)<div class="text-center mb-3"><span class="text-xs font-bold uppercase tracking-widest text-white px-3 py-1 rounded-full" style="background:var(--green)">Most Popular</span></div>@endif
-                <div class="text-gray-500 font-semibold text-sm mb-1.5">{{ $plan }}</div>
-                <div class="font-heading font-extrabold text-2xl md:text-3xl mb-0.5 text-gray-900">{{ $price }}</div>
-                <div class="text-gray-400 text-xs mb-4">per {{ $per }}</div>
-                <p class="text-gray-500 text-xs leading-relaxed mb-4">{{ $desc }}</p>
-                <ul class="space-y-2 mb-5">
-                    @foreach($items as $item)
-                    <li class="flex items-start gap-2 text-xs text-gray-600"><i class="fa-solid fa-check shrink-0 mt-0.5" style="color:var(--green)"></i>{{ $item }}</li>
+
+        @php
+        $pricingPlans = [
+            [
+                'key'      => 'basic',
+                'name'     => 'Basic',
+                'monthly'  => '₦2,500',
+                'yearly'   => '₦25,000',
+                'badge'    => null,
+                'color'    => '#1FA84A',
+                'bg'       => '#f0fdf4',
+                'border'   => '#bbf7d0',
+                'desc'     => 'Perfect for individual smallholder farmers.',
+                'items'    => ['15 AI Smart Scans/month','50 Crop & Livestock Records','Marketplace access','Basic reports & downloads','Multilingual support','Email notifications'],
+            ],
+            [
+                'key'      => 'basic_pro',
+                'name'     => 'Basic Pro',
+                'monthly'  => '₦5,000',
+                'yearly'   => '₦50,000',
+                'badge'    => 'BEST VALUE',
+                'color'    => '#0D9488',
+                'bg'       => '#f0fdfa',
+                'border'   => '#99f6e4',
+                'desc'     => 'AI diagnostics + expert consultations at an affordable price.',
+                'items'    => ['25 AI Smart Scans/month','100 Crop & Livestock Records','3 Vet consultations/month','3 Agronomist consultations/month','AI & PDF Reports','Priority email support'],
+            ],
+            [
+                'key'      => 'premium',
+                'name'     => 'Premium',
+                'monthly'  => '₦10,000',
+                'yearly'   => '₦100,000',
+                'badge'    => 'MOST POPULAR',
+                'color'    => '#2D9CDB',
+                'bg'       => '#eff6ff',
+                'border'   => '#bfdbfe',
+                'desc'     => 'Full AI power for commercial farms and agribusinesses.',
+                'items'    => ['100 AI Smart Scans/month','Unlimited Records','15 Vet & Agronomist consultations/month','Marketplace Seller Account','AI Predictive Analytics','Weather Intelligence & SMS Alerts'],
+            ],
+            [
+                'key'      => 'enterprise',
+                'name'     => 'Enterprise',
+                'monthly'  => '₦30,000',
+                'yearly'   => '₦300,000',
+                'badge'    => null,
+                'color'    => '#7C3AED',
+                'bg'       => '#f5f3ff',
+                'border'   => '#ddd6fe',
+                'desc'     => 'For NGOs, cooperatives, government agencies and large organizations.',
+                'items'    => ['Unlimited AI Scans & Records','Unlimited Users','Unlimited Consultations','Dedicated Account Manager','Multi-Branch Management','API Access & Enterprise Security'],
+            ],
+            [
+                'key'      => 'enterprise_plus',
+                'name'     => 'Enterprise Plus',
+                'monthly'  => '₦75,000',
+                'yearly'   => '₦750,000',
+                'badge'    => 'RECOMMENDED',
+                'color'    => '#0B2447',
+                'bg'       => '#eef2ff',
+                'border'   => '#c7d2fe',
+                'desc'     => 'For multinationals, financial institutions and large-scale deployments.',
+                'items'    => ['Everything in Enterprise','AI Decision Intelligence','Custom AI Models & ML Analytics','White Label Option','Dedicated Cloud Resources','24/7 Support & Success Manager'],
+            ],
+        ];
+        @endphp
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
+            @foreach($pricingPlans as $pp)
+            <div class="price-card fade-up {{ $pp['badge'] ? 'featured' : '' }}" style="border-color:{{ $pp['border'] }};background:#fff;position:relative;overflow:hidden;">
+                @if($pp['badge'])
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:{{ $pp['color'] }};"></div>
+                <div class="text-center" style="margin-bottom:10px;">
+                    <span style="background:{{ $pp['color'] }};color:#fff;font-size:9px;font-weight:900;letter-spacing:.07em;padding:3px 10px;border-radius:20px;display:inline-block;text-transform:uppercase;">{{ $pp['badge'] }}</span>
+                </div>
+                @else
+                <div style="height:13px;"></div>
+                @endif
+
+                <div style="font-size:11px;font-weight:800;color:{{ $pp['color'] }};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">{{ $pp['name'] }}</div>
+                <div class="font-heading font-extrabold text-gray-900" style="font-size:1.6rem;line-height:1.1;">{{ $pp['monthly'] }}</div>
+                <div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">per month</div>
+                <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:10px;">{{ $pp['yearly'] }} / year</div>
+                <p style="font-size:11px;color:#64748b;line-height:1.5;margin-bottom:12px;min-height:32px;">{{ $pp['desc'] }}</p>
+                <ul style="list-style:none;padding:0;margin:0 0 14px;display:flex;flex-direction:column;gap:6px;">
+                    @foreach($pp['items'] as $item)
+                    <li style="display:flex;align-items:flex-start;gap:7px;font-size:11px;color:#374151;">
+                        <i class="fa-solid fa-check shrink-0" style="color:{{ $pp['color'] }};margin-top:2px;font-size:9px;"></i>
+                        {{ $item }}
+                    </li>
                     @endforeach
                 </ul>
-                <a href="{{ route($route) }}" class="{{ $featured ? 'btn-primary' : 'btn-outline' }} w-full justify-center text-sm">Get Started</a>
+                <a href="{{ route('register') }}?plan={{ $pp['key'] }}"
+                   style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px 0;border-radius:9px;font-size:12px;font-weight:700;text-decoration:none;background:{{ $pp['badge'] ? $pp['color'] : 'transparent' }};color:{{ $pp['badge'] ? '#fff' : $pp['color'] }};border:2px solid {{ $pp['color'] }};transition:all .2s;"
+                   onmouseover="this.style.background='{{ $pp['color'] }}';this.style.color='#fff';"
+                   onmouseout="this.style.background='{{ $pp['badge'] ? $pp['color'] : 'transparent' }}';this.style.color='{{ $pp['badge'] ? '#fff' : $pp['color'] }}';">
+                    Start Free Trial
+                </a>
             </div>
             @endforeach
+        </div>
+
+        <div class="text-center mt-8">
+            <p style="font-size:13px;color:#64748b;">All plans include a <strong>14-day free trial</strong>. &nbsp;|&nbsp;
+               Need a custom quote? <a href="#contact" style="color:var(--green);font-weight:700;text-decoration:none;">Contact us →</a>
+            </p>
         </div>
     </div>
 </section>

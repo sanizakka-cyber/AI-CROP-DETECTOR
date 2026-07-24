@@ -67,6 +67,101 @@
             @endforeach
         </div>
 
+        {{-- ── Subscription Analytics ────────────────────────────────────────── --}}
+        @php
+        $planColors = [
+            'basic'          => ['#1FA84A','Basic'],
+            'basic_pro'      => ['#0D9488','Basic Pro'],
+            'premium'        => ['#2D9CDB','Premium'],
+            'enterprise'     => ['#7C3AED','Enterprise'],
+            'enterprise_plus'=> ['#0B2447','Ent. Plus'],
+            'pro'            => ['#64748b','Pro (Legacy)'],
+        ];
+        @endphp
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Subscription Analytics
+                </h3>
+                <span style="font-size:11px;color:#64748b;">Updates every 2 minutes</span>
+            </div>
+
+            {{-- Status Row --}}
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
+                @php
+                $statuses = [
+                    ['label'=>'Total Subs',  'val'=>$subStats['total'],     'color'=>'#0f172a'],
+                    ['label'=>'Active',      'val'=>$subStats['active'],    'color'=>'#1FA84A'],
+                    ['label'=>'Trial',       'val'=>$subStats['trial'],     'color'=>'#2D9CDB'],
+                    ['label'=>'Expired',     'val'=>$subStats['expired'],   'color'=>'#dc2626'],
+                    ['label'=>'Cancelled',   'val'=>$subStats['cancelled'], 'color'=>'#94a3b8'],
+                    ['label'=>'Suspended',   'val'=>$subStats['suspended'], 'color'=>'#F4A300'],
+                ];
+                @endphp
+                @foreach($statuses as $st)
+                <div style="background:#f8fafc;border-radius:10px;padding:12px 10px;text-align:center;border-left:3px solid {{ $st['color'] }};">
+                    <div style="font-size:20px;font-weight:900;color:{{ $st['color'] }};">{{ $st['val'] }}</div>
+                    <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-top:2px;">{{ $st['label'] }}</div>
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Plans + Revenue Row --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Subscribers by plan --}}
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">Subscribers by Plan</div>
+                    @foreach($planColors as $pk => [$pc, $pn])
+                    @php $cnt = $subStats['by_plan'][$pk] ?? 0; $total = max(1, $subStats['active'] + $subStats['trial']); $pct = round($cnt / $total * 100); @endphp
+                    @if($cnt > 0 || in_array($pk, ['basic','basic_pro','premium']))
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                            <span style="font-size:12px;color:#374151;font-weight:600;">{{ $pn }}</span>
+                            <span style="font-size:12px;font-weight:800;color:{{ $pc }};">{{ $cnt }}</span>
+                        </div>
+                        <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                            <div style="height:100%;width:{{ $pct }}%;background:{{ $pc }};border-radius:3px;"></div>
+                        </div>
+                    </div>
+                    @endif
+                    @endforeach
+                </div>
+
+                {{-- Revenue --}}
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">Revenue</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                        <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;">Total Revenue</div>
+                            <div style="font-size:18px;font-weight:900;color:#0F6B3E;">₦{{ number_format($subStats['revenue_total']) }}</div>
+                        </div>
+                        <div style="background:#eff6ff;border-radius:10px;padding:12px;text-align:center;">
+                            <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;">This Month</div>
+                            <div style="font-size:18px;font-weight:900;color:#2D9CDB;">₦{{ number_format($subStats['revenue_month']) }}</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">Revenue by Plan</div>
+                    @foreach($planColors as $pk => [$pc, $pn])
+                    @php $rev = $subStats['revenue_by_plan'][$pk] ?? 0; @endphp
+                    @if($rev > 0)
+                    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:12px;color:#374151;">{{ $pn }}</span>
+                        <span style="font-size:12px;font-weight:800;color:{{ $pc }};">₦{{ number_format($rev) }}</span>
+                    </div>
+                    @endif
+                    @endforeach
+                    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                        <span style="font-size:12px;color:#64748b;">New this month</span>
+                        <span style="font-size:12px;font-weight:800;color:{{ $subStats['growth_pct'] >= 0 ? '#1FA84A' : '#dc2626' }};">
+                            {{ $subStats['new_this_month'] }}
+                            ({{ $subStats['growth_pct'] >= 0 ? '↑' : '↓' }}{{ abs($subStats['growth_pct']) }}%)
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ── Charts Row 1: User Growth + Revenue ── --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

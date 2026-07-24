@@ -58,9 +58,17 @@ $oldWard       = old('ward', '');
 @endpush
 
 @php
-$startStep = $oldRole ? 3 : 1;
-// If there are validation errors, we jump straight to step 3 (form) with role from old()
+$startStep       = $oldRole ? 3 : 1;
+$preselectedPlan = $preselectedPlan ?? old('plan', '');
+$planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[$preselectedPlan]['name'] : '';
 @endphp
+
+@if($planName)
+<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0;border-radius:10px;margin-bottom:14px;">
+    <svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span style="font-size:13px;color:#15803d;font-weight:600;">You selected <strong>{{ $planName }}</strong> — complete registration to start your free 14-day trial.</span>
+</div>
+@endif
 
 <div x-data="regWizard()" x-init="init()">
 
@@ -276,6 +284,7 @@ $startStep = $oldRole ? 3 : 1;
             <input type="hidden" name="state"       id="h_state"       :value="step2.state">
             <input type="hidden" name="lga"         id="h_lga"         :value="step2.lga">
             <input type="hidden" name="ward"        id="h_ward"        :value="step2.ward">
+            <input type="hidden" name="plan"        value="{{ $preselectedPlan }}">
 
             {{-- Summary card --}}
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;">

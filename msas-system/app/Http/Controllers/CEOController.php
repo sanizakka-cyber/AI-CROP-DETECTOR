@@ -11,6 +11,7 @@ use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
+use App\Models\Subscription;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -181,6 +182,53 @@ class CEOController extends Controller
                 ->toArray();
         } catch (\Exception $e) { $diseaseAlerts = []; }
 
+        // ── Subscription Analytics ─────────────────────────────────
+        try {
+            $planKeys = array_keys(config('subscription.plans', []));
+            $subStats = Cache::remember('ceo:sub_stats', 120, function () use ($planKeys) {
+                $all = Subscription::all();
+                $active  = $all->whereIn('status', ['active', 'trial']);
+                $byPlan  = $active->groupBy('plan')
+                                  ->map(fn($g) => $g->count());
+                $revenue = Subscription::where('status', 'active')
+                    ->selectRaw('plan, SUM(amount_paid) as total')
+                    ->groupBy('plan')
+                    ->pluck('total', 'plan');
+
+                $thisMonth = now()->format('Y-m');
+                $lastMonth = now()->subMonth()->format('Y-m');
+                $newThisMonth = Subscription::where('status', 'active')
+                    ->whereRaw("TO_CHAR(created_at, 'YYYY-MM') = ?", [$thisMonth])
+                    ->count();
+                $newLastMonth = Subscription::where('status', 'active')
+                    ->whereRaw("TO_CHAR(created_at, 'YYYY-MM') = ?", [$lastMonth])
+                    ->count();
+
+                return [
+                    'total'         => $all->count(),
+                    'active'        => $all->where('status', 'active')->count(),
+                    'trial'         => $all->where('status', 'trial')->count(),
+                    'expired'       => $all->where('status', 'expired')->count(),
+                    'cancelled'     => $all->where('status', 'cancelled')->count(),
+                    'suspended'     => $all->where('status', 'suspended')->count(),
+                    'by_plan'       => $byPlan->toArray(),
+                    'revenue_total' => $all->sum('amount_paid'),
+                    'revenue_month' => Subscription::whereRaw("TO_CHAR(created_at, 'YYYY-MM') = ?", [$thisMonth])->sum('amount_paid'),
+                    'revenue_by_plan' => $revenue->toArray(),
+                    'new_this_month'  => $newThisMonth,
+                    'growth_pct'    => $newLastMonth > 0 ? round((($newThisMonth - $newLastMonth) / $newLastMonth) * 100, 1) : 0,
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::warning('[CEO] Subscription stats failed: ' . $e->getMessage());
+            $subStats = [
+                'total' => 0, 'active' => 0, 'trial' => 0, 'expired' => 0,
+                'cancelled' => 0, 'suspended' => 0, 'by_plan' => [],
+                'revenue_total' => 0, 'revenue_month' => 0, 'revenue_by_plan' => [],
+                'new_this_month' => 0, 'growth_pct' => 0,
+            ];
+        }
+
         return view('ceo.dashboard', compact(
             'totalUsers','activeUsers','pendingExperts',
             'totalAnimals','totalDiagnoses','pendingConsults',
@@ -190,7 +238,8 @@ class CEOController extends Controller
             'presentToday','staffCount','pendingLeaves',
             'marketItems','pendingListings','diseaseAlerts',
             'monthlyGrowth','cropDiagnoses','livestockDiagnoses',
-            'stateActivity','platformHealth','resolutionRate','activePct'
+            'stateActivity','platformHealth','resolutionRate','activePct',
+            'subStats'
         ));
     }
 
