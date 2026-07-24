@@ -83,7 +83,7 @@ class MarketplaceSellController extends Controller implements HasMiddleware
         $data['is_approved'] = true;
         $data['dealer_id']   = auth()->id();
         $data['tags']        = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
-        $data['sku']         = $data['sku'] ?: 'SKU-' . strtoupper(Str::random(8));
+        $data['sku']         = !empty($data['sku'] ?? null) ? $data['sku'] : 'SKU-' . strtoupper(Str::random(8));
 
         Product::create($data);
 
