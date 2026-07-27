@@ -53,7 +53,7 @@ class DashboardController extends Controller
     {
         try { $totalUsers = \App\Models\User::count(); } catch (\Exception $e) { $totalUsers = 0; }
         try { $activeUsers = \App\Models\User::where('is_active', true)->count(); } catch (\Exception $e) { $activeUsers = 0; }
-        try { $pendingApprovals = \App\Models\User::where('is_verified', false)->whereIn('role', ['vet','agronomist','extension-officer'])->count(); } catch (\Exception $e) { $pendingApprovals = 0; }
+        try { $pendingApprovals = \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count(); } catch (\Exception $e) { $pendingApprovals = 0; }
         try { $recentUsers = \App\Models\User::latest()->take(10)->get(); } catch (\Exception $e) { $recentUsers = collect(); }
         try { $usersByRole = \App\Models\User::select('role', DB::raw('count(*) as count'))->groupBy('role')->pluck('count','role'); } catch (\Exception $e) { $usersByRole = collect(); }
         try { $newThisMonth = \App\Models\User::whereMonth('created_at', now()->month)->count(); } catch (\Exception $e) { $newThisMonth = 0; }
@@ -90,7 +90,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) { $recentConsults = collect(); }
 
         // ── Application / Verification Stats ───────────────────────────────────
-        try { $pendingVerifications = \App\Models\User::where('is_verified', false)->whereIn('role', ['vet','agronomist','extension-officer','agro-dealer','cooperative'])->count(); } catch (\Exception $e) { $pendingVerifications = 0; }
+        // Must match ApplicationController::index() query exactly so the counter = the page count
+        try { $pendingVerifications = \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count(); } catch (\Exception $e) { $pendingVerifications = 0; }
 
         return view('admin.dashboard', compact(
             'totalUsers','activeUsers','pendingApprovals','recentUsers',

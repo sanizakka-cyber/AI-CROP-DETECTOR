@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use App\Models\User;
 
 /*
@@ -23,8 +22,6 @@ use App\Models\User;
 |     lead can paste them into a password manager immediately.
 |  2. Every account is flagged is_test_account = true for easy bulk delete.
 |  3. Run the cleanup command BEFORE going to production:
-|       php artisan db:seed --class=QACleanupSeeder
-|     or:
 |       User::where('is_test_account', true)->forceDelete();
 |  4. Do NOT commit any file that contains these credentials.
 |     storage/qa-credentials-*.txt is already in .gitignore.
@@ -34,216 +31,357 @@ use App\Models\User;
 class QAAccountsSeeder extends Seeder
 {
     private const QA_ACCOUNTS = [
+        // ── Internal Staff ─────────────────────────────────────────────────────
         [
-            'role'            => 'farmer',
-            'first_name'      => 'QA',
-            'last_name'       => 'Farmer',
-            'email'           => 'qa-farmer@msas.test',
-            'phone'           => '+2348010000001',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'lga'             => 'QA District',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'Scan crops & livestock',
-                'View own diagnoses',
-                'Consult an expert',
-                'Browse & order from marketplace',
-                'Manage own farm records',
-            ],
+            'role'             => 'ceo',
+            'first_name'       => 'QA',
+            'last_name'        => 'CEO',
+            'email'            => 'qa-ceo@msas.test',
+            'phone'            => '+2348010000001',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/ceo',
+            'features_to_test' => ['Full system access','Executive analytics','Financial controls','Staff management','System settings'],
         ],
         [
-            'role'            => 'vet',
-            'first_name'      => 'QA',
-            'last_name'       => 'Vet',
-            'email'           => 'qa-vet@msas.test',
-            'phone'           => '+2347010000002',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'specialization'  => 'QA Livestock',
-            'years_experience'=> 5,
-            'consultation_fee'=> 0,
-            'license_number'  => 'QA-VET-0001',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'View assigned livestock cases',
-                'Write prescriptions',
-                'Mark cases complete',
-                'View own performance metrics',
-                'Verify: CANNOT access crop cases',
-            ],
+            'role'             => 'admin',
+            'first_name'       => 'QA',
+            'last_name'        => 'Admin',
+            'email'            => 'qa-admin@msas.test',
+            'phone'            => '+2348010000002',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/admin/dashboard',
+            'features_to_test' => ['User management','Approve/reject applications','Platform analytics','Cannot access financial controls'],
         ],
         [
-            'role'            => 'agronomist',
-            'first_name'      => 'QA',
-            'last_name'       => 'Agronomist',
-            'email'           => 'qa-agro@msas.test',
-            'phone'           => '+2347010000003',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'specialization'  => 'QA Crop Protection',
-            'years_experience'=> 4,
-            'consultation_fee'=> 0,
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'View assigned crop cases',
-                'Write advisory recommendations',
-                'Mark cases complete',
-                'View own performance metrics',
-                'Verify: CANNOT access livestock cases',
-            ],
+            'role'             => 'operations',
+            'first_name'       => 'QA',
+            'last_name'        => 'Operations',
+            'email'            => 'qa-ops@msas.test',
+            'phone'            => '+2348010000003',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/operations/dashboard',
+            'features_to_test' => ['Platform overview','User registrations','Task management','Cannot manage finances'],
         ],
         [
-            'role'            => 'admin',
-            'first_name'      => 'QA',
-            'last_name'       => 'Admin',
-            'email'           => 'qa-admin@msas.test',
-            'phone'           => '+2348010000004',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'User management (list, suspend, edit)',
-                'Approve/reject expert applications',
-                'View platform analytics',
-                'Access admin dashboard',
-                'Verify: CANNOT change system settings',
-                'Verify: CANNOT access financial controls',
-            ],
+            'role'             => 'finance',
+            'first_name'       => 'QA',
+            'last_name'        => 'Finance',
+            'email'            => 'qa-finance@msas.test',
+            'phone'            => '+2348010000004',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/finance/dashboard',
+            'features_to_test' => ['Income/expense tracking','Payroll','Financial reports','Monthly charts'],
         ],
         [
-            'role'            => 'agro-dealer',
-            'first_name'      => 'QA',
-            'last_name'       => 'Dealer',
-            'email'           => 'qa-dealer@msas.test',
-            'phone'           => '+2348010000005',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'organization'    => 'QA AgroShop',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'List products for sale',
-                'Manage inventory',
-                'View and fulfill orders',
-                'Request payout',
-                'Verify: CANNOT access consultation features',
-            ],
+            'role'             => 'hr',
+            'first_name'       => 'QA',
+            'last_name'        => 'HR',
+            'email'            => 'qa-hr@msas.test',
+            'phone'            => '+2348010000005',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/hr/dashboard',
+            'features_to_test' => ['Staff management','Attendance','Leave management','Payroll'],
         ],
         [
-            'role'            => 'extension-officer',
-            'first_name'      => 'QA',
-            'last_name'       => 'Extension Officer',
-            'email'           => 'qa-ext@msas.test',
-            'phone'           => '+2348010000006',
-            'language'        => 'ha',
-            'state'           => 'Katsina',
-            'lga'             => 'QA Coverage Area',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'View farms in assigned area',
-                'Create diagnoses on behalf of farmers',
-                'Escalate cases to experts',
-                'Verify: CANNOT approve experts',
-                'Verify: CANNOT access financial data',
-            ],
+            'role'             => 'customer-support',
+            'first_name'       => 'QA',
+            'last_name'        => 'Support',
+            'email'            => 'qa-support@msas.test',
+            'phone'            => '+2348010000006',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/customer-support/dashboard',
+            'features_to_test' => ['View users','Support tickets','User lookup','Cannot modify system'],
         ],
         [
-            'role'            => 'ceo',
-            'first_name'      => 'QA',
-            'last_name'       => 'CEO',
-            'email'           => 'qa-ceo@msas.test',
-            'phone'           => '+2348010000007',
-            'language'        => 'en',
-            'state'           => 'Katsina',
-            'is_verified'     => true,
-            'is_active'       => true,
-            'features_to_test'=> [
-                'Full system access',
-                'Executive dashboard & all analytics',
-                'Financial controls and payouts',
-                'Change system settings',
-                'Emergency controls',
-                'Approve/reject any expert or seller',
-            ],
+            'role'             => 'data-analyst',
+            'first_name'       => 'QA',
+            'last_name'        => 'Analyst',
+            'email'            => 'qa-analyst@msas.test',
+            'phone'            => '+2348010000007',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/data-analyst/dashboard',
+            'features_to_test' => ['User analytics','Role charts','Monthly registrations','Consultation trends'],
+        ],
+        [
+            'role'             => 'm-e-officer',
+            'first_name'       => 'QA',
+            'last_name'        => 'ME Officer',
+            'email'            => 'qa-me@msas.test',
+            'phone'            => '+2348010000008',
+            'state'            => 'Abuja',
+            'dashboard_url'    => '/monitoring-evaluation/dashboard',
+            'features_to_test' => ['KPI tracking','Adoption rates','State activity heatmap','Monthly summary reports'],
+        ],
+        [
+            'role'             => 'field-officer',
+            'first_name'       => 'QA',
+            'last_name'        => 'Field Officer',
+            'email'            => 'qa-field@msas.test',
+            'phone'            => '+2348010000009',
+            'state'            => 'Kano',
+            'dashboard_url'    => '/field-officer/dashboard',
+            'features_to_test' => ['Assigned farmers','Farm visits','Follow-up schedule','Reports submitted'],
+        ],
+
+        // ── Experts ────────────────────────────────────────────────────────────
+        [
+            'role'             => 'vet',
+            'first_name'       => 'QA',
+            'last_name'        => 'Veterinarian',
+            'email'            => 'qa-vet@msas.test',
+            'phone'            => '+2347010000010',
+            'state'            => 'Katsina',
+            'specialization'   => 'Large Animal Medicine',
+            'years_experience' => 5,
+            'consultation_fee' => 0,
+            'license_number'   => 'QA-VET-0001',
+            'dashboard_url'    => '/vet/dashboard',
+            'features_to_test' => ['Consultation queue','Livestock cases','Vaccination schedule','Disease alerts','Vet reports'],
+        ],
+        [
+            'role'             => 'agronomist',
+            'first_name'       => 'QA',
+            'last_name'        => 'Agronomist',
+            'email'            => 'qa-agro@msas.test',
+            'phone'            => '+2347010000011',
+            'state'            => 'Katsina',
+            'specialization'   => 'Crop Protection',
+            'years_experience' => 4,
+            'consultation_fee' => 0,
+            'dashboard_url'    => '/agronomist/dashboard',
+            'features_to_test' => ['Crop consultations','Advisory recommendations','AI review','Farmer reports'],
+        ],
+        [
+            'role'             => 'extension-officer',
+            'first_name'       => 'QA',
+            'last_name'        => 'Extension',
+            'email'            => 'qa-ext@msas.test',
+            'phone'            => '+2348010000012',
+            'state'            => 'Katsina',
+            'dashboard_url'    => '/extension/dashboard',
+            'features_to_test' => ['Farmer assignments','Advisory creation','Visit scheduling','Farm visits log'],
+        ],
+
+        // ── Farmers ────────────────────────────────────────────────────────────
+        [
+            'role'             => 'farmer',
+            'first_name'       => 'QA',
+            'last_name'        => 'Farmer',
+            'email'            => 'qa-farmer@msas.test',
+            'phone'            => '+2348010000013',
+            'state'            => 'Kano',
+            'dashboard_url'    => '/farmer/dashboard',
+            'features_to_test' => ['AI Scan','Marketplace buying','Sell produce','Consult expert','Farm records','Finance tracking'],
+        ],
+
+        // ── Dealers ────────────────────────────────────────────────────────────
+        [
+            'role'             => 'agro-dealer',
+            'first_name'       => 'QA',
+            'last_name'        => 'AgroDealer',
+            'email'            => 'qa-dealer@msas.test',
+            'phone'            => '+2348010000014',
+            'state'            => 'Lagos',
+            'organization'     => 'QA AgroShop',
+            'dashboard_url'    => '/dealer/dashboard',
+            'features_to_test' => ['Product catalogue','Add/edit/delete products','Orders','Sales revenue','Inventory management'],
+        ],
+        [
+            'role'             => 'equipment-dealer',
+            'first_name'       => 'QA',
+            'last_name'        => 'EquipDealer',
+            'email'            => 'qa-equip@msas.test',
+            'phone'            => '+2348010000015',
+            'state'            => 'Lagos',
+            'organization'     => 'QA Equipment Ltd',
+            'dashboard_url'    => '/equipment-dealer/dashboard',
+            'features_to_test' => ['Equipment inventory','Add equipment','Edit equipment','Orders','Delivery requests'],
+        ],
+        [
+            'role'             => 'agribusiness-owner',
+            'first_name'       => 'QA',
+            'last_name'        => 'AgriBiz',
+            'email'            => 'qa-agribiz@msas.test',
+            'phone'            => '+2348010000016',
+            'state'            => 'Oyo',
+            'organization'     => 'QA AgriBusiness',
+            'dashboard_url'    => '/agribusiness/dashboard',
+            'features_to_test' => ['Business analytics','Product sales','Orders','Revenue tracking'],
+        ],
+        [
+            'role'             => 'input-supplier',
+            'first_name'       => 'QA',
+            'last_name'        => 'Supplier',
+            'email'            => 'qa-supplier@msas.test',
+            'phone'            => '+2348010000017',
+            'state'            => 'Rivers',
+            'organization'     => 'QA Inputs Ltd',
+            'dashboard_url'    => '/input-supplier/dashboard',
+            'features_to_test' => ['Supply catalogue','Orders','Stock management','Revenue'],
+        ],
+
+        // ── Logistics ──────────────────────────────────────────────────────────
+        [
+            'role'             => 'rider',
+            'first_name'       => 'QA',
+            'last_name'        => 'Rider',
+            'email'            => 'qa-rider@msas.test',
+            'phone'            => '+2348010000018',
+            'state'            => 'Lagos',
+            'vehicle_type'     => 'motorcycle',
+            'rider_status'     => 'available',
+            'dashboard_url'    => '/rider/dashboard',
+            'features_to_test' => ['Accept delivery','Decline delivery','Navigate to customer','Mark delivered','Delivery history','Earnings'],
+        ],
+        [
+            'role'             => 'logistics-provider',
+            'first_name'       => 'QA',
+            'last_name'        => 'Logistics',
+            'email'            => 'qa-logistics@msas.test',
+            'phone'            => '+2348010000019',
+            'state'            => 'Lagos',
+            'organization'     => 'QA Logistics Co.',
+            'dashboard_url'    => '/logistics/dashboard',
+            'features_to_test' => ['Fleet overview','Drivers management','Vehicles','Deliveries','Routes'],
+        ],
+
+        // ── Organisations / External ───────────────────────────────────────────
+        [
+            'role'             => 'cooperative',
+            'first_name'       => 'QA',
+            'last_name'        => 'Cooperative',
+            'email'            => 'qa-coop@msas.test',
+            'phone'            => '+2348010000020',
+            'state'            => 'Kaduna',
+            'organization'     => 'QA Farmers Cooperative',
+            'dashboard_url'    => '/cooperative/dashboard',
+            'features_to_test' => ['Member management','Group AI scans','Cooperative finances','Reports'],
+        ],
+        [
+            'role'             => 'ngo',
+            'first_name'       => 'QA',
+            'last_name'        => 'NGO',
+            'email'            => 'qa-ngo@msas.test',
+            'phone'            => '+2348010000021',
+            'state'            => 'Borno',
+            'organization'     => 'QA AgriRelief NGO',
+            'dashboard_url'    => '/ngo/dashboard',
+            'features_to_test' => ['Project management','Beneficiary tracking','NGO reports','Analytics','Intervention monitoring'],
+        ],
+        [
+            'role'             => 'government-agency',
+            'first_name'       => 'QA',
+            'last_name'        => 'Government',
+            'email'            => 'qa-govt@msas.test',
+            'phone'            => '+2348010000022',
+            'state'            => 'Abuja',
+            'organization'     => 'QA FMARD',
+            'dashboard_url'    => '/government/dashboard',
+            'features_to_test' => ['Monitoring dashboard','Statistics','Farmer registrations','Regulatory data','Reports'],
+        ],
+        [
+            'role'             => 'research-institution',
+            'first_name'       => 'QA',
+            'last_name'        => 'Researcher',
+            'email'            => 'qa-research@msas.test',
+            'phone'            => '+2348010000023',
+            'state'            => 'Ibadan',
+            'organization'     => 'QA Agricultural Research Institute',
+            'dashboard_url'    => '/research-institution/dashboard',
+            'features_to_test' => ['Research workspace','AI dataset access','Data analysis','Publications','Reports'],
+        ],
+        [
+            'role'             => 'investor',
+            'first_name'       => 'QA',
+            'last_name'        => 'Investor',
+            'email'            => 'qa-investor@msas.test',
+            'phone'            => '+2348010000024',
+            'state'            => 'Lagos',
+            'organization'     => 'QA AgriVenture Capital',
+            'dashboard_url'    => '/investor/dashboard',
+            'features_to_test' => ['Investment opportunities','Project portfolio','Financial reports','Market analytics'],
+        ],
+        [
+            'role'             => 'financial-institution',
+            'first_name'       => 'QA',
+            'last_name'        => 'Bank',
+            'email'            => 'qa-bank@msas.test',
+            'phone'            => '+2348010000025',
+            'state'            => 'Lagos',
+            'organization'     => 'QA AgriBank',
+            'dashboard_url'    => '/financial-institution/dashboard',
+            'features_to_test' => ['Loan portfolio','Farmer creditworthiness','Risk analytics','Disbursement reports'],
         ],
     ];
 
     public function run(): void
     {
         $this->command->warn('');
-        $this->command->warn('╔══════════════════════════════════════════════════════════════╗');
-        $this->command->warn('║  QA ACCOUNTS SEEDER — CREDENTIALS PRINTED BELOW             ║');
-        $this->command->warn('║  Copy them into your password manager NOW.                   ║');
-        $this->command->warn('║  These will NOT be shown again.                             ║');
-        $this->command->warn('╚══════════════════════════════════════════════════════════════╝');
+        $this->command->warn('╔══════════════════════════════════════════════════════════════════════╗');
+        $this->command->warn('║  QA ACCOUNTS SEEDER — ' . count(self::QA_ACCOUNTS) . ' ROLES — CREDENTIALS BELOW        ║');
+        $this->command->warn('║  Copy them into your password manager NOW. Not stored in code.      ║');
+        $this->command->warn('╚══════════════════════════════════════════════════════════════════════╝');
         $this->command->warn('');
 
         $summary  = [];
-        $logLines = ["MSAS QA Credentials — generated " . now()->toDateTimeString(), str_repeat('-', 72)];
+        $logLines = ["MSAS QA Credentials — generated " . now()->toDateTimeString(), str_repeat('=', 80)];
 
         foreach (self::QA_ACCOUNTS as $spec) {
             $password = $this->generateStrongPassword();
 
             $userData = array_filter([
-                'first_name'       => $spec['first_name'],
-                'last_name'        => $spec['last_name'],
-                'email'            => $spec['email'],
-                'phone'            => $spec['phone'],
-                'password'         => Hash::make($password),
-                'role'             => $spec['role'],
-                'language'         => $spec['language'],
-                'state'            => $spec['state'],
-                'lga'              => $spec['lga']             ?? null,
-                'specialization'   => $spec['specialization']  ?? null,
-                'years_experience' => $spec['years_experience'] ?? null,
-                'consultation_fee' => $spec['consultation_fee'] ?? null,
-                'license_number'   => $spec['license_number']  ?? null,
-                'organization'     => $spec['organization']    ?? null,
-                'is_verified'      => $spec['is_verified'],
-                'is_active'        => $spec['is_active'],
-                'is_test_account'  => true,
+                'first_name'          => $spec['first_name'],
+                'last_name'           => $spec['last_name'],
+                'email'               => $spec['email'],
+                'phone'               => $spec['phone'],
+                'password'            => Hash::make($password),
+                'role'                => $spec['role'],
+                'state'               => $spec['state']              ?? null,
+                'organization'        => $spec['organization']       ?? null,
+                'specialization'      => $spec['specialization']     ?? null,
+                'years_experience'    => $spec['years_experience']   ?? null,
+                'consultation_fee'    => $spec['consultation_fee']   ?? null,
+                'license_number'      => $spec['license_number']     ?? null,
+                'vehicle_type'        => $spec['vehicle_type']       ?? null,
+                'rider_status'        => $spec['rider_status']       ?? null,
+                'language'            => 'en',
+                'is_verified'         => true,
+                'is_active'           => true,
+                'application_status'  => 'approved',
+                'is_test_account'     => true,
             ], fn($v) => $v !== null);
 
             User::updateOrCreate(['email' => $spec['email']], $userData);
 
-            $fullName   = trim("{$spec['first_name']} {$spec['last_name']}");
-            $summary[]  = [$spec['role'], $spec['email'], $spec['phone'], $password];
-            $logLines[] = "ROLE:     {$spec['role']}";
-            $logLines[] = "EMAIL:    {$spec['email']}";
-            $logLines[] = "PHONE:    {$spec['phone']}";
-            $logLines[] = "PASSWORD: {$password}";
-            $logLines[] = "TEST FEATURES:";
+            $summary[]  = [$spec['role'], $spec['email'], $spec['dashboard_url'], $password];
+            $logLines[] = "ROLE:         {$spec['role']}";
+            $logLines[] = "EMAIL:        {$spec['email']}";
+            $logLines[] = "PHONE:        {$spec['phone']}";
+            $logLines[] = "PASSWORD:     {$password}";
+            $logLines[] = "DASHBOARD:    https://ai.msasagro.com{$spec['dashboard_url']}";
+            $logLines[] = "TEST CHECKLIST:";
             foreach ($spec['features_to_test'] as $f) {
-                $logLines[] = "  • {$f}";
+                $logLines[] = "  ✓ {$f}";
             }
-            $logLines[] = str_repeat('-', 72);
+            $logLines[] = str_repeat('-', 80);
         }
 
-        // Print credentials table to terminal ONCE.
         $this->command->table(
-            ['Role', 'Email', 'Phone', 'Password'],
+            ['Role', 'Email', 'Dashboard', 'Password'],
             $summary
         );
 
-        // Write to storage (excluded from git via default .gitignore on storage/).
         $filename = storage_path('qa-credentials-' . now()->format('Ymd-His') . '.txt');
         file_put_contents($filename, implode("\n", $logLines) . "\n");
 
         $this->command->warn('');
         $this->command->warn("⚠  Credentials also saved to: {$filename}");
         $this->command->warn('   Move them to your password manager, then delete this file.');
-        $this->command->warn('   Run  php artisan msas:qa-cleanup  to delete all test accounts before production.');
+        $this->command->warn('   To remove all test accounts: User::where(\'is_test_account\',true)->forceDelete()');
         $this->command->warn('');
-        $this->command->info('✅ ' . count(self::QA_ACCOUNTS) . ' QA accounts created (is_test_account = true).');
+        $this->command->info('✅ ' . count(self::QA_ACCOUNTS) . ' QA accounts created / updated (is_test_account = true).');
     }
 
-    // ── Generates a 20-char password: mixed case + digits + symbols ───────────
     private function generateStrongPassword(): string
     {
         $upper   = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -252,21 +390,16 @@ class QAAccountsSeeder extends Seeder
         $symbols = '!@#$%^&*';
 
         $password = '';
-        // Guarantee at least 3 of each character class.
         for ($i = 0; $i < 3; $i++) {
             $password .= $upper[random_int(0, strlen($upper) - 1)];
             $password .= $lower[random_int(0, strlen($lower) - 1)];
             $password .= $digits[random_int(0, strlen($digits) - 1)];
             $password .= $symbols[random_int(0, strlen($symbols) - 1)];
         }
-
-        // Pad to 20 characters with random lower-case.
         while (strlen($password) < 20) {
-            $pool     = $upper . $lower . $digits . $symbols;
+            $pool      = $upper . $lower . $digits . $symbols;
             $password .= $pool[random_int(0, strlen($pool) - 1)];
         }
-
-        // Shuffle so the pattern isn't predictable.
         return str_shuffle($password);
     }
 }
