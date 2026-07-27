@@ -430,6 +430,16 @@ Route::middleware(['auth', 'role:extension-officer,field-officer,admin,ceo'])->p
     Route::post('/visits',                              [\App\Http\Controllers\ExtensionController::class, 'storeVisit'])->name('visits.store');
 });
 
+// ── Public Order Tracking ─────────────────────────────────────────────────
+Route::get('/track/{orderNumber}', [\App\Http\Controllers\TrackOrderController::class, 'show'])->name('track.order');
+
+// ── AI Widget Proxy (authenticated) ───────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::post('/ai/weather', [\App\Http\Controllers\AiWidgetController::class, 'weather'])->name('ai.weather');
+    Route::post('/ai/market',  [\App\Http\Controllers\AiWidgetController::class, 'market'])->name('ai.market');
+    Route::post('/ai/chat',    [\App\Http\Controllers\AiWidgetController::class, 'chat'])->name('ai.chat');
+});
+
 // ── Scheduler Webhook (external cron trigger) ──────────────────────────────
 // Protected by SCHEDULER_KEY env var. Hit this URL every minute from cron-job.org.
 Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {

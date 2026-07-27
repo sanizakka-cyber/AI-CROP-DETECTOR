@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\MobileNotification;
 use App\Models\Notification;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -68,13 +69,20 @@ class RiderController extends Controller
         $rider = auth()->user();
         $vehicle = $rider->vehicle_type ? ucfirst($rider->vehicle_type) : 'Motorcycle';
 
+        $acceptMsg = "Your order {$order->order_number} has been accepted by {$rider->first_name} {$rider->last_name} ({$vehicle}). Contact: {$rider->phone}. Delivery in progress.";
+
         Notification::create([
             'user_id' => $order->buyer_id,
             'title'   => 'Rider On the Way!',
-            'message' => "Your order {$order->order_number} has been accepted by {$rider->first_name} {$rider->last_name} ({$vehicle}). Contact: {$rider->phone}. Delivery in progress.",
+            'message' => $acceptMsg,
             'type'    => 'success',
             'link'    => '/marketplace/orders/' . $order->id,
         ]);
+
+        MobileNotification::send($order->buyer_id, 'Rider On the Way! 🛵', $acceptMsg, 'order', [
+            'order_id'     => $order->id,
+            'order_number' => $order->order_number,
+        ], '🛵');
 
         AuditLog::record('order.rider_accepted', 'Order', $order->id, ['rider_id' => auth()->id()]);
 
@@ -153,13 +161,20 @@ class RiderController extends Controller
         ]);
 
         // Notify buyer to confirm
+        $deliveredMsg = "Your order {$order->order_number} has arrived! Please confirm delivery or report an issue.";
+
         Notification::create([
             'user_id' => $order->buyer_id,
             'title'   => 'Order Delivered — Please Confirm',
-            'message' => "Your order {$order->order_number} has arrived! Please confirm delivery or report an issue.",
+            'message' => $deliveredMsg,
             'type'    => 'success',
             'link'    => '/marketplace/orders/' . $order->id,
         ]);
+
+        MobileNotification::send($order->buyer_id, 'Order Delivered! ✅', $deliveredMsg, 'order', [
+            'order_id'     => $order->id,
+            'order_number' => $order->order_number,
+        ], '📦');
 
         if ($order->dealer_id) {
             Notification::create([

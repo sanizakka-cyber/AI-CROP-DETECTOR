@@ -410,4 +410,64 @@
         </div>
     </div>
 </div>
+
+{{-- ── AI Weather Advisory Widget ──────────────────────────────────── --}}
+<div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,.05);overflow:hidden;margin-top:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f1f5f9;cursor:pointer;" onclick="toggleWeatherWidget()">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:linear-gradient(135deg,#0ea5e9,#2D9CDB);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌦️</div>
+            <div>
+                <div style="font-weight:800;font-size:14px;color:#0f172a;">AI Weather Advisory</div>
+                <div style="font-size:11px;color:#94a3b8;">Farming-specific forecast for your region</div>
+            </div>
+        </div>
+        <div id="weather-chevron" style="color:#94a3b8;font-size:18px;transition:transform .2s;">▼</div>
+    </div>
+
+    <div id="weather-body" style="display:none;padding:16px 20px;">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+            <input type="text" id="weather-location" placeholder="Your location (e.g. Kano, Ogun)" value="{{ auth()->user()->state ?? '' }}"
+                   style="flex:1;min-width:160px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;">
+            <input type="text" id="weather-crop" placeholder="Current crop (optional)"
+                   style="flex:1;min-width:130px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;">
+            <button onclick="loadWeather()" style="padding:8px 18px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">Get Forecast</button>
+        </div>
+        <div id="weather-result" style="min-height:60px;font-size:13px;color:#475569;line-height:1.6;">
+            <span style="color:#94a3b8;">Press "Get Forecast" to load AI weather advisory for your farm.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleWeatherWidget() {
+    var body = document.getElementById('weather-body');
+    var chevron = document.getElementById('weather-chevron');
+    var open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+function loadWeather() {
+    var loc = document.getElementById('weather-location').value || 'Nigeria';
+    var crop = document.getElementById('weather-crop').value;
+    var result = document.getElementById('weather-result');
+    result.innerHTML = '<span style="color:#94a3b8;">⏳ Loading AI weather advisory...</span>';
+    var fd = new FormData();
+    fd.append('location', loc);
+    if (crop) fd.append('crop', crop);
+    fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+    fetch('/ai/weather', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) { result.innerHTML = '<span style="color:#ef4444;">⚠ ' + d.error + '</span>'; return; }
+            var html = '';
+            var summary = d.summary || d.forecast || d.advisory || d.recommendation || '';
+            if (summary) html += '<div style="margin-bottom:10px;">' + summary + '</div>';
+            if (d.temperature) html += '<div style="font-size:12px;color:#64748b;">🌡 Temperature: ' + d.temperature + '</div>';
+            if (d.rainfall) html += '<div style="font-size:12px;color:#64748b;">🌧 Rainfall: ' + d.rainfall + '</div>';
+            if (d.farming_advice) html += '<div style="margin-top:8px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #0F6B3E;border-radius:6px;font-size:12px;color:#166534;">' + d.farming_advice + '</div>';
+            result.innerHTML = html || JSON.stringify(d, null, 2);
+        })
+        .catch(function() { result.innerHTML = '<span style="color:#ef4444;">⚠ Weather service temporarily unavailable.</span>'; });
+}
+</script>
 </x-app-layout>

@@ -287,4 +287,67 @@
         document.addEventListener('keydown', function(e){ if(e.key==='Escape') window.closeContactModal(); });
     })();
     </script>
+
+    {{-- AI Market Price Widget --}}
+    <div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer" onclick="toggleMarketWidget()">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:linear-gradient(135deg,#F4A300,#f59e0b);">📈</div>
+                <div>
+                    <div class="font-extrabold text-slate-800 text-sm">AI Market Price Advisor</div>
+                    <div class="text-[11px] text-slate-400">Get real-time crop price intelligence</div>
+                </div>
+            </div>
+            <span id="market-chevron" class="text-slate-400 text-lg transition-transform duration-200">▼</span>
+        </div>
+        <div id="market-body" class="hidden px-5 py-4">
+            <div class="flex flex-wrap gap-2 mb-3">
+                <input type="text" id="market-crop" placeholder="Crop or product (e.g. Maize, Tomato)"
+                       class="flex-1 min-w-[160px] border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+                <input type="text" id="market-region" placeholder="Region (e.g. Lagos, Kano)"
+                       class="flex-1 min-w-[130px] border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+                <button onclick="loadMarket()"
+                        class="px-4 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm hover:bg-amber-600 transition">
+                    Get Prices
+                </button>
+            </div>
+            <div id="market-result" class="text-sm text-slate-500 min-h-[50px]">
+                <span class="text-slate-400">Enter a crop and region to get AI-powered market price insights.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function toggleMarketWidget() {
+        var body = document.getElementById('market-body');
+        var chevron = document.getElementById('market-chevron');
+        var open = !body.classList.contains('hidden');
+        body.classList.toggle('hidden', open);
+        chevron.style.transform = open ? '' : 'rotate(180deg)';
+    }
+    function loadMarket() {
+        var crop = document.getElementById('market-crop').value;
+        var region = document.getElementById('market-region').value || 'Nigeria';
+        var result = document.getElementById('market-result');
+        if (!crop) { result.innerHTML = '<span style="color:#f59e0b;">Please enter a crop name.</span>'; return; }
+        result.innerHTML = '<span class="text-slate-400">⏳ Fetching market prices...</span>';
+        var fd = new FormData();
+        fd.append('crop', crop);
+        fd.append('region', region);
+        fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+        fetch('/ai/market', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.error) { result.innerHTML = '<span style="color:#ef4444;">⚠ ' + d.error + '</span>'; return; }
+                var html = '';
+                var summary = d.summary || d.analysis || d.market_analysis || d.recommendation || '';
+                if (summary) html += '<div class="mb-2">' + summary + '</div>';
+                if (d.current_price) html += '<div class="text-xs text-slate-500">💰 Current Price: ' + d.current_price + '</div>';
+                if (d.price_trend) html += '<div class="text-xs text-slate-500">📊 Trend: ' + d.price_trend + '</div>';
+                if (d.best_time_to_sell) html += '<div class="mt-2 p-3 rounded-lg text-xs" style="background:#fffbeb;border-left:3px solid #F4A300;color:#92400e;">' + d.best_time_to_sell + '</div>';
+                result.innerHTML = html || JSON.stringify(d, null, 2);
+            })
+            .catch(function() { result.innerHTML = '<span style="color:#ef4444;">⚠ Market service temporarily unavailable.</span>'; });
+    }
+    </script>
 </x-app-layout>

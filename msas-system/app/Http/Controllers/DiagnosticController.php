@@ -19,13 +19,14 @@ class DiagnosticController extends Controller
     public function analyze(Request $request)
     {
         $request->validate([
-            'scan_type'       => 'required|in:plant,animal,soil',
+            'scan_type'       => 'required|in:plant,animal,soil,pest',
             'image'           => 'required|image|max:5120',
             'crop_type'       => 'nullable|string|max:100',
             'crop_part'       => 'nullable|string|max:100',
             'animal_type'     => 'nullable|string|max:100',
             'assessment_type' => 'nullable|string|max:100',
             'soil_context'    => 'nullable|string|max:300',
+            'pest_location'   => 'nullable|string|max:100',
         ]);
 
         // ── 1. Store image ────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ class DiagnosticController extends Controller
         $aiEndpoint = match($request->scan_type) {
             'plant'  => "{$baseUrl}/predict/crop",
             'soil'   => "{$baseUrl}/predict/soil",
+            'pest'   => "{$baseUrl}/predict/pest",
             default  => "{$baseUrl}/predict/livestock",
         };
 
@@ -67,6 +69,10 @@ class DiagnosticController extends Controller
                 'animal' => array_filter([
                     'animalType'     => $request->input('animal_type'),
                     'assessmentType' => $request->input('assessment_type'),
+                ]),
+                'pest' => array_filter([
+                    'cropType' => $request->input('crop_type'),
+                    'location' => $request->input('pest_location'),
                 ]),
                 default => array_filter([
                     'soilContext' => $request->input('soil_context'),
