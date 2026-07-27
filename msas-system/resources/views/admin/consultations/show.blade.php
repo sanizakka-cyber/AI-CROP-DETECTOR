@@ -96,26 +96,48 @@
             </div>
             @endif
 
+            {{-- Consultant status badge --}}
+            @if($consultation->expert_id && $consultation->consultant_status)
+            @php
+                $csBadge = match($consultation->consultant_status) {
+                    'pending_acceptance' => ['Pending Acceptance', 'bg-amber-100 text-amber-700'],
+                    'accepted'           => ['Accepted', 'bg-green-100 text-green-700'],
+                    'declined_by_expert' => ['Declined by Expert', 'bg-red-100 text-red-700'],
+                    default              => [ucfirst($consultation->consultant_status), 'bg-slate-100 text-slate-600'],
+                };
+            @endphp
+            <div class="mb-3">
+                <span class="px-3 py-1 rounded-full text-xs font-bold {{ $csBadge[1] }}">{{ $csBadge[0] }}</span>
+            </div>
+            @endif
+
             @if($consultation->status === 'open')
-            <form method="POST" action="{{ route('admin.consultations.assign', $consultation) }}" class="flex flex-wrap gap-3 items-end">
+            @if(count($experts) === 0)
+            <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                No {{ $consultation->case_type === 'crop' ? 'agronomists / extension officers' : 'veterinarians' }} found. Ensure experts are registered and approved on the platform.
+            </div>
+            @else
+            <form method="POST" action="{{ route('admin.consultations.assign', $consultation) }}" class="space-y-3">
                 @csrf
-                <div class="flex-1 min-w-[200px]">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">
-                        {{ $consultation->expert_id ? 'Reassign' : 'Assign' }} Expert
-                    </label>
-                    <select name="expert_id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-                        <option value="">Select {{ $consultation->case_type === 'crop' ? 'agronomist' : 'vet' }}…</option>
-                        @foreach($experts as $e)
-                        <option value="{{ $e->id }}" {{ $consultation->expert_id === $e->id ? 'selected' : '' }}>
-                            {{ $e->first_name }} {{ $e->last_name }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    {{ $consultation->expert_id ? 'Reassign' : 'Assign' }} Expert
+                </label>
+                <select name="expert_id" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                    <option value="">— Select {{ $consultation->case_type === 'crop' ? 'agronomist / extension officer' : 'veterinarian' }} —</option>
+                    @foreach($experts as $e)
+                    <option value="{{ $e->id }}" {{ $consultation->expert_id === $e->id ? 'selected' : '' }}>
+                        {{ $e->first_name }} {{ $e->last_name }}
+                        ({{ ucfirst(str_replace('-', ' ', $e->role)) }})
+                        {{ $e->state ? '· ' . $e->state : '' }}
+                        {{ $e->is_verified ? '✓' : '' }}
+                    </option>
+                    @endforeach
+                </select>
                 <button class="px-4 py-2 bg-[#0F6B3E] text-white rounded-lg text-sm font-bold hover:bg-[#047857]">
-                    {{ $consultation->expert_id ? 'Reassign' : 'Assign Expert' }}
+                    {{ $consultation->expert_id ? 'Reassign Expert' : 'Assign Expert' }}
                 </button>
             </form>
+            @endif
             @endif
         </div>
 
