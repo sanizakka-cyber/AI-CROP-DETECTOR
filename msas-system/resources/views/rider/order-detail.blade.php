@@ -92,10 +92,17 @@
         </div>
         @elseif($rs === 'in_transit')
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-            <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-3">Actions</h3>
-            <form method="POST" action="{{ route('rider.orders.delivered', $order) }}" onsubmit="return confirm('Confirm that this order has been delivered?')">
+            <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide mb-3">Confirm Delivery</h3>
+            <form method="POST" action="{{ route('rider.orders.delivered', $order) }}" enctype="multipart/form-data"
+                  onsubmit="return confirm('Confirm that this order has been delivered?')">
                 @csrf
-                <button class="w-full py-3 bg-[#0F6B3E] text-white rounded-xl font-bold hover:bg-[#047857]">Confirm Delivery Complete</button>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Proof of Delivery Photo <span class="text-slate-300 font-normal">(optional)</span></label>
+                    <input type="file" name="proof" accept="image/*" capture="environment"
+                           class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                    <p class="text-xs text-slate-400 mt-1">Take a photo showing the package at the delivery address. Max 5 MB.</p>
+                </div>
+                <button class="w-full py-3 bg-[#0F6B3E] text-white rounded-xl font-bold hover:bg-[#047857]">Mark as Delivered</button>
             </form>
         </div>
         @endif

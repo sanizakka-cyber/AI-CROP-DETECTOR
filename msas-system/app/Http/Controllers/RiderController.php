@@ -149,15 +149,23 @@ class RiderController extends Controller
         return back()->with('success', 'Order marked as in transit.');
     }
 
-    public function markDelivered(Order $order)
+    public function markDelivered(Request $request, Order $order)
     {
         abort_if($order->rider_id !== auth()->id(), 403);
         abort_if($order->rider_status !== 'in_transit', 422);
 
+        $request->validate(['proof' => 'nullable|image|max:5120']);
+
+        $proofPath = null;
+        if ($request->hasFile('proof')) {
+            $proofPath = $request->file('proof')->store('proof_of_delivery', 'public');
+        }
+
         $order->update([
-            'rider_status' => 'awaiting_confirmation',
-            'status'       => 'delivered',
-            'delivered_at' => now(),
+            'rider_status'       => 'awaiting_confirmation',
+            'status'             => 'delivered',
+            'delivered_at'       => now(),
+            'proof_of_delivery'  => $proofPath,
         ]);
 
         // Notify buyer to confirm

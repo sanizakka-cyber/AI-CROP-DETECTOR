@@ -288,7 +288,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/marketplace/orders/{order}',                [\App\Http\Controllers\MarketplaceController::class, 'showOrder'])->name('marketplace.orders.show');
     Route::post('/marketplace/orders/{order}/confirm',       [\App\Http\Controllers\MarketplaceController::class, 'confirmDelivery'])->name('marketplace.orders.confirm');
     Route::post('/marketplace/orders/{order}/report-issue',  [\App\Http\Controllers\MarketplaceController::class, 'reportIssue'])->name('marketplace.orders.report');
-    Route::get('/marketplace/{product}',                     [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show')->whereNumber('product');
+    Route::get('/marketplace/{product}',                        [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show')->whereNumber('product');
+    Route::post('/marketplace/{product}/reviews',               [\App\Http\Controllers\MarketplaceController::class, 'storeReview'])->name('marketplace.reviews.store');
+    Route::delete('/marketplace/reviews/{review}',              [\App\Http\Controllers\MarketplaceController::class, 'deleteReview'])->name('marketplace.reviews.delete');
 });
 
 // Notifications

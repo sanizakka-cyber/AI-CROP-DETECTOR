@@ -129,6 +129,119 @@
         </div>
         @endif
 
+        {{-- Reviews --}}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="flex items-baseline justify-between border-b pb-3">
+                <h2 class="font-extrabold text-slate-800 text-lg">Reviews
+                    @if($product->rating_count > 0)
+                    <span class="text-sm font-semibold text-amber-500 ml-2">★ {{ number_format($product->rating, 1) }}</span>
+                    <span class="text-xs text-slate-400">({{ $product->rating_count }})</span>
+                    @endif
+                </h2>
+            </div>
+
+            {{-- Write a review --}}
+            @if($userCanReview)
+            <form method="POST" action="{{ route('marketplace.reviews.store', $product) }}" class="space-y-3 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                @csrf
+                <p class="text-sm font-bold text-slate-700">Write Your Review</p>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-slate-600">Rating:</label>
+                    <div class="flex gap-1" id="star-row">
+                        @for($i=1;$i<=5;$i++)
+                        <label class="cursor-pointer text-2xl leading-none">
+                            <input type="radio" name="rating" value="{{ $i }}" class="sr-only" {{ old('rating')==$i?'checked':'' }}>
+                            <span class="star text-slate-300 hover:text-amber-400" data-val="{{ $i }}">★</span>
+                        </label>
+                        @endfor
+                    </div>
+                </div>
+                @error('rating')<p class="text-xs text-red-500">{{ $message }}</p>@enderror
+                <textarea name="review" rows="3" placeholder="Share your experience with this product…" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0F6B3E]/30">{{ old('review') }}</textarea>
+                @error('review')<p class="text-xs text-red-500">{{ $message }}</p>@enderror
+                <button type="submit" class="px-5 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-bold hover:bg-[#047857] transition">Post Review</button>
+            </form>
+            @elseif($userReview)
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                <p class="text-sm font-bold text-emerald-800">Your Review
+                    <span class="text-amber-500 ml-1">{{ str_repeat('★', $userReview->rating) }}<span class="text-slate-300">{{ str_repeat('★', 5 - $userReview->rating) }}</span></span>
+                </p>
+                <p class="text-sm text-slate-600 mt-1">{{ $userReview->review }}</p>
+                <form method="POST" action="{{ route('marketplace.reviews.delete', $userReview) }}" class="mt-2" onsubmit="return confirm('Delete your review?')">
+                    @csrf @method('DELETE')
+                    <button class="text-xs text-red-500 hover:text-red-700 font-semibold">Delete My Review</button>
+                </form>
+            </div>
+            @elseif(auth()->check())
+            <p class="text-sm text-slate-400 italic">Only verified buyers of this product can leave a review.</p>
+            @else
+            <p class="text-sm text-slate-400 italic"><a href="{{ route('login') }}" class="text-[#0F6B3E] font-semibold hover:underline">Log in</a> to write a review.</p>
+            @endif
+
+            {{-- Reviews list --}}
+            @if($reviews->count())
+            <div class="space-y-4">
+                @foreach($reviews as $review)
+                <div class="border-b border-slate-100 pb-4 last:border-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm flex items-center justify-center">
+                                {{ strtoupper(substr($review->user->first_name ?? 'U', 0, 1)) }}
+                            </div>
+                            <span class="text-sm font-semibold text-slate-700">{{ $review->user->first_name ?? 'User' }} {{ substr($review->user->last_name ?? '', 0, 1) }}.</span>
+                            <span class="text-amber-400 text-sm">{{ str_repeat('★', $review->rating) }}<span class="text-slate-200">{{ str_repeat('★', 5 - $review->rating) }}</span></span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-slate-400">{{ $review->created_at->diffForHumans() }}</span>
+                            @if(auth()->check() && (auth()->id() === $review->user_id || in_array(auth()->user()->role, ['admin','ceo'])))
+                            <form method="POST" action="{{ route('marketplace.reviews.delete', $review) }}" onsubmit="return confirm('Delete this review?')">
+                                @csrf @method('DELETE')
+                                <button class="text-xs text-red-400 hover:text-red-600">Delete</button>
+                            </form>
+                            @endif
+                        </div>
+                    </div>
+                    @if($review->review)
+                    <p class="text-sm text-slate-600 mt-2 ml-9">{{ $review->review }}</p>
+                    @endif
+                </div>
+                @endforeach
+                <div>{{ $reviews->links() }}</div>
+            </div>
+            @else
+            <p class="text-slate-400 text-sm text-center py-4">No reviews yet. Be the first!</p>
+            @endif
+        </div>
+
+        <script>
+        document.querySelectorAll('#star-row .star').forEach(function(star) {
+            star.closest('label').addEventListener('mouseover', function() {
+                var val = parseInt(star.dataset.val);
+                document.querySelectorAll('#star-row .star').forEach(function(s, i) {
+                    s.classList.toggle('text-amber-400', i < val);
+                    s.classList.toggle('text-slate-300', i >= val);
+                });
+            });
+        });
+        document.querySelector('#star-row').addEventListener('mouseleave', function() {
+            var checked = document.querySelector('#star-row input:checked');
+            var val = checked ? parseInt(checked.value) : 0;
+            document.querySelectorAll('#star-row .star').forEach(function(s, i) {
+                s.classList.toggle('text-amber-400', i < val);
+                s.classList.toggle('text-slate-300', i >= val);
+            });
+        });
+        document.querySelectorAll('#star-row input').forEach(function(input) {
+            input.addEventListener('change', function() {
+                var val = parseInt(this.value);
+                document.querySelectorAll('#star-row .star').forEach(function(s, i) {
+                    s.classList.toggle('text-amber-400', i < val);
+                    s.classList.toggle('text-slate-300', i >= val);
+                });
+            });
+        });
+        </script>
+
         {{-- Related Products --}}
         @if($related->count())
         <div class="space-y-4">

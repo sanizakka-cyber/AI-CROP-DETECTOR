@@ -50,8 +50,53 @@ class MarketplaceController extends Controller
             ->where('status', 'active')->where('is_approved', true)
             ->take(4)->get();
 
-        $cartCount = collect(session('cart', []))->sum('quantity');
-        return view('marketplace.show', compact('product', 'related', 'cartCount'));
+        $cartCount       = collect(session('cart', []))->sum('quantity');
+        $reviews         = $product->reviews()->with('user:id,first_name,last_name')->latest()->paginate(10);
+        $userReview      = auth()->check()
+            ? $product->reviews()->where('user_id', auth()->id())->first()
+            : null;
+        $userCanReview   = auth()->check() && !$userReview
+            && Order::where('buyer_id', auth()->id())
+                ->whereHas('items', fn($q) => $q->where('product_id', $product->id))
+                ->whereIn('status', ['delivered', 'completed'])
+                ->exists();
+
+        return view('marketplace.show', compact('product', 'related', 'cartCount', 'reviews', 'userReview', 'userCanReview'));
+    }
+
+    public function storeReview(Request $request, Product $product)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:1000',
+        ]);
+
+        $hasPurchased = Order::where('buyer_id', auth()->id())
+            ->whereHas('items', fn($q) => $q->where('product_id', $product->id))
+            ->whereIn('status', ['delivered', 'completed'])
+            ->exists();
+
+        abort_if(!$hasPurchased, 403, 'You can only review products you have purchased and received.');
+
+        \App\Models\ProductReview::updateOrCreate(
+            ['product_id' => $product->id, 'user_id' => auth()->id()],
+            ['rating' => $request->rating, 'review' => $request->review]
+        );
+
+        $product->syncRating();
+
+        return back()->with('success', 'Your review has been submitted. Thank you!');
+    }
+
+    public function deleteReview(\App\Models\ProductReview $review)
+    {
+        abort_if($review->user_id !== auth()->id() && !in_array(auth()->user()->role, ['admin','ceo']), 403);
+
+        $product = $review->product;
+        $review->delete();
+        $product->syncRating();
+
+        return back()->with('success', 'Review removed.');
     }
 
     // ── Cart (session-based) ────────────────────────────────────────────────────
