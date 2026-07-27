@@ -32,6 +32,16 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // Block suspended / deactivated accounts
+        if (! $user->is_active) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Your account has been suspended. Please contact support.',
+            ]);
+        }
+
         // Block pending/rejected applicants from accessing the platform
         $appStatus = $user->application_status ?? 'approved';
         if ($appStatus === 'pending') {
