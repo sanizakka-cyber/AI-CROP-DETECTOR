@@ -50,6 +50,10 @@ class RoleMiddleware
                 'field-officer'          => 'field-officer.dashboard',
                 'customer-support'       => 'customer-support.dashboard',
                 'rider'                  => 'rider.dashboard',
+                'agribusiness-owner'     => 'agribusiness.dashboard',
+                'input-supplier'         => 'input-supplier.dashboard',
+                'logistics-provider'     => 'logistics.dashboard',
+                'government-agency'      => 'government.dashboard',
             ];
             $routeName = $redirectMap[$user->role] ?? null;
             if ($routeName) {
