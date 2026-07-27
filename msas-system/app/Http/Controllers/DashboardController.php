@@ -96,13 +96,16 @@ class DashboardController extends Controller
         // Must match ApplicationController::index() query exactly so the counter = the page count
         try { $pendingVerifications = \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count(); } catch (\Exception $e) { $pendingVerifications = 0; }
 
+        // ── Wallet Stats ────────────────────────────────────────────────────────
+        try { $pendingWithdrawals = \App\Models\WalletTransaction::where('type','hold')->where('status','pending')->count(); } catch (\Exception $e) { $pendingWithdrawals = 0; }
+
         return view('admin.dashboard', compact(
             'totalUsers','activeUsers','pendingApprovals','recentUsers',
             'usersByRole','newThisMonth','totalAnimals','totalConsults','monthlyGrowth',
             'ordersToday','ordersUnassigned','ordersInTransit','ordersPending',
             'ordersDelivered','ridersAvailable','ridersBusy','revenueToday','recentOrders',
             'consultsOpen','consultsUnassigned','consultsResolved','recentConsults',
-            'pendingVerifications'
+            'pendingVerifications','pendingWithdrawals'
         ));
     }
 

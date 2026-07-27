@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -359,6 +360,33 @@ class MarketplaceController extends Controller
                 'rider_status'     => 'available',
                 'rider_deliveries' => ($order->rider->rider_deliveries ?? 0) + 1,
             ]);
+        }
+
+        // Credit rider and dealer wallets
+        $walletService = app(WalletService::class);
+
+        if ($order->rider_id && $order->rider && !$order->rider_credited) {
+            $riderEarning = round($order->delivery_fee * 0.90, 2); // 90% of delivery fee
+            $walletService->credit(
+                $order->rider,
+                $riderEarning,
+                "Delivery earnings — order #{$order->order_number}",
+                ['order_id' => $order->id, 'order_number' => $order->order_number, 'commission_rate' => '90%'],
+                'RIDER-' . $order->order_number
+            );
+            $order->update(['rider_credited' => true]);
+        }
+
+        if ($order->dealer_id && $order->dealer && !$order->dealer_credited) {
+            $dealerEarning = round($order->subtotal * 0.95, 2); // 95% of subtotal (5% platform fee)
+            $walletService->credit(
+                $order->dealer,
+                $dealerEarning,
+                "Sales earnings — order #{$order->order_number}",
+                ['order_id' => $order->id, 'order_number' => $order->order_number, 'commission_rate' => '95%'],
+                'DEALER-' . $order->order_number
+            );
+            $order->update(['dealer_credited' => true]);
         }
 
         // Notify rider + admin

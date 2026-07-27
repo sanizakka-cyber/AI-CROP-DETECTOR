@@ -30,7 +30,7 @@
 
         {{-- ── Attention Required Banner ── --}}
         @php
-            $urgent = ($ordersUnassigned ?? 0) + ($consultsUnassigned ?? 0) + ($pendingVerifications ?? 0);
+            $urgent = ($ordersUnassigned ?? 0) + ($consultsUnassigned ?? 0) + ($pendingVerifications ?? 0) + ($pendingWithdrawals ?? 0);
         @endphp
         @if($urgent > 0)
         <div class="rounded-xl border border-red-200 bg-red-50 p-5">
@@ -72,6 +72,17 @@
                     <svg class="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>
                 @endif
+                @if($pendingWithdrawals ?? 0)
+                <a href="{{ route('admin.wallets.withdrawals') }}"
+                   class="flex items-center justify-between bg-white border border-green-200 rounded-xl px-4 py-3 hover:border-green-400 hover:shadow-sm transition group">
+                    <div>
+                        <div class="text-2xl font-extrabold text-[#0F6B3E]">{{ $pendingWithdrawals }}</div>
+                        <div class="text-xs font-bold text-slate-600 mt-0.5">Withdrawal Requests</div>
+                        <div class="text-[10px] text-slate-400">Click to approve/reject →</div>
+                    </div>
+                    <svg class="w-5 h-5 text-green-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @endif
             </div>
         </div>
         @endif
@@ -104,6 +115,7 @@
                 ['label'=>'Riders',        'sub'=>($ridersAvailable??0).' available', 'href'=>route('admin.riders.index'),        'color'=>'#10b981', 'bg'=>'bg-emerald-50','icon'=>'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0'],
                 ['label'=>'Applications',  'sub'=>$pendingApprovals.' pending',        'href'=>route('admin.applications.index'),  'color'=>'#ef4444', 'bg'=>'bg-red-50',    'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                 ['label'=>'Payments',      'sub'=>'Financial records',                'href'=>route('admin.payments.index'),       'color'=>'#0F6B3E', 'bg'=>'bg-emerald-50','icon'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'],
+                ['label'=>'Wallets',       'sub'=>($pendingWithdrawals??0).' pending withdrawals', 'href'=>route('admin.wallets.index'), 'color'=>'#0F6B3E','bg'=>'bg-emerald-50','icon'=>'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['label'=>'Users',         'sub'=>number_format($totalUsers).' total', 'href'=>route('admin.users'),               'color'=>'#2563eb', 'bg'=>'bg-blue-50',   'icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
             ];
             @endphp

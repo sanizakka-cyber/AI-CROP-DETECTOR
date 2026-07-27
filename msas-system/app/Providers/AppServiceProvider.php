@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\Payment;
+use App\Models\User;
+use App\Observers\UserObserver;
 use App\Policies\PaymentPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -22,5 +24,6 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::policy(Payment::class, PaymentPolicy::class);
+        User::observe(UserObserver::class);
     }
 }

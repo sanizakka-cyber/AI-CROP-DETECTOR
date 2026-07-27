@@ -433,6 +433,20 @@ Route::middleware(['auth', 'role:extension-officer,field-officer,admin,ceo'])->p
 // ── Public Order Tracking ─────────────────────────────────────────────────
 Route::get('/track/{orderNumber}', [\App\Http\Controllers\TrackOrderController::class, 'show'])->name('track.order');
 
+// ── Digital Wallet ────────────────────────────────────────────────────────
+Route::middleware(['auth'])->prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/',        [\App\Http\Controllers\WalletController::class, 'show'])->name('show');
+    Route::post('/withdraw', [\App\Http\Controllers\WalletController::class, 'requestWithdrawal'])->name('withdraw');
+});
+
+// ── Admin Wallet Management ───────────────────────────────────────────────
+Route::middleware(['auth', 'role:admin,ceo,finance'])->prefix('admin/wallets')->name('admin.wallets.')->group(function () {
+    Route::get('/',                                    [\App\Http\Controllers\Admin\WalletManagementController::class, 'index'])->name('index');
+    Route::get('/withdrawals',                         [\App\Http\Controllers\Admin\WalletManagementController::class, 'withdrawals'])->name('withdrawals');
+    Route::post('/withdrawals/{transaction}/approve',  [\App\Http\Controllers\Admin\WalletManagementController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+    Route::post('/withdrawals/{transaction}/reject',   [\App\Http\Controllers\Admin\WalletManagementController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+});
+
 // ── AI Widget Proxy (authenticated) ───────────────────────────────────────
 Route::middleware(['auth'])->group(function () {
     Route::post('/ai/weather', [\App\Http\Controllers\AiWidgetController::class, 'weather'])->name('ai.weather');
