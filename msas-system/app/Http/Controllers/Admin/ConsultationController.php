@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Consultation;
+use App\Models\MobileNotification;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -94,13 +95,23 @@ class ConsultationController extends Controller
         ]);
 
         // Notify the farmer
+        $farmerMsg = "An expert has been assigned to your consultation request. You will receive a response shortly.";
         Notification::create([
             'user_id' => $consultation->farmer_id,
             'title'   => 'Expert Assigned',
-            'message' => "An expert has been assigned to your consultation request. You will receive a response shortly.",
+            'message' => $farmerMsg,
             'type'    => 'success',
             'link'    => '#',
         ]);
+        MobileNotification::send($consultation->farmer_id, 'Expert Assigned 👨‍⚕️', $farmerMsg, 'consultation', [
+            'consultation_id' => $consultation->id,
+        ], '👨‍⚕️');
+
+        // Notify the expert (mobile)
+        $expertMsg = "You have been assigned a {$consultation->case_type} consultation case. Please review and respond.";
+        MobileNotification::send($expert->id, 'New Consultation Assigned 📋', $expertMsg, 'consultation', [
+            'consultation_id' => $consultation->id,
+        ], '📋');
 
         AuditLog::record('consultation.assigned', 'Consultation', $consultation->id, [
             'expert_id'     => $expert->id,
@@ -145,13 +156,17 @@ class ConsultationController extends Controller
                 'link'    => '/admin/consultations/' . $consultation->id,
             ]);
         }
+        $acceptedMsg = "Your consultation has been accepted by {$consultation->expert->first_name} {$consultation->expert->last_name}. They will respond shortly.";
         Notification::create([
             'user_id' => $consultation->farmer_id,
             'title'   => 'Expert Accepted Your Case',
-            'message' => "Your consultation has been accepted by {$consultation->expert->first_name} {$consultation->expert->last_name}. They will respond shortly.",
+            'message' => $acceptedMsg,
             'type'    => 'success',
             'link'    => '#',
         ]);
+        MobileNotification::send($consultation->farmer_id, 'Expert Accepted Your Case ✅', $acceptedMsg, 'consultation', [
+            'consultation_id' => $consultation->id,
+        ], '✅');
 
         return back()->with('success', 'You have accepted this consultation.');
     }

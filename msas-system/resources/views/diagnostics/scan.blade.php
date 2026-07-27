@@ -35,7 +35,7 @@
                 <!-- Scan Type Selection -->
                 <div class="mb-8">
                     <label class="block text-sm font-bold text-slate-700 mb-3">What are you scanning?</label>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <label class="cursor-pointer">
                             <input type="radio" name="scan_type" value="plant" class="peer sr-only" required checked
                                    onchange="setScanType('plant')">
@@ -61,6 +61,15 @@
                                 <div class="text-4xl mb-2">🌱</div>
                                 <div class="font-bold text-sm">Soil Sample</div>
                                 <div class="text-xs text-slate-500 mt-1">Nutrients, pH, Recommendations</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="scan_type" value="pest" class="peer sr-only"
+                                   onchange="setScanType('pest')">
+                            <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700">
+                                <div class="text-4xl mb-2">🐛</div>
+                                <div class="font-bold text-sm">Pest ID</div>
+                                <div class="text-xs text-slate-500 mt-1">Insects, weeds & pathogens</div>
                             </div>
                         </label>
                     </div>
@@ -117,6 +126,21 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Additional Context <span class="font-normal normal-case text-slate-400">(optional)</span></label>
                         <input type="text" name="soil_context" placeholder="e.g., Farm location, current crop, known issues"
                                class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-700 focus:border-amber-700">
+                    </div>
+                </div>
+
+                <div id="ctx-pest" class="mb-6 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Crop / Plant Affected <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <input type="text" name="crop_type" placeholder="e.g., Maize, Tomato, Cassava"
+                                   class="w-full border-slate-200 rounded-lg text-sm focus:ring-red-500 focus:border-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Location / Region <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <input type="text" name="pest_location" placeholder="e.g., Kano, Northern Nigeria"
+                                   class="w-full border-slate-200 rounded-lg text-sm focus:ring-red-500 focus:border-red-500">
+                        </div>
                     </div>
                 </div>
 
@@ -203,6 +227,7 @@
         document.getElementById('ctx-plant').classList.toggle('hidden', type !== 'plant');
         document.getElementById('ctx-animal').classList.toggle('hidden', type !== 'animal');
         document.getElementById('ctx-soil').classList.toggle('hidden', type !== 'soil');
+        document.getElementById('ctx-pest').classList.toggle('hidden', type !== 'pest');
     }
 
     // ── Image source triggers ──────────────────────────────────────────────────

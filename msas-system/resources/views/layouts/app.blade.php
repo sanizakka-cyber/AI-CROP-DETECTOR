@@ -728,5 +728,101 @@
     });
 })();
 </script>
+
+{{-- ── Floating AI Chat Widget ──────────────────────────────────────────── --}}
+@auth
+<style>
+#msas-chat-btn{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,.45);z-index:9998;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+#msas-chat-btn:hover{transform:scale(1.08);}
+#msas-chat-modal{position:fixed;bottom:92px;right:24px;width:min(360px,calc(100vw - 32px));background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:9999;display:none;flex-direction:column;max-height:520px;overflow:hidden;border:1px solid #e2e8f0;}
+#msas-chat-modal.open{display:flex;}
+#chat-header{background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#chat-header-title{font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;}
+#chat-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;line-height:1;}
+#chat-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.chat-bubble{max-width:85%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;}
+.chat-bubble.bot{background:#f1f5f9;color:#0f172a;align-self:flex-start;border-bottom-left-radius:4px;}
+.chat-bubble.user{background:#0F6B3E;color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+#chat-footer{padding:10px 12px;border-top:1px solid #f1f5f9;display:flex;gap:8px;flex-shrink:0;}
+#chat-input{flex:1;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;}
+#chat-input:focus{border-color:#0F6B3E;}
+#chat-send{padding:8px 14px;background:#0F6B3E;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+</style>
+
+<button id="msas-chat-btn" title="AI Farm Assistant" onclick="toggleChat()">🌿</button>
+
+<div id="msas-chat-modal">
+    <div id="chat-header">
+        <div id="chat-header-title">🌿 MSAS AI Assistant</div>
+        <button id="chat-close" onclick="toggleChat()">×</button>
+    </div>
+    <div id="chat-messages">
+        <div class="chat-bubble bot">Hello! I'm your MSAS AI farming assistant. Ask me anything about crops, pests, livestock, market prices, or weather. 🌱</div>
+    </div>
+    <div id="chat-footer">
+        <input type="text" id="chat-input" placeholder="Ask about your farm…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button id="chat-send" onclick="sendChat()">Send</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    var chatHistory = '[]';
+    var csrfToken = document.querySelector('meta[name=csrf-token]') ? document.querySelector('meta[name=csrf-token]').content : '';
+
+    window.toggleChat = function() {
+        var modal = document.getElementById('msas-chat-modal');
+        modal.classList.toggle('open');
+        if (modal.classList.contains('open')) {
+            document.getElementById('chat-input').focus();
+        }
+    };
+
+    window.sendChat = function() {
+        var input = document.getElementById('chat-input');
+        var msg = input.value.trim();
+        if (!msg) return;
+        input.value = '';
+
+        appendBubble(msg, 'user');
+
+        var thinking = appendBubble('…', 'bot');
+
+        var fd = new FormData();
+        fd.append('message', msg);
+        fd.append('history', chatHistory);
+        fd.append('_token', csrfToken);
+
+        fetch('/ai/chat', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.history) chatHistory = typeof d.history === 'string' ? d.history : JSON.stringify(d.history);
+                var reply = d.reply || d.response || d.message || 'Sorry, I could not get a response.';
+                thinking.textContent = reply;
+                scrollChat();
+            })
+            .catch(function() {
+                thinking.textContent = 'Sorry, the AI assistant is temporarily unavailable. Please try again.';
+            });
+    };
+
+    function appendBubble(text, type) {
+        var msgs = document.getElementById('chat-messages');
+        var div = document.createElement('div');
+        div.className = 'chat-bubble ' + type;
+        div.textContent = text;
+        msgs.appendChild(div);
+        scrollChat();
+        return div;
+    }
+
+    function scrollChat() {
+        var msgs = document.getElementById('chat-messages');
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+})();
+</script>
+@endauth
+
 </body>
 </html>
