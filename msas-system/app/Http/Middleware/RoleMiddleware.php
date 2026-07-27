@@ -54,6 +54,9 @@ class RoleMiddleware
                 'input-supplier'         => 'input-supplier.dashboard',
                 'logistics-provider'     => 'logistics.dashboard',
                 'government-agency'      => 'government.dashboard',
+                'researcher'             => 'research-institution.dashboard',
+                'student'                => 'farmer.dashboard',
+                'general-user'           => 'dashboard',
             ];
             $routeName = $redirectMap[$user->role] ?? null;
             if ($routeName) {

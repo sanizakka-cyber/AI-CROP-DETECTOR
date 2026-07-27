@@ -56,6 +56,9 @@
                             'monitoring-evaluation' => route('monitoring-evaluation.dashboard'),
                             'field-officer'         => route('field-officer.dashboard'),
                             'customer-support'      => route('customer-support.dashboard'),
+                            'researcher'            => route('research-institution.dashboard'),
+                            'student'               => route('farmer.dashboard'),
+                            'general-user'          => route('dashboard'),
                             default                 => route('dashboard'),
                         };
                     @endphp
