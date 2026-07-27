@@ -77,14 +77,28 @@ class DashboardController extends Controller
         try { $revenueToday      = \App\Models\Order::whereDate('created_at', today())->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $revenueToday = 0; }
         try {
             $recentOrders = \App\Models\Order::with(['buyer:id,first_name,last_name','dealer:id,first_name,last_name','rider:id,first_name,last_name'])
-                ->latest()->take(8)->get();
+                ->latest()->take(6)->get();
         } catch (\Exception $e) { $recentOrders = collect(); }
+
+        // ── Consultation Stats ──────────────────────────────────────────────────
+        try { $consultsOpen        = \App\Models\Consultation::where('status','open')->count(); } catch (\Exception $e) { $consultsOpen = 0; }
+        try { $consultsUnassigned  = \App\Models\Consultation::whereNull('expert_id')->where('status','open')->count(); } catch (\Exception $e) { $consultsUnassigned = 0; }
+        try { $consultsResolved    = \App\Models\Consultation::where('status','resolved')->count(); } catch (\Exception $e) { $consultsResolved = 0; }
+        try {
+            $recentConsults = \App\Models\Consultation::with(['farmer:id,first_name,last_name','expert:id,first_name,last_name,role'])
+                ->latest()->take(6)->get();
+        } catch (\Exception $e) { $recentConsults = collect(); }
+
+        // ── Application / Verification Stats ───────────────────────────────────
+        try { $pendingVerifications = \App\Models\User::where('is_verified', false)->whereIn('role', ['vet','agronomist','extension-officer','agro-dealer','cooperative'])->count(); } catch (\Exception $e) { $pendingVerifications = 0; }
 
         return view('admin.dashboard', compact(
             'totalUsers','activeUsers','pendingApprovals','recentUsers',
             'usersByRole','newThisMonth','totalAnimals','totalConsults','monthlyGrowth',
             'ordersToday','ordersUnassigned','ordersInTransit','ordersPending',
-            'ordersDelivered','ridersAvailable','ridersBusy','revenueToday','recentOrders'
+            'ordersDelivered','ridersAvailable','ridersBusy','revenueToday','recentOrders',
+            'consultsOpen','consultsUnassigned','consultsResolved','recentConsults',
+            'pendingVerifications'
         ));
     }
 

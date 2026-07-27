@@ -197,6 +197,14 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::post('/applications/{user}/reject',      [ApplicationController::class, 'reject'])  ->name('applications.reject');
 });
 
+// ── Admin: Consultation Management ────────────────────────────────────────────
+Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/consultations',                     [\App\Http\Controllers\Admin\ConsultationController::class, 'index'])        ->name('consultations.index');
+    Route::get('/consultations/{consultation}',      [\App\Http\Controllers\Admin\ConsultationController::class, 'show'])         ->name('consultations.show');
+    Route::post('/consultations/{consultation}/assign', [\App\Http\Controllers\Admin\ConsultationController::class, 'assign'])    ->name('consultations.assign');
+    Route::patch('/consultations/{consultation}/status', [\App\Http\Controllers\Admin\ConsultationController::class, 'updateStatus'])->name('consultations.status');
+});
+
 // ── Admin: Order & Rider Management ───────────────────────────────────────────
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {
     // Orders

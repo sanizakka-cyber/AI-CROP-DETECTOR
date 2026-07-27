@@ -49,40 +49,135 @@
                         Dashboard
                     </a>
 
-                    {{-- CEO / Admin links --}}
-                    @if(in_array($role, ['ceo', 'admin']))
-                        <a href="{{ route('ceo.users') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.users') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Users
-                        </a>
-                        <a href="{{ route('ceo.reports') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.reports') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Reports
-                        </a>
-                        <a href="{{ route('admin.users') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.users') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Admin
-                        </a>
-                        <a href="{{ route('ceo.ai-status') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.ai-status') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            AI Status
-                        </a>
+                    {{-- ── CEO Dropdown Menus ── --}}
+                    @if($role === 'ceo')
+                        {{-- Staff Management dropdown --}}
+                        <div class="relative" x-data="{ staffOpen: false }">
+                            <button @click="staffOpen=!staffOpen" @click.outside="staffOpen=false"
+                                class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.staff*') || request()->routeIs('ceo.staff-roles*') || request()->routeIs('ceo.audit') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                                Staff
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="staffOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-cloak
+                                class="absolute left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                                <a href="{{ route('ceo.staff.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('ceo.staff*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    All Staff
+                                </a>
+                                <a href="{{ route('ceo.staff.create') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                    Add Staff
+                                </a>
+                                <a href="{{ route('ceo.staff-roles.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('ceo.staff-roles*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                    Roles & Permissions
+                                </a>
+                                <a href="{{ route('ceo.audit') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('ceo.audit') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                    Audit Log
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Operations dropdown --}}
+                        <div class="relative" x-data="{ opsOpen: false }">
+                            <button @click="opsOpen=!opsOpen" @click.outside="opsOpen=false"
+                                class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.orders*') || request()->routeIs('admin.riders*') || request()->routeIs('admin.consultations*') || request()->routeIs('admin.applications*') || request()->routeIs('ceo.orders*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                                Operations
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="opsOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-cloak
+                                class="absolute left-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                                <a href="{{ route('ceo.orders') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('ceo.orders*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                    Order Oversight
+                                </a>
+                                <a href="{{ route('admin.consultations.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.consultations*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                    Consultations
+                                </a>
+                                <a href="{{ route('admin.riders.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.riders*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+                                    Riders
+                                </a>
+                                <a href="{{ route('admin.applications.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.applications*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Applications
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Finance dropdown --}}
+                        <div class="relative" x-data="{ finOpen: false }">
+                            <button @click="finOpen=!finOpen" @click.outside="finOpen=false"
+                                class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payments*') || request()->routeIs('admin.payouts*') || request()->routeIs('admin.subscriptions*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                                Finance
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="finOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-cloak
+                                class="absolute left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                                <a href="{{ route('admin.payments.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Payments</a>
+                                <a href="{{ route('admin.payouts.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Payouts</a>
+                                <a href="{{ route('admin.subscriptions.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Subscriptions</a>
+                                <a href="{{ route('ceo.reports') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Reports</a>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('ceo.users') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.users*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">Users</a>
+                        <a href="{{ route('ceo.ai-status') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('ceo.ai-status') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">AI</a>
                     @endif
 
-                    {{-- Finance / Admin / CEO payment management --}}
-                    @if(in_array($role, ['ceo', 'admin', 'finance']))
-                        <a href="{{ route('admin.payments.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payments.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Payments
-                        </a>
-                        <a href="{{ route('admin.payouts.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payouts.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Payouts
-                        </a>
+                    {{-- ── Admin Dropdown Menus ── --}}
+                    @if($role === 'admin')
+                        {{-- Operations dropdown --}}
+                        <div class="relative" x-data="{ opsOpen: false }">
+                            <button @click="opsOpen=!opsOpen" @click.outside="opsOpen=false"
+                                class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.orders*') || request()->routeIs('admin.consultations*') || request()->routeIs('admin.riders*') || request()->routeIs('admin.applications*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                                Operations
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="opsOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-cloak
+                                class="absolute left-0 mt-1 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                                <a href="{{ route('admin.orders.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.orders*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                    Orders
+                                </a>
+                                <a href="{{ route('admin.consultations.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.consultations*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                    Consultations
+                                </a>
+                                <a href="{{ route('admin.riders.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.riders*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+                                    Riders
+                                </a>
+                                <a href="{{ route('admin.applications.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E] {{ request()->routeIs('admin.applications*') ? 'text-[#0F6B3E] font-semibold' : '' }}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    Applications
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Management dropdown --}}
+                        <div class="relative" x-data="{ mgmtOpen: false }">
+                            <button @click="mgmtOpen=!mgmtOpen" @click.outside="mgmtOpen=false"
+                                class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.users') || request()->routeIs('admin.payments*') || request()->routeIs('admin.payouts*') || request()->routeIs('admin.subscriptions*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
+                                Manage
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="mgmtOpen" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-cloak
+                                class="absolute left-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50">
+                                <a href="{{ route('admin.users') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Users</a>
+                                <a href="{{ route('admin.payments.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Payments</a>
+                                <a href="{{ route('admin.payouts.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Payouts</a>
+                                <a href="{{ route('admin.subscriptions.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-emerald-50 hover:text-[#0F6B3E]">Subscriptions</a>
+                            </div>
+                        </div>
                     @endif
 
-                    {{-- Admin / CEO: Order & Rider management --}}
-                    @if(in_array($role, ['admin', 'ceo']))
-                        <a href="{{ route('admin.orders.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.orders.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Orders
-                        </a>
-                        <a href="{{ route('admin.riders.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.riders.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">
-                            Riders
-                        </a>
+                    {{-- Finance officer --}}
+                    @if($role === 'finance')
+                        <a href="{{ route('admin.payments.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payments.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">Payments</a>
+                        <a href="{{ route('admin.payouts.index') }}" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-[#0F6B3E] transition {{ request()->routeIs('admin.payouts.*') ? 'bg-emerald-50 text-[#0F6B3E]' : '' }}">Payouts</a>
                     @endif
 
                     {{-- Rider links --}}
@@ -259,18 +354,40 @@
             @if(in_array($role, ['vet', 'agronomist']))
                 <x-responsive-nav-link :href="route('vet.queue')">Consult Queue</x-responsive-nav-link>
             @endif
-            @if(in_array($role, ['ceo', 'admin']))
+            @if($role === 'ceo')
+                <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Staff</div>
+                <x-responsive-nav-link :href="route('ceo.staff.index')">All Staff</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('ceo.staff.create')">Add Staff</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('ceo.staff-roles.index')">Roles & Permissions</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('ceo.audit')">Audit Log</x-responsive-nav-link>
+                <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2">Operations</div>
+                <x-responsive-nav-link :href="route('ceo.orders')">Order Oversight</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.consultations.index')">Consultations</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.riders.index')">Riders</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.applications.index')">Applications</x-responsive-nav-link>
+                <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2">Finance & Users</div>
                 <x-responsive-nav-link :href="route('ceo.users')">Users</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.payouts.index')">Payouts</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.subscriptions.index')">Subscriptions</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ceo.reports')">Reports</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('ceo.ai-status')">AI Status</x-responsive-nav-link>
             @endif
-            @if(in_array($role, ['ceo', 'admin', 'finance']))
+            @if($role === 'admin')
+                <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operations</div>
+                <x-responsive-nav-link :href="route('admin.orders.index')">Orders</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.consultations.index')">Consultations</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.riders.index')">Riders</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.applications.index')">Applications</x-responsive-nav-link>
+                <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2">Management</div>
+                <x-responsive-nav-link :href="route('admin.users')">Users</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.payouts.index')">Payouts</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.subscriptions.index')">Subscriptions</x-responsive-nav-link>
             @endif
-            @if(in_array($role, ['admin', 'ceo']))
-                <x-responsive-nav-link :href="route('admin.orders.index')">Orders</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.riders.index')">Riders</x-responsive-nav-link>
+            @if($role === 'finance')
+                <x-responsive-nav-link :href="route('admin.payments.index')">Payments</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.payouts.index')">Payouts</x-responsive-nav-link>
             @endif
             @if($role === 'rider')
                 <x-responsive-nav-link :href="route('rider.orders')">My Deliveries</x-responsive-nav-link>
