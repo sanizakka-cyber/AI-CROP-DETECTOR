@@ -337,7 +337,73 @@ class MarketplaceController extends Controller
     public function showOrder(Order $order)
     {
         abort_if($order->buyer_id !== auth()->id(), 403);
-        $order->load(['items.product', 'dealer:id,first_name,last_name,phone,email']);
+        $order->load(['items.product', 'dealer:id,first_name,last_name,phone,email', 'rider:id,first_name,last_name,phone,vehicle_type,rider_rating']);
         return view('marketplace.order-detail', compact('order'));
+    }
+
+    public function confirmDelivery(Order $order)
+    {
+        abort_if($order->buyer_id !== auth()->id(), 403);
+        abort_if($order->rider_status !== 'awaiting_confirmation', 422, 'Order is not awaiting confirmation.');
+
+        $order->update([
+            'rider_status'       => 'completed',
+            'status'             => 'completed',
+            'buyer_confirmed_at' => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // Free the rider
+        if ($order->rider) {
+            $order->rider->update([
+                'rider_status'     => 'available',
+                'rider_deliveries' => ($order->rider->rider_deliveries ?? 0) + 1,
+            ]);
+        }
+
+        // Notify rider + admin
+        if ($order->rider_id) {
+            \App\Models\Notification::create([
+                'user_id' => $order->rider_id,
+                'title'   => 'Delivery Confirmed',
+                'message' => "Customer confirmed delivery for order {$order->order_number}. Well done!",
+                'type'    => 'success',
+                'link'    => '/rider/orders/' . $order->id,
+            ]);
+        }
+        foreach (\App\Models\User::whereIn('role', ['admin','ceo'])->pluck('id') as $id) {
+            \App\Models\Notification::create([
+                'user_id' => $id,
+                'title'   => 'Order Completed',
+                'message' => "Order {$order->order_number} confirmed by customer.",
+                'type'    => 'success',
+                'link'    => '/admin/orders/' . $order->id,
+            ]);
+        }
+
+        return back()->with('success', 'Delivery confirmed. Thank you for your order!');
+    }
+
+    public function reportIssue(\Illuminate\Http\Request $request, Order $order)
+    {
+        abort_if($order->buyer_id !== auth()->id(), 403);
+        $request->validate(['issue' => 'required|string|max:1000']);
+
+        foreach (\App\Models\User::whereIn('role', ['admin','ceo'])->pluck('id') as $id) {
+            \App\Models\Notification::create([
+                'user_id' => $id,
+                'title'   => 'Delivery Issue Reported',
+                'message' => "Order {$order->order_number}: {$request->issue}",
+                'type'    => 'warning',
+                'link'    => '/admin/orders/' . $order->id,
+            ]);
+        }
+
+        \App\Models\AuditLog::record('order.issue_reported', 'Order', $order->id, [
+            'issue'      => $request->issue,
+            'buyer_id'   => auth()->id(),
+        ]);
+
+        return back()->with('info', 'Issue reported. Our team will follow up shortly.');
     }
 }

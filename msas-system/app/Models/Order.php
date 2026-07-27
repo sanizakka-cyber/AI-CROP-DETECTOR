@@ -66,14 +66,28 @@ class Order extends Model
     public function riderStatusBadge(): array
     {
         return match ($this->rider_status ?? 'unassigned') {
-            'assigned'   => ['label' => 'Rider Assigned',  'class' => 'bg-blue-100 text-blue-800'],
-            'accepted'   => ['label' => 'Rider Accepted',  'class' => 'bg-indigo-100 text-indigo-800'],
-            'declined'   => ['label' => 'Rider Declined',  'class' => 'bg-red-100 text-red-800'],
-            'in_transit' => ['label' => 'In Transit',      'class' => 'bg-purple-100 text-purple-800'],
-            'completed'  => ['label' => 'Completed',       'class' => 'bg-green-100 text-green-800'],
-            'returned'   => ['label' => 'Returned',        'class' => 'bg-amber-100 text-amber-800'],
-            default      => ['label' => 'Unassigned',      'class' => 'bg-slate-100 text-slate-600'],
+            'assigned'               => ['label' => 'Rider Assigned',          'class' => 'bg-blue-100 text-blue-800'],
+            'accepted'               => ['label' => 'Rider Accepted',          'class' => 'bg-indigo-100 text-indigo-800'],
+            'declined'               => ['label' => 'Rider Declined',          'class' => 'bg-red-100 text-red-800'],
+            'in_transit'             => ['label' => 'Out for Delivery',        'class' => 'bg-purple-100 text-purple-800'],
+            'awaiting_confirmation'  => ['label' => 'Awaiting Confirmation',   'class' => 'bg-amber-100 text-amber-800'],
+            'completed'              => ['label' => 'Completed',               'class' => 'bg-green-100 text-green-800'],
+            'returned'               => ['label' => 'Returned',                'class' => 'bg-slate-100 text-slate-600'],
+            default                  => ['label' => 'Unassigned',              'class' => 'bg-slate-100 text-slate-600'],
         };
+    }
+
+    public function orderTimeline(): array
+    {
+        $steps = [
+            ['key' => 'pending',   'label' => 'Order Placed',    'done' => true],
+            ['key' => 'assigned',  'label' => 'Rider Assigned',  'done' => !is_null($this->rider_assigned_at)],
+            ['key' => 'accepted',  'label' => 'Rider Accepted',  'done' => !is_null($this->rider_accepted_at)],
+            ['key' => 'transit',   'label' => 'Out for Delivery','done' => !is_null($this->in_transit_at)],
+            ['key' => 'delivered', 'label' => 'Delivered',       'done' => !is_null($this->delivered_at)],
+            ['key' => 'confirmed', 'label' => 'Confirmed',       'done' => !is_null($this->buyer_confirmed_at)],
+        ];
+        return $steps;
     }
 
     public static function generateNumber(): string

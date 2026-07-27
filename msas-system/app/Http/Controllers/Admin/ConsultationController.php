@@ -45,8 +45,12 @@ class ConsultationController extends Controller
             'crop'       => Consultation::where('case_type', 'crop')->count(),
         ];
 
-        $vets        = User::where('role', 'vet')->where('is_active', true)->where('is_verified', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']);
-        $agronomists = User::where('role', 'agronomist')->where('is_active', true)->where('is_verified', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']);
+        $vets        = User::whereIn('role', ['vet'])->where('is_active', true)
+            ->where(fn($q) => $q->where('application_status', 'approved')->orWhereNull('application_status'))
+            ->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'state', 'is_verified']);
+        $agronomists = User::whereIn('role', ['agronomist', 'extension-officer'])->where('is_active', true)
+            ->where(fn($q) => $q->where('application_status', 'approved')->orWhereNull('application_status'))
+            ->orderBy('first_name')->get(['id', 'first_name', 'last_name', 'role', 'state', 'is_verified']);
 
         return view('admin.consultations.index', compact('consultations', 'stats', 'vets', 'agronomists'));
     }
@@ -55,9 +59,13 @@ class ConsultationController extends Controller
     {
         $consultation->load(['farmer', 'expert']);
 
-        $experts = $consultation->case_type === 'crop'
-            ? User::where('role', 'agronomist')->where('is_active', true)->where('is_verified', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name'])
-            : User::where('role', 'vet')->where('is_active', true)->where('is_verified', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']);
+        $cropRoles      = ['agronomist', 'extension-officer', 'research-institution'];
+        $livestockRoles = ['vet'];
+        $roles  = $consultation->case_type === 'crop' ? $cropRoles : $livestockRoles;
+        $experts = User::whereIn('role', $roles)->where('is_active', true)
+            ->where(fn($q) => $q->where('application_status', 'approved')->orWhereNull('application_status'))
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'role', 'state', 'is_verified']);
 
         return view('admin.consultations.show', compact('consultation', 'experts'));
     }
@@ -71,8 +79,9 @@ class ConsultationController extends Controller
         $oldExpertId = $consultation->expert_id;
 
         $consultation->update([
-            'expert_id' => $expert->id,
-            'status'    => 'open',
+            'expert_id'          => $expert->id,
+            'status'             => 'open',
+            'consultant_status'  => 'pending_acceptance',
         ]);
 
         // Notify the assigned expert
@@ -114,5 +123,67 @@ class ConsultationController extends Controller
         ]);
 
         return back()->with('success', 'Consultation status updated.');
+    }
+
+    // Called by expert (vet/agronomist) to accept their assigned consultation
+    public function expertAccept(Consultation $consultation)
+    {
+        abort_if($consultation->expert_id !== auth()->id(), 403);
+
+        $consultation->update([
+            'consultant_status'      => 'accepted',
+            'consultant_accepted_at' => now(),
+        ]);
+
+        // Notify admin + farmer
+        foreach (User::whereIn('role', ['admin', 'ceo'])->pluck('id') as $id) {
+            Notification::create([
+                'user_id' => $id,
+                'title'   => 'Consultation Accepted by Expert',
+                'message' => "{$consultation->expert->first_name} {$consultation->expert->last_name} accepted consultation #{$consultation->id}.",
+                'type'    => 'success',
+                'link'    => '/admin/consultations/' . $consultation->id,
+            ]);
+        }
+        Notification::create([
+            'user_id' => $consultation->farmer_id,
+            'title'   => 'Expert Accepted Your Case',
+            'message' => "Your consultation has been accepted by {$consultation->expert->first_name} {$consultation->expert->last_name}. They will respond shortly.",
+            'type'    => 'success',
+            'link'    => '#',
+        ]);
+
+        return back()->with('success', 'You have accepted this consultation.');
+    }
+
+    // Called by expert to decline — returns case to unassigned
+    public function expertDecline(Request $request, Consultation $consultation)
+    {
+        abort_if($consultation->expert_id !== auth()->id(), 403);
+
+        $reason = $request->input('reason', 'Declined by expert');
+
+        $consultation->update([
+            'expert_id'                  => null,
+            'consultant_status'          => null,
+            'consultant_decline_reason'  => $reason,
+        ]);
+
+        foreach (User::whereIn('role', ['admin', 'ceo'])->pluck('id') as $id) {
+            Notification::create([
+                'user_id' => $id,
+                'title'   => 'Consultation Declined — Needs Reassignment',
+                'message' => "Consultation #{$consultation->id} was declined. Reason: {$reason}. Please reassign.",
+                'type'    => 'warning',
+                'link'    => '/admin/consultations/' . $consultation->id,
+            ]);
+        }
+
+        AuditLog::record('consultation.expert_declined', 'Consultation', $consultation->id, [
+            'reason' => $reason,
+            'by'     => auth()->id(),
+        ]);
+
+        return back()->with('info', 'Consultation declined. Admin has been notified.');
     }
 }

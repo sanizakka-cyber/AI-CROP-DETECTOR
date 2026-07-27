@@ -33,41 +33,65 @@
             $urgent = ($ordersUnassigned ?? 0) + ($consultsUnassigned ?? 0) + ($pendingVerifications ?? 0);
         @endphp
         @if($urgent > 0)
-        <div class="bg-red-50 border border-red-200 rounded-xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                </div>
-                <div>
-                    <div class="font-bold text-red-800 text-sm">{{ $urgent }} item{{ $urgent !== 1 ? 's' : '' }} need your attention</div>
-                    <div class="text-xs text-red-600 mt-0.5">
-                        @if($ordersUnassigned) {{ $ordersUnassigned }} order{{ $ordersUnassigned !== 1 ? 's' : '' }} unassigned @endif
-                        @if($consultsUnassigned) · {{ $consultsUnassigned }} consultation{{ $consultsUnassigned !== 1 ? 's' : '' }} unassigned @endif
-                        @if($pendingVerifications) · {{ $pendingVerifications }} verification{{ $pendingVerifications !== 1 ? 's' : '' }} pending @endif
-                    </div>
-                </div>
+        <div class="rounded-xl border border-red-200 bg-red-50 p-5">
+            <div class="flex items-center gap-2 mb-3">
+                <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span class="font-extrabold text-red-800 text-sm">{{ $urgent }} item{{ $urgent !== 1 ? 's' : '' }} need your attention</span>
             </div>
-            <div class="flex gap-2">
-                @if($ordersUnassigned) <a href="{{ route('admin.orders.index', ['rider_status'=>'unassigned']) }}" class="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg font-bold hover:bg-red-700">Orders</a> @endif
-                @if($consultsUnassigned) <a href="{{ route('admin.consultations.index', ['assigned'=>'unassigned']) }}" class="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg font-bold hover:bg-orange-700">Consultations</a> @endif
-                @if($pendingVerifications) <a href="{{ route('admin.applications.index') }}" class="px-3 py-1.5 bg-amber-600 text-white text-xs rounded-lg font-bold hover:bg-amber-700">Applications</a> @endif
+            <div class="grid sm:grid-cols-3 gap-3">
+                @if($ordersUnassigned ?? 0)
+                <a href="{{ route('admin.orders.index', ['rider_status'=>'unassigned']) }}"
+                   class="flex items-center justify-between bg-white border border-red-200 rounded-xl px-4 py-3 hover:border-red-400 hover:shadow-sm transition group">
+                    <div>
+                        <div class="text-2xl font-extrabold text-red-600">{{ $ordersUnassigned }}</div>
+                        <div class="text-xs font-bold text-slate-600 mt-0.5">Unassigned Orders</div>
+                        <div class="text-[10px] text-slate-400">Click to assign riders →</div>
+                    </div>
+                    <svg class="w-5 h-5 text-red-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @endif
+                @if($consultsUnassigned ?? 0)
+                <a href="{{ route('admin.consultations.index', ['assigned'=>'unassigned']) }}"
+                   class="flex items-center justify-between bg-white border border-orange-200 rounded-xl px-4 py-3 hover:border-orange-400 hover:shadow-sm transition group">
+                    <div>
+                        <div class="text-2xl font-extrabold text-orange-600">{{ $consultsUnassigned }}</div>
+                        <div class="text-xs font-bold text-slate-600 mt-0.5">Unassigned Consultations</div>
+                        <div class="text-[10px] text-slate-400">Click to assign experts →</div>
+                    </div>
+                    <svg class="w-5 h-5 text-orange-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @endif
+                @if($pendingVerifications ?? 0)
+                <a href="{{ route('admin.applications.index') }}"
+                   class="flex items-center justify-between bg-white border border-amber-200 rounded-xl px-4 py-3 hover:border-amber-400 hover:shadow-sm transition group">
+                    <div>
+                        <div class="text-2xl font-extrabold text-amber-600">{{ $pendingVerifications }}</div>
+                        <div class="text-xs font-bold text-slate-600 mt-0.5">Pending Verifications</div>
+                        <div class="text-[10px] text-slate-400">Click to review applications →</div>
+                    </div>
+                    <svg class="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @endif
             </div>
         </div>
         @endif
 
         {{-- ── Platform KPIs ── --}}
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            @foreach([
-                ['label'=>'Total Users',  'val'=>number_format($totalUsers),  'sub'=>number_format($activeUsers).' active',    'color'=>'#0F6B3E', 'border'=>'border-l-[#0F6B3E]'],
-                ['label'=>'New This Month','val'=>$newThisMonth,              'sub'=>'Registrations',                         'color'=>'#2563eb', 'border'=>'border-l-blue-500'],
-                ['label'=>'Pending Verify','val'=>$pendingApprovals,          'sub'=>'Expert verifications',                  'color'=>'#f59e0b', 'border'=>'border-l-amber-500'],
-                ['label'=>'Consultations', 'val'=>number_format($totalConsults),'sub'=>$consultsOpen.' open',                 'color'=>'#8b5cf6', 'border'=>'border-l-purple-500'],
-            ] as $k)
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 border-l-4 {{ $k['border'] }} p-5">
+            @php
+            $kpis = [
+                ['label'=>'Total Users',   'val'=>number_format($totalUsers),    'sub'=>number_format($activeUsers).' active',  'color'=>'#0F6B3E', 'border'=>'border-l-[#0F6B3E]', 'href'=>route('admin.users')],
+                ['label'=>'New This Month','val'=>$newThisMonth,                'sub'=>'Registrations',                       'color'=>'#2563eb', 'border'=>'border-l-blue-500',    'href'=>route('admin.users')],
+                ['label'=>'Pending Verify','val'=>$pendingApprovals,            'sub'=>'Expert verifications',                'color'=>'#f59e0b', 'border'=>'border-l-amber-500',   'href'=>route('admin.applications.index')],
+                ['label'=>'Consultations', 'val'=>number_format($totalConsults),'sub'=>($consultsOpen??0).' open',            'color'=>'#8b5cf6', 'border'=>'border-l-purple-500',  'href'=>route('admin.consultations.index')],
+            ];
+            @endphp
+            @foreach($kpis as $k)
+            <a href="{{ $k['href'] }}" class="bg-white rounded-2xl shadow-sm border border-slate-100 border-l-4 {{ $k['border'] }} p-5 hover:shadow-md transition group">
                 <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ $k['label'] }}</p>
-                <p class="text-3xl font-black mt-1" style="color:{{ $k['color'] }}">{{ $k['val'] }}</p>
+                <p class="text-3xl font-black mt-1 group-hover:opacity-80" style="color:{{ $k['color'] }}">{{ $k['val'] }}</p>
                 <p class="text-xs text-slate-400 mt-1">{{ $k['sub'] }}</p>
-            </div>
+            </a>
             @endforeach
         </div>
 

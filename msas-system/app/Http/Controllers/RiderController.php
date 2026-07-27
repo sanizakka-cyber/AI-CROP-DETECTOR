@@ -65,11 +65,13 @@ class RiderController extends Controller
             'status'            => 'processing',
         ]);
 
-        // Notify buyer and seller
+        $rider = auth()->user();
+        $vehicle = $rider->vehicle_type ? ucfirst($rider->vehicle_type) : 'Motorcycle';
+
         Notification::create([
             'user_id' => $order->buyer_id,
-            'title'   => 'Rider Accepted',
-            'message' => "Your rider has accepted the delivery for order {$order->order_number}. Delivery in progress.",
+            'title'   => 'Rider On the Way!',
+            'message' => "Your order {$order->order_number} has been accepted by {$rider->first_name} {$rider->last_name} ({$vehicle}). Contact: {$rider->phone}. Delivery in progress.",
             'type'    => 'success',
             'link'    => '/marketplace/orders/' . $order->id,
         ]);
@@ -145,23 +147,16 @@ class RiderController extends Controller
         abort_if($order->rider_status !== 'in_transit', 422);
 
         $order->update([
-            'rider_status' => 'completed',
+            'rider_status' => 'awaiting_confirmation',
             'status'       => 'delivered',
             'delivered_at' => now(),
-            'completed_at' => now(),
         ]);
 
-        // Free rider
-        auth()->user()->update([
-            'rider_status'      => 'available',
-            'rider_deliveries'  => auth()->user()->rider_deliveries + 1,
-        ]);
-
-        // Notify buyer and seller
+        // Notify buyer to confirm
         Notification::create([
             'user_id' => $order->buyer_id,
-            'title'   => 'Order Delivered!',
-            'message' => "Your order {$order->order_number} has been delivered. Please confirm receipt.",
+            'title'   => 'Order Delivered — Please Confirm',
+            'message' => "Your order {$order->order_number} has arrived! Please confirm delivery or report an issue.",
             'type'    => 'success',
             'link'    => '/marketplace/orders/' . $order->id,
         ]);

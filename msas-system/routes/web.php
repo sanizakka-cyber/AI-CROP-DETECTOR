@@ -203,6 +203,8 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::get('/consultations/{consultation}',      [\App\Http\Controllers\Admin\ConsultationController::class, 'show'])         ->name('consultations.show');
     Route::post('/consultations/{consultation}/assign', [\App\Http\Controllers\Admin\ConsultationController::class, 'assign'])    ->name('consultations.assign');
     Route::patch('/consultations/{consultation}/status', [\App\Http\Controllers\Admin\ConsultationController::class, 'updateStatus'])->name('consultations.status');
+    Route::post('/consultations/{consultation}/expert-accept', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertAccept'])->name('consultations.expert.accept');
+    Route::post('/consultations/{consultation}/expert-decline', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertDecline'])->name('consultations.expert.decline');
 });
 
 // ── Admin: Order & Rider Management ───────────────────────────────────────────
@@ -284,6 +286,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/marketplace/order',                        [\App\Http\Controllers\MarketplaceController::class, 'placeOrder'])->name('marketplace.order.place');
     Route::get('/marketplace/orders',                        [\App\Http\Controllers\MarketplaceController::class, 'myOrders'])->name('marketplace.orders');
     Route::get('/marketplace/orders/{order}',                [\App\Http\Controllers\MarketplaceController::class, 'showOrder'])->name('marketplace.orders.show');
+    Route::post('/marketplace/orders/{order}/confirm',       [\App\Http\Controllers\MarketplaceController::class, 'confirmDelivery'])->name('marketplace.orders.confirm');
+    Route::post('/marketplace/orders/{order}/report-issue',  [\App\Http\Controllers\MarketplaceController::class, 'reportIssue'])->name('marketplace.orders.report');
     Route::get('/marketplace/{product}',                     [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('marketplace.show')->whereNumber('product');
 });
 
