@@ -137,4 +137,14 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
+    public function security(Request $request): View
+    {
+        $user         = $request->user();
+        $loginHistory = \App\Models\LoginHistory::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->take(20)
+            ->get();
+        return view('profile.security', compact('user', 'loginHistory'));
+    }
 }

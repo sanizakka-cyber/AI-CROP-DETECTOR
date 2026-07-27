@@ -473,12 +473,30 @@ class DashboardController extends Controller
     // ── Government Dashboard ───────────────────────────────────────
     public function government()
     {
-        try { $totalFarmers     = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
-        try { $totalAnimals     = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
-        try { $totalDiagnoses   = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
-        try { $diseaseAlerts    = \App\Models\Diagnosis::where('status','reviewed')->latest()->take(5)->get(); } catch (\Exception $e) { $diseaseAlerts = collect(); }
-        try { $stateBreakdown   = \App\Models\User::where('role','farmer')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(10)->get(); } catch (\Exception $e) { $stateBreakdown = collect(); }
-        return view('government.dashboard', compact('totalFarmers','totalAnimals','totalDiagnoses','diseaseAlerts','stateBreakdown'));
+        try { $totalFarmers        = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        try { $totalAnimals        = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
+        try { $totalDiagnoses      = \App\Models\Diagnosis::count(); } catch (\Exception $e) { $totalDiagnoses = 0; }
+        try { $totalConsults       = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsults = 0; }
+        try { $resolvedConsults    = \App\Models\Consultation::where('status','resolved')->count(); } catch (\Exception $e) { $resolvedConsults = 0; }
+        try { $resolutionRate      = $totalConsults > 0 ? round(($resolvedConsults / $totalConsults) * 100) : 0; } catch (\Exception $e) { $resolutionRate = 0; }
+        try { $verifiedFarmers     = \App\Models\User::where('role','farmer')->where('is_active',true)->count(); } catch (\Exception $e) { $verifiedFarmers = 0; }
+        try { $marketGMV           = \App\Models\Order::where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $marketGMV = 0; }
+        try { $diseaseAlerts       = \App\Models\Diagnosis::whereNotNull('disease_name')->latest()->take(8)->get(); } catch (\Exception $e) { $diseaseAlerts = collect(); }
+        try { $stateBreakdown      = \App\Models\User::where('role','farmer')->whereNotNull('state')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(10)->get(); } catch (\Exception $e) { $stateBreakdown = collect(); }
+        try { $diseaseFrequency    = \App\Models\Diagnosis::whereNotNull('disease_name')->select('disease_name', DB::raw('count(*) as count'))->groupBy('disease_name')->orderByDesc('count')->take(8)->get(); } catch (\Exception $e) { $diseaseFrequency = collect(); }
+        try { $totalAgroDealers    = \App\Models\User::whereIn('role',['agro-dealer','equipment-dealer'])->count(); } catch (\Exception $e) { $totalAgroDealers = 0; }
+        try { $totalVets           = \App\Models\User::where('role','vet')->count(); } catch (\Exception $e) { $totalVets = 0; }
+        try { $totalAgronomists    = \App\Models\User::where('role','agronomist')->count(); } catch (\Exception $e) { $totalAgronomists = 0; }
+        try { $monthlyFarmers      = collect(range(5,0))->map(fn($i) => ['label' => now()->subMonths($i)->format('M'), 'count' => \App\Models\User::where('role','farmer')->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->count()]); } catch (\Exception $e) { $monthlyFarmers = collect(); }
+        try { $monthlyDiagnoses    = collect(range(5,0))->map(fn($i) => ['label' => now()->subMonths($i)->format('M'), 'count' => \App\Models\Diagnosis::whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->count()]); } catch (\Exception $e) { $monthlyDiagnoses = collect(); }
+        try { $lgaBreakdown        = \App\Models\User::where('role','farmer')->whereNotNull('lga')->select('lga', DB::raw('count(*) as count'))->groupBy('lga')->orderByDesc('count')->take(8)->get(); } catch (\Exception $e) { $lgaBreakdown = collect(); }
+        try { $recentFarmers       = \App\Models\User::where('role','farmer')->latest()->take(8)->get(); } catch (\Exception $e) { $recentFarmers = collect(); }
+        return view('government.dashboard', compact(
+            'totalFarmers','totalAnimals','totalDiagnoses','totalConsults','resolvedConsults','resolutionRate',
+            'verifiedFarmers','marketGMV','diseaseAlerts','stateBreakdown','diseaseFrequency',
+            'totalAgroDealers','totalVets','totalAgronomists','monthlyFarmers','monthlyDiagnoses',
+            'lgaBreakdown','recentFarmers'
+        ));
     }
 
     // ── Research Institution Dashboard ─────────────────────────────

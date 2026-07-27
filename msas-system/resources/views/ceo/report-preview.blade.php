@@ -16,7 +16,7 @@
                 <button onclick="window.print()" class="px-4 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-semibold hover:bg-[#047857] transition">
                     &#9112; Print Report
                 </button>
-                <button onclick="alert('Export coming soon!')" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+                <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
                     &#8659; Export CSV
                 </button>
             </div>

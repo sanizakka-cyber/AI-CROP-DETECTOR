@@ -23,6 +23,7 @@ class User extends Authenticatable
         'expo_push_token', 'fcm_token', 'api_token',
         'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
         'is_test_account',
+        'two_factor_enabled', 'two_factor_code', 'two_factor_expires_at',
     ];
 
     public function wallet(): \Illuminate\Database\Eloquent\Relations\HasOne

@@ -153,7 +153,7 @@
             <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 border border-emerald-100">🛒</div>
             <h3 class="text-xl font-bold text-slate-800 mb-2">
                 @if(request('search') || request('category'))No Products Found
-                @else Marketplace Coming Soon @endif
+                @else No Products Available Yet @endif
             </h3>
             <p class="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">
                 @if(request('search'))

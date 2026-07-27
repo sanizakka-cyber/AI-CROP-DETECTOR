@@ -456,6 +456,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ai/chat',    [\App\Http\Controllers\AiWidgetController::class, 'chat'])->name('ai.chat');
 });
 
+// ── Two-Factor Authentication ──────────────────────────────────────────────
+Route::get('/2fa/verify',  [\App\Http\Controllers\TwoFactorController::class, 'showVerify'])->name('2fa.verify');
+Route::post('/2fa/verify', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->name('2fa.verify.post')->middleware('throttle:10,1');
+Route::post('/2fa/resend', [\App\Http\Controllers\TwoFactorController::class, 'resend'])->name('2fa.resend')->middleware('throttle:3,1');
+
+// ── Login History & 2FA Toggle (auth required) ────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile/security',   [\App\Http\Controllers\ProfileController::class, 'security'])->name('profile.security');
+    Route::post('/profile/2fa/toggle',[\App\Http\Controllers\TwoFactorController::class, 'toggle'])->name('2fa.toggle');
+});
+
 // ── Scheduler Webhook (external cron trigger) ──────────────────────────────
 // Protected by SCHEDULER_KEY env var. Hit this URL every minute from cron-job.org.
 Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {
