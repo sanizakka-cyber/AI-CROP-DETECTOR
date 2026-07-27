@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\LoginHistory;
 use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
@@ -104,6 +106,17 @@ class AuthenticatedSessionController extends Controller
 
             return redirect()->route('otp.verify')
                 ->with('status', 'Please verify your account first. A new code has been sent.');
+        }
+
+        // Log successful login
+        LoginHistory::record($user->id, true);
+
+        // Trigger 2FA for privileged roles (or when user has manually enabled it)
+        if (TwoFactorController::roleRequires2FA($user->role) || $user->two_factor_enabled) {
+            Auth::logout();
+            session(['2fa_user_id' => $user->id]);
+            TwoFactorController::initiate($user);
+            return redirect()->route('2fa.verify');
         }
 
         return redirect()->intended(route('dashboard', absolute: false));

@@ -18,10 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.api'            => \App\Http\Middleware\ApiAuthenticate::class,
             'subscription'        => \App\Http\Middleware\RequireSubscription::class,
             'force.password.reset'=> \App\Http\Middleware\ForcePasswordReset::class,
+            '2fa'                 => \App\Http\Middleware\RequireTwoFactor::class,
         ]);
 
         // Restore user's chosen language from session on every web request
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
+
+        // Intercept mid-2FA sessions so unauthenticated users can't bypass OTP
+        $middleware->appendToGroup('web', \App\Http\Middleware\RequireTwoFactor::class);
 
         // Redirect users with a temporary password to the change-password page
         $middleware->appendToGroup('web', \App\Http\Middleware\ForcePasswordReset::class);
