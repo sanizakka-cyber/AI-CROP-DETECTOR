@@ -20,6 +20,8 @@ class Order extends Model
         'rider_assigned_at', 'rider_accepted_at', 'in_transit_at',
         'completed_at', 'returned_at', 'buyer_confirmed_at',
         'rejection_reason', 'admin_notes',
+        // wallet payouts
+        'delivery_fee', 'dealer_credited', 'rider_credited',
     ];
 
     protected $casts = [
@@ -38,6 +40,9 @@ class Order extends Model
         'completed_at'        => 'datetime',
         'returned_at'         => 'datetime',
         'buyer_confirmed_at'  => 'datetime',
+        'delivery_fee'        => 'float',
+        'dealer_credited'     => 'boolean',
+        'rider_credited'      => 'boolean',
     ];
 
     // ── Relationships ────────────────────────────────────────────────────────────

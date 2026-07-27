@@ -25,6 +25,11 @@ class User extends Authenticatable
         'is_test_account',
     ];
 
+    public function wallet(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\Wallet::class);
+    }
+
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(UserDocument::class);
