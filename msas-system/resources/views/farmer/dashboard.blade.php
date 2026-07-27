@@ -110,10 +110,30 @@
         <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;"><a href="{{ route('farmer.poultry') }}" style="color:#b45309;" data-i18n="View flocks">{{ __('View flocks') }}</a> →</div>
     </div>
 
-    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0;">
+    <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0;position:relative;overflow:hidden;">
+        @php
+            $scanLimit = $scanCheck['limit'] ?? -1;
+            $scanUsed  = $scanCheck['used'] ?? 0;
+            $scanPct   = ($scanLimit > 0 && $scanLimit !== -1) ? min(100, ($scanUsed / $scanLimit) * 100) : 0;
+            $scanNearLimit = $scanLimit > 0 && $scanLimit !== -1 && $scanPct >= 80;
+        @endphp
+        @if($scanLimit > 0 && $scanLimit !== -1)
+        <div style="position:absolute;top:0;left:0;width:{{ $scanPct }}%;height:3px;background:{{ $scanNearLimit?'#dc2626':'#1FA84A' }};border-radius:2px 0 0 0;"></div>
+        @endif
         <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;" data-i18n="AI Diagnoses">{{ __('AI Diagnoses') }}</div>
         <div style="font-size:34px;font-weight:900;color:#1FA84A;line-height:1;">{{ $diagnosesCount }}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;" data-i18n="Total scans">{{ __('Total scans') }}</div>
+        @if($scanLimit === -1)
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;">{{ __('Unlimited scans') }}</div>
+        @elseif($scanLimit > 0)
+        <div style="font-size:11px;color:{{ $scanNearLimit?'#dc2626':'#94a3b8' }};margin-top:4px;font-weight:600;">
+            {{ $scanUsed }}/{{ $scanLimit }} {{ __('used this month') }}
+            @if(!$scanCheck['allowed'])
+            · <a href="{{ route('subscription.plans') }}" style="color:#0F6B3E;">{{ __('Upgrade') }}</a>
+            @endif
+        </div>
+        @else
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:600;">{{ __('Total scans') }}</div>
+        @endif
     </div>
 
     <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0;">

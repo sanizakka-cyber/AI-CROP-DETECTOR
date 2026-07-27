@@ -110,6 +110,16 @@
     </div>
     @endif
 
+    {{-- Proof of Delivery --}}
+    @if($order->proof_of_delivery)
+    <div class="card">
+        <div class="section-title">Proof of Delivery</div>
+        <img src="{{ asset('storage/' . $order->proof_of_delivery) }}"
+             alt="Proof of delivery"
+             style="width:100%;border-radius:10px;object-fit:cover;max-height:300px;">
+    </div>
+    @endif
+
     {{-- Items --}}
     <div class="card">
         <div class="section-title">Order Items</div>

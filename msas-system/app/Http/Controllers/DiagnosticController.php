@@ -29,6 +29,13 @@ class DiagnosticController extends Controller
             'pest_location'   => 'nullable|string|max:100',
         ]);
 
+        // ── Subscription scan limit check ─────────────────────────────────────
+        $scanCheck = app(\App\Services\SubscriptionLimitService::class)->canScan(auth()->user());
+        if (!$scanCheck['allowed']) {
+            $limit = $scanCheck['limit'];
+            return back()->withErrors(['image' => "You have used all {$limit} AI scans for this month. <a href=\"" . route('subscription.plans') . "\" class=\"underline font-semibold\">Upgrade your plan to continue →</a>"]);
+        }
+
         // ── 1. Store image ────────────────────────────────────────────────────
         $uploadedFile = $request->file('image');
         $path         = $uploadedFile->store('diagnostics', 'public');

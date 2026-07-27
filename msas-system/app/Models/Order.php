@@ -22,6 +22,8 @@ class Order extends Model
         'rejection_reason', 'admin_notes',
         // wallet payouts
         'delivery_fee', 'dealer_credited', 'rider_credited',
+        // delivery
+        'proof_of_delivery',
     ];
 
     protected $casts = [
