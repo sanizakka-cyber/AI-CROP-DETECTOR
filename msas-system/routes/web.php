@@ -70,12 +70,12 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
 // Role-Specific Dashboards
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard',                [DashboardController::class, 'admin'])               ->middleware('role:admin,ceo')            ->name('admin.dashboard');
-    Route::get('/farmer/dashboard',               [DashboardController::class, 'farmer'])              ->middleware('role:farmer')               ->name('farmer.dashboard');
+    Route::get('/farmer/dashboard',               [DashboardController::class, 'farmer'])              ->middleware('role:farmer,student')       ->name('farmer.dashboard');
     Route::get('/equipment-dealer/dashboard',     [DashboardController::class, 'equipmentDealer'])     ->middleware('role:equipment-dealer')     ->name('equipment-dealer.dashboard');
     Route::get('/cooperative/dashboard',          [DashboardController::class, 'cooperative'])         ->middleware('role:cooperative')          ->name('cooperative.dashboard');
     Route::get('/ngo/dashboard',                  [DashboardController::class, 'ngo'])                 ->middleware('role:ngo')                  ->name('ngo.dashboard');
     Route::get('/government/dashboard',           [DashboardController::class, 'government'])          ->middleware('role:government,government-agency') ->name('government.dashboard');
-    Route::get('/research-institution/dashboard', [DashboardController::class, 'researchInstitution'])->middleware('role:research-institution') ->name('research-institution.dashboard');
+    Route::get('/research-institution/dashboard', [DashboardController::class, 'researchInstitution'])->middleware('role:research-institution,researcher') ->name('research-institution.dashboard');
     Route::get('/investor/dashboard',             [DashboardController::class, 'investor'])            ->middleware('role:investor')             ->name('investor.dashboard');
     Route::get('/financial-institution/dashboard',[DashboardController::class, 'financialInstitution'])->middleware('role:financial-institution')->name('financial-institution.dashboard');
     Route::get('/vet/dashboard', [DashboardController::class, 'vet'])->middleware('role:vet')->name('vet.dashboard');
