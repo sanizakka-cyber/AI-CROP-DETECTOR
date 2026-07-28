@@ -548,11 +548,24 @@ Route::middleware(['auth'])->group(function () {
 
 // ── Scheduler Webhook (external cron trigger) ──────────────────────────────
 // Protected by SCHEDULER_KEY env var. Hit this URL every minute from cron-job.org.
-Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {
+// Preferred: POST with Authorization: Bearer <SCHEDULER_KEY> header.
+// Legacy GET with ?key=<SCHEDULER_KEY> still accepted but query params appear in access logs.
+Route::match(['get', 'post'], '/scheduler/run', function (\Illuminate\Http\Request $request) {
     $key = config('app.scheduler_key');
-    if (!$key || $request->query('key') !== $key) {
+
+    // Prefer Authorization header (keeps secret out of server access logs)
+    $headerKey = null;
+    $authHeader = $request->header('Authorization', '');
+    if (str_starts_with($authHeader, 'Bearer ')) {
+        $headerKey = substr($authHeader, 7);
+    }
+
+    $provided = $headerKey ?? $request->query('key', '');
+
+    if (!$key || !hash_equals($key, (string) $provided)) {
         abort(403, 'Forbidden');
     }
+
     \Illuminate\Support\Facades\Artisan::call('schedule:run');
     return response('OK ' . now()->toIso8601String(), 200)
         ->header('Content-Type', 'text/plain');

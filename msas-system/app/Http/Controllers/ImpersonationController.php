@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +42,11 @@ class ImpersonationController extends Controller
             'target_id'  => $user->id,
             'target_role'=> $user->role,
         ]);
+        AuditLog::record('impersonation.started', 'User', $user->id, [
+            'actor_id'   => $actor->id,
+            'actor_role' => $actor->role,
+            'target_role'=> $user->role,
+        ]);
 
         session()->put(self::SESSION_KEY, $actor->id);
         Auth::loginUsingId($user->id);
@@ -66,6 +72,10 @@ class ImpersonationController extends Controller
             'original_id'   => $original->id,
             'original_role' => $original->role,
             'was_id'        => Auth::id(),
+        ]);
+        AuditLog::record('impersonation.ended', 'User', Auth::id(), [
+            'original_id'   => $original->id,
+            'original_role' => $original->role,
         ]);
 
         Auth::loginUsingId($original->id);

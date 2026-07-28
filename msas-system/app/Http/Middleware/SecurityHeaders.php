@@ -18,6 +18,23 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
+        // Content-Security-Policy: blocks injected scripts from untrusted origins,
+        // prevents clickjacking (redundant with X-Frame-Options but defense-in-depth),
+        // and stops base-tag / form-action phishing even with inline scripts allowed.
+        $csp = implode('; ', [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://js.paystack.co https://meet.jit.si",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https://ui-avatars.com",
+            "font-src 'self' data:",
+            "connect-src 'self' https://api.open-meteo.com https://api.paystack.co",
+            "frame-src 'self' https://meet.jit.si",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+        ]);
+        $response->headers->set('Content-Security-Policy', $csp);
+
         // Only send HSTS over HTTPS connections
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
