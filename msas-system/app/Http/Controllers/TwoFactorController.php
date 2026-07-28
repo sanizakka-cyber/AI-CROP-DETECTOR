@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 class TwoFactorController extends Controller
@@ -20,8 +21,10 @@ class TwoFactorController extends Controller
     public static function initiate($user): void
     {
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Store a bcrypt hash — same pattern as OtpService — so DB read access
+        // does not expose a valid code for CEO/admin/finance accounts.
         $user->update([
-            'two_factor_code'       => $code,
+            'two_factor_code'       => Hash::make($code),
             'two_factor_expires_at' => now()->addMinutes(10),
         ]);
 
@@ -30,7 +33,6 @@ class TwoFactorController extends Controller
                 $m->to($user->email)->subject('Your MSAS FarmAI Security Code');
             });
         } catch (\Throwable $e) {
-            // Log but don't block — admin can see code in DB during testing
             \Log::warning('2FA email failed for user '.$user->id.': '.$e->getMessage());
         }
     }
@@ -61,7 +63,7 @@ class TwoFactorController extends Controller
             return redirect()->route('login')->withErrors(['code' => 'Code expired. Please log in again to receive a new code.']);
         }
 
-        if ($request->code !== $user->two_factor_code) {
+        if (! Hash::check($request->code, $user->two_factor_code)) {
             return back()->withErrors(['code' => 'Invalid code. Please try again.']);
         }
 

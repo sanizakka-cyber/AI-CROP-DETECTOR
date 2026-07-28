@@ -2,15 +2,20 @@
 
 $extraOrigins = array_filter(explode(',', env('CORS_ALLOWED_ORIGINS', '')));
 
+// In production, require CORS_ALLOWED_ORIGINS to be set explicitly.
+// Falling back to wildcard in production would allow any website to make
+// authenticated API requests using a visitor's stored bearer token.
+// Mobile app requests carry no Origin header and are unaffected by CORS.
+$allowedOrigins = !empty($extraOrigins)
+    ? $extraOrigins
+    : (app()->environment('production') ? [] : ['*']);
+
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    // Set CORS_ALLOWED_ORIGINS=https://yourdomain.com in .env for production.
-    // Mobile apps send no Origin header, so they are unaffected by CORS policy.
-    // Falls back to '*' only when no explicit origins are configured (local/dev).
-    'allowed_origins' => !empty($extraOrigins) ? $extraOrigins : ['*'],
+    'allowed_origins' => $allowedOrigins,
 
     'allowed_origins_patterns' => [],
 

@@ -164,6 +164,19 @@ class SubscriptionController extends Controller
         $cycle     = $meta['billing_cycle'] ?? session('pending_sub.cycle');
         $amount    = ($data['amount'] ?? 0) / 100;
 
+        // Verify this payment belongs to the authenticated user — prevents
+        // an attacker who guesses/intercepts a reference from activating a
+        // subscription on their own account at another user's expense.
+        if (isset($meta['user_id']) && (int) $meta['user_id'] !== $user->id) {
+            Log::warning('Subscription callback: user_id mismatch', [
+                'meta_user_id' => $meta['user_id'],
+                'auth_id'      => $user->id,
+                'reference'    => $reference,
+            ]);
+            return redirect()->route('subscription.plans')
+                ->with('error', 'Payment reference does not belong to your account. Contact support if you believe this is an error.');
+        }
+
         // Prevent double-activation
         $alreadyActivated = $user->subscriptions()
             ->where('payment_reference', $reference)
@@ -189,8 +202,8 @@ class SubscriptionController extends Controller
         $signature = $request->header('x-paystack-signature');
         $body      = $request->getContent();
 
-        // Verify webhook signature
-        if (hash_hmac('sha512', $body, config('services.paystack.secret_key')) !== $signature) {
+        // Verify webhook signature — use hash_equals to prevent timing attacks
+        if (! hash_equals(hash_hmac('sha512', $body, config('services.paystack.secret_key')), (string) $signature)) {
             return response()->json(['status' => 'invalid signature'], 401);
         }
 
