@@ -61,7 +61,19 @@ class ComplianceController extends Controller
         return back()->with('success', 'Your data export has been queued. You will receive a download link within 15 minutes.');
     }
 
-    // ── Privacy & Consent page ────────────────────────────────────────────────
+    // ── Public legal pages (no auth required) ────────────────────────────────
+
+    public function publicPrivacy()
+    {
+        return view('legal.privacy');
+    }
+
+    public function terms()
+    {
+        return view('legal.terms');
+    }
+
+    // ── Privacy & Consent page (authenticated farmer) ─────────────────────────
 
     public function privacy()
     {
