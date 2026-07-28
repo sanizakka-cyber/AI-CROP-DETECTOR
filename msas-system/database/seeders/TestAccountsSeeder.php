@@ -33,7 +33,8 @@ use Illuminate\Support\Facades\Hash;
 
 class TestAccountsSeeder extends Seeder
 {
-    private const TEMP_PASSWORD = 'Welcome@123';
+    // Route all transactional emails (OTP, 2FA, alerts) to shared QA inbox during testing.
+    const TEST_INBOX = 'msaslivestockagroservices@gmail.com';
 
     private const ACCOUNTS = [
         [
@@ -208,6 +209,13 @@ class TestAccountsSeeder extends Seeder
 
     public function run(): void
     {
+        // Password is read from environment — never hardcoded in source.
+        $seedPassword = env('STAFF_SEED_PASSWORD');
+        if (!$seedPassword) {
+            $this->command->error('STAFF_SEED_PASSWORD is not set. Add it to your .env and re-run.');
+            return;
+        }
+
         $created = 0;
         $skipped = 0;
 
@@ -222,12 +230,14 @@ class TestAccountsSeeder extends Seeder
                 'last_name'            => $spec['last_name'],
                 'email'                => $spec['email'],
                 'phone'                => $spec['phone'],
-                'password'             => Hash::make(self::TEMP_PASSWORD),
+                'password'             => Hash::make($seedPassword),
                 'role'                 => $spec['role'],
                 'is_verified'          => true,
                 'is_active'            => true,
+                'email_verified_at'    => now(),
                 'force_password_reset' => true,
                 'is_test_account'      => true,
+                'notification_email'   => self::TEST_INBOX,
                 'state'                => 'Katsina',
                 'language'             => 'en',
             ]);

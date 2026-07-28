@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(ProductSeeder::class);
         $this->call(SuperAdminSeeder::class);
+        $this->call(StaffAccountsSeeder::class);
 
         // 1. CEO ACCOUNT
         User::create([
