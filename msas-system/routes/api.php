@@ -22,13 +22,75 @@ use App\Http\Controllers\Api\MessageApiController;
 use App\Models\SubscriptionUsage;
 use Illuminate\Support\Facades\Route;
 
-// ── Health / connectivity check (unauthenticated) ────────────────────────────
+// ── Health / monitoring endpoint (unauthenticated — used by Render + uptime monitors) ──
 Route::get('/health', function () {
+    $checks  = [];
+    $healthy = true;
+
+    // Database
+    try {
+        \Illuminate\Support\Facades\DB::select('SELECT 1');
+        $checks['database'] = 'ok';
+    } catch (\Throwable $e) {
+        $checks['database'] = 'error: ' . $e->getMessage();
+        $healthy = false;
+    }
+
+    // Queue depth (failed jobs are a monitoring signal)
+    try {
+        $checks['failed_jobs'] = (int) \Illuminate\Support\Facades\DB::table('failed_jobs')->count();
+    } catch (\Throwable) {
+        $checks['failed_jobs'] = null;
+    }
+
+    // Pending jobs depth
+    try {
+        $checks['pending_jobs'] = (int) \Illuminate\Support\Facades\DB::table('jobs')->count();
+    } catch (\Throwable) {
+        $checks['pending_jobs'] = null;
+    }
+
+    // AI engine reachability (fast timeout — non-fatal)
+    try {
+        $aiUrl = rtrim(config('services.ai_engine.url', ''), '/');
+        if ($aiUrl) {
+            $aiKey = config('services.ai_engine.key', '');
+            $guzzle = new \GuzzleHttp\Client(['timeout' => 4, 'http_errors' => false]);
+            $headers = $aiKey ? ['Authorization' => "Bearer {$aiKey}"] : [];
+            $resp = $guzzle->get("{$aiUrl}/health", ['headers' => $headers]);
+            $checks['ai_engine'] = $resp->getStatusCode() < 500 ? 'ok' : 'degraded';
+        } else {
+            $checks['ai_engine'] = 'not_configured';
+        }
+    } catch (\Throwable) {
+        $checks['ai_engine'] = 'unreachable';
+    }
+
+    // Recent AI scan failures (last 15 min)
+    try {
+        $checks['ai_scan_failures_15m'] = (int) \App\Models\Diagnosis::where('status', 'needs_review')
+            ->where('created_at', '>=', now()->subMinutes(15))
+            ->count();
+    } catch (\Throwable) {
+        $checks['ai_scan_failures_15m'] = null;
+    }
+
+    // Recent payment failures (last hour)
+    try {
+        $checks['payment_failures_1h'] = (int) \App\Models\Payment::where('status', 'failed')
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+    } catch (\Throwable) {
+        $checks['payment_failures_1h'] = null;
+    }
+
     return response()->json([
-        'status'  => 'ok',
+        'status'  => $healthy ? 'ok' : 'degraded',
         'app'     => config('app.name'),
+        'env'     => config('app.env'),
         'time'    => now()->toIso8601String(),
-    ]);
+        'checks'  => $checks,
+    ], $healthy ? 200 : 503);
 });
 
 // ── Public Auth (rate-limited: 5 attempts per minute per IP) ─────────────────
