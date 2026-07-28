@@ -38,6 +38,6 @@
                 Resend Code
             </button>
         </form>
-        <a href="{{ route('login') }}" class="block mt-2 text-xs text-slate-400 hover:text-slate-600">Back to Login</a>
+        <a href="{{ route('2fa.cancel') }}" class="block mt-2 text-xs text-slate-400 hover:text-slate-600">Back to Login</a>
     </div>
 </x-guest-layout>

@@ -41,10 +41,26 @@ class TwoFactorController extends Controller
     // Show OTP entry form
     public function showVerify()
     {
-        if (!session('2fa_user_id')) {
+        $userId = session('2fa_user_id');
+        if (!$userId) {
             return redirect()->route('login');
         }
+
+        // If the code has expired, clear the pending session so the user isn't trapped.
+        $user = \App\Models\User::find($userId);
+        if (!$user || ($user->two_factor_expires_at && now()->gt($user->two_factor_expires_at))) {
+            session()->forget('2fa_user_id');
+            return redirect()->route('login')->withErrors(['identifier' => 'Your security code has expired. Please log in again.']);
+        }
+
         return view('auth.two-factor');
+    }
+
+    // Cancel pending 2FA and return to login — clears session so the user isn't trapped in a loop.
+    public function cancel()
+    {
+        session()->forget('2fa_user_id');
+        return redirect()->route('login');
     }
 
     // Verify submitted OTP
