@@ -20,11 +20,13 @@ class User extends Authenticatable
         'password', 'profile_photo', 'language', 'last_seen',
         'is_active', 'is_verified', 'force_password_reset',
         'email_verified_at', 'phone_verified_at',
-        'expo_push_token', 'fcm_token', 'api_token',
+        'expo_push_token', 'fcm_token',
         'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
-        'is_test_account',
-        'two_factor_enabled', 'two_factor_code', 'two_factor_expires_at',
+        'two_factor_enabled',
     ];
+
+    // api_token, is_test_account, two_factor_code, two_factor_expires_at are intentionally
+    // excluded from $fillable — they are set only via direct property assignment by trusted code.
 
     public function wallet(): \Illuminate\Database\Eloquent\Relations\HasOne
     {

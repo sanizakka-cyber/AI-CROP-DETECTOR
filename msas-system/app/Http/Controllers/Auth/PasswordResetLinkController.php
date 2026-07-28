@@ -35,10 +35,9 @@ class PasswordResetLinkController extends Controller
                 ->first();
 
         if (! $user) {
+            // Generic message — avoids confirming whether an account exists (account enumeration)
             return back()->withErrors([
-                'identifier' => $isEmail
-                    ? 'No account found with that email address.'
-                    : 'No account found with that phone number.',
+                'identifier' => 'If an account exists with that identifier, a reset code has been sent.',
             ]);
         }
 

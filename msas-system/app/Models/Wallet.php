@@ -9,8 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Wallet extends Model
 {
     protected $fillable = [
-        'user_id', 'balance', 'locked_balance', 'currency', 'is_active',
+        'user_id', 'currency', 'is_active',
     ];
+
+    // balance and locked_balance are excluded from $fillable — WalletService mutates
+    // them only via direct property assignment inside lockForUpdate() transactions.
 
     protected $casts = [
         'balance'        => 'float',

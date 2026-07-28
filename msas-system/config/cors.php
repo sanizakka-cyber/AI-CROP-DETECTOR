@@ -7,12 +7,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // In production set CORS_ALLOWED_ORIGINS=https://yourdomain.com in .env
-    // Mobile apps send no Origin header, so '*' is safe for the API.
-    'allowed_origins' => array_merge(
-        ['*'],
-        $extraOrigins,
-    ),
+    // Set CORS_ALLOWED_ORIGINS=https://yourdomain.com in .env for production.
+    // Mobile apps send no Origin header, so they are unaffected by CORS policy.
+    // Falls back to '*' only when no explicit origins are configured (local/dev).
+    'allowed_origins' => !empty($extraOrigins) ? $extraOrigins : ['*'],
 
     'allowed_origins_patterns' => [],
 

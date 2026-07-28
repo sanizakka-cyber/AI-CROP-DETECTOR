@@ -102,9 +102,14 @@ class AnalyticsApiController extends Controller
         ]);
     }
 
-    // GET /analytics/outbreaks — disease outbreak trends (last 30 days)
+    // GET /analytics/outbreaks — disease outbreak trends (last 30 days, admin/analyst roles only)
     public function outbreaks(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'government-agency', 'research-institution'])) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         try {
             $outbreaks = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
                 ->where('created_at', '>=', now()->subDays(30))
@@ -127,9 +132,14 @@ class AnalyticsApiController extends Controller
         return response()->json(['outbreaks' => $outbreaks]);
     }
 
-    // GET /analytics/outcomes — treatment success breakdown
+    // GET /analytics/outcomes — treatment success breakdown (admin/analyst roles only)
     public function outcomes(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'government-agency', 'research-institution'])) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         try {
             $total     = Diagnosis::count();
             $confirmed = Diagnosis::where('status', 'confirmed')->count();

@@ -154,7 +154,7 @@ class RiderController extends Controller
         abort_if($order->rider_id !== auth()->id(), 403);
         abort_if($order->rider_status !== 'in_transit', 422);
 
-        $request->validate(['proof' => 'nullable|image|max:5120']);
+        $request->validate(['proof' => 'nullable|mimes:jpeg,jpg,png,gif,webp|max:5120']);
 
         $proofPath = null;
         if ($request->hasFile('proof')) {

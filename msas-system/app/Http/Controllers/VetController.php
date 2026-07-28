@@ -34,12 +34,33 @@ class VetController extends Controller
 
     public function show(\App\Models\Consultation $consultation)
     {
+        $user = auth()->user();
+        // Only the assigned expert or an unassigned open consultation visible to matching role
+        $isAssignedToMe = $consultation->expert_id === $user->id;
+        $isOpenAndMatchingRole = is_null($consultation->expert_id)
+            && $consultation->status === 'open'
+            && (
+                ($user->role === 'vet' && $consultation->case_type === 'livestock')
+                || ($user->role === 'agronomist' && $consultation->case_type === 'crop')
+            );
+
+        abort_unless($isAssignedToMe || $isOpenAndMatchingRole, 403, 'You do not have permission to view this consultation.');
+
         return view('vet.show', compact('consultation'));
     }
 
     public function respond(Request $request, \App\Models\Consultation $consultation)
     {
         abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
+
+        // Prevent overwriting another expert's response
+        abort_if(
+            $consultation->expert_id && $consultation->expert_id !== auth()->id(),
+            403,
+            'This consultation is assigned to another expert.'
+        );
+        abort_if($consultation->status === 'resolved', 422, 'This consultation has already been resolved.');
+
         $request->validate([
             'expert_response' => 'required|string|min:10',
         ]);
@@ -47,7 +68,7 @@ class VetController extends Controller
         $consultation->update([
             'expert_id' => auth()->id(),
             'expert_response' => $request->expert_response,
-            'status' => 'resolved', // or 'completed'
+            'status' => 'resolved',
             'completed_at' => now(),
         ]);
 

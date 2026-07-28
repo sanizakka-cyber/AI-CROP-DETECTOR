@@ -42,10 +42,11 @@ class CartApiController extends Controller
             return response()->json(['error' => 'Insufficient stock'], 422);
         }
 
-        $item = CartItem::updateOrCreate(
+        $item = CartItem::firstOrCreate(
             ['user_id' => auth()->id(), 'product_id' => $product->id],
-            ['quantity' => \DB::raw("quantity + {$qty}")]
+            ['quantity' => 0]
         );
+        $item->increment('quantity', $qty);
 
         return response()->json(['data' => $item, 'message' => 'Added to cart'], 201);
     }

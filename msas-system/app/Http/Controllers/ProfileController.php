@@ -37,7 +37,7 @@ class ProfileController extends Controller
             'phone'         => ['nullable', 'string', 'max:20'],
             'state'         => ['nullable', 'string', 'max:100'],
             'lga'           => ['nullable', 'string', 'max:100'],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => ['nullable', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
         ]);
 
         $user = $request->user();
