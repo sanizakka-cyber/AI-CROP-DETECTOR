@@ -345,20 +345,20 @@ class FarmerController extends Controller
         $activeSub = $user->activeSubscription();
 
         if (!$activeSub || !$activeSub->hasFeature('vet_service_requests')) {
-            return back()->with('error',
-                'Veterinary consultation requests require the Basic Pro Plan or higher. '
-                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade now</a>.'
-            );
+            return back()->with([
+                'error'       => 'Veterinary consultation requests require the Basic Pro Plan or higher.',
+                'upgrade_url' => route('subscription.plans'),
+            ]);
         }
 
         // Check monthly vet consultation limit (applies to Basic Pro; Pro/Premium are unlimited)
         if ($activeSub->getLimit('vet_consultations_per_cycle') > 0
             && $activeSub->hasReachedLimit('vet_consultations_per_cycle')) {
             $limit = $activeSub->getLimit('vet_consultations_per_cycle');
-            return back()->with('error',
-                "You have used all {$limit} veterinary consultations for this month. "
-                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade to Pro</a> for unlimited consultations.'
-            );
+            return back()->with([
+                'error'       => "You have used all {$limit} veterinary consultations for this month.",
+                'upgrade_url' => route('subscription.plans'),
+            ]);
         }
 
         $validated = $request->validate([
@@ -415,20 +415,20 @@ class FarmerController extends Controller
         $activeSub = $user->activeSubscription();
 
         if (!$activeSub || !$activeSub->hasFeature('vet_service_requests')) {
-            return back()->with('error',
-                'Agronomist advisory requests require the Basic Pro Plan or higher. '
-                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade now</a>.'
-            );
+            return back()->with([
+                'error'       => 'Agronomist advisory requests require the Basic Pro Plan or higher.',
+                'upgrade_url' => route('subscription.plans'),
+            ]);
         }
 
         // Check monthly agronomist consultation limit (applies to Basic Pro; Pro/Premium are unlimited)
         if ($activeSub->getLimit('agronomist_consultations_per_cycle') > 0
             && $activeSub->hasReachedLimit('agronomist_consultations_per_cycle')) {
             $limit = $activeSub->getLimit('agronomist_consultations_per_cycle');
-            return back()->with('error',
-                "You have used all {$limit} agronomist consultations for this month. "
-                . '<a href="' . route('subscription.plans') . '" style="color:#0F6B3E;font-weight:700;">Upgrade to Pro</a> for unlimited consultations.'
-            );
+            return back()->with([
+                'error'       => "You have used all {$limit} agronomist consultations for this month.",
+                'upgrade_url' => route('subscription.plans'),
+            ]);
         }
 
         $validated = $request->validate([

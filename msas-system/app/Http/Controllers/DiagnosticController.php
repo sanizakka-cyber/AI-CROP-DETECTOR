@@ -20,7 +20,7 @@ class DiagnosticController extends Controller
     {
         $request->validate([
             'scan_type'       => 'required|in:plant,animal,soil,pest',
-            'image'           => 'required|image|max:5120',
+            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|max:5120',
             'crop_type'       => 'nullable|string|max:100',
             'crop_part'       => 'nullable|string|max:100',
             'animal_type'     => 'nullable|string|max:100',

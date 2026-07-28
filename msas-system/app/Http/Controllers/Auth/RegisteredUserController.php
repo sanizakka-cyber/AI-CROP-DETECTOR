@@ -70,8 +70,9 @@ class RegisteredUserController extends Controller
         }
 
         if ($isEmail && User::where('email', $identifier)->exists()) {
+            // Generic message to avoid confirming account existence to an attacker
             return back()->withInput()->withErrors([
-                'identifier' => 'An account already exists with this email. Sign in instead.',
+                'identifier' => 'There is already an account associated with this identifier. Try signing in.',
             ]);
         }
 
@@ -79,7 +80,7 @@ class RegisteredUserController extends Controller
 
         if ($isPhone && User::where('phone', $normalizedPhone)->exists()) {
             return back()->withInput()->withErrors([
-                'identifier' => 'This phone number is already registered. Sign in instead.',
+                'identifier' => 'There is already an account associated with this identifier. Try signing in.',
             ]);
         }
 

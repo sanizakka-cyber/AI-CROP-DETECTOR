@@ -44,16 +44,20 @@ class AuthApiController extends Controller
         $firstName = $parts[0];
         $lastName  = $parts[1] ?? $parts[0];
 
+        $role          = $request->role ?? 'farmer';
+        $needsApproval = !in_array($role, ['farmer']);
+
         $user = User::create([
-            'first_name' => $firstName,
-            'last_name'  => $lastName,
-            'phone'      => $request->phone,
-            'email'      => $request->email ?? null,
-            'password'   => Hash::make($request->password),
-            'role'       => $request->role ?? 'farmer',
-            'language'   => $request->language ?? 'en',
-            'state'      => $request->state ?? null,
-            'is_active'  => true,
+            'first_name'         => $firstName,
+            'last_name'          => $lastName,
+            'phone'              => $request->phone,
+            'email'              => $request->email ?? null,
+            'password'           => Hash::make($request->password),
+            'role'               => $role,
+            'language'           => $request->language ?? 'en',
+            'state'              => $request->state ?? null,
+            'is_active'          => !$needsApproval,
+            'application_status' => $needsApproval ? 'pending' : 'approved',
         ]);
 
         $token = $user->createToken('mobile')->plainTextToken;

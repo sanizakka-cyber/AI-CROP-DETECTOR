@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             '2fa'                 => \App\Http\Middleware\RequireTwoFactor::class,
         ]);
 
+        // Add security headers to all web responses
+        $middleware->appendToGroup('web', \App\Http\Middleware\SecurityHeaders::class);
+
         // Restore user's chosen language from session on every web request
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
 
