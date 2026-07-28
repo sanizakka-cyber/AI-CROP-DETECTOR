@@ -347,9 +347,21 @@ Route::middleware(['auth', 'role:vet,agronomist', 'subscription'])->prefix('vet'
     Route::get('/queue', [\App\Http\Controllers\VetController::class, 'queue'])->name('queue');
     Route::get('/consultation/{consultation}', [\App\Http\Controllers\VetController::class, 'show'])->name('show');
     Route::post('/consultation/{consultation}/respond', [\App\Http\Controllers\VetController::class, 'respond'])->name('respond');
+    Route::post('/consultation/{consultation}/start-video', [\App\Http\Controllers\VetController::class, 'startVideo'])->name('start-video');
     Route::view('/vaccinations',   'vet.vaccinations')->name('vaccinations');
     Route::view('/disease-alerts', 'vet.disease-alerts')->name('disease-alerts');
 });
+
+// ── Video Consultation join page (vet + farmer) ───────────────────────────
+Route::middleware(['auth'])->get('/consultation/{consultation}/video', function (\App\Models\Consultation $consultation) {
+    $user = auth()->user();
+    $isFarmer = $consultation->farmer_id === $user->id;
+    $isExpert = $consultation->expert_id === $user->id;
+    abort_unless($isFarmer || $isExpert || in_array($user->role, ['admin','ceo']), 403);
+    abort_unless($consultation->video_room_id, 404, 'No video room has been started for this consultation.');
+    $jitsiUrl = 'https://meet.jit.si/msas-' . $consultation->video_room_id;
+    return view('consultation.video', compact('consultation', 'jitsiUrl'));
+})->name('consultation.video');
 
 // Marketplace Seller Routes (agribusiness-owner, input-supplier, farmer)
 Route::middleware(['auth', 'subscription'])->prefix('marketplace/sell')->name('marketplace.')->group(function () {
@@ -478,6 +490,21 @@ Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {
     return response('OK ' . now()->toIso8601String(), 200)
         ->header('Content-Type', 'text/plain');
 })->name('scheduler.run');
+
+// ── Knowledge Base (public read, admin CRUD) ──────────────────────────────
+Route::middleware(['auth'])->prefix('knowledge')->name('knowledge.')->group(function () {
+    Route::get('/',         [\App\Http\Controllers\KnowledgeBaseController::class, 'index'])->name('index');
+    Route::get('/{slug}',   [\App\Http\Controllers\KnowledgeBaseController::class, 'show'])->name('show');
+});
+
+Route::middleware(['auth', 'role:admin,ceo,extension-officer'])->prefix('admin/knowledge')->name('admin.knowledge.')->group(function () {
+    Route::get('/',                          [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'index'])->name('index');
+    Route::get('/create',                    [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'create'])->name('create');
+    Route::post('/',                         [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'store'])->name('store');
+    Route::get('/{knowledgeArticle}/edit',   [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'edit'])->name('edit');
+    Route::patch('/{knowledgeArticle}',      [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'update'])->name('update');
+    Route::delete('/{knowledgeArticle}',     [\App\Http\Controllers\Admin\KnowledgeBaseController::class, 'destroy'])->name('destroy');
+});
 
 // ── Direct Messaging (all authenticated users) ────────────────────────────
 Route::middleware(['auth'])->prefix('messages')->name('messages.')->group(function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class VetController extends Controller
 {
@@ -73,6 +74,26 @@ class VetController extends Controller
         ]);
 
         return redirect()->route('vet.queue')->with('success', 'Consultation resolved successfully.');
+    }
+
+    // POST /vet/consultation/{consultation}/start-video — vet initiates a Jitsi video room
+    public function startVideo(\App\Models\Consultation $consultation)
+    {
+        abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
+        abort_if(
+            $consultation->expert_id && $consultation->expert_id !== auth()->id(),
+            403,
+            'This consultation is assigned to another expert.'
+        );
+
+        if (! $consultation->video_room_id) {
+            $consultation->update([
+                'video_room_id' => Str::uuid()->toString(),
+                'expert_id'     => auth()->id(),
+            ]);
+        }
+
+        return redirect()->route('consultation.video', $consultation);
     }
 }
 

@@ -48,6 +48,20 @@
 
                     <hr class="border-slate-100 mb-8">
 
+                    @if($consultation->video_room_id)
+                    <!-- Video Call Join -->
+                    <div class="mb-6 flex items-center justify-between bg-violet-50 border border-violet-200 rounded-2xl p-4">
+                        <div>
+                            <p class="text-sm font-bold text-violet-800">📹 Video session started</p>
+                            <p class="text-xs text-violet-600 mt-0.5">Your expert has opened a video consultation room.</p>
+                        </div>
+                        <a href="{{ route('consultation.video', $consultation) }}"
+                           class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2 rounded-xl font-bold text-sm transition-colors shadow">
+                            Join Video Call
+                        </a>
+                    </div>
+                    @endif
+
                     <!-- The Response -->
                     <div class="mb-10">
                         <h4 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">

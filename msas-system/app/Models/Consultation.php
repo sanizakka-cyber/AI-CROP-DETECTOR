@@ -26,7 +26,8 @@ class Consultation extends Model
         'rating',
         'feedback',
         'completed_at',
-        'priority'
+        'priority',
+        'video_room_id',
     ];
 
     public function farmer()
