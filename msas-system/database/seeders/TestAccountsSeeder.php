@@ -245,7 +245,7 @@ class TestAccountsSeeder extends Seeder
         }
 
         $this->command->info("Test accounts: {$created} created, {$skipped} already existed (skipped).");
-        $this->command->warn('Temporary password for all new test accounts: ' . self::TEMP_PASSWORD);
         $this->command->warn('All accounts flagged is_test_account = true. Run User::where("is_test_account", true)->delete() before going live.');
+        $this->command->warn('All OTPs and system emails → ' . self::TEST_INBOX);
     }
 }
