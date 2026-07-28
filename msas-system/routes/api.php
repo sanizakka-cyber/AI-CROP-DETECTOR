@@ -12,6 +12,13 @@ use App\Http\Controllers\Api\PoultryApiController;
 use App\Http\Controllers\Api\WeatherApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\ConsultationApiController;
+use App\Http\Controllers\Api\RiderApiController;
+use App\Http\Controllers\Api\WalletApiController;
+use App\Http\Controllers\Api\KnowledgeBaseApiController;
+use App\Http\Controllers\Api\SubscriptionApiController;
+use App\Http\Controllers\Api\OrderTrackingApiController;
+use App\Http\Controllers\Api\MessageApiController;
 use App\Models\SubscriptionUsage;
 use Illuminate\Support\Facades\Route;
 
@@ -152,9 +159,53 @@ Route::middleware('auth.api')->group(function () {
 
     // ── Direct Messaging ──────────────────────────────────────────────────────
     Route::prefix('messages')->group(function () {
-        Route::get('/',         [\App\Http\Controllers\Api\MessageApiController::class, 'index']);
-        Route::get('/{user}',   [\App\Http\Controllers\Api\MessageApiController::class, 'show']);
-        Route::post('/{user}',  [\App\Http\Controllers\Api\MessageApiController::class, 'send']);
+        Route::get('/',        [MessageApiController::class, 'index']);
+        Route::get('/{user}',  [MessageApiController::class, 'show']);
+        Route::post('/{user}', [MessageApiController::class, 'send']);
+    });
+
+    // ── Consultations ─────────────────────────────────────────────────────────
+    Route::prefix('consultations')->group(function () {
+        Route::get('/',                           [ConsultationApiController::class, 'index']);
+        Route::get('/{consultation}',             [ConsultationApiController::class, 'show']);
+        Route::post('/vet',                       [ConsultationApiController::class, 'storeVet']);
+        Route::post('/agro',                      [ConsultationApiController::class, 'storeAgro']);
+    });
+    Route::prefix('vet')->group(function () {
+        Route::get('/queue',                                        [ConsultationApiController::class, 'vetQueue']);
+        Route::post('/consultations/{consultation}/respond',        [ConsultationApiController::class, 'vetRespond']);
+        Route::post('/consultations/{consultation}/start-video',    [ConsultationApiController::class, 'vetStartVideo']);
+    });
+
+    // ── Rider ─────────────────────────────────────────────────────────────────
+    Route::prefix('rider')->group(function () {
+        Route::get('/orders',                      [RiderApiController::class, 'orders']);
+        Route::post('/orders/{order}/accept',      [RiderApiController::class, 'accept']);
+        Route::post('/orders/{order}/decline',     [RiderApiController::class, 'decline']);
+        Route::post('/orders/{order}/in-transit',  [RiderApiController::class, 'markInTransit']);
+        Route::post('/orders/{order}/delivered',   [RiderApiController::class, 'markDelivered']);
+        Route::patch('/availability',              [RiderApiController::class, 'updateAvailability']);
+        Route::get('/status',                      [RiderApiController::class, 'status']);
+    });
+
+    // ── Wallet ────────────────────────────────────────────────────────────────
+    Route::prefix('wallet')->group(function () {
+        Route::get('/',            [WalletApiController::class, 'balance']);
+        Route::post('/withdraw',   [WalletApiController::class, 'requestWithdrawal']);
+    });
+
+    // ── Knowledge Base (authenticated browse) ────────────────────────────────
+    Route::prefix('knowledge')->group(function () {
+        Route::get('/',        [KnowledgeBaseApiController::class, 'index']);
+        Route::get('/{slug}',  [KnowledgeBaseApiController::class, 'show']);
+    });
+
+    // ── Subscription (full API) ───────────────────────────────────────────────
+    Route::prefix('subscription')->group(function () {
+        Route::get('/plans',   [SubscriptionApiController::class, 'plans']);
+        Route::post('/subscribe', [SubscriptionApiController::class, 'subscribe']);
+        Route::post('/cancel', [SubscriptionApiController::class, 'cancel']);
+        Route::get('/my',      [SubscriptionApiController::class, 'status']);
     });
 
     // ── Payments ────────────────────────────────────────────────────────────
@@ -170,3 +221,14 @@ Route::middleware('auth.api')->group(function () {
 Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCallback'])
     ->middleware('throttle:20,1')
     ->name('api.payment.mobile-callback');
+
+// ── Public Order Tracking (no auth required) ──────────────────────────────────
+Route::get('/track/{orderNumber}', [OrderTrackingApiController::class, 'track'])
+    ->middleware('throttle:30,1')
+    ->name('api.track');
+
+// ── Public Knowledge Base (unauthenticated read) ─────────────────────────────
+Route::prefix('kb')->middleware('throttle:60,1')->group(function () {
+    Route::get('/',        [KnowledgeBaseApiController::class, 'index']);
+    Route::get('/{slug}',  [KnowledgeBaseApiController::class, 'show']);
+});

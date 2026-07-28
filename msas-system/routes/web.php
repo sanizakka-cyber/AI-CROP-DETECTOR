@@ -176,7 +176,8 @@ Route::middleware(['auth', 'role:ceo'])->prefix('ceo')->name('ceo.')->group(func
 });
 // Report generation also accessible by data-analyst and M&E roles
 Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-e-officer'])->group(function () {
-    Route::get('/ceo/reports/{type}', [CEOController::class, 'generateReport'])->name('ceo.reports.generate');
+    Route::get('/ceo/reports/{type}',     [CEOController::class, 'generateReport'])->name('ceo.reports.generate');
+    Route::get('/ceo/reports/{type}/csv', [CEOController::class, 'exportCsv'])->name('ceo.reports.csv');
 });
 
 // Admin Routes
@@ -348,8 +349,9 @@ Route::middleware(['auth', 'role:vet,agronomist', 'subscription'])->prefix('vet'
     Route::get('/consultation/{consultation}', [\App\Http\Controllers\VetController::class, 'show'])->name('show');
     Route::post('/consultation/{consultation}/respond', [\App\Http\Controllers\VetController::class, 'respond'])->name('respond');
     Route::post('/consultation/{consultation}/start-video', [\App\Http\Controllers\VetController::class, 'startVideo'])->name('start-video');
-    Route::view('/vaccinations',   'vet.vaccinations')->name('vaccinations');
-    Route::view('/disease-alerts', 'vet.disease-alerts')->name('disease-alerts');
+    Route::get('/vaccinations',    [\App\Http\Controllers\VetController::class, 'vaccinations'])->name('vaccinations');
+    Route::post('/vaccinations',   [\App\Http\Controllers\VetController::class, 'storeVaccination'])->name('vaccinations.store');
+    Route::get('/disease-alerts',  [\App\Http\Controllers\VetController::class, 'diseaseAlerts'])->name('disease-alerts');
 });
 
 // ── Video Consultation join page (vet + farmer) ───────────────────────────

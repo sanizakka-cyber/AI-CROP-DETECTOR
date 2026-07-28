@@ -44,7 +44,7 @@ class DashboardController extends Controller
             'rider'                 => 'rider.dashboard',
             'researcher'            => 'research-institution.dashboard',
             'student'               => 'farmer.dashboard',
-            'general-user'          => 'dashboard',
+            'general-user'          => 'farmer.dashboard',
             default                 => null,
         };
 

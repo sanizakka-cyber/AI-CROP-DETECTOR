@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Diagnosis;
+use App\Models\User;
+use App\Models\Vaccination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -94,6 +97,90 @@ class VetController extends Controller
         }
 
         return redirect()->route('consultation.video', $consultation);
+    }
+
+    // GET /vet/vaccinations — list + form
+    public function vaccinations()
+    {
+        $vet = auth()->user();
+
+        $upcoming = Vaccination::where('vet_id', $vet->id)
+            ->whereNotNull('next_due_at')
+            ->where('next_due_at', '>=', now())
+            ->where('next_due_at', '<=', now()->addDays(30))
+            ->with('farmer')
+            ->orderBy('next_due_at')
+            ->get();
+
+        $records = Vaccination::where('vet_id', $vet->id)
+            ->with('farmer')
+            ->latest('administered_at')
+            ->paginate(20);
+
+        $farmers = User::where('role', 'farmer')->where('is_active', true)
+            ->select('id', 'first_name', 'last_name', 'phone')
+            ->orderBy('first_name')
+            ->get();
+
+        return view('vet.vaccinations', compact('upcoming', 'records', 'farmers'));
+    }
+
+    // POST /vet/vaccinations — record a new vaccination
+    public function storeVaccination(Request $request)
+    {
+        abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
+
+        $data = $request->validate([
+            'farmer_id'      => 'required|exists:users,id',
+            'animal_type'    => 'required|string|max:100',
+            'vaccine_name'   => 'required|string|max:150',
+            'batch_number'   => 'nullable|string|max:100',
+            'administered_at'=> 'required|date|before_or_equal:today',
+            'next_due_at'    => 'nullable|date|after:administered_at',
+            'notes'          => 'nullable|string|max:1000',
+        ]);
+
+        $data['vet_id'] = auth()->id();
+
+        Vaccination::create($data);
+
+        return redirect()->route('vet.vaccinations')->with('success', 'Vaccination record saved successfully.');
+    }
+
+    // GET /vet/disease-alerts — outbreak data from diagnoses
+    public function diseaseAlerts()
+    {
+        $vet = auth()->user();
+
+        try {
+            $outbreaks = Diagnosis::select('disease_name', 'type', \Illuminate\Support\Facades\DB::raw('count(*) as cases'))
+                ->where('created_at', '>=', now()->subDays(30))
+                ->whereNotNull('disease_name')
+                ->where('disease_name', '!=', 'Pending Expert Review')
+                ->where('disease_name', '!=', '')
+                ->where('type', $vet->role === 'agronomist' ? 'plant' : 'animal')
+                ->groupBy('disease_name', 'type')
+                ->orderByDesc('cases')
+                ->take(15)
+                ->get()
+                ->map(fn($d) => [
+                    'disease'  => $d->disease_name,
+                    'type'     => $d->type,
+                    'cases'    => $d->cases,
+                    'severity' => $d->cases >= 10 ? 'high' : ($d->cases >= 4 ? 'medium' : 'low'),
+                ]);
+        } catch (\Exception $e) {
+            $outbreaks = collect([]);
+        }
+
+        $recentCases = Diagnosis::where('type', $vet->role === 'agronomist' ? 'plant' : 'animal')
+            ->whereNotNull('disease_name')
+            ->where('disease_name', '!=', 'Pending Expert Review')
+            ->latest()
+            ->take(10)
+            ->get(['id', 'disease_name', 'type', 'status', 'created_at']);
+
+        return view('vet.disease-alerts', compact('outbreaks', 'recentCases'));
     }
 }
 
