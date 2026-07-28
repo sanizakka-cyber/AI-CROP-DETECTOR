@@ -1,11 +1,6 @@
 <x-app-layout>
     <x-slot name="header">Platform Reports</x-slot>
 
-    {{-- Toast --}}
-    <div id="toast" class="hidden fixed top-6 right-6 z-50 bg-slate-800 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-lg transition-all" role="alert">
-        Export feature coming soon!
-    </div>
-
     <script>
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -30,18 +25,13 @@
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <h3 class="font-bold text-slate-800 text-lg">Quick Export</h3>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="showToast('PDF export coming soon!')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                        Export PDF
-                    </button>
-                    <button onclick="showToast('Excel export coming soon!')" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Export Excel
-                    </button>
-                    <button onclick="showToast('CSV export coming soon!')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
+                    @foreach(['users'=>'All Users','farmers'=>'Farmers','financial'=>'Financial','diseases'=>'Consultations','geographic'=>'Geographic'] as $type => $label)
+                    <a href="{{ route('ceo.reports.csv', $type) }}"
+                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-sm flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export CSV
-                    </button>
+                        {{ $label }} CSV
+                    </a>
+                    @endforeach
                 </div>
             </div>
         </div>

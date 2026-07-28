@@ -506,6 +506,62 @@ class CEOController extends Controller
         return view('ceo.report-preview', compact('data','type'));
     }
 
+    // ── CSV Export ─────────────────────────────────────────────────
+    public function exportCsv(string $type)
+    {
+        $data = match($type) {
+            'financial' => [
+                'filename' => 'financial-report',
+                'columns'  => ['Description', 'Type', 'Amount', 'Date'],
+                'records'  => Finance::latest()->get(),
+                'row'      => fn($r) => [$r->description, $r->type, $r->amount, $r->transaction_date],
+            ],
+            'users' => [
+                'filename' => 'users-report',
+                'columns'  => ['Name', 'Role', 'Email', 'Phone', 'State', 'Active', 'Joined'],
+                'records'  => User::latest()->get(),
+                'row'      => fn($r) => [$r->first_name.' '.$r->last_name, $r->role, $r->email, $r->phone, $r->state, $r->is_active ? 'Yes' : 'No', $r->created_at->toDateString()],
+            ],
+            'farmers' => [
+                'filename' => 'farmers-report',
+                'columns'  => ['Name', 'Email', 'Phone', 'State', 'LGA', 'Verified', 'Joined'],
+                'records'  => User::where('role', 'farmer')->latest()->get(),
+                'row'      => fn($r) => [$r->first_name.' '.$r->last_name, $r->email, $r->phone, $r->state, $r->lga, $r->is_verified ? 'Yes' : 'No', $r->created_at->toDateString()],
+            ],
+            'diseases' => [
+                'filename' => 'disease-report',
+                'columns'  => ['Farmer', 'Case Type', 'Status', 'Submitted', 'Completed'],
+                'records'  => Consultation::with('farmer')->latest()->get(),
+                'row'      => fn($r) => [$r->farmer?->first_name.' '.$r->farmer?->last_name, $r->case_type, $r->status, $r->created_at->toDateString(), $r->completed_at?->toDateString() ?? '-'],
+            ],
+            'geographic' => [
+                'filename' => 'geographic-report',
+                'columns'  => ['State', 'Total Users'],
+                'records'  => User::select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->get(),
+                'row'      => fn($r) => [$r->state ?? 'Unknown', $r->count],
+            ],
+            default => abort(404),
+        };
+
+        $filename = $data['filename'] . '-' . now()->format('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($data) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $data['columns']);
+            foreach ($data['records'] as $record) {
+                fputcsv($handle, ($data['row'])($record));
+            }
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function aiStatus()
     {
         $baseUrl = rtrim(config('services.ai_engine.url', ''), '/');
