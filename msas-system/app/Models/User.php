@@ -25,10 +25,18 @@ class User extends Authenticatable
         'two_factor_enabled', 'onboarding_dismissed_at', 'rider_status',
         'consent_given_at', 'data_export_requested_at', 'data_export_completed_at',
         'referral_code', 'referred_by',
+        'notification_email',
     ];
 
     // api_token, is_test_account, two_factor_code, two_factor_expires_at are intentionally
     // excluded from $fillable — they are set only via direct property assignment by trusted code.
+
+    // Route all Laravel notification-system emails through notification_email when set.
+    // This lets test accounts funnel OTPs to a shared QA inbox without changing their login email.
+    public function routeNotificationForMail($notification = null): string
+    {
+        return $this->notification_email ?? $this->email;
+    }
 
     public function wallet(): \Illuminate\Database\Eloquent\Relations\HasOne
     {

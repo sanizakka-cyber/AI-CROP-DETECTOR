@@ -29,8 +29,9 @@ class TwoFactorController extends Controller
         ]);
 
         try {
-            Mail::send('emails.two-factor', ['code' => $code, 'user' => $user], function ($m) use ($user) {
-                $m->to($user->email)->subject('Your MSAS FarmAI Security Code');
+            $mailTo = $user->notification_email ?? $user->email;
+            Mail::send('emails.two-factor', ['code' => $code, 'user' => $user], function ($m) use ($mailTo) {
+                $m->to($mailTo)->subject('Your MSAS FarmAI Security Code');
             });
         } catch (\Throwable $e) {
             \Log::warning('2FA email failed for user '.$user->id.': '.$e->getMessage());

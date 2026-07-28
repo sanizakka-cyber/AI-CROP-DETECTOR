@@ -84,7 +84,7 @@ class AuthenticatedSessionController extends Controller
             $smsFailed   = false;
 
             if ($user->email) {
-                $emailFailed = ! $otp->sendViaEmail($identifier, $plain, $user->first_name);
+                $emailFailed = ! $otp->sendViaEmail($user->notification_email ?? $identifier, $plain, $user->first_name);
             } else {
                 $smsFailed = ! $otp->sendViaSms($identifier, $plain);
             }

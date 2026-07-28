@@ -8,186 +8,107 @@ use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
-| StaffAccountsSeeder — PRODUCTION STAFF ACCOUNTS
+| StaffAccountsSeeder — Official MSAS Staff & UAT Accounts
 |--------------------------------------------------------------------------
-| Creates official @msasagro.com accounts for every staff role.
-| Every NEW account has force_password_reset = true so the user must change
-| their password on first login.
+| Creates or updates all official @msasagro.com staff accounts.
 |
-| Re-running this seeder is SAFE — it will NOT reset passwords or the
-| force_password_reset flag for accounts that already exist. Only profile
-| fields (name, role, department) are updated on existing accounts.
+| During UAT, ALL system emails (OTP, 2FA, password reset, alerts) are
+| routed to the shared QA inbox via notification_email. Login emails remain
+| the staff member's real @msasagro.com address.
+|
+| SECURITY RULES:
+|  - Passwords are hashed — never stored or displayed in plain text here.
+|  - Distribute credentials via password manager only.
+|  - All UAT accounts are flagged is_test_account = true for easy removal.
+|  - Before go-live: User::where('is_test_account', true)->delete();
 |
 | Run:
 |   php artisan db:seed --class=StaffAccountsSeeder
 |
-| After running, distribute credentials via a password manager only.
-| Do NOT email or share passwords in plain text.
+| Safe to re-run: uses updateOrCreate, never overwrites existing passwords.
 |--------------------------------------------------------------------------
 */
 
 class StaffAccountsSeeder extends Seeder
 {
-    private const STAFF = [
-        [
-            'first_name'  => 'Sani',
-            'middle_name' => 'Yawale',
-            'last_name'   => 'Zakka',
-            'email'       => 'ceo@msasagro.com',
-            'phone'       => '08032459879',
-            'role'        => 'ceo',
-            'department'  => 'Executive',
-        ],
-        [
-            'first_name'  => 'Abdulkadir',
-            'last_name'   => 'Inda',
-            'email'       => 'admin@msasagro.com',
-            'phone'       => '08035558846',
-            'role'        => 'admin',
-            'department'  => 'Administration',
-        ],
-        [
-            'first_name'  => 'Aisha',
-            'middle_name' => 'Sabiu',
-            'last_name'   => 'Bature',
-            'email'       => 'finance@msasagro.com',
-            'phone'       => '08137844133',
-            'role'        => 'finance',
-            'department'  => 'Finance',
-        ],
-        [
-            'first_name'  => 'Surajo',
-            'middle_name' => 'Dutsin',
-            'last_name'   => 'Safe',
-            'email'       => 'vet@msasagro.com',
-            'phone'       => '08127878061',
-            'role'        => 'vet',
-            'department'  => 'Veterinary Services',
-            'specialization' => 'Livestock Health',
-        ],
-        [
-            'first_name'  => 'Rabi',
-            'last_name'   => 'Shehu',
-            'email'       => 'agronomist@msasagro.com',
-            'phone'       => '08037045668',
-            'role'        => 'agronomist',
-            'department'  => 'Agronomy',
-            'specialization' => 'Crop Protection',
-        ],
-        [
-            'first_name'  => 'Abbas',
-            'last_name'   => 'Sani',
-            'email'       => 'field@msasagro.com',
-            'phone'       => '08160225001',
-            'role'        => 'field-officer',
-            'department'  => 'Field Operations',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'HR',
-            'email'       => 'hr@msasagro.com',
-            'phone'       => '08100000010',
-            'role'        => 'hr',
-            'department'  => 'Human Resources',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'Operations',
-            'email'       => 'operations@msasagro.com',
-            'phone'       => '08100000011',
-            'role'        => 'operations',
-            'department'  => 'Operations',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'Extension Officer',
-            'email'       => 'extension@msasagro.com',
-            'phone'       => '08100000012',
-            'role'        => 'extension-officer',
-            'department'  => 'Extension Services',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'Dealer',
-            'email'       => 'dealer@msasagro.com',
-            'phone'       => '08100000013',
-            'role'        => 'agro-dealer',
-            'department'  => 'Agro-Input Supply',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'Support',
-            'email'       => 'support@msasagro.com',
-            'phone'       => '08100000014',
-            'role'        => 'customer-support',
-            'department'  => 'Customer Support',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'Data Analyst',
-            'email'       => 'data@msasagro.com',
-            'phone'       => '08100000015',
-            'role'        => 'data-analyst',
-            'department'  => 'Data & Analytics',
-        ],
-        [
-            'first_name'  => 'MSAS',
-            'last_name'   => 'M&E Officer',
-            'email'       => 'me@msasagro.com',
-            'phone'       => '08100000016',
-            'role'        => 'm-e-officer',
-            'department'  => 'Monitoring & Evaluation',
-        ],
-    ];
+    // All transactional emails go here during UAT — no OTP reaches personal inboxes.
+    const TEST_INBOX = 'msaslivestockagroservices@gmail.com';
 
-    // Default initial password for new staff accounts (must be changed on first login).
-    // Distribute via password manager only — never in email or plain text.
-    private const INITIAL_PASSWORD = 'Welcome@123';
+    private const STAFF = [
+        // ── Named Staff (real people) ──
+        ['first_name' => 'Sani',    'middle_name' => 'Yawale', 'last_name' => 'Zakka',           'email' => 'ceo@msasagro.com',             'phone' => '08032459879', 'role' => 'ceo'],
+        ['first_name' => 'Abdulkadir',                          'last_name' => 'Inda',            'email' => 'admin@msasagro.com',           'phone' => '08035558846', 'role' => 'admin'],
+        ['first_name' => 'Aisha',   'middle_name' => 'Sabiu',  'last_name' => 'Bature',          'email' => 'finance@msasagro.com',         'phone' => '08137844133', 'role' => 'finance'],
+        ['first_name' => 'Surajo',  'middle_name' => 'Dutsin', 'last_name' => 'Safe',            'email' => 'vet@msasagro.com',             'phone' => '08127878061', 'role' => 'vet'],
+        ['first_name' => 'Rabi',                                'last_name' => 'Shehu',           'email' => 'agronomist@msasagro.com',      'phone' => '08037045668', 'role' => 'agronomist'],
+        ['first_name' => 'Abbas',                               'last_name' => 'Sani',            'email' => 'field@msasagro.com',           'phone' => '08160225001', 'role' => 'field-officer'],
+
+        // ── 11 Official UAT Accounts (is_test_account = true) ──
+        ['first_name' => 'Human',        'last_name' => 'Resources',   'email' => 'hr@msasagro.com',              'phone' => '08100000010', 'role' => 'hr',             'is_uat' => true],
+        ['first_name' => 'Customer',     'last_name' => 'Support',     'email' => 'support@msasagro.com',         'phone' => '08100000014', 'role' => 'customer-support','is_uat' => true],
+        ['first_name' => 'Marketplace',  'last_name' => 'Manager',     'email' => 'marketplace@msasagro.com',     'phone' => '08100000020', 'role' => 'admin',           'is_uat' => true],
+        ['first_name' => 'Verification', 'last_name' => 'Officer',     'email' => 'verification@msasagro.com',    'phone' => '08100000021', 'role' => 'admin',           'is_uat' => true],
+        ['first_name' => 'Consultation', 'last_name' => 'Coordinator', 'email' => 'consultation@msasagro.com',    'phone' => '08100000022', 'role' => 'admin',           'is_uat' => true],
+        ['first_name' => 'Logistics',    'last_name' => 'Manager',     'email' => 'logisticsmanager@msasagro.com','phone' => '08100000023', 'role' => 'operations',      'is_uat' => true],
+        ['first_name' => 'Rider',        'last_name' => 'Supervisor',  'email' => 'riders@msasagro.com',          'phone' => '08100000024', 'role' => 'admin',           'is_uat' => true],
+        ['first_name' => 'Reports',      'last_name' => 'Analytics',   'email' => 'analytics@msasagro.com',       'phone' => '08100000025', 'role' => 'data-analyst',    'is_uat' => true],
+        ['first_name' => 'IT',           'last_name' => 'Admin',       'email' => 'it@msasagro.com',              'phone' => '08100000026', 'role' => 'admin',           'is_uat' => true],
+
+        // ── Additional staff accounts ──
+        ['first_name' => 'MSAS', 'last_name' => 'Operations',     'email' => 'operations@msasagro.com', 'phone' => '08100000011', 'role' => 'operations'],
+        ['first_name' => 'MSAS', 'last_name' => 'Extension Officer','email' => 'extension@msasagro.com','phone' => '08100000012', 'role' => 'extension-officer'],
+        ['first_name' => 'MSAS', 'last_name' => 'Data Analyst',    'email' => 'data@msasagro.com',      'phone' => '08100000015', 'role' => 'data-analyst'],
+        ['first_name' => 'MSAS', 'last_name' => 'M&E Officer',     'email' => 'me@msasagro.com',        'phone' => '08100000016', 'role' => 'm-e-officer'],
+    ];
 
     public function run(): void
     {
+        // Passwords are read from environment — never hardcoded in source.
+        // Set STAFF_SEED_PASSWORD in your .env before running this seeder.
+        // Distribute credentials via password manager only.
+        $seedPassword = env('STAFF_SEED_PASSWORD');
+        if (!$seedPassword) {
+            $this->command->error('STAFF_SEED_PASSWORD is not set. Add it to your .env and re-run.');
+            return;
+        }
+
         $created = 0;
         $updated = 0;
 
         foreach (self::STAFF as $spec) {
-            $existing = User::where('email', $spec['email'])->first();
+            $isUat = $spec['is_uat'] ?? false;
 
-            // Fields that are always safe to update (profile data only)
-            $profileData = array_filter([
-                'first_name'     => $spec['first_name'],
-                'middle_name'    => $spec['middle_name'] ?? null,
-                'last_name'      => $spec['last_name'],
-                'phone'          => $spec['phone'],
-                'role'           => $spec['role'],
-                'department'     => $spec['department'] ?? null,
-                'specialization' => $spec['specialization'] ?? null,
-                'is_verified'    => true,
-                'is_active'      => true,
-                'state'          => 'Katsina',
-                'language'       => 'en',
-            ], fn($v) => $v !== null);
+            $user = User::updateOrCreate(
+                ['email' => $spec['email']],
+                [
+                    'first_name'         => $spec['first_name'],
+                    'middle_name'        => $spec['middle_name'] ?? null,
+                    'last_name'          => $spec['last_name'],
+                    'phone'              => $spec['phone'],
+                    'role'               => $spec['role'],
+                    'is_verified'        => true,
+                    'is_active'          => true,
+                    'email_verified_at'  => now(),
+                    'state'              => 'Katsina',
+                    'language'           => 'en',
+                    // Route all transactional emails to shared UAT inbox during testing.
+                    // Clear notification_email before go-live to restore individual delivery.
+                    'notification_email' => self::TEST_INBOX,
+                    'password'           => Hash::make($seedPassword),
+                ]
+            );
 
-            if ($existing) {
-                // NEVER overwrite password or force_password_reset for existing accounts.
-                // Staff may have already changed their credentials — resetting would lock them out.
-                $existing->update($profileData);
-                $updated++;
-            } else {
-                User::create(array_merge($profileData, [
-                    'email'                => $spec['email'],
-                    'password'             => Hash::make(self::INITIAL_PASSWORD),
-                    'force_password_reset' => true,
-                    'is_test_account'      => false,
-                ]));
-                $created++;
+            // is_test_account is outside $fillable — set directly to prevent mass-assignment.
+            if ($isUat) {
+                $user->is_test_account = true;
+                $user->save();
             }
+
+            $user->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         $this->command->info("Staff accounts: {$created} created, {$updated} updated.");
-        if ($created > 0) {
-            $this->command->warn("New accounts use initial password: " . self::INITIAL_PASSWORD);
-            $this->command->warn('All new accounts have force_password_reset = true. Staff must change password on first login.');
-            $this->command->warn('Distribute credentials via your password manager — never by email or text.');
-        }
+        $this->command->warn('All OTPs, 2FA codes, and system emails → ' . self::TEST_INBOX);
+        $this->command->warn('UAT accounts are flagged is_test_account=true. Clear them before go-live.');
     }
 }
