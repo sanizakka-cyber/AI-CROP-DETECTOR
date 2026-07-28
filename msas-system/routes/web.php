@@ -180,6 +180,17 @@ Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-
     Route::get('/ceo/reports/{type}/csv', [CEOController::class, 'exportCsv'])->name('ceo.reports.csv');
 });
 
+// ── CEO Pilot Program routes ──────────────────────────────────────────────────
+Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
+    Route::get('/pilot',                         [\App\Http\Controllers\CEOController::class, 'pilot'])            ->name('pilot');
+    Route::post('/pilot/{user}/flag',            [\App\Http\Controllers\CEOController::class, 'flagPilot'])        ->name('pilot.flag');
+    Route::get('/feedback',                      [\App\Http\Controllers\CEOController::class, 'feedback'])         ->name('feedback');
+    Route::patch('/feedback/{feedback}/status',  [\App\Http\Controllers\CEOController::class, 'updateFeedback'])   ->name('feedback.update');
+    Route::get('/invite-codes',                  [\App\Http\Controllers\CEOController::class, 'inviteCodes'])      ->name('invite-codes');
+    Route::post('/invite-codes',                 [\App\Http\Controllers\CEOController::class, 'storeInviteCode'])  ->name('invite-codes.store');
+    Route::delete('/invite-codes/{code}',        [\App\Http\Controllers\CEOController::class, 'deleteInviteCode']) ->name('invite-codes.delete');
+});
+
 // Admin Routes
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'users'])->name('users');
@@ -272,6 +283,9 @@ Route::middleware(['auth', 'role:farmer'])->prefix('farmer')->name('farmer.')->g
     // Reports — Pro+ (subscription gate enforced inside controller)
     Route::get('/reports',                   [\App\Http\Controllers\FarmerController::class, 'reports'])->name('reports');
     Route::get('/reports/download',          [\App\Http\Controllers\FarmerController::class, 'downloadReport'])->name('reports.download');
+
+    // Onboarding checklist dismiss
+    Route::post('/onboarding/dismiss',       [\App\Http\Controllers\FarmerController::class, 'dismissOnboarding'])->name('onboarding.dismiss');
 });
 
 
@@ -514,5 +528,8 @@ Route::middleware(['auth'])->prefix('messages')->name('messages.')->group(functi
     Route::get('/{user}',   [\App\Http\Controllers\MessageController::class, 'show'])->name('show');
     Route::post('/{user}',  [\App\Http\Controllers\MessageController::class, 'send'])->name('send');
 });
+
+// ── In-app Feedback (all authenticated users) ─────────────────────────────
+Route::middleware(['auth'])->post('/feedback', [\App\Http\Controllers\FeedbackController::class, 'store'])->name('feedback.store');
 
 require __DIR__.'/auth.php';

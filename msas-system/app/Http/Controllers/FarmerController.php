@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Animal;
 use App\Models\Consultation;
+use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Finance;
 use App\Models\PoultryRecord;
@@ -624,5 +625,29 @@ class FarmerController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    // ── Onboarding ─────────────────────────────────────────────────────────────
+
+    public function dismissOnboarding(Request $request)
+    {
+        $request->user()->update(['onboarding_dismissed_at' => now()]);
+        return response()->json(['ok' => true]);
+    }
+
+    public static function onboardingSteps(\App\Models\User $user): array
+    {
+        $profileComplete = filled($user->state) && filled($user->lga);
+        $hasScan         = Diagnosis::where('user_id', $user->id)->exists();
+        $hasLivestock    = Animal::where('user_id', $user->id)->exists()
+                        || PoultryRecord::where('user_id', $user->id)->exists();
+        $hasSub          = (bool) $user->activeSubscription();
+
+        return [
+            ['key' => 'profile',   'label' => 'Complete your profile',        'detail' => 'Add your location and farm details', 'done' => $profileComplete, 'url' => '/profile'],
+            ['key' => 'scan',      'label' => 'Run your first AI scan',       'detail' => 'Diagnose a crop or animal disease',   'done' => $hasScan,         'url' => '/diagnostics'],
+            ['key' => 'livestock', 'label' => 'Record livestock or poultry',  'detail' => 'Add your first animal or flock',      'done' => $hasLivestock,    'url' => '/farmer/livestock'],
+            ['key' => 'trial',     'label' => 'Start your free trial',        'detail' => 'Unlock all premium features free',    'done' => $hasSub,          'url' => '/subscription/plans'],
+        ];
     }
 }

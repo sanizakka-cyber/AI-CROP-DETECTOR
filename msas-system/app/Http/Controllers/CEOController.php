@@ -4,14 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Animal;
+use App\Models\Feedback;
 use App\Models\Finance;
 use App\Models\Consultation;
+use App\Models\InviteCode;
 use App\Models\Product;
 use App\Models\Diagnosis;
 use App\Models\EggProduction;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\Subscription;
+use Illuminate\Http\Request;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -721,5 +724,89 @@ class CEOController extends Controller
         ]);
 
         return back()->with('success', "Order {$order->order_number} assigned to {$rider->first_name} {$rider->last_name}.");
+    }
+
+    // ── Phase 2: Pilot Program ─────────────────────────────────────────────────
+
+    public function pilot()
+    {
+        $pilots = User::where('role', 'farmer')
+            ->where(fn($q) => $q->where('is_pilot', true)->orWhere('created_at', '>=', now()->subDays(30)))
+            ->with(['subscriptions' => fn($q) => $q->latest()])
+            ->withCount(['diagnoses as scan_count', 'consultations as consult_count'])
+            ->latest()
+            ->paginate(25);
+
+        $pilotCount = User::where('is_pilot', true)->count();
+        $newThisWeek = User::where('role', 'farmer')->where('created_at', '>=', now()->subDays(7))->count();
+
+        return view('ceo.pilot', compact('pilots', 'pilotCount', 'newThisWeek'));
+    }
+
+    public function flagPilot(Request $request, User $user)
+    {
+        $user->update(['is_pilot' => ! $user->is_pilot]);
+        $action = $user->fresh()->is_pilot ? 'flagged as pilot' : 'removed from pilot';
+        return back()->with('success', "{$user->first_name} {$user->last_name} has been {$action}.");
+    }
+
+    public function feedback(Request $request)
+    {
+        $query = Feedback::with('user:id,first_name,last_name,role')->latest();
+        if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('type'))   $query->where('type', $request->type);
+        $feedbacks = $query->paginate(30);
+        $counts = [
+            'total'    => Feedback::count(),
+            'new'      => Feedback::where('status', 'new')->count(),
+            'reviewed' => Feedback::where('status', 'reviewed')->count(),
+            'resolved' => Feedback::where('status', 'resolved')->count(),
+        ];
+        return view('ceo.feedback', compact('feedbacks', 'counts'));
+    }
+
+    public function updateFeedback(Request $request, Feedback $feedback)
+    {
+        $data = $request->validate([
+            'status'      => 'required|in:new,reviewed,resolved',
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+        $feedback->update($data);
+        return back()->with('success', 'Feedback updated.');
+    }
+
+    public function inviteCodes()
+    {
+        $codes = InviteCode::with('creator:id,first_name,last_name')
+            ->latest()
+            ->paginate(30);
+        $plans = config('subscription.plans', []);
+        return view('ceo.invite-codes', compact('codes', 'plans'));
+    }
+
+    public function storeInviteCode(Request $request)
+    {
+        $validPlans = implode(',', array_keys(config('subscription.plans', [])));
+        $data = $request->validate([
+            'plan'       => "required|in:{$validPlans}",
+            'max_uses'   => 'required|integer|min:1|max:500',
+            'expires_at' => 'nullable|date|after:today',
+        ]);
+
+        InviteCode::create([
+            'code'       => InviteCode::generate(),
+            'created_by' => auth()->id(),
+            'plan'       => $data['plan'],
+            'max_uses'   => $data['max_uses'],
+            'expires_at' => $data['expires_at'] ?? null,
+        ]);
+
+        return back()->with('success', 'Invite code created successfully.');
+    }
+
+    public function deleteInviteCode(InviteCode $code)
+    {
+        $code->delete();
+        return back()->with('success', 'Invite code deleted.');
     }
 }

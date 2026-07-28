@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ApplicationReceivedMail;
+use App\Mail\WelcomeMail;
+use App\Models\InviteCode;
 use App\Models\User;
 use App\Models\UserDocument;
 use App\Services\OtpService;
@@ -54,6 +56,7 @@ class RegisteredUserController extends Controller
             'state'       => 'nullable|string|max:100',
             'lga'         => 'nullable|string|max:100',
             'ward'        => 'nullable|string|max:100',
+            'invite_code' => 'nullable|string|max:20',
             'password'    => ['required', 'confirmed', Rules\Password::min(8)
                 ->mixedCase()->numbers()->symbols()],
             'documents.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
@@ -110,6 +113,18 @@ class RegisteredUserController extends Controller
 
         $user = User::create($userData);
 
+        // Redeem invite code if provided (farmers only)
+        $inviteCode = null;
+        if ($role === 'farmer' && $request->filled('invite_code')) {
+            $inviteCode = InviteCode::where('code', strtoupper(trim($request->invite_code)))->first();
+            if ($inviteCode && $inviteCode->isValid()) {
+                $inviteCode->increment('used_count');
+                $user->update(['is_pilot' => true]);
+                // Override pendingPlan with the invite code's plan
+                $request->merge(['plan' => $inviteCode->plan]);
+            }
+        }
+
         // Preserve plan selection through the verification flow
         $pendingPlan = $request->input('plan', '');
         $validPlans  = array_keys(config('subscription.plans', []));
@@ -160,6 +175,7 @@ class RegisteredUserController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
             Log::info('Phone-only registration completed', ['user_id' => $user->id]);
+            // No email available for phone-only users at this point
 
             if ($pendingPlan && $role === 'farmer') {
                 return redirect()->route('subscription.plans')

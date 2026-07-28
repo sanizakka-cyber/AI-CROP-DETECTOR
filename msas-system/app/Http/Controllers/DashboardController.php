@@ -132,10 +132,15 @@ class DashboardController extends Controller
         $netBalance = $totalIncome - $totalExpense;
         try { $scanCheck = app(\App\Services\SubscriptionLimitService::class)->canScan($user); } catch (\Exception $e) { $scanCheck = ['allowed'=>true,'used'=>0,'limit'=>-1,'remaining'=>-1,'plan'=>'free']; }
 
+        $onboardingSteps     = \App\Http\Controllers\FarmerController::onboardingSteps($user);
+        $onboardingDone      = collect($onboardingSteps)->every(fn($s) => $s['done']);
+        $showOnboarding      = ! $onboardingDone && ! $user->onboarding_dismissed_at;
+
         return view('farmer.dashboard', compact(
             'animalsCount', 'poultryCount', 'diagnosesCount', 'recentScans', 'pendingVetConsults',
             'recentAnimals', 'recentFlocks', 'recentConsults', 'totalIncome', 'totalExpense',
-            'recentFinances', 'netBalance', 'scanCheck'
+            'recentFinances', 'netBalance', 'scanCheck',
+            'onboardingSteps', 'showOnboarding'
         ));
     }
 
