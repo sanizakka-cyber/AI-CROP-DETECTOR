@@ -135,6 +135,28 @@ $farmer = $consultation->farmer;
         </div>
         @endif
 
+        {{-- Video Call button (before the response form) --}}
+        @if($consultation->video_room_id)
+        <div style="margin-bottom:18px;padding:14px 16px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:13px;color:#4c1d95;font-weight:700;">📹 Video room is active</div>
+            <a href="{{ route('consultation.video', $consultation) }}"
+               style="background:#7c3aed;color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">
+                Rejoin Video Call
+            </a>
+        </div>
+        @else
+        <div style="margin-bottom:18px;display:flex;justify-content:flex-end;">
+            <form action="{{ route('vet.start-video', $consultation) }}" method="POST">
+                @csrf
+                <button type="submit"
+                    style="background:#7c3aed;color:#fff;padding:10px 22px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Start Video Consultation
+                </button>
+            </form>
+        </div>
+        @endif
+
         <form action="{{ route('vet.respond', $consultation) }}" method="POST">
             @csrf
             <div style="margin-bottom:16px;">
