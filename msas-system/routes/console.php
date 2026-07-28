@@ -9,8 +9,15 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // ── Subscription Lifecycle ─────────────────────────────────────────────────
-// Mark subscriptions whose ends_at has passed as expired (runs every hour)
 Schedule::command('subscriptions:expire')->hourly();
-
-// Send renewal reminder emails 7 days and 1 day before expiry (runs daily at 07:00 UTC = 08:00 WAT)
 Schedule::command('subscriptions:remind')->dailyAt('07:00');
+
+// ── DevOps ─────────────────────────────────────────────────────────────────
+// Daily DB backup at 02:00 UTC (03:00 WAT)
+Schedule::command('db:backup --email')->dailyAt('02:00');
+
+// System health check every 6 hours
+Schedule::command('system:health --alert')->everySixHours();
+
+// ── CI: Weekly digest email to CEO ─────────────────────────────────────────
+Schedule::command('digest:weekly')->weeklyOn(1, '06:00'); // Monday 07:00 WAT

@@ -180,10 +180,11 @@ Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-
     Route::get('/ceo/reports/{type}/csv', [CEOController::class, 'exportCsv'])->name('ceo.reports.csv');
 });
 
-// ── CEO Monitoring (ceo + admin) ──────────────────────────────────────────────
+// ── CEO Monitoring + BI (ceo + admin) ─────────────────────────────────────────
 Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
     Route::get('/monitoring',              [\App\Http\Controllers\MonitoringController::class, 'index'])      ->name('monitoring');
     Route::get('/monitoring/health.json',  [\App\Http\Controllers\MonitoringController::class, 'healthJson']) ->name('monitoring.health');
+    Route::get('/bi',                      [\App\Http\Controllers\BiController::class, 'index'])              ->name('bi');
 });
 
 // ── CEO Pilot Program routes ──────────────────────────────────────────────────
@@ -195,7 +196,51 @@ Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->grou
     Route::get('/invite-codes',                  [\App\Http\Controllers\CEOController::class, 'inviteCodes'])      ->name('invite-codes');
     Route::post('/invite-codes',                 [\App\Http\Controllers\CEOController::class, 'storeInviteCode'])  ->name('invite-codes.store');
     Route::delete('/invite-codes/{code}',        [\App\Http\Controllers\CEOController::class, 'deleteInviteCode']) ->name('invite-codes.delete');
+    // Support tickets (staff side)
+    Route::get('/support',                       [\App\Http\Controllers\SupportTicketController::class, 'adminIndex'])  ->name('support');
+    Route::get('/support/{ticket}',              [\App\Http\Controllers\SupportTicketController::class, 'adminShow'])   ->name('support.show');
+    Route::patch('/support/{ticket}',            [\App\Http\Controllers\SupportTicketController::class, 'adminUpdate']) ->name('support.update');
+    Route::post('/support/{ticket}/reply',       [\App\Http\Controllers\SupportTicketController::class, 'adminReply'])  ->name('support.reply');
+    // Broadcast
+    Route::get('/broadcast',                     [\App\Http\Controllers\SupportTicketController::class, 'broadcastForm'])->name('broadcast');
+    Route::post('/broadcast',                    [\App\Http\Controllers\SupportTicketController::class, 'broadcastSend'])->name('broadcast.send');
 });
+
+// Support tickets (farmer side)
+Route::middleware(['auth'])->name('support.')->prefix('support')->group(function () {
+    Route::get('/',              [\App\Http\Controllers\SupportTicketController::class, 'index'])  ->name('index');
+    Route::get('/create',        [\App\Http\Controllers\SupportTicketController::class, 'create']) ->name('create');
+    Route::post('/',             [\App\Http\Controllers\SupportTicketController::class, 'store'])  ->name('store');
+    Route::get('/{ticket}',      [\App\Http\Controllers\SupportTicketController::class, 'show'])   ->name('show');
+    Route::post('/{ticket}/reply',[\App\Http\Controllers\SupportTicketController::class,'reply'])  ->name('reply');
+});
+
+// Notification centre (farmer)
+Route::middleware(['auth'])->get('/notifications', [\App\Http\Controllers\SupportTicketController::class, 'notificationCentre'])->name('notifications.index');
+
+// ── Compliance (farmer) ───────────────────────────────────────────────────────
+Route::middleware(['auth'])->prefix('account')->name('compliance.')->group(function () {
+    Route::get('/privacy',  [\App\Http\Controllers\ComplianceController::class, 'privacy'])        ->name('privacy');
+    Route::post('/export',  [\App\Http\Controllers\ComplianceController::class, 'requestExport'])  ->name('export');
+    Route::delete('/delete',[\App\Http\Controllers\ComplianceController::class, 'requestDeletion'])->name('delete');
+    Route::post('/consent', [\App\Http\Controllers\ComplianceController::class, 'recordConsent'])  ->name('consent');
+});
+
+// ── Audit Log + BI CEO routes ─────────────────────────────────────────────────
+Route::middleware(['auth','role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
+    Route::get('/audit-log',  [\App\Http\Controllers\ComplianceController::class, 'auditLog'])->name('audit-log');
+    Route::get('/referrals',  [\App\Http\Controllers\ReferralController::class, 'leaderboard'])->name('referrals');
+    Route::get('/nps',        [\App\Http\Controllers\NpsController::class, 'dashboard'])       ->name('nps');
+});
+
+// ── Referral (farmer) ─────────────────────────────────────────────────────────
+Route::middleware(['auth'])->get('/referral', [\App\Http\Controllers\ReferralController::class, 'index'])->name('referral.index');
+
+// ── NPS (AJAX, auth) ──────────────────────────────────────────────────────────
+Route::middleware(['auth'])->post('/nps', [\App\Http\Controllers\NpsController::class, 'store'])->name('nps.store');
+
+// ── Changelog (public) ────────────────────────────────────────────────────────
+Route::get('/changelog', fn() => view('changelog'))->name('changelog');
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {

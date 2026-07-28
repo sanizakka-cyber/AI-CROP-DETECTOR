@@ -23,6 +23,8 @@ class User extends Authenticatable
         'expo_push_token', 'fcm_token',
         'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
         'two_factor_enabled', 'onboarding_dismissed_at', 'rider_status',
+        'consent_given_at', 'data_export_requested_at', 'data_export_completed_at',
+        'referral_code', 'referred_by',
     ];
 
     // api_token, is_test_account, two_factor_code, two_factor_expires_at are intentionally
@@ -297,7 +299,12 @@ class User extends Authenticatable
             'is_verified'            => 'boolean',
             'is_pilot'               => 'boolean',
             'is_test_account'        => 'boolean',
-            'onboarding_dismissed_at'=> 'datetime',
+            'onboarding_dismissed_at'  => 'datetime',
+            'consent_given_at'         => 'datetime',
+            'data_export_requested_at' => 'datetime',
+            'data_export_completed_at' => 'datetime',
+            'nps_rated_at'             => 'datetime',
+            'nps_score'                => 'integer',
         ];
     }
 }

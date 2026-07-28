@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ApplicationReceivedMail;
 use App\Mail\WelcomeMail;
 use App\Models\InviteCode;
+use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserDocument;
 use App\Services\OtpService;
@@ -57,6 +58,7 @@ class RegisteredUserController extends Controller
             'lga'         => 'nullable|string|max:100',
             'ward'        => 'nullable|string|max:100',
             'invite_code' => 'nullable|string|max:20',
+            'ref'         => 'nullable|string|max:20',
             'password'    => ['required', 'confirmed', Rules\Password::min(8)
                 ->mixedCase()->numbers()->symbols()],
             'documents.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
@@ -122,6 +124,14 @@ class RegisteredUserController extends Controller
                 $user->update(['is_pilot' => true]);
                 // Override pendingPlan with the invite code's plan
                 $request->merge(['plan' => $inviteCode->plan]);
+            }
+        }
+
+        // Referral code redemption
+        if ($role === 'farmer' && $request->filled('ref')) {
+            $referrer = User::where('referral_code', strtoupper(trim($request->ref)))->first();
+            if ($referrer && $referrer->id !== $user->id) {
+                Referral::firstOrCreate(['referrer_id' => $referrer->id, 'referred_id' => $user->id]);
             }
         }
 

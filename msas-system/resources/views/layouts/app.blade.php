@@ -174,6 +174,10 @@
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
                 <span x-show="sidebarOpen">Monitoring</span>
             </a>
+            <a href="{{ route('ceo.bi') }}" class="nav-link {{ request()->routeIs('ceo.bi*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
+                <span x-show="sidebarOpen">BI Dashboard</span>
+            </a>
             <a href="{{ route('ceo.pilot') }}" class="nav-link {{ request()->routeIs('ceo.pilot*') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></span>
                 <span x-show="sidebarOpen">Pilot Program</span>
@@ -185,6 +189,26 @@
             <a href="{{ route('ceo.invite-codes') }}" class="nav-link {{ request()->routeIs('ceo.invite-codes*') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg></span>
                 <span x-show="sidebarOpen">Invite Codes</span>
+            </a>
+            <a href="{{ route('ceo.support') }}" class="nav-link {{ request()->routeIs('ceo.support*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></span>
+                <span x-show="sidebarOpen">Support Tickets</span>
+            </a>
+            <a href="{{ route('ceo.broadcast') }}" class="nav-link {{ request()->routeIs('ceo.broadcast*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg></span>
+                <span x-show="sidebarOpen">Broadcast</span>
+            </a>
+            <a href="{{ route('ceo.audit-log') }}" class="nav-link {{ request()->routeIs('ceo.audit-log*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></span>
+                <span x-show="sidebarOpen">Audit Log</span>
+            </a>
+            <a href="{{ route('ceo.referrals') }}" class="nav-link {{ request()->routeIs('ceo.referrals*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg></span>
+                <span x-show="sidebarOpen">Referrals</span>
+            </a>
+            <a href="{{ route('ceo.nps') }}" class="nav-link {{ request()->routeIs('ceo.nps*') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg></span>
+                <span x-show="sidebarOpen">NPS</span>
             </a>
             @endif
             <a href="{{ route('admin.applications.index') }}" class="nav-link {{ request()->routeIs('admin.applications.*') ? 'active' : '' }}">
@@ -921,6 +945,42 @@ function submitFeedback(e) {
         .catch(() => alert('Failed to send. Please try again.'));
 }
 </script>
+@endauth
+
+@auth
+@php
+$__authUser = auth()->user();
+$__showNps  = $__authUser->role === 'farmer'
+    && is_null($__authUser->nps_score)
+    && $__authUser->created_at
+    && $__authUser->created_at->lt(now()->subDays(30));
+@endphp
+@if($__showNps)
+<div id="nps-modal" style="position:fixed;bottom:24px;right:24px;z-index:9998;background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:24px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.12);">
+    <button onclick="document.getElementById('nps-modal').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;">×</button>
+    <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:6px;">How likely are you to recommend MSAS FarmAI?</div>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:16px;">0 = not at all · 10 = definitely</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">
+    @for($i=0;$i<=10;$i++)
+    <button onclick="submitNps({{ $i }},this)" style="width:28px;height:28px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;color:#475569;">{{ $i }}</button>
+    @endfor
+    </div>
+    <div id="nps-thanks" style="display:none;text-align:center;margin-top:12px;font-size:13px;font-weight:700;color:#0F6B3E;">Thank you! 🙏</div>
+</div>
+<script>
+function submitNps(score, btn) {
+    fetch('{{ route('nps.store') }}', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},
+        body:JSON.stringify({score})
+    }).then(() => {
+        document.getElementById('nps-thanks').style.display='block';
+        document.querySelectorAll('#nps-modal button[onclick^="submitNps"]').forEach(b=>b.disabled=true);
+        setTimeout(() => document.getElementById('nps-modal').remove(), 2000);
+    });
+}
+</script>
+@endif
 @endauth
 
 </body>
