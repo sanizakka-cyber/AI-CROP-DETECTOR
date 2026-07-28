@@ -227,12 +227,49 @@ class PaymentController extends Controller
     {
         return match ($module) {
             'subscription' => $this->validateSubscriptionAmount($clientAmount, $metadata),
-            'consultation' => $clientAmount > 0 ? $clientAmount : false,
+            'consultation' => $this->validateConsultationAmount($moduleId, $clientAmount),
             'marketplace'  => $moduleId
                 ? (\App\Models\Order::find($moduleId)?->total ?? false)
                 : false,
             default => $clientAmount > 0 ? $clientAmount : false,
         };
+    }
+
+    private function validateConsultationAmount(?int $moduleId, float $clientAmount): float|false
+    {
+        if (!$moduleId) {
+            return $clientAmount > 0 ? $clientAmount : false;
+        }
+
+        $consultation = \App\Models\Consultation::find($moduleId);
+
+        if (!$consultation) {
+            return false;
+        }
+
+        // Verify the authenticated user owns this consultation
+        if ((int) $consultation->farmer_id !== auth()->id()) {
+            Log::warning('Consultation payment: ownership mismatch', [
+                'module_id' => $moduleId,
+                'farmer_id' => $consultation->farmer_id,
+                'auth_id'   => auth()->id(),
+            ]);
+            return false;
+        }
+
+        $fee = (float) $consultation->fee;
+
+        // If the consultation has a pre-set fee, enforce it; otherwise accept client amount
+        if ($fee > 0 && abs($clientAmount - $fee) > 1) {
+            Log::warning('Consultation payment amount mismatch', [
+                'client_amount' => $clientAmount,
+                'expected'      => $fee,
+                'module_id'     => $moduleId,
+            ]);
+            return false;
+        }
+
+        return $fee > 0 ? $fee : ($clientAmount > 0 ? $clientAmount : false);
     }
 
     private function validateSubscriptionAmount(float $clientAmount, array $metadata): float|false
