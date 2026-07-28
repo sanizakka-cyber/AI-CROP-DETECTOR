@@ -479,4 +479,11 @@ Route::get('/scheduler/run', function (\Illuminate\Http\Request $request) {
         ->header('Content-Type', 'text/plain');
 })->name('scheduler.run');
 
+// ── Direct Messaging (all authenticated users) ────────────────────────────
+Route::middleware(['auth'])->prefix('messages')->name('messages.')->group(function () {
+    Route::get('/',         [\App\Http\Controllers\MessageController::class, 'index'])->name('index');
+    Route::get('/{user}',   [\App\Http\Controllers\MessageController::class, 'show'])->name('show');
+    Route::post('/{user}',  [\App\Http\Controllers\MessageController::class, 'send'])->name('send');
+});
+
 require __DIR__.'/auth.php';

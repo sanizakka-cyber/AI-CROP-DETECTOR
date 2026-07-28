@@ -150,6 +150,13 @@ Route::middleware('auth.api')->group(function () {
         return response()->json(['subscription' => $sub, 'message' => '14-day free trial started!'], 201);
     });
 
+    // ── Direct Messaging ──────────────────────────────────────────────────────
+    Route::prefix('messages')->group(function () {
+        Route::get('/',         [\App\Http\Controllers\Api\MessageApiController::class, 'index']);
+        Route::get('/{user}',   [\App\Http\Controllers\Api\MessageApiController::class, 'show']);
+        Route::post('/{user}',  [\App\Http\Controllers\Api\MessageApiController::class, 'send']);
+    });
+
     // ── Payments ────────────────────────────────────────────────────────────
     Route::prefix('payment')->name('api.payment.')->group(function () {
         Route::post('/initiate',         [PaymentApiController::class, 'initiate'])->name('initiate');

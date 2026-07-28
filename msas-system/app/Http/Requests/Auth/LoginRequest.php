@@ -60,6 +60,8 @@ class LoginRequest extends FormRequest
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+            // Per-identifier counter: locks out after 20 failures regardless of IP rotation
+            RateLimiter::hit($this->throttleKeyByUser(), 900);
 
             throw ValidationException::withMessages([
                 'login' => trans('auth.failed'),
@@ -67,6 +69,7 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        RateLimiter::clear($this->throttleKeyByUser());
     }
 
     /**
@@ -76,27 +79,34 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
+        // Per-IP check (5 attempts)
+        if (RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+            event(new Lockout($this));
+            $seconds = RateLimiter::availableIn($this->throttleKey());
+            throw ValidationException::withMessages([
+                'login' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
         }
 
-        event(new Lockout($this));
-
-        $seconds = RateLimiter::availableIn($this->throttleKey());
-
-        throw ValidationException::withMessages([
-            'login' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
+        // Per-identifier check (20 attempts across any IPs, 15-min lockout)
+        if (RateLimiter::tooManyAttempts($this->throttleKeyByUser(), 20)) {
+            $seconds = RateLimiter::availableIn($this->throttleKeyByUser());
+            throw ValidationException::withMessages([
+                'login' => 'Too many failed login attempts. Please try again in ' . ceil($seconds / 60) . ' minutes.',
+            ]);
+        }
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('login')).'|'.$this->ip());
+    }
+
+    public function throttleKeyByUser(): string
+    {
+        return 'login_user:' . Str::transliterate(Str::lower($this->string('login')));
     }
 }
