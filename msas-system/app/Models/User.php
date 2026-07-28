@@ -18,11 +18,11 @@ class User extends Authenticatable
         'first_name', 'middle_name', 'last_name',
         'email', 'phone', 'role', 'state', 'lga', 'ward', 'village', 'country',
         'password', 'profile_photo', 'language', 'last_seen',
-        'is_active', 'is_verified', 'force_password_reset',
+        'is_active', 'is_verified', 'is_pilot', 'force_password_reset',
         'email_verified_at', 'phone_verified_at',
         'expo_push_token', 'fcm_token',
         'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
-        'two_factor_enabled',
+        'two_factor_enabled', 'onboarding_dismissed_at', 'rider_status',
     ];
 
     // api_token, is_test_account, two_factor_code, two_factor_expires_at are intentionally
@@ -36,6 +36,16 @@ class User extends Authenticatable
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(UserDocument::class);
+    }
+
+    public function diagnoses(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Diagnosis::class);
+    }
+
+    public function consultations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Consultation::class, 'farmer_id');
     }
 
     public function isPending(): bool
@@ -282,10 +292,12 @@ class User extends Authenticatable
         return [
             'email_verified_at'    => 'datetime',
             'phone_verified_at'    => 'datetime',
-            'force_password_reset' => 'boolean',
-            'is_active'            => 'boolean',
-            'is_verified'          => 'boolean',
-            'is_test_account'      => 'boolean',
+            'force_password_reset'   => 'boolean',
+            'is_active'              => 'boolean',
+            'is_verified'            => 'boolean',
+            'is_pilot'               => 'boolean',
+            'is_test_account'        => 'boolean',
+            'onboarding_dismissed_at'=> 'datetime',
         ];
     }
 }

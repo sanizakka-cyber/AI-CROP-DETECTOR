@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
@@ -10,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class OtpVerificationController extends Controller
@@ -70,6 +72,14 @@ class OtpVerificationController extends Controller
             $this->clearOtpSession($request);
             Auth::login($user);
             $request->session()->regenerate();
+
+            if ($user->email && $user->role === 'farmer') {
+                try {
+                    Mail::to($user->email)->send(new WelcomeMail($user));
+                } catch (\Exception $e) {
+                    Log::error('WelcomeMail failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+                }
+            }
 
             if ($pendingPlan && $user->role === 'farmer') {
                 return redirect()->route('subscription.plans')

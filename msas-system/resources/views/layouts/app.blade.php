@@ -824,5 +824,86 @@
 </script>
 @endauth
 
+@auth
+{{-- ── Floating Feedback Button ─────────────────────────────────────────── --}}
+<div id="fb-widget" style="position:fixed;bottom:24px;right:24px;z-index:9999;">
+    <button id="fb-btn" onclick="document.getElementById('fb-modal').classList.remove('hidden')"
+        title="Send feedback"
+        style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,0.45);display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform 0.2s;"
+        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        💬
+    </button>
+</div>
+<div id="fb-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:flex-end;padding:24px;">
+    <div style="background:#fff;border-radius:20px;padding:28px;width:360px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div>
+                <div style="font-size:16px;font-weight:800;color:#0f172a;">Share Feedback</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px;">Help us improve MSAS FarmAI</div>
+            </div>
+            <button onclick="document.getElementById('fb-modal').classList.add('hidden')" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">&times;</button>
+        </div>
+        <div id="fb-success" class="hidden" style="text-align:center;padding:20px 0;">
+            <div style="font-size:36px;margin-bottom:10px;">🎉</div>
+            <div style="font-weight:800;color:#0F6B3E;font-size:15px;">Thank you!</div>
+            <div style="font-size:13px;color:#64748b;margin-top:4px;">Your feedback has been received.</div>
+        </div>
+        <form id="fb-form" onsubmit="submitFeedback(event)">
+            @csrf
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                @foreach(['general'=>'General','bug'=>'Bug Report','feature'=>'Feature Request','praise'=>'Praise 🎉'] as $val=>$label)
+                <label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;font-size:12px;font-weight:600;color:#475569;transition:background 0.15s;" class="fb-type-label">
+                    <input type="radio" name="type" value="{{ $val }}" {{ $val==='general'?'checked':'' }} style="accent-color:#0F6B3E;"> {{ $label }}
+                </label>
+                @endforeach
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:14px;">
+                @for($i=1;$i<=5;$i++)
+                <button type="button" onclick="setRating({{ $i }})" data-rating="{{ $i }}"
+                    style="flex:1;padding:6px 0;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:18px;cursor:pointer;transition:all 0.15s;"
+                    class="fb-star">{{ $i <= 3 ? ($i==1?'😟':($i==2?'😐':'🙂')) : ($i==4?'😊':'🤩') }}</button>
+                @endfor
+                <input type="hidden" name="rating" id="fb-rating">
+            </div>
+            <textarea name="message" rows="3" required placeholder="Tell us what you think..." maxlength="2000"
+                style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;resize:none;box-sizing:border-box;font-family:inherit;outline:none;"></textarea>
+            <input type="hidden" name="page" value="{{ url()->current() }}">
+            <button type="submit" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">
+                Send Feedback
+            </button>
+        </form>
+    </div>
+</div>
+<script>
+function setRating(n) {
+    document.getElementById('fb-rating').value = n;
+    document.querySelectorAll('.fb-star').forEach((b,i) => {
+        b.style.background  = i < n ? '#f0fdf4' : '#f8fafc';
+        b.style.borderColor = i < n ? '#0F6B3E' : '#e2e8f0';
+    });
+}
+function submitFeedback(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    fetch('{{ route('feedback.store') }}', {method:'POST', body:data, headers:{'Accept':'application/json','X-CSRF-TOKEN':data.get('_token')}})
+        .then(r => r.json())
+        .then(() => {
+            form.classList.add('hidden');
+            document.getElementById('fb-success').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('fb-modal').classList.add('hidden');
+                document.getElementById('fb-success').classList.add('hidden');
+                form.classList.remove('hidden');
+                form.reset();
+                document.getElementById('fb-rating').value = '';
+                document.querySelectorAll('.fb-star').forEach(b => { b.style.background='#f8fafc'; b.style.borderColor='#e2e8f0'; });
+            }, 2800);
+        })
+        .catch(() => alert('Failed to send. Please try again.'));
+}
+</script>
+@endauth
+
 </body>
 </html>

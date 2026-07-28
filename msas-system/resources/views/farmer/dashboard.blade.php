@@ -87,6 +87,56 @@
 </div>
 @endif
 
+{{-- ── Onboarding Checklist ─────────────────────────────────────────── --}}
+@if($showOnboarding ?? false)
+@php $doneCount = collect($onboardingSteps)->where('done', true)->count(); @endphp
+<div id="onboarding-card" style="background:#fff;border:2px solid #bbf7d0;border-radius:16px;padding:22px 24px;margin-bottom:24px;position:relative;">
+    <button onclick="dismissOnboarding()" title="Dismiss"
+        style="position:absolute;top:14px;right:16px;background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌱</div>
+        <div>
+            <div style="font-size:15px;font-weight:800;color:#0f172a;">{{ __('Get Started') }} ({{ $doneCount }}/{{ count($onboardingSteps) }} {{ __('done') }})</div>
+            <div style="font-size:12px;color:#64748b;">{{ __('Complete these steps to unlock the full power of MSAS FarmAI') }}</div>
+        </div>
+    </div>
+    <div style="width:100%;height:6px;background:#e2e8f0;border-radius:3px;margin-bottom:18px;">
+        <div style="width:{{ ($doneCount / count($onboardingSteps)) * 100 }}%;height:6px;background:linear-gradient(90deg,#0F6B3E,#1FA84A);border-radius:3px;transition:width 0.4s;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        @foreach($onboardingSteps as $step)
+        <a href="{{ $step['url'] }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:10px;background:{{ $step['done'] ? '#f0fdf4' : '#f8fafc' }};border:1px solid {{ $step['done'] ? '#bbf7d0' : '#e2e8f0' }};text-decoration:none;">
+            <div style="width:24px;height:24px;border-radius:50%;background:{{ $step['done'] ? '#0F6B3E' : '#e2e8f0' }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                @if($step['done'])
+                    <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                @else
+                    <div style="width:8px;height:8px;border-radius:50%;background:#94a3b8;"></div>
+                @endif
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:{{ $step['done'] ? '#0F6B3E' : '#0f172a' }};">{{ __($step['label']) }}</div>
+                <div style="font-size:11px;color:#64748b;">{{ __($step['detail']) }}</div>
+            </div>
+            @if(!$step['done'])
+            <div style="margin-left:auto;font-size:12px;color:#0F6B3E;font-weight:700;">{{ __('Start') }} →</div>
+            @endif
+        </a>
+        @endforeach
+    </div>
+</div>
+<script>
+function dismissOnboarding() {
+    fetch('{{ route('farmer.onboarding.dismiss') }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json'},
+    }).then(() => {
+        const card = document.getElementById('onboarding-card');
+        if (card) { card.style.opacity='0'; card.style.transition='opacity 0.3s'; setTimeout(()=>card.remove(),300); }
+    });
+}
+</script>
+@endif
+
 {{-- ── KPI Cards ──────────────────────────────────────────────────────── --}}
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
 
