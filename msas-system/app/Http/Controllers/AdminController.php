@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -60,6 +61,10 @@ class AdminController extends Controller
         $user->is_active = !$user->is_active;
         $user->save();
 
+        AuditLog::record('user.status_toggled', 'User', $user->id, [
+            'new_status' => $user->is_active ? 'active' : 'suspended',
+        ]);
+
         return back()->with('success', 'User status updated successfully.');
     }
 
@@ -69,6 +74,11 @@ class AdminController extends Controller
         if ($user->id === auth()->id() || $user->role === 'ceo') {
             return back()->with('error', 'Cannot delete this account.');
         }
+
+        AuditLog::record('user.deleted', 'User', $user->id, [
+            'email' => $user->email,
+            'role'  => $user->role,
+        ]);
 
         $user->delete();
         return back()->with('success', 'User deleted successfully.');
@@ -100,10 +110,8 @@ class AdminController extends Controller
             'force_password_reset'=> true,
         ]);
 
-        Log::info('Admin created staff account', [
-            'created_by' => auth()->id(),
-            'new_user_id'=> $user->id,
-            'role'       => $user->role,
+        AuditLog::record('user.created', 'User', $user->id, [
+            'role' => $user->role,
         ]);
 
         return redirect()->route('admin.users')

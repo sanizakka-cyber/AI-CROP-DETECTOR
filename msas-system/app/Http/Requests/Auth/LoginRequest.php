@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -62,6 +64,15 @@ class LoginRequest extends FormRequest
             RateLimiter::hit($this->throttleKey());
             // Per-identifier counter: locks out after 20 failures regardless of IP rotation
             RateLimiter::hit($this->throttleKeyByUser(), 900);
+
+            // Persist failed attempt for security monitoring — user_id may be null if identifier not found
+            $candidate = User::where($loginType, $login)->first();
+            AuditLog::record('login.failed', 'User', $candidate?->id, [
+                'login_type' => $loginType,
+                'identifier' => $loginType === 'email'
+                    ? preg_replace('/(?<=.{2}).(?=.*@)/u', '*', $login)
+                    : '***' . substr($login, -4),
+            ]);
 
             throw ValidationException::withMessages([
                 'login' => trans('auth.failed'),
