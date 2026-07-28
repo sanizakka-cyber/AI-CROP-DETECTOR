@@ -12,7 +12,7 @@ class ExtensionController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
-        return ['auth', new Middleware('role:extension-officer,admin,ceo')];
+        return ['auth', new Middleware('role:extension-officer,field-officer,admin,ceo')];
     }
 
     public function farmers(Request $request)

@@ -74,7 +74,10 @@ class OperationsController extends Controller implements HasMiddleware
         $request->validate(['status' => 'required|in:pending,in_progress,completed,cancelled']);
         try {
             DB::table('operations_tasks')->where('id', $task)->update(['status' => $request->status, 'updated_at' => now()]);
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+            \Log::error('OperationsController: updateTaskStatus failed', ['task' => $task, 'error' => $e->getMessage()]);
+            return back()->with('error', 'Could not update task status. Please try again.');
+        }
         return back()->with('success', 'Task status updated.');
     }
 

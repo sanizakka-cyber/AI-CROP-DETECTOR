@@ -147,8 +147,9 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::get('/ceo/users/{user}',      [CEOController::class, 'showUser'])->name('ceo.users.show');
     Route::get('/ceo/users/{user}/edit', [CEOController::class, 'editUser'])->name('ceo.users.edit');
     Route::patch('/ceo/users/{user}',    [CEOController::class, 'updateUser'])->name('ceo.users.update');
-    Route::post('/ceo/users/{user}/toggle', [CEOController::class, 'toggleUser'])->name('ceo.users.toggle');
-    Route::delete('/ceo/users/{user}',   [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
+    Route::post('/ceo/users/{user}/toggle',         [CEOController::class, 'toggleUser'])->name('ceo.users.toggle');
+    Route::delete('/ceo/users/{user}',              [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
+    Route::post('/ceo/users/{user}/approve-expert', [CEOController::class, 'approveExpert'])->name('ceo.users.approve-expert');
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
     Route::get('/ceo/audit',   [CEOController::class, 'audit'])->name('ceo.audit');
     Route::get('/ceo/ai-status', [CEOController::class, 'aiStatus'])->name('ceo.ai-status');
@@ -220,7 +221,7 @@ Route::middleware(['auth'])->name('support.')->prefix('support')->group(function
 });
 
 // Notification centre (farmer)
-Route::middleware(['auth'])->get('/notifications', [\App\Http\Controllers\SupportTicketController::class, 'notificationCentre'])->name('notifications.index');
+Route::middleware(['auth'])->get('/farmer/notifications', [\App\Http\Controllers\SupportTicketController::class, 'notificationCentre'])->name('farmer.notifications');
 
 // ── Compliance (farmer) ───────────────────────────────────────────────────────
 Route::middleware(['auth'])->prefix('account')->name('compliance.')->group(function () {

@@ -91,7 +91,7 @@ class ConsultationController extends Controller
             'title'   => 'New Consultation Assigned',
             'message' => "You have been assigned a {$consultation->case_type} consultation case. Please review and respond.",
             'type'    => 'info',
-            'link'    => '/vet/consultations/' . $consultation->id,
+            'link'    => '/vet/consultation/' . $consultation->id,
         ]);
 
         // Notify the farmer
