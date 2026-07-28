@@ -28,6 +28,10 @@ Route::view('/application-submitted', 'auth.application-submitted')->name('appli
 // Language / Locale switcher (works logged in or out)
 Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
 
+// ── Public legal pages (no auth required) ────────────────────────────────────
+Route::get('/privacy-policy', [\App\Http\Controllers\ComplianceController::class, 'publicPrivacy'])->name('legal.privacy');
+Route::get('/terms',          [\App\Http\Controllers\ComplianceController::class, 'terms'])->name('legal.terms');
+
 // Services Public Routes (Redirects to register/login for now to prevent 404s)
 Route::prefix('services')->name('services.')->group(function () {
     Route::redirect('/livestock', '/register')->name('livestock');
