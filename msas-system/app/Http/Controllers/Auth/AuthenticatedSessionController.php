@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AuditLog;
 use App\Models\LoginHistory;
 use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
@@ -127,6 +128,8 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        AuditLog::record('logout', 'User', Auth::id());
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,7 +72,12 @@ class ProfileController extends Controller
             $user->email_verified_at = null;
         }
 
+        $changedFields = array_keys($user->getDirty());
         $user->save();
+
+        AuditLog::record('profile.updated', 'User', $user->id, [
+            'changed_fields' => array_diff($changedFields, ['password']),
+        ]);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -108,6 +114,8 @@ class ProfileController extends Controller
         $user->password             = Hash::make($request->password);
         $user->force_password_reset = false;
         $user->save();
+
+        AuditLog::record('password.changed', 'User', $user->id);
 
         return redirect()->route('dashboard')->with('status', 'password-changed');
     }
