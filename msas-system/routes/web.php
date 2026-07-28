@@ -180,6 +180,12 @@ Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-
     Route::get('/ceo/reports/{type}/csv', [CEOController::class, 'exportCsv'])->name('ceo.reports.csv');
 });
 
+// ── CEO Monitoring (ceo + admin) ──────────────────────────────────────────────
+Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
+    Route::get('/monitoring',              [\App\Http\Controllers\MonitoringController::class, 'index'])      ->name('monitoring');
+    Route::get('/monitoring/health.json',  [\App\Http\Controllers\MonitoringController::class, 'healthJson']) ->name('monitoring.health');
+});
+
 // ── CEO Pilot Program routes ──────────────────────────────────────────────────
 Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
     Route::get('/pilot',                         [\App\Http\Controllers\CEOController::class, 'pilot'])            ->name('pilot');
