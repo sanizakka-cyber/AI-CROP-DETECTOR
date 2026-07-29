@@ -279,8 +279,11 @@
                 </a>
                 {{-- Language Selector --}}
                 @php $loc = session('locale', app()->getLocale()); @endphp
-                <div class="relative" x-data="{ langOpen: false }" @keydown.escape.window="langOpen=false">
-                    <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                <div class="relative" x-data="{ langOpen: false }"
+                     @click.outside="langOpen=false"
+                     @keydown.escape.window="langOpen=false"
+                     @pageshow.window="langOpen=false">
+                    <button @click="langOpen=!langOpen"
                         :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                         class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition border border-slate-200">
                         {{ match($loc){ 'ha'=>'🇳🇬 HA','fr'=>'🇫🇷 FR','yo'=>'🇳🇬 YO','ig'=>'🇳🇬 IG',default=>'🇬🇧 EN' } }}
@@ -294,7 +297,7 @@
                          x-transition:leave="transition ease-in duration-75"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         style="transform-origin:top right"
+                         style="display:none;transform-origin:top right"
                         class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
                         @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yorùbá'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
                         <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">@csrf<input type="hidden" name="locale" value="{{ $code }}">

@@ -178,9 +178,12 @@
         <div class="hidden lg:flex items-center gap-1.5">
             <button class="p-2 rounded-lg transition" :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
             {{-- Language Selector --}}
-            <div class="relative" x-data="{ langOpen: false }" @keydown.escape.window="langOpen=false">
+            <div class="relative" x-data="{ langOpen: false }"
+                 @click.outside="langOpen=false"
+                 @keydown.escape.window="langOpen=false"
+                 @pageshow.window="langOpen=false">
                 @php $locale = session('locale', app()->getLocale()); $localeLabels = ['en'=>'EN','ha'=>'HA','fr'=>'FR','yo'=>'YO','ig'=>'IG','ff'=>'FF']; @endphp
-                <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                <button @click="langOpen=!langOpen"
                     :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                     class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-bold transition"
                     :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'">
@@ -195,7 +198,7 @@
                      x-transition:leave="transition ease-in duration-75"
                      x-transition:leave-start="opacity-100 scale-100"
                      x-transition:leave-end="opacity-0 scale-95"
-                     style="transform-origin:top right"
+                     style="display:none;transform-origin:top right"
                     class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
                     @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yoruba'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
                     <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
