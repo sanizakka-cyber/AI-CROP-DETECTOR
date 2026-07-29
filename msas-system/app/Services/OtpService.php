@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\OtpExpiredException;
+use App\Exceptions\OtpInvalidException;
+use App\Exceptions\OtpLockedException;
 use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\OtpDeliveryLog;
@@ -79,12 +82,12 @@ class OtpService
 
         if ($otp->tooManyAttempts()) {
             Log::warning('OTP verify: too many attempts', ['hint' => $this->hint($identifier), 'type' => $type]);
-            throw new \RuntimeException('Too many incorrect attempts. Please request a new verification code.');
+            throw new OtpLockedException('Too many incorrect attempts. Please request a new verification code.');
         }
 
         if ($otp->isExpired()) {
             Log::info('OTP verify: expired', ['hint' => $this->hint($identifier), 'type' => $type, 'expired_at' => $otp->expires_at]);
-            throw new \RuntimeException('Verification code has expired. Request another code.');
+            throw new OtpExpiredException('Verification code has expired. Request another code.');
         }
 
         if (! Hash::check($plain, $otp->code)) {
@@ -92,10 +95,13 @@ class OtpService
             $remaining = max(0, self::MAX_ATTEMPTS - $otp->fresh()->attempts);
             Log::info('OTP verify: wrong code', ['hint' => $this->hint($identifier), 'type' => $type, 'attempts_left' => $remaining]);
 
-            throw new \RuntimeException(
-                $remaining > 0
-                    ? "Verification code is incorrect. {$remaining} attempt(s) remaining."
-                    : 'Too many incorrect attempts. Please request a new verification code.'
+            if ($remaining === 0) {
+                throw new OtpLockedException('Too many incorrect attempts. Please request a new verification code.');
+            }
+
+            throw new OtpInvalidException(
+                "Verification code is incorrect. {$remaining} attempt(s) remaining.",
+                $remaining,
             );
         }
 
