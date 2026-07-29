@@ -5,29 +5,28 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Mail\NewDeviceLoginMail;
 use App\Models\AuditLog;
 use App\Models\LoginHistory;
 use App\Services\OtpService;
+use App\Services\TrustedDeviceService;
 use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     use NormalizesPhone;
-    /**
-     * Display the login view.
-     */
+
     public function create(): View
     {
         return view('auth.login');
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
@@ -45,7 +44,7 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        // Block pending/rejected applicants from accessing the platform
+        // Block pending/rejected applicants
         $appStatus = $user->application_status ?? 'approved';
         if ($appStatus === 'pending') {
             Auth::logout();
@@ -68,10 +67,8 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        // Block unverified accounts — phone-only users get verified immediately (no SMS OTP policy);
-        // email users are redirected to OTP verify with the full session payload.
+        // Unverified accounts — send OTP and redirect to verify screen
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
-            // Phone-only account: activate in place — consistent with registration policy
             if (! $user->email && $user->phone) {
                 $user->update(['phone_verified_at' => now()]);
                 return redirect()->intended(route('dashboard', absolute: false));
@@ -109,23 +106,39 @@ class AuthenticatedSessionController extends Controller
                 ->with('status', 'Please verify your account first. A new code has been sent.');
         }
 
-        // Log successful login
-        LoginHistory::record($user->id, true);
+        // ── Trusted device check ───────────────────────────────────────────────
+        // Only relevant for accounts that would otherwise require 2FA.
+        $needs2FA = TwoFactorController::roleRequires2FA($user->role) || $user->two_factor_enabled;
 
-        // Trigger 2FA for privileged roles (or when user has manually enabled it)
-        if (TwoFactorController::roleRequires2FA($user->role) || $user->two_factor_enabled) {
+        if ($needs2FA) {
+            $tdSvc = app(TrustedDeviceService::class);
+
+            if ($tdSvc->isDeviceTrusted($request, $user)) {
+                // Known trusted device — skip 2FA entirely
+                $tdSvc->refreshLastUsed($request, $user);
+                LoginHistory::record($user->id, true);
+                return redirect()->intended(route('dashboard', absolute: false));
+            }
+
+            // New device — initiate 2FA and flag for new-device notification
+            LoginHistory::record($user->id, true);
             Auth::logout();
-            session(['2fa_user_id' => $user->id]);
+            session(['2fa_user_id' => $user->id, '2fa_new_device' => true]);
             TwoFactorController::initiate($user);
             return redirect()->route('2fa.verify');
         }
 
+        // ── Normal (non-2FA) user ──────────────────────────────────────────────
+        LoginHistory::record($user->id, true);
+
+        // Send new-device notification if no trusted device is registered for this user at all
+        // (first login from any device, or after all trusted devices were revoked)
+        $ua = $request->userAgent() ?? '';
+        $this->maybeSendNewDeviceEmail($user, $ua, $request->ip() ?? '');
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         AuditLog::record('logout', 'User', Auth::id());
@@ -137,5 +150,42 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function maybeSendNewDeviceEmail(\App\Models\User $user, string $ua, string $ip): void
+    {
+        if (! $user->email) {
+            return;
+        }
+
+        // Only notify if no trusted devices at all (truly first login / post-revoke)
+        $hasAnyTrustedDevice = \App\Models\TrustedDevice::where('user_id', $user->id)
+            ->where('expires_at', '>', now())
+            ->exists();
+
+        if ($hasAnyTrustedDevice) {
+            return;
+        }
+
+        // Don't notify on the very first ever login (no prior login history)
+        $priorLogins = LoginHistory::where('user_id', $user->id)
+            ->where('success', true)
+            ->count();
+
+        if ($priorLogins <= 1) {
+            return;
+        }
+
+        try {
+            Mail::to($user->notification_email ?? $user->email)->send(new NewDeviceLoginMail(
+                $user,
+                LoginHistory::parseBrowser($ua),
+                LoginHistory::parsePlatform($ua),
+                $ip,
+                now()->format('M d, Y g:i A') . ' UTC'
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('NewDeviceLoginMail failed for user ' . $user->id . ': ' . $e->getMessage());
+        }
     }
 }

@@ -115,9 +115,14 @@ class ProfileController extends Controller
         $user->force_password_reset = false;
         $user->save();
 
+        // Revoke all trusted devices — a password change should force re-verification everywhere
+        \App\Models\TrustedDevice::where('user_id', $user->id)->delete();
+
         AuditLog::record('password.changed', 'User', $user->id);
 
-        return redirect()->route('dashboard')->with('status', 'password-changed');
+        return redirect()->route('dashboard')
+            ->with('status', 'password-changed')
+            ->withCookie(\Cookie::forget(\App\Services\TrustedDeviceService::COOKIE_NAME));
     }
 
     /**
@@ -148,11 +153,15 @@ class ProfileController extends Controller
 
     public function security(Request $request): View
     {
-        $user         = $request->user();
-        $loginHistory = \App\Models\LoginHistory::where('user_id', $user->id)
+        $user          = $request->user();
+        $loginHistory  = \App\Models\LoginHistory::where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->take(20)
             ->get();
-        return view('profile.security', compact('user', 'loginHistory'));
+        $trustedDevices = \App\Models\TrustedDevice::where('user_id', $user->id)
+            ->where('expires_at', '>', now())
+            ->orderByDesc('last_used_at')
+            ->get();
+        return view('profile.security', compact('user', 'loginHistory', 'trustedDevices'));
     }
 }

@@ -43,7 +43,7 @@ class LoginHistory extends Model
         ]);
     }
 
-    private static function parseBrowser(string $ua): string
+    public static function parseBrowser(string $ua): string
     {
         if (str_contains($ua, 'Edg/'))    return 'Edge';
         if (str_contains($ua, 'Chrome'))  return 'Chrome';
@@ -53,7 +53,7 @@ class LoginHistory extends Model
         return 'Unknown';
     }
 
-    private static function parsePlatform(string $ua): string
+    public static function parsePlatform(string $ua): string
     {
         if (str_contains($ua, 'Windows')) return 'Windows';
         if (str_contains($ua, 'Mac'))     return 'macOS';
@@ -63,7 +63,7 @@ class LoginHistory extends Model
         return 'Unknown';
     }
 
-    private static function parseDevice(string $ua): string
+    public static function parseDevice(string $ua): string
     {
         if (str_contains($ua, 'Mobile') || str_contains($ua, 'Android') || str_contains($ua, 'iPhone')) return 'Mobile';
         if (str_contains($ua, 'iPad') || str_contains($ua, 'Tablet')) return 'Tablet';
