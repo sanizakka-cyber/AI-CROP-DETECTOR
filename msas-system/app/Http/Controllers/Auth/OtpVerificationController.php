@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class OtpVerificationController extends Controller
 {
@@ -20,7 +22,7 @@ class OtpVerificationController extends Controller
 
     public function __construct(private OtpService $otp) {}
 
-    /** Show the OTP entry screen. */
+    /** Show the OTP entry screen with no-store cache headers to prevent back-button replay. */
     public function show(Request $request): View|RedirectResponse
     {
         if (! $request->session()->has('otp_identifier')) {
@@ -30,13 +32,16 @@ class OtpVerificationController extends Controller
         $identifier = $request->session()->get('otp_identifier');
         $expiresAt  = $request->session()->get('otp_expires_at');
 
-        return view('auth.verify-otp', [
+        return response()->view('auth.verify-otp', [
             'identifier'     => $identifier,
             'context'        => $request->session()->get('otp_context', 'registration'),
             'smsFailed'      => $request->session()->get('otp_sms_failed', false),
             'emailFailed'    => $request->session()->get('otp_email_failed', false),
             'deliveryMethod' => $request->session()->get('otp_delivery_method', 'email'),
-            'expiresAt'      => $expiresAt,    // ISO 8601 string — JS uses this for accurate countdown
+            'expiresAt'      => $expiresAt,
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma'        => 'no-cache',
         ]);
     }
 
@@ -63,11 +68,16 @@ class OtpVerificationController extends Controller
             $pendingPlan = $request->session()->get('pending_plan', '');
             $user        = User::findOrFail($userId);
 
+            $updates = ['email_verified_at' => now(), 'is_verified' => true];
+
             if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-                $user->update(['email_verified_at' => now()]);
+                $user->update($updates);
             } else {
-                $user->update(['phone_verified_at' => now()]);
+                $user->update(['phone_verified_at' => now(), 'is_verified' => true]);
             }
+
+            // Audit the successful verification
+            $this->auditOtpEvent('otp.verified', $userId, $context, $identifier);
 
             $this->clearOtpSession($request);
             Auth::login($user);
@@ -90,6 +100,9 @@ class OtpVerificationController extends Controller
         }
 
         if ($context === 'password_reset') {
+            $userId = $request->session()->get('otp_user_id');
+            $this->auditOtpEvent('otp.verified', $userId, $context, $identifier);
+
             $token = \Illuminate\Support\Str::random(64);
             $request->session()->put('reset_token', $token);
             $request->session()->forget('otp_context');
@@ -106,13 +119,14 @@ class OtpVerificationController extends Controller
         $identifier = $request->session()->get('otp_identifier');
         $context    = $request->session()->get('otp_context', 'registration');
         $method     = $request->session()->get('otp_delivery_method', 'email');
+        $uid        = $request->session()->get('otp_user_id');
 
         if (! $identifier) {
             return redirect()->route('login');
         }
 
         $firstName = 'User';
-        if ($uid = $request->session()->get('otp_user_id')) {
+        if ($uid) {
             $firstName = User::find($uid)?->first_name ?? 'User';
         }
 
@@ -125,9 +139,10 @@ class OtpVerificationController extends Controller
             $normalized = $this->looksLikePhone($identifier)
                 ? $this->normalizePhone($identifier)
                 : $identifier;
-            $failed = ! $this->otp->sendViaSms($normalized, $plain);
+            $failed = ! $this->otp->sendViaSms($normalized, $plain, $uid, $context);
         } else {
-            $failed = ! $this->otp->sendViaEmail($identifier, $plain, $firstName);
+            // Pass userId and context so the delivery log is accurate
+            $failed = ! $this->otp->sendViaEmail($identifier, $plain, $firstName, $uid, $context);
         }
 
         $request->session()->put([
@@ -135,6 +150,10 @@ class OtpVerificationController extends Controller
             'otp_email_failed' => $method === 'email' && $failed,
             'otp_expires_at'   => $expiresAt?->toISOString(),
         ]);
+
+        if ($uid) {
+            $this->auditOtpEvent('otp.resent', $uid, $context, $identifier);
+        }
 
         if ($failed) {
             return back()->withErrors(['code' => 'We couldn\'t resend the code. Please try again or switch to a different method.']);
@@ -145,7 +164,6 @@ class OtpVerificationController extends Controller
 
     /**
      * Switch from failed SMS to email verification.
-     * Accepts the user's email, sends a fresh OTP to it, and updates the session.
      */
     public function switchToEmail(Request $request): RedirectResponse
     {
@@ -163,19 +181,16 @@ class OtpVerificationController extends Controller
         $user  = User::findOrFail($userId);
         $email = strtolower(trim($request->fallback_email));
 
-        // Prevent using an email that belongs to a different account
         $taken = User::where('email', $email)->where('id', '!=', $user->id)->exists();
         if ($taken) {
             return back()->withErrors(['fallback_email' => 'That email address is already in use by another account.']);
         }
 
-        // Persist email on user record so verification can activate it
         $user->update(['email' => $email]);
 
-        // Generate new OTP for the email identifier
         $plain     = $this->otp->generate($email, $context);
         $expiresAt = $this->otp->expiresAt($email, $context);
-        $sent      = $this->otp->sendViaEmail($email, $plain, $user->first_name);
+        $sent      = $this->otp->sendViaEmail($email, $plain, $user->first_name, $userId, $context);
 
         Log::info('OTP fallback to email', [
             'user_id'    => $user->id,
@@ -209,5 +224,32 @@ class OtpVerificationController extends Controller
             'otp_sms_failed', 'otp_email_failed',
             'otp_expires_at', 'otp_delivery_method', 'pending_plan',
         ]);
+    }
+
+    private function auditOtpEvent(string $action, ?int $userId, string $context, string $identifier): void
+    {
+        try {
+            AuditLog::create([
+                'user_id'    => $userId,
+                'action'     => $action,
+                'model'      => 'User',
+                'model_id'   => $userId,
+                'details'    => json_encode([
+                    'context'         => $context,
+                    'identifier_hint' => $this->hintIdentifier($identifier),
+                ]),
+                'ip_address' => request()->ip(),
+            ]);
+        } catch (\Throwable) {}
+    }
+
+    private function hintIdentifier(string $id): string
+    {
+        if (str_contains($id, '@')) {
+            [$local, $domain] = explode('@', $id, 2);
+            return substr($local, 0, 2) . '***@' . $domain;
+        }
+        $clean = preg_replace('/\D/', '', $id);
+        return substr($clean, 0, 3) . '***' . substr($clean, -3);
     }
 }
