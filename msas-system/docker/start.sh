@@ -17,6 +17,10 @@ echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/t
 echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/www.conf
 echo "decorate_workers_output = no" >> /usr/local/etc/php-fpm.d/www.conf
 
+# Discover packages now that env vars are available (skipped during Docker build)
+echo "==> Discovering packages..."
+php artisan package:discover --ansi 2>/dev/null || true
+
 # Run migrations FIRST so all tables exist before caching views/config
 echo "==> Running migrations..."
 php artisan migrate --force

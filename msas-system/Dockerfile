@@ -32,7 +32,9 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 COPY . .
 
 # ── Finish Composer (Vite assets pre-built and committed in public/build/) ────
-RUN composer dump-autoload --optimize
+# --no-scripts skips @php artisan package:discover which requires a .env file
+# that doesn't exist at build time. package:discover runs at container startup instead.
+RUN composer dump-autoload --optimize --no-scripts
 
 # ── Permissions ───────────────────────────────────────────────────────────────
 RUN chown -R www-data:www-data /var/www/html \
