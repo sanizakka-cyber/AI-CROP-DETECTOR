@@ -110,6 +110,9 @@
 
         .field-label { display: block; font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
         .field-error { color: #dc2626; font-size: 11px; margin-top: 4px; }
+
+        /* Hide Alpine-controlled elements before Alpine initialises (prevents dropdown flash) */
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body>
@@ -222,20 +225,28 @@
             $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
             $guestFlags   = ['en'=>'🇬🇧','ha'=>'🟢','yo'=>'🟡','ig'=>'🔵','ff'=>'🔴'];
         @endphp
-        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }">
-            <button @click="open = !open"
+        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @keydown.escape.window="open=false">
+            <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"
                 style="display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;">
                 <span>{{ $guestFlags[$guestLocale] ?? '🌍' }}</span>
                 <span>{{ strtoupper($guestLocale) }}</span>
-                <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
+                <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" :style="open ? 'transform:rotate(180deg)' : ''"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
-            <div x-show="open" @click.outside="open=false" x-cloak
+            <div x-show="open"
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="transform opacity-0 scale-95"
+                 x-transition:enter-end="transform opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="transform opacity-100 scale-100"
+                 x-transition:leave-end="transform opacity-0 scale-95"
+                 @click.outside="open=false"
+                 x-cloak
                  style="position:absolute;right:0;top:36px;width:160px;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #e2e8f0;z-index:100;overflow:hidden;padding:4px 0;">
                 @foreach($guestLocales as $code => $name)
                 <form method="POST" action="{{ route('locale.set') }}">
                     @csrf
                     <input type="hidden" name="locale" value="{{ $code }}">
-                    <button type="submit"
+                    <button type="submit" @click="open=false"
                         style="width:100%;display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:{{ $guestLocale === $code ? '#0F6B3E' : '#475569' }};font-weight:{{ $guestLocale === $code ? '700' : '400' }}; text-align:left;">
                         <span>{{ $guestFlags[$code] }}</span>
                         <span>{{ $name }}</span>

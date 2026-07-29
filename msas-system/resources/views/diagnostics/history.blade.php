@@ -184,7 +184,7 @@
                 <span id="{{ $ttsId }}-state" class="hidden">stopped</span>
             </div>
             {{-- Voice warning: shown when device lacks a native voice for the selected language --}}
-            <div id="{{ $ttsId }}-voice-warning" class="hidden bg-amber-900/20 border-t border-amber-700/20 px-5 py-1.5 text-[10px] text-amber-300"></div>
+            <div id="{{ $ttsId }}-voice-warning" class="hidden bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/40 rounded-lg px-4 py-2 text-[11px] text-amber-800 dark:text-amber-300 mt-2 leading-snug"></div>
 
             {{-- ── Voice Transcript Panel ───────────────────────────────────────── --}}
             <div id="{{ $ttsId }}-transcript-panel" class="hidden bg-slate-900 border-t border-slate-700">
@@ -706,15 +706,31 @@
 
                 if (voices.length) {
                     var code  = langCode.split('-')[0];
-                    // Prefer exact lang match, then prefix match, then any voice for that language
+                    // 1. Exact BCP-47 match (e.g. ha-NG)
+                    // 2. Same language code, any region (e.g. ha-*)
+                    // 3. Starts with language prefix
+                    // 4. For African languages without native voices, prefer a clear
+                    //    non-English voice to avoid silent mismatch
                     var match = voices.find(function(v){ return v.lang === langCode; })
                              || voices.find(function(v){ return v.lang.startsWith(code + '-'); })
-                             || voices.find(function(v){ return v.lang.startsWith(code); });
+                             || voices.find(function(v){ return v.lang.toLowerCase().startsWith(code); });
+
+                    // Never silently fall back to English voice when a non-English language
+                    // was requested — either use a matched voice or narrate with English
+                    // voice while showing a clear warning that the device lacks the voice.
                     if (match) {
                         u.voice = match;
                         setVoiceWarning(id, null);
                     } else if (code !== 'en') {
-                        setVoiceWarning(id, '⚠ No ' + langCode + ' voice installed on this device — narrating in default voice but text is translated');
+                        // Pick the best available English or default voice so narration is
+                        // intelligible, then warn the user clearly.
+                        var engVoice = voices.find(function(v){ return v.lang === 'en-NG'; })
+                                    || voices.find(function(v){ return v.lang === 'en-GB'; })
+                                    || voices.find(function(v){ return v.lang === 'en-US'; })
+                                    || voices.find(function(v){ return v.lang.startsWith('en'); });
+                        if (engVoice) u.voice = engVoice;
+                        setVoiceWarning(id,
+                            '⚠ Your browser has no ' + langCode + ' voice. The translated text is shown above. Install a ' + code.toUpperCase() + ' voice pack in your device settings for audio in this language.');
                     }
                 }
 

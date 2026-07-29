@@ -544,7 +544,7 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/2fa/verify',  [\App\Http\Controllers\TwoFactorController::class, 'showVerify'])->name('2fa.verify');
 Route::post('/2fa/verify', [\App\Http\Controllers\TwoFactorController::class, 'verify'])->name('2fa.verify.post')->middleware('throttle:10,1');
 Route::post('/2fa/resend', [\App\Http\Controllers\TwoFactorController::class, 'resend'])->name('2fa.resend')->middleware('throttle:3,1');
-Route::get('/2fa/cancel',  [\App\Http\Controllers\TwoFactorController::class, 'cancel'])->name('2fa.cancel');
+Route::match(['GET', 'POST'], '/2fa/cancel', [\App\Http\Controllers\TwoFactorController::class, 'cancel'])->name('2fa.cancel');
 
 // ── Security, 2FA, and Trusted Device Management (auth required) ──────────
 Route::middleware(['auth'])->group(function () {

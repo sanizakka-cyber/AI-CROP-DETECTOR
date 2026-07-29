@@ -57,7 +57,10 @@
                 Resend Code
             </button>
         </form>
-        <a href="{{ route('2fa.cancel') }}" class="block mt-2 text-xs text-slate-400 hover:text-slate-600">Back to Login</a>
+        <form method="POST" action="{{ route('2fa.cancel') }}" style="display:inline;">
+            @csrf
+            <button type="submit" class="block mt-2 text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer p-0">Back to Login</button>
+        </form>
     </div>
 
     {{-- JS to make the visual checkbox work alongside the hidden peer input --}}
