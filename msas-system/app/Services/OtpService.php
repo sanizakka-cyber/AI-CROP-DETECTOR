@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 
 class OtpService
 {
-    public const TTL_MINUTES  = 5;
+    public const TTL_MINUTES  = 10;
     public const MAX_ATTEMPTS = 5;
 
     /**
