@@ -17,7 +17,7 @@
                 <div>
                     <h2 class="text-base font-extrabold text-slate-800 dark:text-white">Two-Factor Authentication</h2>
                     <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">
-                        When enabled, you'll be asked for a 6-digit email code each time you sign in.
+                        Required on any unrecognised device. Trusted devices skip the code prompt.
                         @if(in_array($user->role, \App\Http\Controllers\TwoFactorController::REQUIRED_ROLES))
                         <span class="text-amber-600 dark:text-amber-400 font-semibold">Your role requires 2FA — it cannot be disabled.</span>
                         @endif
@@ -38,6 +38,90 @@
                     {{ $user->two_factor_enabled ? 'Disable 2FA' : 'Enable 2FA' }}
                 </button>
             </form>
+            @endif
+        </div>
+
+        {{-- Trusted Devices --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 p-6">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-base font-extrabold text-slate-800 dark:text-white">Trusted Devices</h2>
+                    <p class="text-sm text-slate-500 dark:text-gray-400 mt-1">
+                        Devices you've chosen to trust. They skip 2FA verification for up to 30 days.
+                    </p>
+                </div>
+                @if($trustedDevices->isNotEmpty())
+                <form method="POST" action="{{ route('devices.destroyAll') }}" class="flex-shrink-0"
+                      onsubmit="return confirm('Remove all trusted devices? You will be asked to verify on your next login from each device.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition">
+                        Remove All
+                    </button>
+                </form>
+                @endif
+            </div>
+
+            @if($trustedDevices->isEmpty())
+            <div class="text-center py-8">
+                <div class="w-12 h-12 bg-slate-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-slate-400">No trusted devices yet.</p>
+                <p class="text-xs text-slate-400 mt-1">Check "Trust this device for 30 days" when verifying your next sign-in.</p>
+            </div>
+            @else
+            <div class="space-y-3">
+                @foreach($trustedDevices as $device)
+                <div class="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-gray-700/50 border border-slate-100 dark:border-gray-600">
+                    <div class="flex items-center gap-3 min-w-0">
+                        {{-- Device icon --}}
+                        <div class="w-9 h-9 rounded-xl bg-[#0F6B3E]/10 dark:bg-[#0F6B3E]/20 flex items-center justify-center flex-shrink-0">
+                            @if($device->device_name === 'Mobile')
+                            <svg class="w-5 h-5 text-[#0F6B3E]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18h3"/>
+                            </svg>
+                            @elseif($device->device_name === 'Tablet')
+                            <svg class="w-5 h-5 text-[#0F6B3E]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5h3m-6.75 2.25h10.5a2.25 2.25 0 002.25-2.25v-15a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 4.5v15a2.25 2.25 0 002.25 2.25z"/>
+                            </svg>
+                            @else
+                            <svg class="w-5 h-5 text-[#0F6B3E]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3"/>
+                            </svg>
+                            @endif
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">
+                                {{ $device->device_label }}
+                            </p>
+                            <p class="text-xs text-slate-400 dark:text-gray-400">
+                                {{ $device->ip_address ?? 'Unknown IP' }}
+                                &middot;
+                                @if($device->last_used_at)
+                                    Last used {{ $device->last_used_at->diffForHumans() }}
+                                @else
+                                    Added {{ $device->created_at->diffForHumans() }}
+                                @endif
+                                &middot;
+                                Expires {{ $device->expires_at->format('M d, Y') }}
+                            </p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('devices.destroy', $device) }}"
+                          onsubmit="return confirm('Remove this trusted device?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="text-xs font-bold text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition flex-shrink-0">
+                            Remove
+                        </button>
+                    </form>
+                </div>
+                @endforeach
+            </div>
             @endif
         </div>
 

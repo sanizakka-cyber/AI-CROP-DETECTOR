@@ -15,7 +15,7 @@
     </div>
     @endif
 
-    <form method="POST" action="{{ route('2fa.verify') }}" class="space-y-5">
+    <form method="POST" action="{{ route('2fa.verify.post') }}" class="space-y-5">
         @csrf
 
         <div>
@@ -25,6 +25,25 @@
                    placeholder="000000" autofocus>
             <x-input-error :messages="$errors->get('code')" class="mt-2" />
         </div>
+
+        {{-- Trust device checkbox --}}
+        <label class="flex items-start gap-3 cursor-pointer group">
+            <div class="relative mt-0.5">
+                <input type="checkbox" name="trust_device" value="1"
+                       class="sr-only peer">
+                <div class="w-5 h-5 rounded border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900
+                            peer-checked:bg-[#0F6B3E] peer-checked:border-[#0F6B3E]
+                            group-hover:border-[#0F6B3E] transition-colors flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <span class="text-sm font-semibold text-slate-700 dark:text-gray-200">Trust this device for 30 days</span>
+                <p class="text-xs text-slate-400 dark:text-gray-500 mt-0.5">Skip verification on this device until the trust period expires or you remove it.</p>
+            </div>
+        </label>
 
         <x-primary-button class="w-full justify-center py-3">
             {{ __('Verify & Sign In') }}
@@ -40,4 +59,31 @@
         </form>
         <a href="{{ route('2fa.cancel') }}" class="block mt-2 text-xs text-slate-400 hover:text-slate-600">Back to Login</a>
     </div>
+
+    {{-- JS to make the visual checkbox work alongside the hidden peer input --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const label = document.querySelector('label[class*="trust"]') ||
+                      [...document.querySelectorAll('label')].find(l => l.textContent.includes('Trust this device'));
+        if (!label) return;
+        const checkbox = label.querySelector('input[type=checkbox]');
+        const box      = label.querySelector('div > div');
+        const tick     = label.querySelector('svg');
+        if (!checkbox || !box || !tick) return;
+        checkbox.addEventListener('change', function () {
+            if (this.checked) {
+                box.classList.add('bg-[#0F6B3E]', 'border-[#0F6B3E]');
+                tick.classList.remove('hidden');
+            } else {
+                box.classList.remove('bg-[#0F6B3E]', 'border-[#0F6B3E]');
+                tick.classList.add('hidden');
+            }
+        });
+        label.addEventListener('click', function (e) {
+            if (e.target === checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
+    });
+    </script>
 </x-guest-layout>

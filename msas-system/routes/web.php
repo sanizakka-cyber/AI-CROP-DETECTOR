@@ -546,10 +546,12 @@ Route::post('/2fa/verify', [\App\Http\Controllers\TwoFactorController::class, 'v
 Route::post('/2fa/resend', [\App\Http\Controllers\TwoFactorController::class, 'resend'])->name('2fa.resend')->middleware('throttle:3,1');
 Route::get('/2fa/cancel',  [\App\Http\Controllers\TwoFactorController::class, 'cancel'])->name('2fa.cancel');
 
-// ── Login History & 2FA Toggle (auth required) ────────────────────────────
+// ── Security, 2FA, and Trusted Device Management (auth required) ──────────
 Route::middleware(['auth'])->group(function () {
-    Route::get('/profile/security',   [\App\Http\Controllers\ProfileController::class, 'security'])->name('profile.security');
-    Route::post('/profile/2fa/toggle',[\App\Http\Controllers\TwoFactorController::class, 'toggle'])->name('2fa.toggle');
+    Route::get('/profile/security',              [\App\Http\Controllers\ProfileController::class, 'security'])->name('profile.security');
+    Route::post('/profile/2fa/toggle',           [\App\Http\Controllers\TwoFactorController::class, 'toggle'])->name('2fa.toggle');
+    Route::delete('/profile/trusted-devices',    [\App\Http\Controllers\DeviceController::class, 'destroyAll'])->name('devices.destroyAll');
+    Route::delete('/profile/trusted-devices/{device}', [\App\Http\Controllers\DeviceController::class, 'destroy'])->name('devices.destroy');
 });
 
 // ── Scheduler Webhook (external cron trigger) ──────────────────────────────
