@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\ApplicationReceivedMail;
 use App\Mail\WelcomeMail;
+use App\Models\AuditLog;
 use App\Models\InviteCode;
 use App\Models\Referral;
 use App\Models\User;
@@ -200,6 +201,17 @@ class RegisteredUserController extends Controller
         $plain       = $this->otp->generate($identifier, 'registration');
         $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration');
         $expiresAt   = $this->otp->expiresAt($identifier, 'registration');
+
+        try {
+            AuditLog::create([
+                'user_id'    => $user->id,
+                'action'     => 'otp.sent',
+                'model'      => 'User',
+                'model_id'   => $user->id,
+                'details'    => json_encode(['context' => 'registration', 'delivered' => ! $emailFailed]),
+                'ip_address' => $request->ip(),
+            ]);
+        } catch (\Throwable) {}
 
         $request->session()->put([
             'otp_context'         => 'registration',

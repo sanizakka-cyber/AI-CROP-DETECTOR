@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\OtpExpiredException;
+use App\Exceptions\OtpInvalidException;
+use App\Exceptions\OtpLockedException;
 use App\Http\Controllers\Controller;
+use App\Mail\OtpLockedMail;
 use App\Mail\WelcomeMail;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -14,7 +18,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\Response;
 
 class OtpVerificationController extends Controller
 {
@@ -42,6 +45,7 @@ class OtpVerificationController extends Controller
         ])->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
             'Pragma'        => 'no-cache',
+            'Expires'       => '0',
         ]);
     }
 
@@ -53,18 +57,32 @@ class OtpVerificationController extends Controller
         $identifier = $request->session()->get('otp_identifier');
         $context    = $request->session()->get('otp_context', 'registration');
 
+        // Resolve userId from either registration or password_reset session key
+        $userId = $request->session()->get('otp_user_id')
+               ?? $request->session()->get('reset_user_id');
+
         if (! $identifier) {
             return redirect()->route('login')->withErrors(['code' => 'Session expired. Please start again.']);
         }
 
         try {
             $this->otp->verify($identifier, $context, $request->code);
+        } catch (OtpLockedException $e) {
+            $this->auditOtpEvent('otp.locked', $userId, $context, $identifier);
+            $this->sendLockoutEmail($userId, request()->ip());
+            return back()->withErrors(['code' => $e->getMessage()]);
+        } catch (OtpExpiredException $e) {
+            $this->auditOtpEvent('otp.expired', $userId, $context, $identifier);
+            return back()->withErrors(['code' => $e->getMessage()]);
+        } catch (OtpInvalidException $e) {
+            $this->auditOtpEvent('otp.failed', $userId, $context, $identifier, ['attempts_left' => $e->attemptsLeft]);
+            return back()->withErrors(['code' => $e->getMessage()]);
         } catch (\RuntimeException $e) {
+            // "No pending OTP found" — session mismatch, no user to attribute to
             return back()->withErrors(['code' => $e->getMessage()]);
         }
 
         if ($context === 'registration') {
-            $userId      = $request->session()->get('otp_user_id');
             $pendingPlan = $request->session()->get('pending_plan', '');
             $user        = User::findOrFail($userId);
 
@@ -76,7 +94,6 @@ class OtpVerificationController extends Controller
                 $user->update(['phone_verified_at' => now(), 'is_verified' => true]);
             }
 
-            // Audit the successful verification
             $this->auditOtpEvent('otp.verified', $userId, $context, $identifier);
 
             $this->clearOtpSession($request);
@@ -100,7 +117,6 @@ class OtpVerificationController extends Controller
         }
 
         if ($context === 'password_reset') {
-            $userId = $request->session()->get('otp_user_id');
             $this->auditOtpEvent('otp.verified', $userId, $context, $identifier);
 
             $token = \Illuminate\Support\Str::random(64);
@@ -113,13 +129,33 @@ class OtpVerificationController extends Controller
         return redirect()->route('login');
     }
 
+    /** Cancel OTP verification, clear the session, and audit the cancellation. */
+    public function cancel(Request $request): RedirectResponse
+    {
+        $context    = $request->session()->get('otp_context', 'registration');
+        $identifier = $request->session()->get('otp_identifier', '');
+        $userId     = $request->session()->get('otp_user_id')
+                   ?? $request->session()->get('reset_user_id');
+
+        if ($identifier) {
+            $this->auditOtpEvent('otp.cancelled', $userId, $context, $identifier);
+        }
+
+        $this->clearOtpSession($request);
+
+        return $context === 'password_reset'
+            ? redirect()->route('password.request')
+            : redirect()->route('register');
+    }
+
     /** Resend OTP to the current identifier (same channel). */
     public function resend(Request $request): RedirectResponse
     {
         $identifier = $request->session()->get('otp_identifier');
         $context    = $request->session()->get('otp_context', 'registration');
         $method     = $request->session()->get('otp_delivery_method', 'email');
-        $uid        = $request->session()->get('otp_user_id');
+        $uid        = $request->session()->get('otp_user_id')
+                   ?? $request->session()->get('reset_user_id');
 
         if (! $identifier) {
             return redirect()->route('login');
@@ -141,7 +177,6 @@ class OtpVerificationController extends Controller
                 : $identifier;
             $failed = ! $this->otp->sendViaSms($normalized, $plain, $uid, $context);
         } else {
-            // Pass userId and context so the delivery log is accurate
             $failed = ! $this->otp->sendViaEmail($identifier, $plain, $firstName, $uid, $context);
         }
 
@@ -198,6 +233,8 @@ class OtpVerificationController extends Controller
             'sent'       => $sent,
         ]);
 
+        $this->auditOtpEvent('otp.sent', $userId, $context, $email);
+
         $request->session()->put([
             'otp_identifier'      => $email,
             'otp_sms_failed'      => false,
@@ -220,13 +257,13 @@ class OtpVerificationController extends Controller
     private function clearOtpSession(Request $request): void
     {
         $request->session()->forget([
-            'otp_identifier', 'otp_context', 'otp_user_id',
+            'otp_identifier', 'otp_context', 'otp_user_id', 'reset_user_id',
             'otp_sms_failed', 'otp_email_failed',
             'otp_expires_at', 'otp_delivery_method', 'pending_plan',
         ]);
     }
 
-    private function auditOtpEvent(string $action, ?int $userId, string $context, string $identifier): void
+    private function auditOtpEvent(string $action, ?int $userId, string $context, string $identifier, array $extra = []): void
     {
         try {
             AuditLog::create([
@@ -234,13 +271,29 @@ class OtpVerificationController extends Controller
                 'action'     => $action,
                 'model'      => 'User',
                 'model_id'   => $userId,
-                'details'    => json_encode([
+                'details'    => json_encode(array_merge([
                     'context'         => $context,
                     'identifier_hint' => $this->hintIdentifier($identifier),
-                ]),
+                ], $extra)),
                 'ip_address' => request()->ip(),
             ]);
         } catch (\Throwable) {}
+    }
+
+    private function sendLockoutEmail(?int $userId, string $ip): void
+    {
+        if (! $userId) return;
+
+        $user = User::find($userId);
+        if (! $user || ! $user->email) return;
+
+        try {
+            Mail::to($user->notification_email ?? $user->email)->send(
+                new OtpLockedMail($user, $ip, now()->format('M d, Y g:i A T'))
+            );
+        } catch (\Throwable $e) {
+            Log::error('OtpLockedMail failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
     }
 
     private function hintIdentifier(string $id): string

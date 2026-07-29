@@ -202,11 +202,16 @@ $serverExpiry = $expiresAt ?? null;
     @endif
 
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;">
-        @if($context === 'registration')
-            <a href="{{ route('register') }}" class="change-link">← Change email / phone</a>
-        @else
-            <a href="{{ route('password.request') }}" class="change-link">← Try a different email / phone</a>
-        @endif
+        <form method="POST" action="{{ route('otp.cancel') }}" style="display:inline;">
+            @csrf
+            <button type="submit" class="change-link" style="background:none;border:none;padding:0;cursor:pointer;font-size:12px;">
+                @if($context === 'registration')
+                    ← Change email / phone
+                @else
+                    ← Try a different email / phone
+                @endif
+            </button>
+        </form>
     </div>
 
 </div>
