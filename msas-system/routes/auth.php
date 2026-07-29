@@ -69,3 +69,11 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });
+
+// Gracefully handle direct GET navigation to /logout (bookmark, address bar, old cached link).
+// We do NOT log out via GET (CSRF risk) — just redirect to the right place.
+Route::get('logout', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+});
