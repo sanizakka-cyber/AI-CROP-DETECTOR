@@ -520,10 +520,7 @@
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="relative" x-data="{ open: false }"
-                     @click.outside="open=false"
-                     @keydown.escape.window="open=false"
-                     @pageshow.window="open=false">
+                <div class="relative" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
                     @php
                         $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
                         $cur = app()->getLocale();

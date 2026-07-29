@@ -279,10 +279,7 @@
                 </a>
                 {{-- Language Selector --}}
                 @php $loc = session('locale', app()->getLocale()); @endphp
-                <div class="relative" x-data="{ langOpen: false }"
-                     @click.outside="langOpen=false"
-                     @keydown.escape.window="langOpen=false"
-                     @pageshow.window="langOpen=false">
+                <div class="relative" x-data="{ langOpen: false }" @click.outside="langOpen=false" @keydown.escape.window="langOpen=false">
                     <button @click="langOpen=!langOpen"
                         :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                         class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition border border-slate-200">

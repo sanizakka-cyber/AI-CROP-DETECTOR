@@ -178,10 +178,7 @@
         <div class="hidden lg:flex items-center gap-1.5">
             <button class="p-2 rounded-lg transition" :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
             {{-- Language Selector --}}
-            <div class="relative" x-data="{ langOpen: false }"
-                 @click.outside="langOpen=false"
-                 @keydown.escape.window="langOpen=false"
-                 @pageshow.window="langOpen=false">
+            <div class="relative" x-data="{ langOpen: false }" @click.outside="langOpen=false" @keydown.escape.window="langOpen=false">
                 @php $locale = session('locale', app()->getLocale()); $localeLabels = ['en'=>'EN','ha'=>'HA','fr'=>'FR','yo'=>'YO','ig'=>'IG','ff'=>'FF']; @endphp
                 <button @click="langOpen=!langOpen"
                     :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
