@@ -520,24 +520,35 @@
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="relative" x-data="{ open: false }">
+                <div class="relative" x-data="{ open: false }" @keydown.escape.window="open=false">
                     @php
                         $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
                         $cur = app()->getLocale();
                         $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
-                    <button @click="open = !open" class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
+                    <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true" aria-label="Select language"
+                            class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
                         <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
                         <span class="hidden sm:inline" data-locale-current="code">{{ strtoupper($cur) }}</span>
-                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                             :style="open ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
+                            <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </button>
                     <div x-show="open" @click.outside="open=false" x-cloak
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         style="transform-origin:top right"
                          class="absolute right-0 top-12 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden py-1">
                         @foreach($locales as $code => $name)
                         <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">
                             @csrf
                             <input type="hidden" name="locale" value="{{ $code }}">
-                            <button type="submit" data-locale-code="{{ $code }}"
+                            <button type="submit" data-locale-code="{{ $code }}" @click="open=false"
                                 class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-slate-50 transition text-left {{ $cur === $code ? 'font-bold' : '' }}"
                                 style="{{ $cur === $code ? 'color:#0F6B3E;' : 'color:#475569;' }}">
                                 <span>{{ $flags[$code] }}</span>

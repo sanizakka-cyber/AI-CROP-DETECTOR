@@ -178,19 +178,31 @@
         <div class="hidden lg:flex items-center gap-1.5">
             <button class="p-2 rounded-lg transition" :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'"><i class="fa-solid fa-magnifying-glass text-sm"></i></button>
             {{-- Language Selector --}}
-            <div class="relative" x-data="{ langOpen: false }">
+            <div class="relative" x-data="{ langOpen: false }" @keydown.escape.window="langOpen=false">
                 @php $locale = session('locale', app()->getLocale()); $localeLabels = ['en'=>'EN','ha'=>'HA','fr'=>'FR','yo'=>'YO','ig'=>'IG','ff'=>'FF']; @endphp
                 <button @click="langOpen=!langOpen" @click.outside="langOpen=false"
+                    :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                     class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-bold transition"
                     :class="scrolled?'text-gray-700 hover:bg-gray-100':'text-white hover:bg-white/10'">
-                    {{ strtoupper($localeLabels[$locale] ?? 'EN') }} <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                    {{ strtoupper($localeLabels[$locale] ?? 'EN') }}
+                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200"
+                       :class="langOpen ? 'rotate-180' : ''"></i>
                 </button>
-                <div x-show="langOpen" x-cloak x-transition
+                <div x-show="langOpen" x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     style="transform-origin:top right"
                     class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
                     @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yoruba'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
                     <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
-                    <button type="submit" class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $locale === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
+                    <button type="submit" @click="langOpen=false"
+                        class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $locale === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
                         <span>{{ $flag }}</span> {{ $name }}
+                        @if($locale === $code)<span class="ml-auto text-xs text-green-700">✓</span>@endif
                     </button></form>
                     @endforeach
                 </div>
