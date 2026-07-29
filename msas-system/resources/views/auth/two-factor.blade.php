@@ -63,29 +63,22 @@
         </form>
     </div>
 
-    {{-- JS to make the visual checkbox work alongside the hidden peer input --}}
+    {{-- Sync the custom visual checkbox with the hidden <input> state --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const label = document.querySelector('label[class*="trust"]') ||
-                      [...document.querySelectorAll('label')].find(l => l.textContent.includes('Trust this device'));
+        const label = [...document.querySelectorAll('label')].find(l => l.textContent.includes('Trust this device'));
         if (!label) return;
         const checkbox = label.querySelector('input[type=checkbox]');
         const box      = label.querySelector('div > div');
         const tick     = label.querySelector('svg');
         if (!checkbox || !box || !tick) return;
+        // Listen on the checkbox itself — the browser toggles it automatically
+        // when the wrapping <label> is clicked, then fires 'change'. No manual
+        // toggle needed; adding one would double-toggle and cancel the click.
         checkbox.addEventListener('change', function () {
-            if (this.checked) {
-                box.classList.add('bg-[#0F6B3E]', 'border-[#0F6B3E]');
-                tick.classList.remove('hidden');
-            } else {
-                box.classList.remove('bg-[#0F6B3E]', 'border-[#0F6B3E]');
-                tick.classList.add('hidden');
-            }
-        });
-        label.addEventListener('click', function (e) {
-            if (e.target === checkbox) return;
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event('change'));
+            box.classList.toggle('bg-[#0F6B3E]', this.checked);
+            box.classList.toggle('border-[#0F6B3E]', this.checked);
+            tick.classList.toggle('hidden', !this.checked);
         });
     });
     </script>

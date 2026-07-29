@@ -26,10 +26,12 @@ class TwoFactorController extends Controller
     {
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        $user->update([
-            'two_factor_code'       => Hash::make($code),
-            'two_factor_expires_at' => now()->addMinutes(10),
-        ]);
+        // two_factor_code and two_factor_expires_at are intentionally excluded from
+        // $fillable, so mass-assignment via update() silently ignores them.
+        // Use direct property assignment so the DB is actually written.
+        $user->two_factor_code       = Hash::make($code);
+        $user->two_factor_expires_at = now()->addMinutes(10);
+        $user->save();
 
         try {
             $mailTo = $user->notification_email ?? $user->email;
@@ -87,20 +89,27 @@ class TwoFactorController extends Controller
 
         $user = \App\Models\User::findOrFail($userId);
 
-        if ($user->two_factor_expires_at && now()->gt($user->two_factor_expires_at)) {
+        if (! $user->two_factor_code) {
             session()->forget(['2fa_user_id', '2fa_new_device']);
-            return redirect()->route('login')->withErrors(['code' => 'Code expired. Please log in again to receive a new code.']);
+            return redirect()->route('login')->withErrors(['identifier' => 'No active security code. Please log in again.']);
         }
 
-        if (! Hash::check($request->code, $user->two_factor_code)) {
-            return back()->withErrors(['code' => 'Invalid code. Please try again.']);
+        if ($user->two_factor_expires_at && now()->gt($user->two_factor_expires_at)) {
+            session()->forget(['2fa_user_id', '2fa_new_device']);
+            return redirect()->route('login')->withErrors(['code' => 'Security code has expired. Please log in again to receive a new one.']);
+        }
+
+        if (! Hash::check(trim($request->code), $user->two_factor_code)) {
+            return back()->withErrors(['code' => 'Incorrect security code. Please check your email and try again.']);
         }
 
         // Pull new-device flag before clearing session
         $isNewDevice = session()->pull('2fa_new_device', false);
 
-        // Clear 2FA state and complete login
-        $user->update(['two_factor_code' => null, 'two_factor_expires_at' => null]);
+        // Invalidate the code immediately — direct assignment to bypass $fillable guard
+        $user->two_factor_code       = null;
+        $user->two_factor_expires_at = null;
+        $user->save();
         session()->forget('2fa_user_id');
 
         Auth::login($user);
