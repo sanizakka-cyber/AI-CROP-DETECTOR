@@ -225,10 +225,7 @@
             $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
             $guestFlags   = ['en'=>'🇬🇧','ha'=>'🟢','yo'=>'🟡','ig'=>'🔵','ff'=>'🔴'];
         @endphp
-        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }"
-             @click.outside="open=false"
-             @keydown.escape.window="open=false"
-             @pageshow.window="open=false">
+        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
             <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"
                 style="display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;">
                 <span>{{ $guestFlags[$guestLocale] ?? '🌍' }}</span>
