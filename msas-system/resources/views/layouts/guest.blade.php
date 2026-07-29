@@ -225,7 +225,10 @@
             $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
             $guestFlags   = ['en'=>'🇬🇧','ha'=>'🟢','yo'=>'🟡','ig'=>'🔵','ff'=>'🔴'];
         @endphp
-        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @keydown.escape.window="open=false">
+        <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }"
+             @click.outside="open=false"
+             @keydown.escape.window="open=false"
+             @pageshow.window="open=false">
             <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"
                 style="display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;">
                 <span>{{ $guestFlags[$guestLocale] ?? '🌍' }}</span>
@@ -239,9 +242,8 @@
                  x-transition:leave="transition ease-in duration-75"
                  x-transition:leave-start="transform opacity-100 scale-100"
                  x-transition:leave-end="transform opacity-0 scale-95"
-                 @click.outside="open=false"
                  x-cloak
-                 style="position:absolute;right:0;top:36px;width:160px;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #e2e8f0;z-index:100;overflow:hidden;padding:4px 0;">
+                 style="display:none;position:absolute;right:0;top:36px;width:160px;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #e2e8f0;z-index:100;overflow:hidden;padding:4px 0;">
                 @foreach($guestLocales as $code => $name)
                 <form method="POST" action="{{ route('locale.set') }}">
                     @csrf
