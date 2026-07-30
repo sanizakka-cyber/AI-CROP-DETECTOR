@@ -34,7 +34,7 @@ class DiagnoseApiController extends Controller
             'cropType' => ['required', 'string'],
             'cropPart' => ['sometimes', 'string'],
             'images'   => ['required', 'array', 'min:1'],
-            'images.*' => ['file', 'image', 'max:10240'],
+            'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
         ]);
 
         try {

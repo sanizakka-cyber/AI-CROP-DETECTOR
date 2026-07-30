@@ -59,11 +59,8 @@ class AuthenticatedSessionController extends Controller
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            $reason = $user->rejection_reason
-                ? ' Reason: ' . $user->rejection_reason
-                : ' Please contact support for more information.';
             return redirect()->route('login')->withErrors([
-                'identifier' => 'Your application was not approved.' . $reason,
+                'identifier' => 'Your application was not approved. Please contact support for more information.',
             ]);
         }
 

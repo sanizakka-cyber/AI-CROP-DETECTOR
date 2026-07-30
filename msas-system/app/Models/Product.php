@@ -10,7 +10,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'dealer_id', 'name', 'sku', 'category', 'subcategory', 'brand', 'manufacturer',
+        'dealer_id', 'seller_type', 'name', 'sku', 'category', 'subcategory', 'brand', 'manufacturer',
         'description', 'usage_instructions', 'dosage_instructions', 'storage_requirements',
         'unit', 'cost_price', 'selling_price', 'quantity_in_stock', 'low_stock_threshold',
         'expiry_date', 'image', 'tags', 'status', 'is_approved', 'is_featured',
@@ -95,7 +95,7 @@ class Product extends Model
         $this->decrement('quantity_in_stock', $qty);
     }
 
-    public function updateRating(): void
+    public function syncRating(): void
     {
         $avg = $this->reviews()->avg('rating');
         $cnt = $this->reviews()->count();

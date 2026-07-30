@@ -227,10 +227,10 @@
     new Chart(document.getElementById('monthlyActivityChart'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode(array_column($monthlySummary, 'month')) !!},
+            labels: {!! json_encode(array_column($monthlySummary, 'month'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
             datasets: [
-                { label: 'New Farmers',    data: {!! json_encode(array_column($monthlySummary, 'farmers')) !!},  backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
-                { label: 'Consultations',  data: {!! json_encode(array_column($monthlySummary, 'consults')) !!}, backgroundColor: 'rgba(99,102,241,0.75)',  borderRadius: 6 },
+                { label: 'New Farmers',    data: {!! json_encode(array_column($monthlySummary, 'farmers'), JSON_HEX_TAG | JSON_HEX_AMP) !!},  backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
+                { label: 'Consultations',  data: {!! json_encode(array_column($monthlySummary, 'consults'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: 'rgba(99,102,241,0.75)',  borderRadius: 6 },
             ]
         },
         options: {

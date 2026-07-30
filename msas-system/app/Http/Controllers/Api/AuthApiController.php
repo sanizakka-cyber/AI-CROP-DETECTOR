@@ -75,7 +75,11 @@ class AuthApiController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->update(['api_token' => null, 'expo_push_token' => null]);
+        // api_token excluded from $fillable — use direct assignment so the token is actually revoked
+        $user = $request->user();
+        $user->api_token       = null;
+        $user->expo_push_token = null;
+        $user->saveQuietly();
         return response()->json(['message' => 'Logged out']);
     }
 

@@ -128,8 +128,8 @@
             <div x-show="sidebarOpen" class="nav-section">Main</div>
 
             <!-- Dashboard -->
-            <a href="{{ auth()->user()->role === 'ceo' ? route('ceo.dashboard') : route('dashboard') }}"
-               class="nav-link {{ request()->routeIs('dashboard','ceo.dashboard') ? 'active' : '' }}">
+            <a href="{{ auth()->user()->role === 'ceo' ? route('ceo.dashboard') : (auth()->user()->role === 'admin' ? route('admin.dashboard') : route('dashboard')) }}"
+               class="nav-link {{ request()->routeIs('dashboard','ceo.dashboard','admin.dashboard') ? 'active' : '' }}">
                 <span class="nav-icon">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 </span>
@@ -682,7 +682,7 @@
 @endphp
 <script>
 (function(){
-    window.MSAS_TRANS  = {!! json_encode($allTrans) !!};
+    window.MSAS_TRANS  = {!! json_encode($allTrans, JSON_HEX_TAG | JSON_HEX_AMP) !!};
     window.MSAS_LOCALE = '{{ app()->getLocale() }}';
 
     var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬', ff:'🇳🇬' };

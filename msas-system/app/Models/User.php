@@ -22,7 +22,7 @@ class User extends Authenticatable
         'email_verified_at', 'phone_verified_at',
         'expo_push_token', 'fcm_token',
         'application_status', 'rejection_reason', 'reviewed_at', 'reviewed_by',
-        'two_factor_enabled', 'onboarding_dismissed_at', 'rider_status',
+        'onboarding_dismissed_at', 'rider_status',
         'consent_given_at', 'data_export_requested_at', 'data_export_completed_at',
         'referral_code', 'referred_by',
         'notification_email',
@@ -171,7 +171,9 @@ class User extends Authenticatable
     public function createToken(string $name = 'mobile'): object
     {
         $plain = bin2hex(random_bytes(32));
-        $this->update(['api_token' => hash('sha256', $plain)]);
+        // api_token is excluded from $fillable — use direct assignment so the DB is written
+        $this->api_token = hash('sha256', $plain);
+        $this->saveQuietly();
         return (object) ['plainTextToken' => $plain];
     }
 

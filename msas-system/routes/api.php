@@ -84,13 +84,19 @@ Route::get('/health', function () {
         $checks['payment_failures_1h'] = null;
     }
 
-    return response()->json([
-        'status'  => $healthy ? 'ok' : 'degraded',
-        'app'     => config('app.name'),
-        'env'     => config('app.env'),
-        'time'    => now()->toIso8601String(),
-        'checks'  => $checks,
-    ], $healthy ? 200 : 503);
+    // Public callers (uptime monitors, Render) only need ok/degraded.
+    // Detailed metrics are restricted to authenticated staff.
+    $isAuthenticated = request()->bearerToken()
+        && \App\Models\User::where('api_token', hash('sha256', request()->bearerToken()))
+            ->whereIn('role', ['ceo','admin','operations','finance','data-analyst'])
+            ->exists();
+
+    $payload = ['status' => $healthy ? 'ok' : 'degraded', 'time' => now()->toIso8601String()];
+    if ($isAuthenticated) {
+        $payload += ['app' => config('app.name'), 'env' => config('app.env'), 'checks' => $checks];
+    }
+
+    return response()->json($payload, $healthy ? 200 : 503);
 });
 
 // ── Public Auth (rate-limited: 5 attempts per minute per IP) ─────────────────

@@ -196,50 +196,6 @@ class SubscriptionController extends Controller
             ->with('success', "Payment confirmed! You are now on the " . config("subscription.plans.{$plan}.name") . ".");
     }
 
-    // Paystack webhook (server-to-server)
-    public function paystackWebhook(Request $request)
-    {
-        $signature = $request->header('x-paystack-signature');
-        $body      = $request->getContent();
-
-        // Verify webhook signature — use hash_equals to prevent timing attacks
-        if (! hash_equals(hash_hmac('sha512', $body, config('services.paystack.secret_key')), (string) $signature)) {
-            return response()->json(['status' => 'invalid signature'], 401);
-        }
-
-        $event = $request->json('event');
-        $data  = $request->json('data');
-
-        if ($event === 'charge.success') {
-            $reference = $data['reference'];
-            $meta      = $data['metadata'] ?? [];
-            $userId    = $meta['user_id'] ?? null;
-
-            if (!$userId) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            $user = \App\Models\User::find($userId);
-            if (!$user) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            $alreadyActivated = $user->subscriptions()
-                ->where('payment_reference', $reference)
-                ->exists();
-
-            if (!$alreadyActivated) {
-                $plan      = $meta['plan'];
-                $cycle     = $meta['billing_cycle'];
-                $amount    = ($data['amount'] ?? 0) / 100;
-                $activeSub = $user->activeSubscription();
-                $this->activateSubscription($user, $plan, $cycle, $amount, $reference, $activeSub, 'paystack');
-            }
-        }
-
-        return response()->json(['status' => 'ok']);
-    }
-
     // Shared: activate/upgrade subscription record
     private function activateSubscription($user, $plan, $cycle, $amount, $reference, $activeSub, $method)
     {

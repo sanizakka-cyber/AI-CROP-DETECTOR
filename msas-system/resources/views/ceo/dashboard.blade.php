@@ -446,10 +446,10 @@
     new Chart(document.getElementById('userGrowthChart'), {
         type: 'line',
         data: {
-            labels: {!! json_encode($monthlyGrowth->pluck('label')) !!},
+            labels: {!! json_encode($monthlyGrowth->pluck('label'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
             datasets: [
-                { label: 'Farmers', data: {!! json_encode($monthlyGrowth->pluck('farmers')) !!}, borderColor: '#1FA84A', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#1FA84A' },
-                { label: 'Experts', data: {!! json_encode($monthlyGrowth->pluck('experts')) !!}, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#3b82f6' },
+                { label: 'Farmers', data: {!! json_encode($monthlyGrowth->pluck('farmers'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, borderColor: '#1FA84A', backgroundColor: 'rgba(16,185,129,0.08)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#1FA84A' },
+                { label: 'Experts', data: {!! json_encode($monthlyGrowth->pluck('experts'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#3b82f6' },
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }
@@ -459,10 +459,10 @@
     new Chart(document.getElementById('revenueChart'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode($revenueChart->pluck('month')) !!},
+            labels: {!! json_encode($revenueChart->pluck('month'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
             datasets: [
-                { label: 'Income',   data: {!! json_encode($revenueChart->pluck('income')) !!},  backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
-                { label: 'Expenses', data: {!! json_encode($revenueChart->pluck('expense')) !!}, backgroundColor: 'rgba(248,113,113,0.75)', borderRadius: 6 },
+                { label: 'Income',   data: {!! json_encode($revenueChart->pluck('income'), JSON_HEX_TAG | JSON_HEX_AMP) !!},  backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
+                { label: 'Expenses', data: {!! json_encode($revenueChart->pluck('expense'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: 'rgba(248,113,113,0.75)', borderRadius: 6 },
             ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }

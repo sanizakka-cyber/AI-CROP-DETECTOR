@@ -178,10 +178,10 @@
     new Chart(document.getElementById('regTrendChart'), {
         type: 'line',
         data: {
-            labels: {!! json_encode($monthlyRegistrations->pluck('month')) !!},
+            labels: {!! json_encode($monthlyRegistrations->pluck('month'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
             datasets: [{
                 label: 'Registrations',
-                data: {!! json_encode($monthlyRegistrations->pluck('count')) !!},
+                data: {!! json_encode($monthlyRegistrations->pluck('count'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
                 borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)',
                 tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#6366f1', pointBorderColor: '#fff', pointBorderWidth: 2
             }]
@@ -193,8 +193,8 @@
     new Chart(document.getElementById('roleDonut'), {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode(array_keys($usersByRole)) !!},
-            datasets: [{ data: {!! json_encode(array_values($usersByRole)) !!}, backgroundColor: ['#1FA84A','#3b82f6','#14b8a6','#ef4444','#f59e0b','#6366f1','#9333ea','#ec4899','#f97316'], borderWidth: 0, hoverOffset: 6 }]
+            labels: {!! json_encode(array_keys($usersByRole), JSON_HEX_TAG | JSON_HEX_AMP) !!},
+            datasets: [{ data: {!! json_encode(array_values($usersByRole), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: ['#1FA84A','#3b82f6','#14b8a6','#ef4444','#f59e0b','#6366f1','#9333ea','#ec4899','#f97316'], borderWidth: 0, hoverOffset: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
     });
@@ -203,8 +203,8 @@
     new Chart(document.getElementById('roleBarChart'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode(array_map(fn($r) => str_replace('-',' ',$r), array_keys($usersByRole))) !!},
-            datasets: [{ label: 'Users', data: {!! json_encode(array_values($usersByRole)) !!}, backgroundColor: ['#1FA84A','#3b82f6','#14b8a6','#ef4444','#f59e0b','#6366f1','#9333ea','#ec4899','#f97316'], borderRadius: 6 }]
+            labels: {!! json_encode(array_map(fn($r) => str_replace('-',' ',$r), array_keys($usersByRole)), JSON_HEX_TAG | JSON_HEX_AMP) !!},
+            datasets: [{ label: 'Users', data: {!! json_encode(array_values($usersByRole), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: ['#1FA84A','#3b82f6','#14b8a6','#ef4444','#f59e0b','#6366f1','#9333ea','#ec4899','#f97316'], borderRadius: 6 }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } } } }
     });

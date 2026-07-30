@@ -74,7 +74,7 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
 // Role-Specific Dashboards
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard',                [DashboardController::class, 'admin'])               ->middleware('role:admin,ceo')            ->name('admin.dashboard');
-    Route::get('/farmer/dashboard',               [DashboardController::class, 'farmer'])              ->middleware('role:farmer,student')       ->name('farmer.dashboard');
+    Route::get('/farmer/dashboard',               [DashboardController::class, 'farmer'])              ->middleware('role:farmer,student,general-user') ->name('farmer.dashboard');
     Route::get('/equipment-dealer/dashboard',     [DashboardController::class, 'equipmentDealer'])     ->middleware('role:equipment-dealer')     ->name('equipment-dealer.dashboard');
     Route::get('/cooperative/dashboard',          [DashboardController::class, 'cooperative'])         ->middleware('role:cooperative')          ->name('cooperative.dashboard');
     Route::get('/ngo/dashboard',                  [DashboardController::class, 'ngo'])                 ->middleware('role:ngo')                  ->name('ngo.dashboard');
@@ -216,7 +216,7 @@ Route::middleware(['auth'])->name('support.')->prefix('support')->group(function
     Route::get('/',              [\App\Http\Controllers\SupportTicketController::class, 'index'])  ->name('index');
     Route::get('/create',        [\App\Http\Controllers\SupportTicketController::class, 'create']) ->name('create');
     Route::post('/',             [\App\Http\Controllers\SupportTicketController::class, 'store'])  ->name('store');
-    Route::get('/{ticket}',      [\App\Http\Controllers\SupportTicketController::class, 'show'])   ->name('show');
+    Route::get('/{ticket}',      [\App\Http\Controllers\SupportTicketController::class, 'show'])   ->name('show')->where('ticket', '[0-9]+');
     Route::post('/{ticket}/reply',[\App\Http\Controllers\SupportTicketController::class,'reply'])  ->name('reply');
 });
 
@@ -555,22 +555,15 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ── Scheduler Webhook (external cron trigger) ──────────────────────────────
-// Protected by SCHEDULER_KEY env var. Hit this URL every minute from cron-job.org.
-// Preferred: POST with Authorization: Bearer <SCHEDULER_KEY> header.
-// Legacy GET with ?key=<SCHEDULER_KEY> still accepted but query params appear in access logs.
-Route::match(['get', 'post'], '/scheduler/run', function (\Illuminate\Http\Request $request) {
+// Protected by SCHEDULER_KEY env var. POST only with Authorization: Bearer <SCHEDULER_KEY>.
+// Update cron-job.org to send a POST request — GET no longer accepted.
+Route::post('/scheduler/run', function (\Illuminate\Http\Request $request) {
     $key = config('app.scheduler_key');
 
-    // Prefer Authorization header (keeps secret out of server access logs)
-    $headerKey = null;
     $authHeader = $request->header('Authorization', '');
-    if (str_starts_with($authHeader, 'Bearer ')) {
-        $headerKey = substr($authHeader, 7);
-    }
+    $provided   = str_starts_with($authHeader, 'Bearer ') ? substr($authHeader, 7) : '';
 
-    $provided = $headerKey ?? $request->query('key', '');
-
-    if (!$key || !hash_equals($key, (string) $provided)) {
+    if (!$key || !hash_equals($key, $provided)) {
         abort(403, 'Forbidden');
     }
 
