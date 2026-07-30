@@ -8,6 +8,8 @@ use App\Models\Feedback;
 use App\Models\Finance;
 use App\Models\Consultation;
 use App\Models\InviteCode;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Diagnosis;
 use App\Models\EggProduction;
@@ -232,6 +234,144 @@ class CEOController extends Controller
             ];
         }
 
+        // ── Marketplace / Orders ───────────────────────────────────────
+        try {
+            $orderStats = Cache::remember('ceo:order_stats', 120, function () {
+                return [
+                    'total'      => Order::count(),
+                    'pending'    => Order::where('status', 'pending')->count(),
+                    'processing' => Order::where('status', 'processing')->count(),
+                    'shipped'    => Order::where('status', 'shipped')->count(),
+                    'delivered'  => Order::where('status', 'delivered')->count(),
+                    'cancelled'  => Order::where('status', 'cancelled')->count(),
+                    'gmv'        => Order::where('payment_status', 'paid')->sum('total'),
+                    'gmv_month'  => Order::where('payment_status', 'paid')
+                                        ->whereMonth('created_at', now()->month)
+                                        ->whereYear('created_at', now()->year)
+                                        ->sum('total'),
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::warning('[CEO] orderStats failed: ' . $e->getMessage());
+            $orderStats = ['total'=>0,'pending'=>0,'processing'=>0,'shipped'=>0,'delivered'=>0,'cancelled'=>0,'gmv'=>0,'gmv_month'=>0];
+        }
+        try {
+            $topProducts = Product::select('id', 'name', 'selling_price', 'category')
+                ->selectRaw('(SELECT COUNT(*) FROM order_items WHERE order_items.product_id = products.id) as order_count')
+                ->where('status', 'active')
+                ->orderByDesc('order_count')
+                ->take(5)
+                ->get();
+        } catch (\Exception $e) { $topProducts = collect(); }
+
+        // ── AI Smart Scan Analytics ────────────────────────────────
+        try {
+            $aiStats = Cache::remember('ceo:ai_stats', 120, function () {
+                return [
+                    'today'       => Diagnosis::whereDate('created_at', today())->count(),
+                    'this_month'  => Diagnosis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
+                    'total'       => Diagnosis::count(),
+                    'avg_conf'    => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score'), 1),
+                    'crop_total'  => Diagnosis::where('type', 'crop')->count(),
+                    'live_total'  => Diagnosis::where('type', 'livestock')->count(),
+                    'soil_total'  => Diagnosis::where('type', 'soil')->count(),
+                    'top_diseases'=> Diagnosis::select('disease_name', DB::raw('count(*) as cnt'))
+                                        ->whereNotNull('disease_name')
+                                        ->where('disease_name', '!=', 'Pending Expert Review')
+                                        ->where('created_at', '>=', now()->subDays(30))
+                                        ->groupBy('disease_name')
+                                        ->orderByDesc('cnt')
+                                        ->take(6)
+                                        ->get(),
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::warning('[CEO] aiStats failed: ' . $e->getMessage());
+            $aiStats = ['today'=>0,'this_month'=>0,'total'=>0,'avg_conf'=>0,'crop_total'=>0,'live_total'=>0,'soil_total'=>0,'top_diseases'=>collect()];
+        }
+
+        // ── Consultation Detail Stats ──────────────────────────────
+        try {
+            $consultStats = [
+                'pending'     => Consultation::where('status', 'pending')->count(),
+                'in_progress' => Consultation::where('status', 'in-progress')->count(),
+                'completed'   => Consultation::where('status', 'completed')->count(),
+                'avg_hours'   => round((float) Consultation::whereNotNull('completed_at')
+                                    ->selectRaw('AVG(EXTRACT(EPOCH FROM (completed_at - created_at)) / 3600) as avg_h')
+                                    ->value('avg_h'), 1),
+            ];
+        } catch (\Exception $e) {
+            $consultStats = ['pending'=>$pendingConsults,'in_progress'=>0,'completed'=>0,'avg_hours'=>0];
+        }
+
+        // ── Logistics Stats ────────────────────────────────────────
+        try {
+            $logisticsStats = [
+                'pending_dispatch' => Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count(),
+                'riders_available' => User::where('role', 'rider')->where('rider_status', 'available')->count(),
+                'riders_busy'      => User::where('role', 'rider')->where('rider_status', 'busy')->count(),
+                'in_transit'       => Order::where('rider_status', 'in_transit')->count(),
+                'delivered'        => Order::where('status', 'delivered')->count(),
+            ];
+        } catch (\Exception $e) {
+            $logisticsStats = ['pending_dispatch'=>0,'riders_available'=>0,'riders_busy'=>0,'in_transit'=>0,'delivered'=>0];
+        }
+
+        // ── Granular Revenue (Payment model) ──────────────────────
+        try {
+            $payRevenue = Cache::remember('ceo:pay_revenue', 120, function () {
+                return [
+                    'today' => Payment::successful()->whereDate('paid_at', today())->sum('amount'),
+                    'week'  => Payment::successful()->where('paid_at', '>=', now()->startOfWeek())->sum('amount'),
+                    'month' => Payment::successful()->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)->sum('amount'),
+                    'year'  => Payment::successful()->whereYear('paid_at', now()->year)->sum('amount'),
+                    'total' => Payment::successful()->sum('amount'),
+                ];
+            });
+        } catch (\Exception $e) {
+            $payRevenue = ['today'=>0,'week'=>0,'month'=>0,'year'=>0,'total'=>0];
+        }
+
+        // ── MRR / ARR / Churn / Conversion ────────────────────────
+        try {
+            $plans = config('subscription.plans', []);
+            $activeSubsByPlan = Subscription::where('status', 'active')
+                ->select('plan', DB::raw('count(*) as cnt'))
+                ->groupBy('plan')
+                ->pluck('cnt', 'plan');
+
+            $mrr = 0;
+            foreach ($plans as $key => $plan) {
+                $mrr += (($plan['price']['monthly'] ?? 0) * ($activeSubsByPlan[$key] ?? 0));
+            }
+            $arr = $mrr * 12;
+
+            $expiredThisMonth    = Subscription::whereIn('status', ['expired','cancelled'])
+                ->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->count();
+            $activeStartOfMonth  = Subscription::where('status', 'active')
+                ->where('created_at', '<', now()->startOfMonth())->count();
+            $churnRate           = $activeStartOfMonth > 0
+                ? round(($expiredThisMonth / $activeStartOfMonth) * 100, 1) : 0;
+
+            $totalSubs           = Subscription::whereIn('status', ['active','trial','expired','cancelled'])->count();
+            $activeSubs          = Subscription::where('status', 'active')->count();
+            $conversionRate      = $totalSubs > 0 ? round(($activeSubs / $totalSubs) * 100, 1) : 0;
+        } catch (\Exception $e) {
+            Log::warning('[CEO] MRR/churn calc failed: ' . $e->getMessage());
+            $mrr = $arr = 0;
+            $churnRate = $conversionRate = 0;
+        }
+
+        // ── User Registration Breakdown ────────────────────────────
+        try {
+            $newUsersToday = User::whereDate('created_at', today())->count();
+            $newUsersWeek  = User::where('created_at', '>=', now()->startOfWeek())->count();
+            $verifiedUsers = User::where('is_verified', true)->count();
+            $verifyRate    = $totalUsers > 0 ? round(($verifiedUsers / $totalUsers) * 100) : 0;
+        } catch (\Exception $e) {
+            $newUsersToday = $newUsersWeek = $verifiedUsers = $verifyRate = 0;
+        }
+
         return view('ceo.dashboard', compact(
             'totalUsers','activeUsers','pendingExperts',
             'totalAnimals','totalDiagnoses','pendingConsults',
@@ -242,7 +382,15 @@ class CEOController extends Controller
             'marketItems','pendingListings','diseaseAlerts',
             'monthlyGrowth','cropDiagnoses','livestockDiagnoses',
             'stateActivity','platformHealth','resolutionRate','activePct',
-            'subStats'
+            'subStats',
+            // New metrics
+            'orderStats','topProducts',
+            'aiStats',
+            'consultStats',
+            'logisticsStats',
+            'payRevenue',
+            'mrr','arr','churnRate','conversionRate',
+            'newUsersToday','newUsersWeek','verifiedUsers','verifyRate'
         ));
     }
 
