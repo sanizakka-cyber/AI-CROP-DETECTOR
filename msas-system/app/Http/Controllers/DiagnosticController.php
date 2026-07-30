@@ -244,6 +244,8 @@ class DiagnosticController extends Controller
             'image_thumbnail' => $thumbnail,
         ]));
 
+        \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
+
         $message = $aiResult
             ? 'Scan complete! Your full AI diagnosis is ready — view it below.'
             : 'Image saved. Our experts will review your scan and respond shortly.';

@@ -40,7 +40,7 @@ class WalletTransaction extends Model
             'pending'   => '<span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pending</span>',
             'failed'    => '<span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Failed</span>',
             'cancelled' => '<span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Cancelled</span>',
-            default     => $this->status,
+            default     => e($this->status),
         };
     }
 }

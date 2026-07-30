@@ -163,7 +163,8 @@ class TwoFactorController extends Controller
     public function toggle(Request $request)
     {
         $user = auth()->user();
-        $user->update(['two_factor_enabled' => ! $user->two_factor_enabled]);
+        $user->two_factor_enabled = ! $user->two_factor_enabled;
+        $user->saveQuietly();
         $state = $user->two_factor_enabled ? 'enabled' : 'disabled';
         return back()->with('success', "Two-factor authentication {$state}.");
     }

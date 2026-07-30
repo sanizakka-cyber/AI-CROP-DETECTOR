@@ -395,14 +395,9 @@ return [
             'description' => 'Legacy plan — superseded by Premium Plan.',
             'highlights'  => [],
         ],
-    ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Professional Role Plans
-    |--------------------------------------------------------------------------
-    */
-    'professional_starter' => [
+        // Professional role plans (dealers, vets, agronomists, etc.)
+        'professional_starter' => [
         'name'        => 'Professional Starter',
         'plan_level'  => 1,
         'badge_color' => '#1FA84A',
@@ -458,6 +453,8 @@ return [
             '24/7 priority support',
         ],
     ],
+
+    ], // end 'plans'
 
     /*
     |--------------------------------------------------------------------------

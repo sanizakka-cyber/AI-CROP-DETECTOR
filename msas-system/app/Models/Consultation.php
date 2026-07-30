@@ -28,6 +28,9 @@ class Consultation extends Model
         'completed_at',
         'priority',
         'video_room_id',
+        'consultant_status',
+        'consultant_accepted_at',
+        'consultant_decline_reason',
     ];
 
     public function farmer()

@@ -36,7 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Exclude payment webhooks from CSRF (they're verified by HMAC signature instead)
         $middleware->validateCsrfTokens(except: [
             'webhooks/paystack',
-            'webhooks/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

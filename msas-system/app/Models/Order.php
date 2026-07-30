@@ -24,14 +24,16 @@ class Order extends Model
         'delivery_fee', 'dealer_credited', 'rider_credited',
         // delivery
         'proof_of_delivery',
+        // logistics (third-party provider integration)
+        'logistics_provider_id', 'shipped_at', 'tracking_ref',
     ];
 
     protected $casts = [
-        'subtotal'            => 'float',
-        'discount'            => 'float',
-        'tax'                 => 'float',
-        'total'               => 'float',
-        'payout_amount'       => 'float',
+        'subtotal'            => 'decimal:2',
+        'discount'            => 'decimal:2',
+        'tax'                 => 'decimal:2',
+        'total'               => 'decimal:2',
+        'payout_amount'       => 'decimal:2',
         'confirmed_at'        => 'datetime',
         'delivered_at'        => 'datetime',
         'payout_requested_at' => 'datetime',
@@ -42,7 +44,7 @@ class Order extends Model
         'completed_at'        => 'datetime',
         'returned_at'         => 'datetime',
         'buyer_confirmed_at'  => 'datetime',
-        'delivery_fee'        => 'float',
+        'delivery_fee'        => 'decimal:2',
         'dealer_credited'     => 'boolean',
         'rider_credited'      => 'boolean',
     ];

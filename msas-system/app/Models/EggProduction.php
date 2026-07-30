@@ -20,4 +20,9 @@ class EggProduction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function poultryRecord()
+    {
+        return $this->belongsTo(PoultryRecord::class, 'poultry_record_id');
+    }
 }
