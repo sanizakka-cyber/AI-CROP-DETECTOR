@@ -223,7 +223,7 @@
         @php
             $guestLocale  = app()->getLocale();
             $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
-            $guestFlags   = ['en'=>'🇬🇧','ha'=>'🟢','yo'=>'🟡','ig'=>'🔵','ff'=>'🔴'];
+            $guestFlags   = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬'];
         @endphp
         <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
             <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"
@@ -242,7 +242,7 @@
                  x-cloak
                  style="display:none;position:absolute;right:0;top:36px;width:160px;background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #e2e8f0;z-index:100;overflow:hidden;padding:4px 0;">
                 @foreach($guestLocales as $code => $name)
-                <form method="POST" action="{{ route('locale.set') }}">
+                <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">
                     @csrf
                     <input type="hidden" name="locale" value="{{ $code }}">
                     <button type="submit" @click="open=false"
