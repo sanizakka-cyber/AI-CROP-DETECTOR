@@ -66,7 +66,7 @@ class OtpVerificationController extends Controller
         }
 
         try {
-            $this->otp->verify($identifier, $context, $request->code);
+            $this->otp->verify($identifier, $context, trim($request->code));
         } catch (OtpLockedException $e) {
             $this->auditOtpEvent('otp.locked', $userId, $context, $identifier);
             $this->sendLockoutEmail($userId, request()->ip());
