@@ -391,7 +391,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:16px;padding:10px 12px;background:#f0fdf4;border-radius:9px;border:1px solid #bbf7d0;">
                 <input type="checkbox" id="terms" required style="width:16px;height:16px;border-radius:4px;accent-color:#0F6B3E;cursor:pointer;margin-top:1px;flex-shrink:0;">
                 <label for="terms" style="font-size:12px;color:#475569;cursor:pointer;line-height:1.5;">
-                    I agree to the <a href="#" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Terms of Service</a> and <a href="#" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Privacy Policy</a>
+                    I agree to the <a href="{{ route('legal.terms') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Privacy Policy</a>
                 </label>
             </div>
 

@@ -26,19 +26,19 @@
         @if($role === 'admin')
             <!-- ADMIN DASHBOARD -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <a href="/admin/users" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('admin.users') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">👥</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="User Management">{{ __('User Management') }}</h3>
                 </a>
-                <a href="/admin/staff" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('admin.staff') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">🏢</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="Staff Records">{{ __('Staff Records') }}</h3>
                 </a>
-                <a href="/admin/settings" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('admin.settings') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">⚙️</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="System Settings">{{ __('System Settings') }}</h3>
                 </a>
-                <a href="/admin/reports" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('admin.reports') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">📊</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="System Reports">{{ __('System Reports') }}</h3>
                 </a>
@@ -90,50 +90,50 @@
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">📋</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="Health Reports">{{ __('Health Reports') }}</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('vet.disease-alerts') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">⚠️</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="Pending Cases">{{ __('Pending Cases') }}</h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
+                </a>
+                <a href="{{ route('vet.vaccinations') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-500 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3 group-hover:scale-110 transition">💉</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="Vaccinations">{{ __('Vaccinations') }}</h3>
-                </div>
+                </a>
             </div>
 
         @elseif($role === 'agronomist')
             <!-- AGRONOMIST DASHBOARD -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition cursor-pointer group flex items-center gap-4">
+                <a href="{{ route('vet.queue') }}" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition cursor-pointer group flex items-center gap-4">
                     <div class="text-5xl group-hover:scale-110 transition">🌾</div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-lg" data-i18n="Crop Support">{{ __('Crop Support') }}</h3>
                     </div>
-                </div>
+                </a>
                 <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition cursor-pointer group flex items-center gap-4">
                     <div class="text-5xl group-hover:scale-110 transition">📊</div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-lg" data-i18n="Farm Records">{{ __('Farm Records') }}</h3>
                     </div>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition cursor-pointer group flex items-center gap-4">
+                <a href="{{ route('vet.queue') }}" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition cursor-pointer group flex items-center gap-4">
                     <div class="text-5xl group-hover:scale-110 transition">💬</div>
                     <div>
                         <h3 class="font-bold text-slate-800 text-lg" data-i18n="Advisory Requests">{{ __('Advisory Requests') }}</h3>
                     </div>
-                </div>
+                </a>
             </div>
 
         @elseif($role === 'rider')
             <!-- RIDER DASHBOARD -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition text-center cursor-pointer group">
+                <a href="{{ route('rider.orders') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3">📦</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="My Deliveries">{{ __('My Deliveries') }}</h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition text-center cursor-pointer group">
+                </a>
+                <a href="{{ route('rider.orders') }}" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3">⏱️</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="Pending Dispatch">{{ __('Pending Dispatch') }}</h3>
-                </div>
+                </a>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:-translate-y-1 transition text-center cursor-pointer group">
                     <div class="text-4xl mb-3">💵</div>
                     <h3 class="font-bold text-slate-800 text-sm" data-i18n="My Earnings">{{ __('My Earnings') }}</h3>

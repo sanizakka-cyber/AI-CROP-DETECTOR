@@ -787,7 +787,7 @@
 <style>
 #msas-chat-btn{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,.45);z-index:9998;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
 #msas-chat-btn:hover{transform:scale(1.08);}
-#msas-chat-modal{position:fixed;bottom:92px;right:24px;width:min(360px,calc(100vw - 32px));background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:9999;display:none;flex-direction:column;max-height:520px;overflow:hidden;border:1px solid #e2e8f0;}
+#msas-chat-modal{position:fixed;bottom:160px;right:24px;width:min(360px,calc(100vw - 32px));background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:9999;display:none;flex-direction:column;max-height:520px;overflow:hidden;border:1px solid #e2e8f0;}
 #msas-chat-modal.open{display:flex;}
 #chat-header{background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 #chat-header-title{font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;}
@@ -879,7 +879,7 @@
 
 @auth
 {{-- ── Floating Feedback Button ─────────────────────────────────────────── --}}
-<div id="fb-widget" style="position:fixed;bottom:24px;right:24px;z-index:9999;">
+<div id="fb-widget" style="position:fixed;bottom:92px;right:24px;z-index:9999;">
     <button id="fb-btn" onclick="document.getElementById('fb-modal').classList.remove('hidden')"
         title="Send feedback"
         style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,0.45);display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform 0.2s;"
