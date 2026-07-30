@@ -432,6 +432,276 @@
         </div>
         @endif
 
+        {{-- ══════════════════════════════════════════════════════════
+             BUSINESS INTELLIGENCE — Live Metrics Expansion
+        ══════════════════════════════════════════════════════════ --}}
+
+        {{-- ── Revenue Intelligence (5 time bands) ── --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Revenue Intelligence
+                <span class="ml-auto text-xs text-gray-400 font-normal">Live payment data · updates every 2 min</span>
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                @php
+                $revBands = [
+                    ['label'=>"Today's Revenue",  'val'=>$payRevenue['today'],  'color'=>'#1FA84A', 'bg'=>'#f0fdf4'],
+                    ['label'=>'This Week',         'val'=>$payRevenue['week'],   'color'=>'#2D9CDB', 'bg'=>'#eff6ff'],
+                    ['label'=>'This Month',        'val'=>$payRevenue['month'],  'color'=>'#7C3AED', 'bg'=>'#f5f3ff'],
+                    ['label'=>'This Year',         'val'=>$payRevenue['year'],   'color'=>'#0B2447', 'bg'=>'#f0f4ff'],
+                    ['label'=>'All Time',          'val'=>$payRevenue['total'],  'color'=>'#0f172a', 'bg'=>'#f8fafc'],
+                ];
+                @endphp
+                @foreach($revBands as $rb)
+                <div style="background:{{ $rb['bg'] }};border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">{{ $rb['label'] }}</div>
+                    <div style="font-size:20px;font-weight:900;color:{{ $rb['color'] }};">₦{{ number_format($rb['val']) }}</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ── Business KPIs: MRR, ARR, Churn, Conversion ── --}}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            @php
+            $biKpis = [
+                ['label'=>'MRR',             'value'=>'₦'.number_format($mrr),          'sub'=>'Monthly Recurring Revenue', 'border'=>'border-l-emerald-500','num'=>'text-emerald-700'],
+                ['label'=>'ARR',             'value'=>'₦'.number_format($arr),           'sub'=>'Annual Recurring Revenue',  'border'=>'border-l-blue-500',   'num'=>'text-blue-700'],
+                ['label'=>'Churn Rate',      'value'=>$churnRate.'%',                    'sub'=>'Cancellations this month',  'border'=>'border-l-red-400',    'num'=>($churnRate>5?'text-red-600':'text-slate-700')],
+                ['label'=>'Conversion Rate', 'value'=>$conversionRate.'%',               'sub'=>'Trial → Active subscribers','border'=>'border-l-indigo-500', 'num'=>'text-indigo-700'],
+            ];
+            @endphp
+            @foreach($biKpis as $k)
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 border-l-4 {{ $k['border'] }} p-5">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">{{ $k['label'] }}</p>
+                <p class="text-3xl font-black {{ $k['num'] }} mt-1 leading-none">{{ $k['value'] }}</p>
+                <p class="text-xs text-gray-400 mt-1.5">{{ $k['sub'] }}</p>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- ── Marketplace & Orders ── --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+                <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    Marketplace & Orders
+                </h3>
+                <a href="{{ route('ceo.orders') }}" class="text-xs font-semibold text-indigo-600 hover:underline">Manage Orders →</a>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+                @php
+                $orderCols = [
+                    ['label'=>'Total',      'val'=>$orderStats['total'],     'color'=>'#0f172a'],
+                    ['label'=>'Pending',    'val'=>$orderStats['pending'],   'color'=>'#F4A300'],
+                    ['label'=>'Processing', 'val'=>$orderStats['processing'],'color'=>'#2D9CDB'],
+                    ['label'=>'Shipped',    'val'=>$orderStats['shipped'],   'color'=>'#7C3AED'],
+                    ['label'=>'Delivered',  'val'=>$orderStats['delivered'], 'color'=>'#1FA84A'],
+                    ['label'=>'Cancelled',  'val'=>$orderStats['cancelled'], 'color'=>'#dc2626'],
+                ];
+                @endphp
+                @foreach($orderCols as $oc)
+                <div style="background:#f8fafc;border-radius:10px;padding:12px 8px;text-align:center;border-top:3px solid {{ $oc['color'] }};">
+                    <div style="font-size:22px;font-weight:900;color:{{ $oc['color'] }};">{{ $oc['val'] }}</div>
+                    <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-top:2px;">{{ $oc['label'] }}</div>
+                </div>
+                @endforeach
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- GMV --}}
+                <div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Gross Merchandise Value</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div style="background:#f0fdf4;border-radius:10px;padding:14px;text-align:center;">
+                            <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;">GMV This Month</div>
+                            <div style="font-size:18px;font-weight:900;color:#1FA84A;">₦{{ number_format($orderStats['gmv_month']) }}</div>
+                        </div>
+                        <div style="background:#f8fafc;border-radius:10px;padding:14px;text-align:center;">
+                            <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;">Total GMV</div>
+                            <div style="font-size:18px;font-weight:900;color:#0f172a;">₦{{ number_format($orderStats['gmv']) }}</div>
+                        </div>
+                    </div>
+                </div>
+                {{-- Top Products --}}
+                <div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Products by Orders</div>
+                    @forelse($topProducts as $i => $prod)
+                    <div class="flex items-center justify-between py-2 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+                        <div class="flex items-center gap-2">
+                            <span style="width:20px;height:20px;border-radius:50%;background:#f1f5f9;font-size:10px;font-weight:800;color:#64748b;display:flex;align-items:center;justify-content:center;">{{ $loop->iteration }}</span>
+                            <span class="text-sm font-semibold text-gray-700">{{ Str::limit($prod->name, 28) }}</span>
+                        </div>
+                        <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">{{ $prod->order_count }} orders</span>
+                    </div>
+                    @empty
+                    <p class="text-sm text-gray-400 py-4 text-center">No orders yet</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        {{-- ── AI Smart Scan Analytics ── --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1"/></svg>
+                AI Smart Scan Analytics
+            </h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                @php
+                $aiCols = [
+                    ['label'=>'Scans Today',      'val'=>$aiStats['today'],      'color'=>'#1FA84A', 'bg'=>'#f0fdf4'],
+                    ['label'=>'Scans This Month', 'val'=>$aiStats['this_month'], 'color'=>'#2D9CDB', 'bg'=>'#eff6ff'],
+                    ['label'=>'Total Scans',      'val'=>$aiStats['total'],      'color'=>'#0f172a', 'bg'=>'#f8fafc'],
+                    ['label'=>'Avg Confidence',   'val'=>$aiStats['avg_conf'].'%','color'=>($aiStats['avg_conf']>=75?'#1FA84A':($aiStats['avg_conf']>=50?'#F4A300':'#dc2626')), 'bg'=>'#fff'],
+                ];
+                @endphp
+                @foreach($aiCols as $ac)
+                <div style="background:{{ $ac['bg'] }};border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">{{ $ac['label'] }}</div>
+                    <div style="font-size:26px;font-weight:900;color:{{ $ac['color'] }};">{{ $ac['val'] }}</div>
+                </div>
+                @endforeach
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- Scan type split --}}
+                <div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Scan Type Split</div>
+                    @php
+                    $scanTotal = max(1, $aiStats['crop_total'] + $aiStats['live_total'] + $aiStats['soil_total']);
+                    $scanTypes = [
+                        ['Crop',      $aiStats['crop_total'], '#1FA84A'],
+                        ['Livestock', $aiStats['live_total'], '#f59e0b'],
+                        ['Soil',      $aiStats['soil_total'], '#8b5cf6'],
+                    ];
+                    @endphp
+                    @foreach($scanTypes as [$stLabel, $stCnt, $stColor])
+                    @php $stPct = round($stCnt / $scanTotal * 100); @endphp
+                    <div class="mb-3">
+                        <div class="flex justify-between text-xs font-medium text-gray-600 mb-1">
+                            <span>{{ $stLabel }}</span>
+                            <span class="font-bold">{{ $stCnt }} <span class="text-gray-400">({{ $stPct }}%)</span></span>
+                        </div>
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width:{{ $stPct }}%;background:{{ $stColor }};"></div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                {{-- Top diseases (30 days) --}}
+                <div>
+                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Detected Diseases (30 days)</div>
+                    @forelse($aiStats['top_diseases'] as $td)
+                    <div class="flex items-center justify-between py-1.5 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+                        <span class="text-sm text-gray-700 font-medium">{{ Str::limit($td->disease_name, 32) }}</span>
+                        <span class="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">{{ $td->cnt }}</span>
+                    </div>
+                    @empty
+                    <p class="text-sm text-gray-400 py-4 text-center">No scan data yet</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Consultations + Logistics (2 columns) ── --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {{-- Consultations --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-800 mb-5 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    Expert Consultations
+                </h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    @php
+                    $cCols = [
+                        ['Pending',     $consultStats['pending'],     '#F4A300', '#fffbeb'],
+                        ['In Progress', $consultStats['in_progress'], '#2D9CDB', '#eff6ff'],
+                        ['Completed',   $consultStats['completed'],   '#1FA84A', '#f0fdf4'],
+                        ['Avg Response',(round($consultStats['avg_hours'] ?? 0, 1)).'h', '#7C3AED', '#f5f3ff'],
+                    ];
+                    @endphp
+                    @foreach($cCols as [$cl, $cv, $cc, $cbg])
+                    <div style="background:{{ $cbg }};border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px;">{{ $cl }}</div>
+                        <div style="font-size:24px;font-weight:900;color:{{ $cc }};">{{ $cv }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                @php $cTotal = max(1, $consultStats['pending'] + $consultStats['in_progress'] + $consultStats['completed']); @endphp
+                @foreach([['Pending',$consultStats['pending'],'#F4A300'],['In Progress',$consultStats['in_progress'],'#2D9CDB'],['Completed',$consultStats['completed'],'#1FA84A']] as [$rl,$rv,$rc])
+                @php $rp = round($rv / $cTotal * 100); @endphp
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs font-medium text-gray-600 mb-0.5"><span>{{ $rl }}</span><span class="font-bold">{{ $rv }}</span></div>
+                    <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:{{ $rp }}%;background:{{ $rc }};"></div></div>
+                </div>
+                @endforeach
+            </div>
+
+            {{-- Logistics --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-800 mb-5 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    Logistics & Delivery
+                </h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    @php
+                    $lCols = [
+                        ['Pending Dispatch',   $logisticsStats['pending_dispatch'], '#F4A300', '#fffbeb'],
+                        ['Riders Available',   $logisticsStats['riders_available'], '#1FA84A', '#f0fdf4'],
+                        ['In Transit',         $logisticsStats['in_transit'],       '#2D9CDB', '#eff6ff'],
+                        ['Delivered',          $logisticsStats['delivered'],         '#0f172a', '#f8fafc'],
+                    ];
+                    @endphp
+                    @foreach($lCols as [$ll, $lv, $lc, $lbg])
+                    <div style="background:{{ $lbg }};border-radius:10px;padding:14px;text-align:center;">
+                        <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:4px;">{{ $ll }}</div>
+                        <div style="font-size:24px;font-weight:900;color:{{ $lc }};">{{ $lv }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">Riders on duty</span>
+                        <span class="font-bold text-gray-800">
+                            {{ $logisticsStats['riders_busy'] }} busy
+                            / {{ $logisticsStats['riders_available'] + $logisticsStats['riders_busy'] }} total
+                        </span>
+                    </div>
+                    <div class="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        @php $totalRiders = max(1, $logisticsStats['riders_available'] + $logisticsStats['riders_busy']); @endphp
+                        <div class="h-full bg-orange-400 rounded-full" style="width:{{ round($logisticsStats['riders_busy']/$totalRiders*100) }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">{{ round($logisticsStats['riders_busy']/$totalRiders*100) }}% of riders currently active</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- ── User Registration Analytics ── --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 mb-5 flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                User Registration & Verification
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                @php
+                $userRegCols = [
+                    ['New Today',      $newUsersToday, '#1FA84A', '#f0fdf4'],
+                    ['New This Week',  $newUsersWeek,  '#2D9CDB', '#eff6ff'],
+                    ['Total Users',    $totalUsers,    '#0f172a', '#f8fafc'],
+                    ['Verified',       $verifiedUsers, '#7C3AED', '#f5f3ff'],
+                    ['Verify Rate',    $verifyRate.'%',($verifyRate>=80?'#1FA84A':($verifyRate>=50?'#F4A300':'#dc2626')),'#fff'],
+                ];
+                @endphp
+                @foreach($userRegCols as [$ul, $uv, $uc, $ubg])
+                <div style="background:{{ $ubg }};border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;">
+                    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">{{ $ul }}</div>
+                    <div style="font-size:24px;font-weight:900;color:{{ $uc }};">{{ $uv }}</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
     </div>
 
     <script>
