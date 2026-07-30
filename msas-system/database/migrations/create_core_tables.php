@@ -22,16 +22,20 @@ return new class extends Migration {
         });
 
         // ── Vaccinations ───────────────────────────────────────────────────────
-        Schema::create('vaccinations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('animal_id')->constrained()->onDelete('cascade');
-            $table->string('vaccine_name');
-            $table->date('given_date');
-            $table->date('next_due')->nullable();
-            $table->string('given_by')->nullable();
-            $table->text('notes')->nullable();
-            $table->timestamps();
-        });
+        // Guard: 2026_07_28_500001 creates this table with the authoritative schema;
+        // skip here to avoid "table already exists" on fresh installs.
+        if (!Schema::hasTable('vaccinations')) {
+            Schema::create('vaccinations', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('animal_id')->constrained()->onDelete('cascade');
+                $table->string('vaccine_name');
+                $table->date('given_date');
+                $table->date('next_due')->nullable();
+                $table->string('given_by')->nullable();
+                $table->text('notes')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // ── Poultry Records ────────────────────────────────────────────────────
         Schema::create('poultry_records', function (Blueprint $table) {
