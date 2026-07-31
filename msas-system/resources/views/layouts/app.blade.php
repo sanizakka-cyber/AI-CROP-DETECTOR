@@ -602,6 +602,27 @@
                                 Settings
                             </a>
                         </div>
+                        {{-- Help & Feedback section --}}
+                        <div class="py-1 border-t border-slate-100">
+                            @php
+                            try {
+                                $__helpRoute = in_array(auth()->user()->role, ['ceo','admin'])
+                                    ? route('ceo.support')
+                                    : route('farmer.support.create');
+                            } catch (\Exception $__e) {
+                                $__helpRoute = '#';
+                            }
+                            @endphp
+                            <a href="{{ $__helpRoute }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Help & Support
+                            </a>
+                            <button type="button" onclick="openFeedbackModal()"
+                                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition text-left">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                                Send Feedback
+                            </button>
+                        </div>
                         <div class="p-2 border-t border-slate-100">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -881,15 +902,7 @@
 @endauth
 
 @auth
-{{-- ── Floating Feedback Button ─────────────────────────────────────────── --}}
-<div id="fb-widget" style="position:fixed;bottom:92px;right:24px;z-index:9999;">
-    <button id="fb-btn" onclick="openFeedbackModal()"
-        title="Send feedback"
-        style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,0.45);display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform 0.2s;"
-        onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-        💬
-    </button>
-</div>
+{{-- ── Feedback Modal (opened via Profile → Send Feedback) ──────────────── --}}
 <div id="fb-modal" class="hidden" onclick="if(event.target===this)closeFeedbackModal()"
      style="position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:flex-end;justify-content:flex-end;padding:24px;">
     <div style="background:#fff;border-radius:20px;padding:28px;width:360px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,0.2);">
