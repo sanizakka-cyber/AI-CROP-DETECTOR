@@ -994,5 +994,27 @@ function submitNps(score, btn) {
 @endif
 @endauth
 
+{{-- ── Sentry browser SDK (active when SENTRY_LARAVEL_DSN is set) ──────── --}}
+@if(config('sentry.dsn'))
+<script src="https://browser.sentry-cdn.com/8.36.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+Sentry.init({
+    dsn:               @json(config('sentry.dsn')),
+    environment:       @json(app()->environment()),
+    release:           @json(config('sentry.release', '1.0.0')),
+    tracesSampleRate:  {{ config('sentry.traces_sample_rate', 0.1) }},
+    @auth
+    initialScope: {
+        user: { id: @json(auth()->id()), role: @json(auth()->user()?->role) }
+    },
+    @endauth
+    ignoreErrors: [
+        'ResizeObserver loop limit exceeded',
+        'Non-Error promise rejection captured',
+    ],
+});
+</script>
+@endif
+
 </body>
 </html>
