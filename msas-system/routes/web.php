@@ -470,6 +470,19 @@ Route::middleware(['auth', 'role:admin,ceo,finance'])->prefix('admin/payouts')->
 });
 
 
+// ── TEMPORARY: Sentry connectivity test (CEO only) ─────────────────────────────
+// REMOVE THIS ENTIRE BLOCK AFTER SENTRY IS VERIFIED IN PRODUCTION
+Route::middleware(['auth', 'role:ceo'])->prefix('ceo')->name('ceo.')->group(function () {
+    Route::get('/sentry-test', function () {
+        return view('ceo.sentry-test');
+    })->name('sentry.test.form');
+
+    Route::post('/sentry-test', function () {
+        throw new \Exception('[MSAS FarmAI Sentry Test] Production exception capture verified — v1.0.0');
+    })->name('sentry.test')->middleware('throttle:3,1');
+});
+// ── END TEMPORARY ──────────────────────────────────────────────────────────────
+
 // HR Routes
 Route::middleware(['auth', 'role:hr,admin,ceo'])->prefix('hr')->name('hr.')->group(function () {
     Route::get('/dashboard',                              [HRController::class, 'dashboard'])->name('dashboard');
