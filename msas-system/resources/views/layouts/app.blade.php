@@ -903,8 +903,8 @@
 
 @auth
 {{-- ── Feedback Modal (opened via Profile → Send Feedback) ──────────────── --}}
-<div id="fb-modal" class="hidden" onclick="if(event.target===this)closeFeedbackModal()"
-     style="position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:flex-end;justify-content:flex-end;padding:24px;">
+<div id="fb-modal" onclick="if(event.target===this)closeFeedbackModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10000;align-items:flex-end;justify-content:flex-end;padding:24px;">
     <div style="background:#fff;border-radius:20px;padding:28px;width:360px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,0.2);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
             <div>
@@ -956,13 +956,12 @@
 function openFeedbackModal() {
     window.dispatchEvent(new CustomEvent('msas-close-overlays'));
     const modal = document.getElementById('fb-modal');
-    modal.classList.remove('hidden');
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 }
 function closeFeedbackModal() {
     const modal = document.getElementById('fb-modal');
-    modal.classList.add('hidden');
+    modal.style.display = 'none';
     document.body.style.overflow = '';
 }
 function fbSyncType(input) {
