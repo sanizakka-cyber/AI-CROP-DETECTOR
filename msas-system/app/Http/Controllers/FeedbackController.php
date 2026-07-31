@@ -12,18 +12,20 @@ class FeedbackController extends Controller
         $data = $request->validate([
             'type'    => 'required|in:general,bug,feature,praise',
             'rating'  => 'nullable|integer|min:1|max:5',
-            'message' => 'required|string|min:5|max:2000',
+            'message' => 'required|string|min:10|max:1000',
             'page'    => 'nullable|string|max:255',
         ]);
 
         $data['user_id'] = auth()->id();
 
-        Feedback::create($data);
+        $feedback = Feedback::create($data);
+
+        $ref = 'FB-' . now()->format('Ymd') . '-' . str_pad($feedback->id, 5, '0', STR_PAD_LEFT);
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Thank you for your feedback!']);
+            return response()->json(['message' => 'Thank you for your feedback!', 'ref' => $ref]);
         }
 
-        return back()->with('success', 'Thank you for your feedback!');
+        return back()->with('success', 'Thank you for your feedback! Reference: ' . $ref);
     }
 }

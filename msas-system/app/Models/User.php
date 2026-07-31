@@ -163,6 +163,9 @@ class User extends Authenticatable
             }
             return config('app.url').'/storage/'.$this->profile_photo;
         }
+        if ($this->role === 'ceo') {
+            return config('app.url').'/msas-logo.png';
+        }
         $name = $this->name ?: 'User';
         return 'https://ui-avatars.com/api/?name='.urlencode($name).'&background=0F6B3E&color=fff&bold=true&size=80';
     }

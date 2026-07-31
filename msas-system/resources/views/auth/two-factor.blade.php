@@ -31,10 +31,9 @@
             <div class="relative mt-0.5">
                 <input type="checkbox" name="trust_device" value="1"
                        class="sr-only peer">
-                <div class="w-5 h-5 rounded border-2 border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900
-                            peer-checked:bg-[#0F6B3E] peer-checked:border-[#0F6B3E]
-                            group-hover:border-[#0F6B3E] transition-colors flex items-center justify-center">
-                    <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                <div class="td-box w-5 h-5 rounded flex items-center justify-center transition-colors"
+                     style="border:2px solid #cbd5e1;background:#fff;">
+                    <svg class="td-tick w-3 h-3" style="display:none;color:#fff;" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                     </svg>
                 </div>
@@ -90,17 +89,16 @@
         const label = [...document.querySelectorAll('label')].find(l => l.textContent.includes('Trust this device'));
         if (!label) return;
         const checkbox = label.querySelector('input[type=checkbox]');
-        const box      = label.querySelector('div > div');
-        const tick     = label.querySelector('svg');
+        const box      = label.querySelector('.td-box');
+        const tick     = label.querySelector('.td-tick');
         if (!checkbox || !box || !tick) return;
-        // Listen on the checkbox itself — the browser toggles it automatically
-        // when the wrapping <label> is clicked, then fires 'change'. No manual
-        // toggle needed; adding one would double-toggle and cancel the click.
-        checkbox.addEventListener('change', function () {
-            box.classList.toggle('bg-[#0F6B3E]', this.checked);
-            box.classList.toggle('border-[#0F6B3E]', this.checked);
-            tick.classList.toggle('hidden', !this.checked);
-        });
+        function syncTd() {
+            box.style.background   = checkbox.checked ? '#0F6B3E' : '#fff';
+            box.style.borderColor  = checkbox.checked ? '#0F6B3E' : '#cbd5e1';
+            tick.style.display     = checkbox.checked ? 'block'   : 'none';
+        }
+        checkbox.addEventListener('change', syncTd);
+        syncTd();
     });
     </script>
 </x-guest-layout>
