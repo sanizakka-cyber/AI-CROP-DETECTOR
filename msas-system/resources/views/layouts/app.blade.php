@@ -84,7 +84,10 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="antialiased" x-data="{ sidebarOpen: true, notifOpen: false, profileOpen: false }">
+<body class="antialiased"
+      x-data="{ sidebarOpen: true, notifOpen: false, profileOpen: false, langOpen: false }"
+      @msas-close-overlays.window="notifOpen=false; profileOpen=false; langOpen=false"
+      @keydown.escape.window="notifOpen=false; profileOpen=false; langOpen=false">
 
 <div class="flex h-screen overflow-hidden">
 
@@ -478,12 +481,12 @@
                         $recentNotifs = collect();
                     }
                 @endphp
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="notif-btn" aria-label="Notifications" :aria-expanded="open.toString()">
+                <div class="relative">
+                    <button @click="notifOpen = !notifOpen; profileOpen = false; langOpen = false" class="notif-btn" aria-label="Notifications" :aria-expanded="notifOpen.toString()">
                         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                         @if($notifCount > 0)<span class="notif-badge">{{ $notifCount > 99 ? '99+' : $notifCount }}</span>@endif
                     </button>
-                    <div x-show="open" @click.outside="open=false" x-cloak
+                    <div x-show="notifOpen" @click.outside="notifOpen=false" x-cloak
                          class="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
                         <div class="p-4 border-b border-slate-100 flex items-center justify-between">
                             <span class="font-bold text-slate-800 text-sm">Notifications</span>
@@ -520,22 +523,22 @@
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="relative" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
+                <div class="relative" @click.outside="langOpen=false">
                     @php
                         $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
                         $cur = app()->getLocale();
                         $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
-                    <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true" aria-label="Select language"
+                    <button @click="langOpen = !langOpen; notifOpen = false; profileOpen = false" :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                             class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
                         <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
                         <span class="hidden sm:inline" data-locale-current="code">{{ strtoupper($cur) }}</span>
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
-                             :style="open ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
+                             :style="langOpen ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
                             <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    <div x-show="open" x-cloak
+                    <div x-show="langOpen" x-cloak
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
@@ -564,8 +567,8 @@
                 <div class="w-px h-6 bg-slate-200"></div>
 
                 <!-- Profile dropdown -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
+                <div class="relative">
+                    <button @click="profileOpen = !profileOpen; notifOpen = false; langOpen = false" class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
                         <img src="{{ auth()->user()->avatarUrl }}"
                              alt="" class="w-8 h-8 rounded-lg object-cover">
                         <div class="hidden sm:block text-left">
@@ -583,7 +586,7 @@
                         </div>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <div x-show="open" @click.outside="open=false" x-cloak
+                    <div x-show="profileOpen" @click.outside="profileOpen=false" x-cloak
                          class="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
                         <div class="p-4 border-b border-slate-100">
                             <div class="font-bold text-sm text-slate-800">{{ auth()->user()->name ?: auth()->user()->email }}</div>
@@ -880,21 +883,22 @@
 @auth
 {{-- ── Floating Feedback Button ─────────────────────────────────────────── --}}
 <div id="fb-widget" style="position:fixed;bottom:92px;right:24px;z-index:9999;">
-    <button id="fb-btn" onclick="document.getElementById('fb-modal').classList.remove('hidden')"
+    <button id="fb-btn" onclick="openFeedbackModal()"
         title="Send feedback"
         style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(15,107,62,0.45);display:flex;align-items:center;justify-content:center;font-size:20px;transition:transform 0.2s;"
         onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
         💬
     </button>
 </div>
-<div id="fb-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:flex-end;justify-content:flex-end;padding:24px;">
+<div id="fb-modal" class="hidden" onclick="if(event.target===this)closeFeedbackModal()"
+     style="position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:10000;display:flex;align-items:flex-end;justify-content:flex-end;padding:24px;">
     <div style="background:#fff;border-radius:20px;padding:28px;width:360px;max-width:calc(100vw - 48px);box-shadow:0 20px 60px rgba(0,0,0,0.2);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
             <div>
                 <div style="font-size:16px;font-weight:800;color:#0f172a;">Share Feedback</div>
                 <div style="font-size:12px;color:#64748b;margin-top:2px;">Help us improve MSAS FarmAI</div>
             </div>
-            <button onclick="document.getElementById('fb-modal').classList.add('hidden')" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">&times;</button>
+            <button onclick="closeFeedbackModal()" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">&times;</button>
         </div>
         <div id="fb-success" class="hidden" style="text-align:center;padding:24px 0;">
             <div style="font-size:40px;margin-bottom:12px;">🎉</div>
@@ -936,6 +940,18 @@
 </div>
 <style>@keyframes fb-spin{to{transform:rotate(360deg)}}</style>
 <script>
+function openFeedbackModal() {
+    window.dispatchEvent(new CustomEvent('msas-close-overlays'));
+    const modal = document.getElementById('fb-modal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closeFeedbackModal() {
+    const modal = document.getElementById('fb-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
 function fbSyncType(input) {
     document.querySelectorAll('.fb-type-label').forEach(l => {
         l.style.background   = l.contains(input) && input.checked ? '#f0fdf4' : '';
@@ -996,7 +1012,7 @@ function submitFeedback(e) {
             success.classList.remove('hidden');
             if (json.ref) document.getElementById('fb-ref').textContent = 'Reference ID: ' + json.ref;
             setTimeout(() => {
-                document.getElementById('fb-modal').classList.add('hidden');
+                closeFeedbackModal();
                 success.classList.add('hidden');
                 form.classList.remove('hidden');
                 form.reset();
@@ -1012,10 +1028,15 @@ function submitFeedback(e) {
             fbShowError(msg);
         });
 }
-// Highlight the pre-checked "General" radio on load
+// Highlight the pre-checked "General" radio on load; Escape closes modal
 document.addEventListener('DOMContentLoaded', function() {
     const checked = document.querySelector('#fb-form input[name=type]:checked');
     if (checked) fbSyncType(checked);
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('fb-modal') && !document.getElementById('fb-modal').classList.contains('hidden')) {
+        closeFeedbackModal();
+    }
 });
 </script>
 @endauth
