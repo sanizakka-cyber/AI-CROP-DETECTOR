@@ -878,6 +878,19 @@
             });
         }
 
+        // Auto-fetch translation on page load when a non-English locale is already selected.
+        // Without this, the hidden text stays in English even though the selector shows Hausa/Igbo/etc.
+        setTimeout(function() {
+            document.querySelectorAll('select[id$="-lang"]').forEach(function(sel) {
+                var lang = sel.value;
+                if (lang && lang !== 'en') {
+                    var ttsId = sel.id.replace(/-lang$/, '');
+                    var url   = sel.getAttribute('data-translate-url') || '';
+                    if (url) window.ttsChangeLang(ttsId, lang, url);
+                }
+            });
+        }, 600);
+
         window.ttsChangeLang = function(id, langCode, translateUrl) {
             // English — clear translation and revert to original text
             if (langCode === 'en') {
