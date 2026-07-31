@@ -296,7 +296,7 @@
                          x-transition:leave-end="opacity-0 scale-95"
                          style="display:none;transform-origin:top right"
                         class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
-                        @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yorùbá'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
+                        @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yorùbá'],['ig','🇳🇬','Igbo'],['ff','🇳🇬','Fulfulde'],['ar','🇸🇦','العربية']] as [$code,$flag,$name])
                         <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">@csrf<input type="hidden" name="locale" value="{{ $code }}">
                         <button type="submit" data-locale-code="{{ $code }}" @click="langOpen=false"
                             class="w-full text-left px-3 py-2 text-xs hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $loc === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">

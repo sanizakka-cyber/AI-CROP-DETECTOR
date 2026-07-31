@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -675,7 +675,7 @@
 {{-- ── Translations bundle + instant-switch engine ──────────────────── --}}
 @php
     $allTrans = [];
-    foreach (['en','ha','fr','yo','ig','ff'] as $_loc) {
+    foreach (['en','ha','fr','yo','ig','ff','ar'] as $_loc) {
         $p = lang_path($_loc.'.json');
         $allTrans[$_loc] = file_exists($p) ? json_decode(file_get_contents($p), true) : [];
     }
@@ -685,9 +685,9 @@
     window.MSAS_TRANS  = {!! json_encode($allTrans, JSON_HEX_TAG | JSON_HEX_AMP) !!};
     window.MSAS_LOCALE = '{{ app()->getLocale() }}';
 
-    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬', ff:'🇳🇬' };
-    var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo', ff:'Fulfulde' };
-    var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…', ff:'Binnditii hakkunde picce…' };
+    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬', ff:'🇳🇬', ar:'🇸🇦' };
+    var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo', ff:'Fulfulde', ar:'العربية' };
+    var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…', ff:'Binnditii hakkunde picce…', ar:'جارٍ تغيير اللغة...' };
 
     /* Apply translations to all [data-i18n] and [data-i18n-placeholder] elements */
     function applyLocale(locale) {

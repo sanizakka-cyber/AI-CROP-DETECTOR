@@ -222,8 +222,8 @@
         <!-- Language switcher (top-right of form panel) -->
         @php
             $guestLocale  = app()->getLocale();
-            $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde'];
-            $guestFlags   = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬'];
+            $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français','ar'=>'العربية'];
+            $guestFlags   = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷','ar'=>'🇸🇦'];
         @endphp
         <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
             <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"

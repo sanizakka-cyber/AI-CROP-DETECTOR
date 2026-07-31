@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 class LocaleController extends Controller
 {
-    private const ALLOWED = ['en', 'ha', 'yo', 'ig', 'fr', 'ff'];
+    private const ALLOWED = ['en', 'ha', 'yo', 'ig', 'fr', 'ff', 'ar'];
 
     public function set(Request $request)
     {
