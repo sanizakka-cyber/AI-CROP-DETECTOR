@@ -71,6 +71,9 @@ return Application::configure(basePath: dirname(__DIR__))
             };
 
             \Illuminate\Support\Facades\Log::error("[{$category}] Unhandled exception", $context);
+
+            // Persist to DB for the monitoring dashboard (non-blocking)
+            \App\Models\ErrorLog::capture($e, $category);
         });
 
         // Return standard JSON for all API errors (request path starts with /api)

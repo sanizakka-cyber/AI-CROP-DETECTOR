@@ -195,7 +195,7 @@
             </div>
         </div>
 
-        {{-- ── Charts Row 1: User Growth + Revenue ── --}}
+        {{-- ── Charts Row 1: User Growth + Revenue Toggle ── --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {{-- User Growth Line Chart --}}
@@ -212,18 +212,76 @@
                 </div>
             </div>
 
-            {{-- Revenue Bar Chart --}}
+            {{-- Revenue Time-Series Chart with toggle --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-bold text-gray-800">Revenue vs Expenses (6 Months)</h3>
-                    <div class="flex gap-3 text-xs font-semibold">
-                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500 inline-block"></span>Income</span>
-                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-400 inline-block"></span>Expenses</span>
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h3 class="font-bold text-gray-800">Revenue Trend</h3>
+                    <div style="display:flex;gap:4px;">
+                        @foreach(['daily'=>'14 Days','weekly'=>'8 Weeks','monthly'=>'12 Months'] as $period => $label)
+                        <button onclick="setRevPeriod('{{ $period }}')" id="rev-btn-{{ $period }}"
+                            style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;transition:all .15s;background:{{ $period==='monthly'?'#0F6B3E':'#fff' }};color:{{ $period==='monthly'?'#fff':'#64748b' }};">
+                            {{ $label }}
+                        </button>
+                        @endforeach
                     </div>
                 </div>
                 <div class="relative h-52">
-                    <canvas id="revenueChart"></canvas>
+                    <canvas id="revenueTimeChart"></canvas>
                 </div>
+            </div>
+        </div>
+
+        {{-- ── Charts Row 1b: Subscription Pie + Geographic Bar ── --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {{-- Subscription Plan Distribution Doughnut --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-800 mb-4">Subscription Distribution by Plan</h3>
+                <div class="flex items-center gap-8">
+                    <div class="relative" style="width:160px;height:160px;flex-shrink:0;">
+                        <canvas id="subPlanDonut"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-xl font-black text-gray-800">{{ array_sum($subStats['by_plan']) ?: $subStats['active'] }}</span>
+                            <span class="text-xs text-gray-400">Active</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        @php
+                        $planDefs = [
+                            'basic'           => ['#1FA84A','Basic'],
+                            'basic_pro'       => ['#0D9488','Basic Pro'],
+                            'premium'         => ['#2D9CDB','Premium'],
+                            'enterprise'      => ['#7C3AED','Enterprise'],
+                            'enterprise_plus' => ['#0B2447','Ent. Plus'],
+                            'pro'             => ['#64748b','Pro (Legacy)'],
+                        ];
+                        $subTotal = max(1, array_sum($subStats['by_plan']) ?: $subStats['active']);
+                        @endphp
+                        @foreach($planDefs as $pk => [$pc, $pn])
+                        @php $cnt = $subStats['by_plan'][$pk] ?? 0; @endphp
+                        @if($cnt > 0)
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="flex items-center gap-1.5 font-medium text-gray-700">
+                                <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0" style="background:{{ $pc }};"></span>
+                                {{ $pn }}
+                            </span>
+                            <span class="font-bold" style="color:{{ $pc }};">{{ $cnt }}</span>
+                        </div>
+                        @endif
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Geographic Distribution Bar Chart --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <h3 class="font-bold text-gray-800 mb-4">Top States — Users &amp; AI Scans</h3>
+                <div class="relative h-44">
+                    <canvas id="geoBarChart"></canvas>
+                </div>
+                @if($geoChart->isEmpty())
+                <p class="text-sm text-gray-400 text-center pt-2">No state data yet</p>
+                @endif
             </div>
         </div>
 
@@ -712,6 +770,8 @@
     }
     tick(); setInterval(tick, 1000);
 
+    const chartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
+
     // User Growth Chart
     new Chart(document.getElementById('userGrowthChart'), {
         type: 'line',
@@ -722,20 +782,40 @@
                 { label: 'Experts', data: {!! json_encode($monthlyGrowth->pluck('experts'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#3b82f6' },
             ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }
+        options: { ...chartOpts, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }
     });
 
-    // Revenue Chart
-    new Chart(document.getElementById('revenueChart'), {
+    // Revenue Time-Series Chart with toggle
+    const revData = {!! json_encode([
+        'daily'   => $revTimeSeries['daily']->values()->toArray(),
+        'weekly'  => $revTimeSeries['weekly']->values()->toArray(),
+        'monthly' => $revTimeSeries['monthly']->values()->toArray(),
+    ], JSON_HEX_TAG | JSON_HEX_AMP) !!};
+
+    let revChart;
+    function setRevPeriod(period) {
+        document.querySelectorAll('[id^="rev-btn-"]').forEach(b => {
+            const active = b.id === 'rev-btn-' + period;
+            b.style.background = active ? '#0F6B3E' : '#fff';
+            b.style.color      = active ? '#fff'    : '#64748b';
+        });
+        const pts = revData[period];
+        revChart.data.labels   = pts.map(p => p.label);
+        revChart.data.datasets[0].data = pts.map(p => p.value);
+        revChart.update();
+    }
+    revChart = new Chart(document.getElementById('revenueTimeChart'), {
         type: 'bar',
         data: {
-            labels: {!! json_encode($revenueChart->pluck('month'), JSON_HEX_TAG | JSON_HEX_AMP) !!},
-            datasets: [
-                { label: 'Income',   data: {!! json_encode($revenueChart->pluck('income'), JSON_HEX_TAG | JSON_HEX_AMP) !!},  backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
-                { label: 'Expenses', data: {!! json_encode($revenueChart->pluck('expense'), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: 'rgba(248,113,113,0.75)', borderRadius: 6 },
-            ]
+            labels: revData.monthly.map(p => p.label),
+            datasets: [{
+                label: 'Revenue',
+                data: revData.monthly.map(p => p.value),
+                backgroundColor: 'rgba(15,107,62,0.75)',
+                borderRadius: 5,
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }
+        options: { ...chartOpts, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => '₦' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) }, grid: { color: '#f1f5f9' } }, x: { ticks: { font: { size: 10 } }, grid: { display: false } } } }
     });
 
     // Diagnosis Donut
@@ -746,7 +826,50 @@
             labels: ['Crop', 'Livestock'],
             datasets: [{ data: [{{ $cropDiagnoses ?: ($total > 0 ? max(1,$total-1) : 1) }}, {{ $livestockDiagnoses ?: 1 }}], backgroundColor: ['#1FA84A','#f59e0b'], borderWidth: 0, hoverOffset: 6 }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } } } }
+        options: { ...chartOpts, cutout: '72%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } } } }
     });
+
+    // Subscription Plan Doughnut
+    @php
+    $spKeys    = array_keys($subStats['by_plan']);
+    $spVals    = array_values($subStats['by_plan']);
+    $planNames = ['basic'=>'Basic','basic_pro'=>'Basic Pro','premium'=>'Premium','enterprise'=>'Enterprise','enterprise_plus'=>'Ent. Plus','pro'=>'Pro'];
+    $planClrs  = ['basic'=>'#1FA84A','basic_pro'=>'#0D9488','premium'=>'#2D9CDB','enterprise'=>'#7C3AED','enterprise_plus'=>'#0B2447','pro'=>'#64748b'];
+    $spLabels  = array_map(fn($k) => $planNames[$k] ?? $k, $spKeys);
+    $spColors  = array_map(fn($k) => $planClrs[$k] ?? '#94a3b8', $spKeys);
+    @endphp
+    @if(!empty($spVals) && array_sum($spVals) > 0)
+    new Chart(document.getElementById('subPlanDonut'), {
+        type: 'doughnut',
+        data: {
+            labels: {!! json_encode($spLabels, JSON_HEX_TAG | JSON_HEX_AMP) !!},
+            datasets: [{ data: {!! json_encode($spVals, JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: {!! json_encode($spColors, JSON_HEX_TAG | JSON_HEX_AMP) !!}, borderWidth: 0, hoverOffset: 6 }]
+        },
+        options: { ...chartOpts, cutout: '68%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } } } }
+    });
+    @endif
+
+    // Geographic Bar Chart
+    @if($geoChart->isNotEmpty())
+    new Chart(document.getElementById('geoBarChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($geoChart->keys()->toArray(), JSON_HEX_TAG | JSON_HEX_AMP) !!},
+            datasets: [
+                { label: 'Users',   data: {!! json_encode($geoChart->pluck('users')->toArray(), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: 'rgba(15,107,62,0.75)', borderRadius: 4 },
+                { label: 'Scans',   data: {!! json_encode($geoChart->pluck('diagnoses')->toArray(), JSON_HEX_TAG | JSON_HEX_AMP) !!}, backgroundColor: 'rgba(45,156,219,0.7)', borderRadius: 4 },
+            ]
+        },
+        options: { ...chartOpts,
+            scales: {
+                x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: '#f1f5f9' } }
+            },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 10, usePointStyle: true } }
+            }
+        }
+    });
+    @endif
     </script>
 </x-app-layout>

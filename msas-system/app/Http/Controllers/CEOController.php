@@ -332,6 +332,74 @@ class CEOController extends Controller
             $payRevenue = ['today'=>0,'week'=>0,'month'=>0,'year'=>0,'total'=>0];
         }
 
+        // ── Revenue Time-Series (daily 14 days / weekly 8 weeks / monthly 12 mo) ─
+        try {
+            $revTimeSeries = Cache::remember('ceo:rev_timeseries', 120, function () {
+                // Daily: last 14 days
+                $dailyRaw = Payment::successful()
+                    ->where('paid_at', '>=', now()->subDays(13)->startOfDay())
+                    ->selectRaw("DATE(paid_at) as d, SUM(amount) as total")
+                    ->groupBy(DB::raw('DATE(paid_at)'))
+                    ->pluck('total', 'd');
+                $daily = collect(range(13, 0))->map(fn($i) => [
+                    'label' => now()->subDays($i)->format('M d'),
+                    'value' => (float) ($dailyRaw[now()->subDays($i)->format('Y-m-d')] ?? 0),
+                ]);
+
+                // Weekly: last 8 weeks
+                $weekly = collect(range(7, 0))->map(function ($i) {
+                    $start = now()->startOfWeek()->subWeeks($i);
+                    $end   = (clone $start)->endOfWeek();
+                    return [
+                        'label' => $start->format('M d'),
+                        'value' => (float) Payment::successful()->whereBetween('paid_at', [$start, $end])->sum('amount'),
+                    ];
+                });
+
+                // Monthly: last 12 months
+                $monthly = collect(range(11, 0))->map(function ($i) {
+                    $m = now()->subMonths($i);
+                    return [
+                        'label' => $m->format('M Y'),
+                        'value' => (float) Payment::successful()->whereYear('paid_at', $m->year)->whereMonth('paid_at', $m->month)->sum('amount'),
+                    ];
+                });
+
+                return compact('daily', 'weekly', 'monthly');
+            });
+        } catch (\Exception $e) {
+            Log::warning('[CEO] revTimeSeries failed: ' . $e->getMessage());
+            $revTimeSeries = [
+                'daily'   => collect(range(13,0))->map(fn($i) => ['label' => now()->subDays($i)->format('M d'), 'value' => 0]),
+                'weekly'  => collect(range(7,0))->map(fn($i) => ['label' => now()->subWeeks($i)->format('M d'), 'value' => 0]),
+                'monthly' => collect(range(11,0))->map(fn($i) => ['label' => now()->subMonths($i)->format('M Y'), 'value' => 0]),
+            ];
+        }
+
+        // ── Geographic: top 8 states — users + diagnoses ──────────
+        try {
+            $geoChart = Cache::remember('ceo:geo_chart', 300, function () {
+                $states = User::whereNotNull('state')
+                    ->select('state', DB::raw('count(*) as users'))
+                    ->groupBy('state')
+                    ->orderByDesc('users')
+                    ->take(8)
+                    ->pluck('users', 'state');
+
+                $diseaseCounts = Diagnosis::join('users', 'diagnoses.user_id', '=', 'users.id')
+                    ->whereIn('users.state', $states->keys()->toArray())
+                    ->select('users.state', DB::raw('count(*) as diagnoses'))
+                    ->groupBy('users.state')
+                    ->pluck('diagnoses', 'users.state');
+
+                return $states->mapWithKeys(fn($cnt, $state) => [
+                    $state => ['users' => $cnt, 'diagnoses' => (int)($diseaseCounts[$state] ?? 0)],
+                ]);
+            });
+        } catch (\Exception $e) {
+            $geoChart = collect();
+        }
+
         // ── MRR / ARR / Churn / Conversion ────────────────────────
         try {
             $plans = config('subscription.plans', []);
@@ -390,7 +458,8 @@ class CEOController extends Controller
             'logisticsStats',
             'payRevenue',
             'mrr','arr','churnRate','conversionRate',
-            'newUsersToday','newUsersWeek','verifiedUsers','verifyRate'
+            'newUsersToday','newUsersWeek','verifiedUsers','verifyRate',
+            'revTimeSeries','geoChart'
         ));
     }
 

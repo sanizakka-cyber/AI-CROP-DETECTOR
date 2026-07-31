@@ -73,6 +73,21 @@ class ComplianceController extends Controller
         return view('legal.terms');
     }
 
+    public function refund()
+    {
+        return view('legal.refund');
+    }
+
+    public function faq()
+    {
+        return view('legal.faq');
+    }
+
+    public function help()
+    {
+        return view('legal.help');
+    }
+
     // ── Privacy & Consent page (authenticated farmer) ─────────────────────────
 
     public function privacy()
