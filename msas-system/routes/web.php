@@ -195,6 +195,8 @@ Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->grou
     Route::get('/monitoring/health.json',             [\App\Http\Controllers\MonitoringController::class, 'healthJson'])   ->name('monitoring.health');
     Route::post('/monitoring/errors/{id}/resolve',    [\App\Http\Controllers\MonitoringController::class, 'resolveError']) ->name('monitoring.error.resolve');
     Route::get('/bi',                      [\App\Http\Controllers\BiController::class, 'index'])              ->name('bi');
+    Route::get('/health',                  [\App\Http\Controllers\SystemHealthController::class, 'index'])    ->name('health');
+    Route::get('/health/data',             [\App\Http\Controllers\SystemHealthController::class, 'data'])     ->name('health.data');
 });
 
 // ── CEO Pilot Program routes ──────────────────────────────────────────────────
