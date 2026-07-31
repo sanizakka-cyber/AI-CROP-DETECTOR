@@ -25,12 +25,17 @@ php artisan package:discover --ansi 2>/dev/null || true
 echo "==> Running migrations..."
 php artisan migrate --force
 
+# Clear all stale caches BEFORE rebuilding — ensures env var changes are picked up
+echo "==> Clearing stale caches..."
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+php artisan event:clear 2>/dev/null || true
+
 # Cache configuration, routes and views (runs as root; chown follows below)
 echo "==> Caching config, routes & views..."
 php artisan config:cache
-# Clear any stale route cache first so closure-route failures never leave
-# the app serving an outdated list of named routes
-php artisan route:clear
 php artisan route:cache  2>/dev/null || echo "Route cache skipped (closure routes present — routes resolved dynamically)"
 php artisan view:cache   2>/dev/null || echo "View cache skipped"
 

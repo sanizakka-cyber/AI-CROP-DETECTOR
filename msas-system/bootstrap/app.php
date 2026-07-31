@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust Render's HTTPS termination proxy so $request->isSecure() returns true,
+        // HSTS gets sent, and client IPs are read from X-Forwarded-For (not the proxy IP).
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role'                => \App\Http\Middleware\RoleMiddleware::class,
             'permission'          => \App\Http\Middleware\PermissionMiddleware::class,
