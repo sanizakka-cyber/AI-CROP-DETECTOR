@@ -163,11 +163,23 @@ class User extends Authenticatable
             }
             return config('app.url').'/storage/'.$this->profile_photo;
         }
-        if ($this->role === 'ceo') {
-            return config('app.url').'/msas-logo.png';
-        }
-        $name = $this->name ?: 'User';
-        return 'https://ui-avatars.com/api/?name='.urlencode($name).'&background=0F6B3E&color=fff&bold=true&size=80';
+
+        // Self-contained SVG initials — no external dependency, never produces a broken image
+        $name    = $this->name ?: 'User';
+        $words   = array_values(array_filter(explode(' ', trim($name))));
+        $initials = count($words) >= 2
+            ? strtoupper(substr($words[0], 0, 1) . substr($words[count($words) - 1], 0, 1))
+            : strtoupper(substr($name, 0, 2));
+
+        $bg  = $this->role === 'ceo' ? '#0B2447' : '#0F6B3E';
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'
+            . '<rect width="80" height="80" rx="12" fill="' . $bg . '"/>'
+            . '<text x="40" y="40" font-family="Arial,sans-serif" font-size="28" font-weight="700" '
+            . 'fill="#ffffff" text-anchor="middle" dominant-baseline="central">'
+            . htmlspecialchars($initials, ENT_XML1)
+            . '</text></svg>';
+
+        return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
     /** Generate a new API token, store its hash, return the plain text token. */
