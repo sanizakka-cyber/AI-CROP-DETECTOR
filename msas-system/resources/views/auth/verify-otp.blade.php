@@ -246,8 +246,17 @@ $serverExpiry = $expiresAt ?? null;
         });
 
         box.addEventListener('input', () => {
-            box.value = box.value.replace(/\D/g, '').slice(-1);
-            if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+            const raw = box.value.replace(/\D/g, '');
+            if (raw.length > 1) {
+                // Browser OTP autofill (Android Chrome) delivers all digits at once
+                raw.split('').slice(0, 6 - idx).forEach(function(ch, i) {
+                    if (boxes[idx + i]) boxes[idx + i].value = ch;
+                });
+                boxes[Math.min(idx + raw.length - 1, 5)].focus();
+            } else {
+                box.value = raw;
+                if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+            }
             updateHidden();
         });
 

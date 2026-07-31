@@ -53,10 +53,14 @@
     <div class="mt-4 text-center">
         <form method="POST" action="{{ route('2fa.resend') }}">
             @csrf
-            <button type="submit" class="text-sm text-green-700 dark:text-green-400 hover:underline font-semibold">
+            <button type="submit" id="tfa-resend-btn" disabled
+                    class="text-sm text-green-700 dark:text-green-400 hover:underline font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline">
                 Resend Code
             </button>
         </form>
+        <p id="tfa-resend-timer" class="text-xs text-slate-400 dark:text-gray-500 mt-1">
+            Available in <span id="tfa-resend-secs">30</span>s
+        </p>
         <form method="POST" action="{{ route('2fa.cancel') }}" style="display:inline;">
             @csrf
             <button type="submit" class="block mt-2 text-xs text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer p-0">Back to Login</button>
@@ -66,6 +70,23 @@
     {{-- Sync the custom visual checkbox with the hidden <input> state --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // 30-second resend cooldown — prevents rapid resends invalidating just-received code
+        const resendBtn   = document.getElementById('tfa-resend-btn');
+        const resendTimer = document.getElementById('tfa-resend-timer');
+        const resendSecs  = document.getElementById('tfa-resend-secs');
+        if (resendBtn) {
+            var countdown = 30;
+            var interval = setInterval(function() {
+                countdown--;
+                if (resendSecs) resendSecs.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    resendBtn.disabled = false;
+                    if (resendTimer) resendTimer.style.display = 'none';
+                }
+            }, 1000);
+        }
+
         const label = [...document.querySelectorAll('label')].find(l => l.textContent.includes('Trust this device'));
         if (!label) return;
         const checkbox = label.querySelector('input[type=checkbox]');
