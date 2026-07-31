@@ -4,9 +4,9 @@ return [
 
     'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
-    'environment' => env('APP_ENV', 'production'),
+    'environment' => env('SENTRY_ENVIRONMENT', env('APP_ENV', 'production')),
 
-    'release' => env('APP_VERSION', '1.0.0'),
+    'release' => env('SENTRY_RELEASE', env('APP_VERSION', '1.0.0-RC1')),
 
     'breadcrumbs' => [
         'logs'                 => true,
@@ -51,5 +51,5 @@ return [
         '/ping',
     ],
 
-    'send_default_pii' => false,  // never send PII to Sentry without explicit user consent
+    'send_default_pii' => (bool) env('SENTRY_SEND_DEFAULT_PII', false),
 ];
