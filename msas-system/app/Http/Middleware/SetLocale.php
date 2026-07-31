@@ -17,7 +17,7 @@ class SetLocale
         }
         $locale = $locale ?: config('app.locale', 'en');
 
-        $allowed = ['en', 'ha', 'yo', 'ig', 'fr', 'ff'];
+        $allowed = ['en', 'ha', 'yo', 'ig', 'fr', 'ff', 'ar'];
         if (!in_array($locale, $allowed)) $locale = 'en';
 
         app()->setLocale($locale);

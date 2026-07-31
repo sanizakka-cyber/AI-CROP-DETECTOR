@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -99,7 +100,7 @@ class ProfileController extends Controller
     public function changePassword(Request $request): RedirectResponse
     {
         $rules = [
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password'              => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'password_confirmation' => ['required'],
         ];
 
