@@ -896,65 +896,127 @@
             </div>
             <button onclick="document.getElementById('fb-modal').classList.add('hidden')" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">&times;</button>
         </div>
-        <div id="fb-success" class="hidden" style="text-align:center;padding:20px 0;">
-            <div style="font-size:36px;margin-bottom:10px;">🎉</div>
-            <div style="font-weight:800;color:#0F6B3E;font-size:15px;">Thank you!</div>
-            <div style="font-size:13px;color:#64748b;margin-top:4px;">Your feedback has been received.</div>
+        <div id="fb-success" class="hidden" style="text-align:center;padding:24px 0;">
+            <div style="font-size:40px;margin-bottom:12px;">🎉</div>
+            <div style="font-weight:800;color:#0F6B3E;font-size:16px;">Feedback Submitted Successfully</div>
+            <div style="font-size:13px;color:#64748b;margin-top:6px;">Thank you for helping improve MSAS FarmAI.</div>
+            <div id="fb-ref" style="margin-top:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#166534;letter-spacing:0.05em;"></div>
         </div>
+        <div id="fb-error" class="hidden" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#dc2626;font-weight:600;"></div>
         <form id="fb-form" onsubmit="submitFeedback(event)">
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
                 @foreach(['general'=>'General','bug'=>'Bug Report','feature'=>'Feature Request','praise'=>'Praise 🎉'] as $val=>$label)
                 <label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;font-size:12px;font-weight:600;color:#475569;transition:background 0.15s;" class="fb-type-label">
-                    <input type="radio" name="type" value="{{ $val }}" {{ $val==='general'?'checked':'' }} style="accent-color:#0F6B3E;"> {{ $label }}
+                    <input type="radio" name="type" value="{{ $val }}" {{ $val==='general'?'checked':'' }} style="accent-color:#0F6B3E;" onchange="fbSyncType(this)"> {{ $label }}
                 </label>
                 @endforeach
             </div>
             <div style="display:flex;gap:6px;margin-bottom:14px;">
                 @for($i=1;$i<=5;$i++)
                 <button type="button" onclick="setRating({{ $i }})" data-rating="{{ $i }}"
-                    style="flex:1;padding:6px 0;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:18px;cursor:pointer;transition:all 0.15s;"
+                    style="flex:1;padding:6px 0;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:18px;cursor:pointer;transition:all 0.15s;"
                     class="fb-star">{{ $i <= 3 ? ($i==1?'😟':($i==2?'😐':'🙂')) : ($i==4?'😊':'🤩') }}</button>
                 @endfor
                 <input type="hidden" name="rating" id="fb-rating">
             </div>
-            <textarea name="message" rows="3" required placeholder="Tell us what you think..." maxlength="2000"
-                style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;resize:none;box-sizing:border-box;font-family:inherit;outline:none;"></textarea>
+            <div style="position:relative;">
+                <textarea id="fb-msg" name="message" rows="3" placeholder="Tell us what you think... (min 10 characters)" maxlength="1000"
+                    oninput="fbCountChars(this)"
+                    style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;resize:none;box-sizing:border-box;font-family:inherit;outline:none;"></textarea>
+                <div id="fb-chars" style="text-align:right;font-size:11px;color:#94a3b8;margin-top:3px;">0 / 1000</div>
+            </div>
             <input type="hidden" name="page" value="{{ url()->current() }}">
-            <button type="submit" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;">
-                Send Feedback
+            <button id="fb-submit" type="submit" style="width:100%;margin-top:12px;background:linear-gradient(135deg,#0F6B3E,#1FA84A);color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span id="fb-submit-text">Send Feedback</span>
+                <svg id="fb-spinner" class="hidden" style="display:none;width:16px;height:16px;animation:fb-spin 0.8s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 010 20" stroke-opacity="1"/></svg>
             </button>
         </form>
     </div>
 </div>
+<style>@keyframes fb-spin{to{transform:rotate(360deg)}}</style>
 <script>
+function fbSyncType(input) {
+    document.querySelectorAll('.fb-type-label').forEach(l => {
+        l.style.background   = l.contains(input) && input.checked ? '#f0fdf4' : '';
+        l.style.borderColor  = l.contains(input) && input.checked ? '#0F6B3E' : '#e2e8f0';
+        l.style.color        = l.contains(input) && input.checked ? '#0F6B3E' : '#475569';
+    });
+}
+function fbCountChars(ta) {
+    const n = ta.value.length;
+    const el = document.getElementById('fb-chars');
+    el.textContent = n + ' / 1000';
+    el.style.color = n < 10 ? '#ef4444' : n > 900 ? '#f59e0b' : '#94a3b8';
+}
 function setRating(n) {
     document.getElementById('fb-rating').value = n;
     document.querySelectorAll('.fb-star').forEach((b,i) => {
-        b.style.background  = i < n ? '#f0fdf4' : '#f8fafc';
-        b.style.borderColor = i < n ? '#0F6B3E' : '#e2e8f0';
+        b.style.background   = i < n ? '#f0fdf4' : '#f8fafc';
+        b.style.borderColor  = i < n ? '#0F6B3E' : '#e2e8f0';
+        b.style.transform    = i === n-1 ? 'scale(1.15)' : 'scale(1)';
+        b.style.boxShadow    = i === n-1 ? '0 0 0 2px #0F6B3E' : 'none';
     });
+}
+function fbShowError(msg) {
+    const el = document.getElementById('fb-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    el.style.display = 'block';
+}
+function fbHideError() {
+    const el = document.getElementById('fb-error');
+    el.classList.add('hidden');
+    el.style.display = 'none';
+}
+function fbSetLoading(on) {
+    const btn  = document.getElementById('fb-submit');
+    const txt  = document.getElementById('fb-submit-text');
+    const spin = document.getElementById('fb-spinner');
+    btn.disabled      = on;
+    btn.style.opacity = on ? '0.75' : '1';
+    txt.textContent   = on ? 'Sending…' : 'Send Feedback';
+    spin.style.display = on ? 'block' : 'none';
 }
 function submitFeedback(e) {
     e.preventDefault();
+    fbHideError();
     const form = e.target;
+    const msg  = document.getElementById('fb-msg').value.trim();
+    if (msg.length < 10) { fbShowError('Please enter at least 10 characters.'); return; }
     const data = new FormData(form);
+    fbSetLoading(true);
     fetch('{{ route('feedback.store') }}', {method:'POST', body:data, headers:{'Accept':'application/json','X-CSRF-TOKEN':data.get('_token')}})
-        .then(r => r.json())
-        .then(() => {
+        .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
+        .then(json => {
+            fbSetLoading(false);
             form.classList.add('hidden');
-            document.getElementById('fb-success').classList.remove('hidden');
+            document.getElementById('fb-error').style.display = 'none';
+            const success = document.getElementById('fb-success');
+            success.classList.remove('hidden');
+            if (json.ref) document.getElementById('fb-ref').textContent = 'Reference ID: ' + json.ref;
             setTimeout(() => {
                 document.getElementById('fb-modal').classList.add('hidden');
-                document.getElementById('fb-success').classList.add('hidden');
+                success.classList.add('hidden');
                 form.classList.remove('hidden');
                 form.reset();
                 document.getElementById('fb-rating').value = '';
-                document.querySelectorAll('.fb-star').forEach(b => { b.style.background='#f8fafc'; b.style.borderColor='#e2e8f0'; });
-            }, 2800);
+                document.getElementById('fb-chars').textContent = '0 / 1000';
+                document.querySelectorAll('.fb-star').forEach(b => { b.style.background='#f8fafc'; b.style.borderColor='#e2e8f0'; b.style.transform='scale(1)'; b.style.boxShadow='none'; });
+                document.querySelectorAll('.fb-type-label').forEach(l => { l.style.background=''; l.style.borderColor='#e2e8f0'; l.style.color='#475569'; });
+            }, 3500);
         })
-        .catch(() => alert('Failed to send. Please try again.'));
+        .catch(err => {
+            fbSetLoading(false);
+            const msg = err?.errors?.message?.[0] || err?.message || 'Failed to send. Please try again.';
+            fbShowError(msg);
+        });
 }
+// Highlight the pre-checked "General" radio on load
+document.addEventListener('DOMContentLoaded', function() {
+    const checked = document.querySelector('#fb-form input[name=type]:checked');
+    if (checked) fbSyncType(checked);
+});
 </script>
 @endauth
 
