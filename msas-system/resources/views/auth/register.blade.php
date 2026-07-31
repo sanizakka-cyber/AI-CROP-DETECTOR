@@ -78,19 +78,19 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <div class="reg-step-circle" :class="step > 1 ? 'done' : step === 1 ? 'active' : 'inactive'">
                 <span x-show="step > 1">✓</span><span x-show="step <= 1">1</span>
             </div>
-            <div class="reg-step-label" :class="step >= 1 ? 'active' : 'inactive'">Role</div>
+            <div class="reg-step-label" :class="step >= 1 ? 'active' : 'inactive'">{{ __('Role') }}</div>
         </div>
         <div class="reg-step-line" :class="step > 1 ? 'done' : ''"></div>
         <div class="reg-step">
             <div class="reg-step-circle" :class="step > 2 ? 'done' : step === 2 ? 'active' : 'inactive'">
                 <span x-show="step > 2">✓</span><span x-show="step <= 2">2</span>
             </div>
-            <div class="reg-step-label" :class="step >= 2 ? 'active' : 'inactive'">Details</div>
+            <div class="reg-step-label" :class="step >= 2 ? 'active' : 'inactive'">{{ __('Details') }}</div>
         </div>
         <div class="reg-step-line" :class="step > 2 ? 'done' : ''"></div>
         <div class="reg-step">
             <div class="reg-step-circle" :class="step === 3 ? 'active' : 'inactive'">3</div>
-            <div class="reg-step-label" :class="step === 3 ? 'active' : 'inactive'">Security</div>
+            <div class="reg-step-label" :class="step === 3 ? 'active' : 'inactive'">{{ __('Security') }}</div>
         </div>
     </div>
 
@@ -99,8 +99,8 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
     {{-- ════════════════════════════════════════ --}}
     <div x-show="step === 1" x-cloak>
         <div style="margin-bottom:16px;">
-            <h2 style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:800;color:#0f172a;margin:0 0 3px 0;">I am joining as…</h2>
-            <p style="font-size:12px;color:#64748b;margin:0;">Choose your role to get the right dashboard and tools.</p>
+            <h2 style="font-family:'Poppins',sans-serif;font-size:18px;font-weight:800;color:#0f172a;margin:0 0 3px 0;">{{ __('I am joining as…') }}</h2>
+            <p style="font-size:12px;color:#64748b;margin:0;">{{ __('Choose your role to get the right dashboard and tools.') }}</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;">
@@ -126,8 +126,8 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
                 @click="selectRole('{{ $rval }}', '{{ $rtitle }}')">
                 <span class="role-icon">{{ $icon }}</span>
                 <span>
-                    <span class="role-title">{{ $rtitle }}</span>
-                    <span class="role-desc">{{ $rdesc }}</span>
+                    <span class="role-title">{{ __($rtitle) }}</span>
+                    <span class="role-desc">{{ __($rdesc) }}</span>
                 </span>
             </button>
             @endforeach
@@ -137,12 +137,12 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             @click="nextFromStep1()"
             :disabled="!role"
             :style="!role ? 'opacity:.45;cursor:not-allowed;transform:none;filter:none' : ''">
-            Continue <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+            {{ __('Continue') }} <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
         </button>
 
         <div style="text-align:center;padding-top:14px;margin-top:12px;border-top:1px solid #f1f5f9;">
-            <span style="font-size:13px;color:#94a3b8;">Already have an account?</span>
-            <a href="{{ route('login') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;margin-left:5px;">Sign In</a>
+            <span style="font-size:13px;color:#94a3b8;">{{ __('Already have an account?') }}</span>
+            <a href="{{ route('login') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;margin-left:5px;">{{ __('Sign In') }}</a>
         </div>
     </div>
 
@@ -155,24 +155,24 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
             <button type="button" @click="step=1"
                 style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#64748b;background:#f1f5f9;border:none;border-radius:7px;padding:5px 10px;cursor:pointer;">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> Change
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> {{ __('Change') }}
             </button>
             <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#0F6B3E;" x-text="roleName"></span>
         </div>
 
-        <h2 style="font-family:'Poppins',sans-serif;font-size:17px;font-weight:800;color:#0f172a;margin:0 0 14px 0;">Your Details</h2>
+        <h2 style="font-family:'Poppins',sans-serif;font-size:17px;font-weight:800;color:#0f172a;margin:0 0 14px 0;">{{ __('Your Details') }}</h2>
 
         {{-- Name row --}}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
             <div>
-                <label class="fl">First Name *</label>
+                <label class="fl">{{ __('First Name') }} *</label>
                 <div style="position:relative;">
                     <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
                     <input id="s2_first_name" class="form-input" style="padding-left:32px;" type="text" placeholder="" value="{{ old('first_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                 </div>
             </div>
             <div>
-                <label class="fl">Last Name *</label>
+                <label class="fl">{{ __('Last Name') }} *</label>
                 <div style="position:relative;">
                     <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
                     <input id="s2_last_name" class="form-input" style="padding-left:32px;" type="text" placeholder="" value="{{ old('last_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
@@ -181,13 +181,13 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         </div>
 
         <div style="margin-bottom:10px;">
-            <label class="fl">Middle Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label>
+            <label class="fl">{{ __('Middle Name') }} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">{{ __('(optional)') }}</span></label>
             <input id="s2_middle_name" class="form-input" type="text" value="{{ old('middle_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
         </div>
 
         {{-- Single identifier field (email OR phone) --}}
         <div style="margin-bottom:10px;">
-            <label class="fl">Email Address or Phone Number *</label>
+            <label class="fl">{{ __('Email Address or Phone Number *') }}</label>
             <div style="position:relative;">
                 <div id="s2-id-icon" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;transition:opacity .2s;">
                     <svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -210,29 +210,29 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         <div style="padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #dcfce7;margin-bottom:14px;">
             <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;">
                 <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                Your Location
+                {{ __('Your Location') }}
             </div>
 
             <div style="margin-bottom:8px;">
-                <label class="fl" style="color:#374151;">Country *</label>
+                <label class="fl" style="color:#374151;">{{ __('Country *') }}</label>
                 <select id="ts-country" name="_country_ts" style="display:none;"></select>
             </div>
 
             <div style="margin-bottom:8px;" id="state-group">
-                <label class="fl" style="color:#374151;">State / Province *</label>
+                <label class="fl" style="color:#374151;">{{ __('State / Province *') }}</label>
                 <select id="ts-state" name="_state_ts" style="display:none;"></select>
                 <p id="state-hint" style="font-size:10px;color:#94a3b8;margin:3px 0 0 0;display:none;">Select a country first</p>
             </div>
 
             <div style="margin-bottom:8px;" id="lga-group">
-                <label class="fl" style="color:#374151;">Local Government Area</label>
+                <label class="fl" style="color:#374151;">{{ __('Local Government Area') }}</label>
                 <select id="ts-lga" name="_lga_ts" style="display:none;"></select>
                 <p id="lga-hint" style="font-size:10px;color:#94a3b8;margin:3px 0 0 0;display:none;">Select a state first</p>
             </div>
 
             <div>
-                <label class="fl" style="color:#374151;">Ward / Village <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label>
-                <input id="s2_ward" class="form-input" type="text" placeholder="Enter ward or village name" value="{{ $oldWard }}" style="background:#fff;">
+                <label class="fl" style="color:#374151;">{{ __('Ward / Village') }} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">{{ __('(optional)') }}</span></label>
+                <input id="s2_ward" class="form-input" type="text" placeholder="{{ __('Enter ward or village name') }}" value="{{ $oldWard }}" style="background:#fff;">
             </div>
         </div>
 
@@ -240,10 +240,10 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 
         <div style="display:flex;gap:8px;">
             <button type="button" class="btn-back" @click="step=1">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> Back
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> {{ __('Back') }}
             </button>
             <button type="button" class="btn-next" @click="nextFromStep2()">
-                Continue <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+                {{ __('Continue') }} <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
     </div>
@@ -264,12 +264,12 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
             <button type="button" @click="step=2"
                 style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#64748b;background:#f1f5f9;border:none;border-radius:7px;padding:5px 10px;cursor:pointer;">
-                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> Back
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg> {{ __('Back') }}
             </button>
             <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#0F6B3E;" x-text="roleName"></span>
         </div>
 
-        <h2 style="font-family:'Poppins',sans-serif;font-size:17px;font-weight:800;color:#0f172a;margin:0 0 14px 0;">Create Password</h2>
+        <h2 style="font-family:'Poppins',sans-serif;font-size:17px;font-weight:800;color:#0f172a;margin:0 0 14px 0;">{{ __('Create Password') }}</h2>
 
         <form method="POST" action="{{ route('register') }}" autocomplete="off" id="reg-form" enctype="multipart/form-data">
             @csrf
@@ -288,20 +288,20 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 
             {{-- Summary card --}}
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;">
-                <div style="font-weight:700;color:#374151;margin-bottom:6px;">Registration Summary</div>
+                <div style="font-weight:700;color:#374151;margin-bottom:6px;">{{ __('Registration Summary') }}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;color:#64748b;">
-                    <span>Name:</span><span style="color:#1e293b;font-weight:600;" x-text="step2.first_name + ' ' + step2.last_name"></span>
-                    <span>Contact:</span><span style="color:#1e293b;font-weight:600;word-break:break-all;" x-text="step2.identifier"></span>
-                    <span>Location:</span><span style="color:#1e293b;font-weight:600;" x-text="(step2.lga ? step2.lga + ', ' : '') + step2.state + (step2.country !== 'Nigeria' ? ', ' + step2.country : '')"></span>
+                    <span>{{ __('Name:') }}</span><span style="color:#1e293b;font-weight:600;" x-text="step2.first_name + ' ' + step2.last_name"></span>
+                    <span>{{ __('Contact:') }}</span><span style="color:#1e293b;font-weight:600;word-break:break-all;" x-text="step2.identifier"></span>
+                    <span>{{ __('Location:') }}</span><span style="color:#1e293b;font-weight:600;" x-text="(step2.lga ? step2.lga + ', ' : '') + step2.state + (step2.country !== 'Nigeria' ? ', ' + step2.country : '')"></span>
                 </div>
             </div>
 
             {{-- ── Documents (professional roles only) ── --}}
             <div x-show="!['farmer','general-user'].includes(role)" x-cloak style="margin-bottom:14px;">
                 <div style="padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:10px;">
-                    <p style="font-size:12px;font-weight:700;color:#1e40af;margin:0 0 2px;">Supporting Documents Required</p>
+                    <p style="font-size:12px;font-weight:700;color:#1e40af;margin:0 0 2px;">{{ __('Supporting Documents Required') }}</p>
                     <p style="font-size:11px;color:#3b82f6;margin:0;line-height:1.5;">
-                        Professional roles require verification documents before account activation. Upload PDFs or images (max 5MB each).
+                        {{ __('Professional roles require verification documents before account activation. Upload PDFs or images (max 5MB each).') }}
                     </p>
                 </div>
 
@@ -366,23 +366,23 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
                 <div>
-                    <label class="fl">Password *</label>
+                    <label class="fl">{{ __('Password *') }}</label>
                     <div style="position:relative;">
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
                         <input id="password" class="form-input {{ $errors->has('password') ? 'error' : '' }}" style="padding-left:32px;"
                             type="password" name="password" required autocomplete="new-password" readonly
-                            placeholder="Minimum 8 characters"
+                            placeholder="{{ __('Minimum 8 characters') }}"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                     </div>
                     @error('password')<div class="fe">{{ $message }}</div>@enderror
                 </div>
                 <div>
-                    <label class="fl">Confirm Password *</label>
+                    <label class="fl">{{ __('Confirm Password *') }}</label>
                     <div style="position:relative;">
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
                         <input id="password_confirmation" class="form-input" style="padding-left:32px;"
                             type="password" name="password_confirmation" required autocomplete="new-password" readonly
-                            placeholder="Re-enter your password"
+                            placeholder="{{ __('Re-enter your password') }}"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                     </div>
                 </div>
@@ -391,7 +391,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:16px;padding:10px 12px;background:#f0fdf4;border-radius:9px;border:1px solid #bbf7d0;">
                 <input type="checkbox" id="terms" required style="width:16px;height:16px;border-radius:4px;accent-color:#0F6B3E;cursor:pointer;margin-top:1px;flex-shrink:0;">
                 <label for="terms" style="font-size:12px;color:#475569;cursor:pointer;line-height:1.5;">
-                    I agree to the <a href="{{ route('legal.terms') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Terms of Service</a> and <a href="{{ route('legal.privacy') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">Privacy Policy</a>
+                    {{ __('I agree to the') }} <a href="{{ route('legal.terms') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">{{ __('Terms of Service') }}</a> and <a href="{{ route('legal.privacy') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">{{ __('Privacy Policy') }}</a>
                 </label>
             </div>
 
@@ -399,15 +399,15 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
                 <button type="submit" class="btn-primary">
                     <span style="display:flex;align-items:center;justify-content:center;gap:8px;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-                        <span x-text="['farmer','general-user'].includes(role) ? 'Create My Account' : 'Submit Application'">Create My Account</span>
+                        <span x-text="['farmer','general-user'].includes(role) ? createMyAccount : submitApplication">{{ __('Create My Account') }}</span>
                     </span>
                 </button>
             </div>
         </form>
 
         <div style="text-align:center;padding-top:12px;border-top:1px solid #f1f5f9;">
-            <span style="font-size:13px;color:#94a3b8;">Already have an account?</span>
-            <a href="{{ route('login') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;margin-left:5px;">Sign In</a>
+            <span style="font-size:13px;color:#94a3b8;">{{ __('Already have an account?') }}</span>
+            <a href="{{ route('login') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;margin-left:5px;">{{ __('Sign In') }}</a>
         </div>
     </div>
 
@@ -532,9 +532,11 @@ function onStateChange(val, silent) {
 
 function regWizard() {
     return {
-        step:     {{ $startStep }},
-        role:     '{{ $oldRole }}',
-        roleName: '',
+        step:            {{ $startStep }},
+        role:            '{{ $oldRole }}',
+        roleName:        '',
+        createMyAccount: @json(__('Create My Account')),
+        submitApplication: @json(__('Submit Application')),
         step2: {
             first_name:  '{{ old('first_name', '') }}',
             middle_name: '{{ old('middle_name', '') }}',
@@ -546,15 +548,22 @@ function regWizard() {
             ward:        '{{ $oldWard }}',
         },
 
-        roleMap: {
-            'farmer':'Farmer','vet':'Veterinarian','agronomist':'Agronomist',
-            'agro-dealer':'Agro Dealer','equipment-dealer':'Equipment Dealer',
-            'agribusiness-owner':'Agribusiness Owner','cooperative':'Cooperative',
-            'government-agency':'Government Agency','ngo':'NGO',
-            'research-institution':'Research Institution','input-supplier':'Input Supplier',
-            'logistics-provider':'Logistics Provider','investor':'Investor',
-            'general-user':'General User',
-        },
+        roleMap: @json([
+            'farmer'               => __('Farmer'),
+            'vet'                  => __('Veterinarian'),
+            'agronomist'           => __('Agronomist'),
+            'agro-dealer'          => __('Agro Dealer'),
+            'equipment-dealer'     => __('Equipment Dealer'),
+            'agribusiness-owner'   => __('Agribusiness Owner'),
+            'cooperative'          => __('Cooperative'),
+            'government-agency'    => __("Gov't Agency"),
+            'ngo'                  => __('NGO'),
+            'research-institution' => __('Research Inst.'),
+            'input-supplier'       => __('Input Supplier'),
+            'logistics-provider'   => __('Logistics'),
+            'investor'             => __('Investor'),
+            'general-user'         => __('General User'),
+        ]),
 
         init() {
             if (this.role && this.roleMap[this.role]) {

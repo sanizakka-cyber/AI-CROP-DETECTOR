@@ -1089,7 +1089,7 @@
                 <div id="faq-list">
                     @foreach([
                         ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
-                        ['Is the platform free to use?','Yes! Our Free Farmer plan is completely free and includes basic farm management, 3 AI scans per month, and marketplace access. Premium features are available from ₦2,500/month.'],
+                        ['Is the platform free to use?','MSAS FarmAI offers a 14-day free trial on any plan. Our Basic plan starts at ₦2,500/month and includes 15 AI scans per month, farm management, and marketplace access. Premium and Professional plans unlock more scans, consultations, and advanced tools.'],
                         ['Does it work without internet?','Yes. Our mobile app supports offline data collection. Once you reconnect, all data syncs automatically to the cloud.'],
                         ['How does the AI diagnostic work?','Simply upload a photo of your sick animal, diseased crop, or soil sample. Our AI engine identifies the condition and provides a treatment plan within seconds.'],
                         ['Can I consult a vet on the platform?','Yes. Farmers can request vet consultations via in-app chat (₦1,500), WhatsApp (₦2,500), or phone call (₦3,500). Vets respond within 2–4 hours.'],
