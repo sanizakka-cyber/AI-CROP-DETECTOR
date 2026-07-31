@@ -14,6 +14,12 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     pdo pdo_pgsql pgsql \
     mbstring zip gd exif pcntl bcmath opcache
 
+# ── Redis extension ───────────────────────────────────────────────────────────
+RUN apk add --no-cache --virtual .phpize-deps $PHPIZE_DEPS \
+ && pecl install redis \
+ && docker-php-ext-enable redis \
+ && apk del --no-cache .phpize-deps
+
 # ── PHP production tuning ─────────────────────────────────────────────────────
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
  && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/opcache.ini \
