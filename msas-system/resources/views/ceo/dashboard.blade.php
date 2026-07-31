@@ -763,10 +763,13 @@
     </div>
 
     <script>
-    // Live clock
+    // Live clock — always shows Africa/Lagos time, matching server-side now()
     function tick() {
-        const now = new Date();
-        document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-NG', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        document.getElementById('live-clock').textContent =
+            new Date().toLocaleTimeString('en-NG', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZone: 'Africa/Lagos'
+            });
     }
     tick(); setInterval(tick, 1000);
 
