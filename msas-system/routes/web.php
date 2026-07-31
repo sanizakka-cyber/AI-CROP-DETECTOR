@@ -152,7 +152,6 @@ Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::get('/ceo/users/{user}/edit', [CEOController::class, 'editUser'])->name('ceo.users.edit');
     Route::patch('/ceo/users/{user}',    [CEOController::class, 'updateUser'])->name('ceo.users.update');
     Route::post('/ceo/users/{user}/toggle',         [CEOController::class, 'toggleUser'])->name('ceo.users.toggle');
-    Route::delete('/ceo/users/{user}',              [CEOController::class, 'deleteUser'])->name('ceo.users.delete');
     Route::post('/ceo/users/{user}/approve-expert', [CEOController::class, 'approveExpert'])->name('ceo.users.approve-expert');
     Route::get('/ceo/reports', [CEOController::class, 'reports'])->name('ceo.reports');
     Route::get('/ceo/audit',   [CEOController::class, 'audit'])->name('ceo.audit');
@@ -311,6 +310,12 @@ Route::middleware(['auth', 'role:rider'])->prefix('rider')->name('rider.')->grou
     Route::post('/orders/{order}/transit',           [\App\Http\Controllers\RiderController::class, 'markInTransit'])->name('orders.transit');
     Route::post('/orders/{order}/delivered',         [\App\Http\Controllers\RiderController::class, 'markDelivered'])->name('orders.delivered');
     Route::patch('/status',                          [\App\Http\Controllers\RiderController::class, 'updateStatus'])->name('status');
+});
+
+// ── CEO-only routes (no admin access) ─────────────────────────────────────────
+// user:delete_other is CEO-only — admin can suspend but not delete
+Route::middleware(['auth', 'role:ceo'])->group(function () {
+    Route::delete('/ceo/users/{user}', [\App\Http\Controllers\CEOController::class, 'deleteUser'])->name('ceo.users.delete');
 });
 
 // ── CEO: Order Oversight ───────────────────────────────────────────────────────

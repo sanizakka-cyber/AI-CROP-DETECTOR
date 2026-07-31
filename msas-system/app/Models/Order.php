@@ -101,6 +101,6 @@ class Order extends Model
 
     public static function generateNumber(): string
     {
-        return 'ORD-' . now()->format('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+        return 'ORD-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(10));
     }
 }

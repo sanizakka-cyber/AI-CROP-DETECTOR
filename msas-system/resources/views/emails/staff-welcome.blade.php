@@ -38,27 +38,20 @@
     @if($isReset)
     <p class="text">
       Your MSAS FarmAI staff account password has been reset by an administrator.
-      Use the temporary credentials below to log in. You will be required to choose a new password immediately after logging in.
+      Click the button below to set a new password. This link is valid for 60 minutes.
     </p>
     @else
     <p class="text">
       Welcome to the MSAS FarmAI platform! A staff account has been created for you.
-      Use the credentials below to access the system. For security, you must set a new password the first time you log in.
+      Click the button below to set your password and access the system.
+      This link is valid for 60 minutes.
     </p>
     @endif
 
     <div class="cred-box">
       <div class="cred-row">
-        <span class="cred-label">Login URL</span>
-        <span class="cred-value">{{ config('app.url') }}/login</span>
-      </div>
-      <div class="cred-row">
-        <span class="cred-label">Email</span>
+        <span class="cred-label">Your Email</span>
         <span class="cred-value">{{ $staff->email }}</span>
-      </div>
-      <div class="cred-row">
-        <span class="cred-label">Temporary Password</span>
-        <span class="cred-value">{{ $temporaryPassword }}</span>
       </div>
       @if($staff->role)
       <div class="cred-row">
@@ -69,11 +62,11 @@
     </div>
 
     <div class="notice">
-      ⚠ This is a temporary password. You <strong>must</strong> change it immediately upon first login.
-      Do not share these credentials with anyone.
+      ⚠ This link expires in 60 minutes. If it expires, ask your administrator to reset your password again.
+      Do not forward this email to anyone.
     </div>
 
-    <a href="{{ config('app.url') }}/login" class="btn">Log In Now →</a>
+    <a href="{{ $resetLink }}" class="btn">{{ $isReset ? 'Set New Password →' : 'Set Your Password →' }}</a>
 
     <p class="security-note">
       If you did not expect this email, please contact your administrator immediately at

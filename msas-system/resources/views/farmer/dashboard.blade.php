@@ -528,16 +528,23 @@ function loadWeather() {
     fetch('/ai/weather', { method: 'POST', body: fd })
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            if (d.error) { result.innerHTML = '<span style="color:#ef4444;">⚠ ' + d.error + '</span>'; return; }
-            var html = '';
+            result.textContent = '';
+            if (d.error) {
+                var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='⚠ ' + d.error; result.appendChild(e); return;
+            }
+            function safeAppend(prefix, val, styles) {
+                if (!val) return;
+                var el = document.createElement('div'); if (styles) el.setAttribute('style', styles);
+                el.textContent = prefix ? prefix + val : val; result.appendChild(el);
+            }
             var summary = d.summary || d.forecast || d.advisory || d.recommendation || '';
-            if (summary) html += '<div style="margin-bottom:10px;">' + summary + '</div>';
-            if (d.temperature) html += '<div style="font-size:12px;color:#64748b;">🌡 Temperature: ' + d.temperature + '</div>';
-            if (d.rainfall) html += '<div style="font-size:12px;color:#64748b;">🌧 Rainfall: ' + d.rainfall + '</div>';
-            if (d.farming_advice) html += '<div style="margin-top:8px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #0F6B3E;border-radius:6px;font-size:12px;color:#166534;">' + d.farming_advice + '</div>';
-            result.innerHTML = html || JSON.stringify(d, null, 2);
+            safeAppend('', summary, 'margin-bottom:10px;');
+            safeAppend('🌡 Temperature: ', d.temperature, 'font-size:12px;color:#64748b;');
+            safeAppend('🌧 Rainfall: ', d.rainfall, 'font-size:12px;color:#64748b;');
+            safeAppend('', d.farming_advice, 'margin-top:8px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #0F6B3E;border-radius:6px;font-size:12px;color:#166534;');
+            if (!result.hasChildNodes()) result.textContent = JSON.stringify(d, null, 2);
         })
-        .catch(function() { result.innerHTML = '<span style="color:#ef4444;">⚠ Weather service temporarily unavailable.</span>'; });
+        .catch(function() { result.textContent = '⚠ Weather service temporarily unavailable.'; });
 }
 </script>
 </x-app-layout>

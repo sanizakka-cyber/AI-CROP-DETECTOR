@@ -100,7 +100,7 @@ class ProfileController extends Controller
     public function changePassword(Request $request): RedirectResponse
     {
         $rules = [
-            'password'              => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'password'              => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             'password_confirmation' => ['required'],
         ];
 

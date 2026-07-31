@@ -97,7 +97,7 @@ class AdminController extends Controller
             'last_name'  => ['required', 'string', 'max:100'],
             'email'      => ['required', 'email', 'max:255', 'unique:users,email'],
             'role'       => ['required', 'string', 'in:' . implode(',', $staffRoles)],
-            'password'   => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()],
+            'password'   => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         $user = User::create([

@@ -51,6 +51,11 @@ class HRController extends Controller implements HasMiddleware
 
     public function toggleStaffStatus(User $user)
     {
+        // HR must not be able to lock out CEO, admin, or themselves
+        if (in_array($user->role, ['ceo', 'admin']) || $user->id === auth()->id()) {
+            return back()->with('error', 'You cannot change the status of this account.');
+        }
+
         $user->update(['is_active' => !$user->is_active]);
         $status = $user->is_active ? 'activated' : 'deactivated';
         return back()->with('success', "{$user->name} has been {$status}.");

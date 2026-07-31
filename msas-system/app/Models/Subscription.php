@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Subscription extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id', 'plan', 'status', 'payment_cycle',
+        'starts_at', 'ends_at', 'trial_ends_at',
+        'auto_renew', 'amount_paid', 'paystack_reference',
+        'payment_method', 'activated_by', 'cancelled_at', 'upgraded_at',
+    ];
 
     protected $casts = [
         'trial_ends_at' => 'datetime',

@@ -15,7 +15,7 @@ class StaffWelcomeMail extends Mailable
 
     public function __construct(
         public readonly User   $staff,
-        public readonly string $temporaryPassword,
+        public readonly string $resetLink,
         public readonly bool   $isReset = false,
     ) {}
 
