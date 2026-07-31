@@ -88,6 +88,11 @@ class ComplianceController extends Controller
         return view('legal.help');
     }
 
+    public function cookie()
+    {
+        return view('legal.cookie');
+    }
+
     // ── Privacy & Consent page (authenticated farmer) ─────────────────────────
 
     public function privacy()

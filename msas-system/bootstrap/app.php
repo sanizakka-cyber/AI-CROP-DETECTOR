@@ -74,6 +74,23 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Persist to DB for the monitoring dashboard (non-blocking)
             \App\Models\ErrorLog::capture($e, $category);
+
+            // Forward to Sentry for real-time alerting (active after: composer require sentry/sentry-laravel)
+            if (class_exists(\Sentry\Laravel\Integration::class) && config('sentry.dsn')) {
+                \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($e, $context): void {
+                    $scope->setTag('category', $context['category'] ?? 'app');
+                    $scope->setTag('role', $context['user_role'] ?? 'guest');
+                    $scope->setContext('request', [
+                        'url'    => $context['url'],
+                        'method' => $context['method'],
+                        'ip'     => $context['ip'],
+                    ]);
+                    if ($context['user_id']) {
+                        \Sentry\configureScope(fn ($s) => $s->setUser(['id' => $context['user_id']]));
+                    }
+                    \Sentry\captureException($e);
+                });
+            }
         });
 
         // Return standard JSON for all API errors (request path starts with /api)

@@ -34,6 +34,7 @@ Route::get('/terms',          [\App\Http\Controllers\ComplianceController::class
 Route::get('/refund-policy',  [\App\Http\Controllers\ComplianceController::class, 'refund'])->name('legal.refund');
 Route::get('/faq',            [\App\Http\Controllers\ComplianceController::class, 'faq'])->name('legal.faq');
 Route::get('/help',           [\App\Http\Controllers\ComplianceController::class, 'help'])->name('legal.help');
+Route::get('/cookie-policy',  [\App\Http\Controllers\ComplianceController::class, 'cookie'])->name('legal.cookie');
 
 // Services Public Routes (Redirects to register/login for now to prevent 404s)
 Route::prefix('services')->name('services.')->group(function () {
