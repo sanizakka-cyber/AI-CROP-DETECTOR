@@ -20,7 +20,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::view('/', 'welcome')->name('welcome');
 
 // Application submitted confirmation page (no auth required)
 Route::view('/application-submitted', 'auth.application-submitted')->name('application.submitted');

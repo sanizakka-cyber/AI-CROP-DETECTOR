@@ -10,15 +10,15 @@
         <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-2xl px-6 py-4 flex items-start gap-4 shadow-lg">
             <div class="text-3xl shrink-0">✨</div>
             <div>
-                <h3 class="font-bold text-base mb-0.5">Auto-Detection Enabled</h3>
-                <p class="text-sm text-emerald-100">Our AI automatically identifies the plant species, animal breed, detected organ, and condition. Optional fields below can improve accuracy if you already know the type.</p>
+                <h3 class="font-bold text-base mb-0.5">{{ __('Auto-Detection Enabled') }}</h3>
+                <p class="text-sm text-emerald-100">{{ __('Our AI automatically identifies the plant species, animal breed, detected organ, and condition. Optional fields below can improve accuracy if you already know the type.') }}</p>
             </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-slate-900 text-white p-6">
-                <h3 class="text-xl font-bold mb-2">Automated Disease & Condition Detection</h3>
-                <p class="text-slate-400 text-sm">Upload a clear photo of the affected plant, animal, or soil sample. Claude AI will identify the subject, detect diseases, and provide a comprehensive 20-point report.</p>
+                <h3 class="text-xl font-bold mb-2">{{ __('Automated Disease & Condition Detection') }}</h3>
+                <p class="text-slate-400 text-sm">{{ __('Upload a clear photo of the affected plant, animal, or soil sample. Claude AI will identify the subject, detect diseases, and provide a comprehensive 20-point report.') }}</p>
             </div>
 
             <form action="{{ route('diagnostics.analyze') }}" method="POST" enctype="multipart/form-data" class="p-8" id="scanForm">
@@ -34,15 +34,15 @@
 
                 <!-- Scan Type Selection -->
                 <div class="mb-8">
-                    <label class="block text-sm font-bold text-slate-700 mb-3">What are you scanning?</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-3">{{ __('What are you scanning?') }}</label>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <label class="cursor-pointer">
                             <input type="radio" name="scan_type" value="plant" class="peer sr-only" required checked
                                    onchange="setScanType('plant')">
                             <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700">
                                 <div class="text-4xl mb-2">🌿</div>
-                                <div class="font-bold text-sm">Plant / Crop</div>
-                                <div class="text-xs text-slate-500 mt-1">Auto-detects species & disease</div>
+                                <div class="font-bold text-sm">{{ __('Plant / Crop') }}</div>
+                                <div class="text-xs text-slate-500 mt-1">{{ __('Auto-detects species & disease') }}</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
@@ -50,8 +50,8 @@
                                    onchange="setScanType('animal')">
                             <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-amber-500 peer-checked:bg-amber-50 peer-checked:text-amber-700">
                                 <div class="text-4xl mb-2">🐄</div>
-                                <div class="font-bold text-sm">Livestock</div>
-                                <div class="text-xs text-slate-500 mt-1">Auto-detects breed & condition</div>
+                                <div class="font-bold text-sm">{{ __('Livestock') }}</div>
+                                <div class="text-xs text-slate-500 mt-1">{{ __('Auto-detects breed & condition') }}</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
@@ -59,8 +59,8 @@
                                    onchange="setScanType('soil')">
                             <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-amber-700 peer-checked:bg-amber-50 peer-checked:text-amber-800">
                                 <div class="text-4xl mb-2">🌱</div>
-                                <div class="font-bold text-sm">Soil Sample</div>
-                                <div class="text-xs text-slate-500 mt-1">Nutrients, pH, Recommendations</div>
+                                <div class="font-bold text-sm">{{ __('Soil Sample') }}</div>
+                                <div class="text-xs text-slate-500 mt-1">{{ __('Nutrients, pH, Recommendations') }}</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
@@ -68,8 +68,8 @@
                                    onchange="setScanType('pest')">
                             <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700">
                                 <div class="text-4xl mb-2">🐛</div>
-                                <div class="font-bold text-sm">Pest ID</div>
-                                <div class="text-xs text-slate-500 mt-1">Insects, weeds & pathogens</div>
+                                <div class="font-bold text-sm">{{ __('Pest ID') }}</div>
+                                <div class="text-xs text-slate-500 mt-1">{{ __('Insects, weeds & pathogens') }}</div>
                             </div>
                         </label>
                     </div>
@@ -79,14 +79,14 @@
                 <div id="ctx-plant" class="mb-6">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Crop Type <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Crop Type') }} <span class="font-normal normal-case text-slate-400">{{ __('(optional)') }}</span></label>
                             <input type="text" name="crop_type" placeholder="e.g., Maize, Tomato, Cassava"
                                    class="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-400 focus:border-emerald-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Plant Part <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Plant Part') }} <span class="font-normal normal-case text-slate-400">{{ __('(optional)') }}</span></label>
                             <select name="crop_part" class="w-full border-slate-200 rounded-lg text-sm focus:ring-emerald-400 focus:border-emerald-400">
-                                <option value="">Let AI Detect</option>
+                                <option value="">{{ __('Let AI Detect') }}</option>
                                 <option value="leaf">Leaf</option>
                                 <option value="stem">Stem</option>
                                 <option value="root">Root</option>
@@ -102,14 +102,14 @@
                 <div id="ctx-animal" class="mb-6 hidden">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Animal Type <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Animal Type') }} <span class="font-normal normal-case text-slate-400">{{ __('(optional)') }}</span></label>
                             <input type="text" name="animal_type" placeholder="e.g., Cattle, Chicken, Goat"
                                    class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-400 focus:border-amber-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Body Area <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Body Area') }} <span class="font-normal normal-case text-slate-400">{{ __('(optional)') }}</span></label>
                             <select name="assessment_type" class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-400 focus:border-amber-400">
-                                <option value="">Let AI Detect</option>
+                                <option value="">{{ __('Let AI Detect') }}</option>
                                 <option value="skin/coat">Skin / Coat</option>
                                 <option value="droppings">Droppings</option>
                                 <option value="eyes">Eyes</option>
@@ -123,7 +123,7 @@
 
                 <div id="ctx-soil" class="mb-6 hidden">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Additional Context <span class="font-normal normal-case text-slate-400">(optional)</span></label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Additional Context') }} <span class="font-normal normal-case text-slate-400">{{ __('(optional)') }}</span></label>
                         <input type="text" name="soil_context" placeholder="e.g., Farm location, current crop, known issues"
                                class="w-full border-slate-200 rounded-lg text-sm focus:ring-amber-700 focus:border-amber-700">
                     </div>
@@ -146,24 +146,24 @@
 
                 <!-- Image Upload Area -->
                 <div class="mb-8">
-                    <label class="block text-sm font-bold text-slate-700 mb-3">Choose Image Source</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-3">{{ __('Choose Image Source') }}</label>
 
                     {{-- Source picker buttons --}}
                     <div class="grid grid-cols-3 gap-3 mb-4">
                         <button type="button" onclick="triggerCamera()"
                             class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-slate-900 hover:bg-slate-700 text-white rounded-xl font-bold transition shadow-sm">
                             <span class="text-3xl">📷</span>
-                            <span class="text-xs leading-tight text-center">Take Photo<br><span class="font-normal opacity-60 text-[10px]">Camera</span></span>
+                            <span class="text-xs leading-tight text-center">{{ __('Take Photo') }}<br><span class="font-normal opacity-60 text-[10px]">Camera</span></span>
                         </button>
                         <button type="button" onclick="triggerGallery()"
                             class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-sm">
                             <span class="text-3xl">🖼️</span>
-                            <span class="text-xs leading-tight text-center">Select Photo<br><span class="font-normal opacity-60 text-[10px]">Gallery</span></span>
+                            <span class="text-xs leading-tight text-center">{{ __('Select Photo') }}<br><span class="font-normal opacity-60 text-[10px]">Gallery</span></span>
                         </button>
                         <button type="button" onclick="triggerBrowse()"
                             class="flex flex-col items-center justify-center gap-2 py-5 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition shadow-sm">
                             <span class="text-3xl">📁</span>
-                            <span class="text-xs leading-tight text-center">Browse Files<br><span class="font-normal opacity-60 text-[10px]">Desktop / Cloud</span></span>
+                            <span class="text-xs leading-tight text-center">{{ __('Browse Files') }}<br><span class="font-normal opacity-60 text-[10px]">Desktop / Cloud</span></span>
                         </button>
                     </div>
 
@@ -176,14 +176,14 @@
                          onclick="triggerBrowse()">
                         <div id="upload-prompt">
                             <div class="text-4xl text-slate-300 mb-2">⬆️</div>
-                            <h4 class="font-bold text-slate-600 mb-1 text-sm">or drag &amp; drop here</h4>
-                            <p class="text-xs text-slate-400">JPG, PNG, HEIC — Max 5 MB</p>
+                            <h4 class="font-bold text-slate-600 mb-1 text-sm">{{ __('or drag & drop here') }}</h4>
+                            <p class="text-xs text-slate-400">{{ __('JPG, PNG, HEIC — Max 5 MB') }}</p>
                         </div>
                         <div id="image-preview-container" class="hidden">
                             <img id="image-preview" src="#" alt="Preview" class="max-h-64 mx-auto rounded-lg shadow-md">
-                            <p class="text-emerald-600 font-bold mt-3 text-sm flex items-center justify-center gap-1"><span>✅</span> Image Ready</p>
+                            <p class="text-emerald-600 font-bold mt-3 text-sm flex items-center justify-center gap-1"><span>✅</span> {{ __('Image Ready') }}</p>
                             <button type="button" onclick="resetUpload(); event.stopPropagation();"
-                                class="mt-2 text-xs text-red-500 hover:underline relative z-10">Remove &amp; try again</button>
+                                class="mt-2 text-xs text-red-500 hover:underline relative z-10">{{ __('Remove & try again') }}</button>
                         </div>
                     </div>
                     @error('image')
@@ -193,7 +193,7 @@
 
                 <!-- Tips -->
                 <div class="mb-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-blue-700">
-                    <div class="font-bold mb-1 flex items-center gap-1"><span>💡</span> Tips for the best diagnosis:</div>
+                    <div class="font-bold mb-1 flex items-center gap-1"><span>💡</span> {{ __('Tips for the best diagnosis:') }}</div>
                     <ul class="list-disc list-inside space-y-1 text-blue-600">
                         <li>Photograph in natural daylight whenever possible</li>
                         <li>Get close enough to fill the frame with the affected area</li>
@@ -206,8 +206,8 @@
                 <!-- Scanning Progress -->
                 <div id="scanning-progress" class="hidden mb-8 bg-slate-900 rounded-xl p-6 text-center text-white">
                     <div class="inline-block w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <h4 class="font-bold text-lg mb-1">AI Engine Analysing...</h4>
-                    <p class="text-sm text-slate-400">Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.</p>
+                    <h4 class="font-bold text-lg mb-1">{{ __('AI Engine Analysing...') }}</h4>
+                    <p class="text-sm text-slate-400">{{ __('Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.') }}</p>
                     <div class="w-full bg-slate-700 rounded-full h-2 mt-4 overflow-hidden">
                         <div class="bg-emerald-500 h-2 rounded-full w-0 animate-[fillProgress_30s_ease-in-out_forwards]"></div>
                     </div>
@@ -215,7 +215,7 @@
 
                 <div class="text-right">
                     <button type="submit" id="submitBtn" class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition flex items-center gap-2 ml-auto">
-                        <span>🔍</span> Run Full AI Diagnosis
+                        <span>🔍</span> {{ __('Run Full AI Diagnosis') }}
                     </button>
                 </div>
             </form>

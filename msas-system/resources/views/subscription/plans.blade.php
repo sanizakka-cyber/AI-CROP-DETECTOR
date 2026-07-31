@@ -36,7 +36,7 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
 <div style="background:linear-gradient(135deg,#0F6B3E,#1FA84A);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
     <div>
         <div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;">🎉 Start with a 14-Day Free Trial</div>
-        <div style="color:rgba(255,255,255,0.8);font-size:13px;">10 AI Smart Scans · Basic Farm Dashboard · Marketplace Preview · No credit card required</div>
+        <div style="color:rgba(255,255,255,0.8);font-size:13px;">15 AI Smart Scans · Basic Farm Dashboard · Marketplace Preview · No credit card required</div>
     </div>
     <a href="{{ route('subscription.subscribe') }}" style="display:none;"></a>
     <div style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;">Subscribe to any plan below to activate your free trial →</div>
