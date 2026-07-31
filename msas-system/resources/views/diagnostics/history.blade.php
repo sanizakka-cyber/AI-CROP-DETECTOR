@@ -530,6 +530,9 @@
         var seekBase       = {};  // id → char offset used in the current utterance
         var pendingOffsets = {};  // id → char offset to seek to on next startSpeaking call
 
+        // iOS Safari fires onend instead of pausing — detect and work around it.
+        var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
         // Chrome silently stops speaking after ~15s — pause/resume keeps it alive
         function startKeepalive() {
             if (keepalive) return;
@@ -779,7 +782,12 @@
                 return;
             }
             if (states[id] === 'paused') {
-                window.speechSynthesis.resume();
+                if (isIos) {
+                    // On iOS pause() already called cancel() — resume by restarting from saved position
+                    cancelThenSpeak(id);
+                } else {
+                    window.speechSynthesis.resume();
+                }
                 states[id] = 'playing';
                 updateUI(id, 'playing');
                 startKeepalive();
@@ -792,7 +800,13 @@
 
         window.ttsPause = function(id) {
             if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.pause();
+                if (isIos) {
+                    // iOS Safari fires onend on pause() — save position and stop instead
+                    pendingOffsets[id] = currentCharIdx[id] || 0;
+                    window.speechSynthesis.cancel();
+                } else {
+                    window.speechSynthesis.pause();
+                }
                 states[id] = 'paused';
                 updateUI(id, 'paused');
                 stopKeepalive();

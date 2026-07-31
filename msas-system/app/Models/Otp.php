@@ -20,6 +20,6 @@ class Otp extends Model
 
     public function tooManyAttempts(): bool
     {
-        return $this->attempts >= 5;
+        return $this->attempts >= \App\Services\OtpService::MAX_ATTEMPTS;
     }
 }
