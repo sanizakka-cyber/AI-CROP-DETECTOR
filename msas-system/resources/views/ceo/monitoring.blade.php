@@ -167,19 +167,62 @@
 
 </div>
 
-{{-- Error Log --}}
-@if(!empty($recentErrors))
+{{-- Error Log (DB-backed) --}}
 <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:20px;">
-    <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:14px;">Recent Error Log (last 8 entries)</div>
-    <div style="overflow-x:auto;">
-        <div style="display:flex;flex-direction:column;gap:6px;font-family:monospace;font-size:11px;">
-            @foreach($recentErrors as $err)
-            <div style="background:#fafafa;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;color:#475569;word-break:break-all;white-space:pre-wrap;">{{ $err }}</div>
-            @endforeach
-        </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">Application Error Log — Unresolved</div>
+        @if($recentErrors->isNotEmpty())
+        <span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #fecaca;">{{ $recentErrors->count() }} unresolved</span>
+        @else
+        <span style="background:#f0fdf4;color:#0F6B3E;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #bbf7d0;">No errors</span>
+        @endif
     </div>
+
+    @if($recentErrors->isEmpty())
+    <p style="font-size:13px;color:#94a3b8;text-align:center;padding:20px 0;">No unresolved application errors.</p>
+    @else
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">
+        @foreach($recentErrors as $err)
+        @php
+        $catColors = [
+            'database' => ['bg'=>'#fef2f2','border'=>'#fecaca','text'=>'#dc2626'],
+            'payment'  => ['bg'=>'#fff7ed','border'=>'#fed7aa','text'=>'#c2410c'],
+            'auth'     => ['bg'=>'#fefce8','border'=>'#fde68a','text'=>'#92400e'],
+            'ai'       => ['bg'=>'#f5f3ff','border'=>'#ddd6fe','text'=>'#6d28d9'],
+            'sms'      => ['bg'=>'#eff6ff','border'=>'#bfdbfe','text'=>'#1d4ed8'],
+            'email'    => ['bg'=>'#eff6ff','border'=>'#bfdbfe','text'=>'#1d4ed8'],
+            'otp'      => ['bg'=>'#fefce8','border'=>'#fde68a','text'=>'#92400e'],
+            'app'      => ['bg'=>'#f8fafc','border'=>'#e2e8f0','text'=>'#475569'],
+        ];
+        $c = $catColors[$err->category] ?? $catColors['app'];
+        @endphp
+        <div style="background:{{ $c['bg'] }};border:1px solid {{ $c['border'] }};border-radius:10px;padding:12px 14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="background:{{ $c['border'] }};color:{{ $c['text'] }};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;">{{ $err->category }}</span>
+                    <span style="font-size:11px;color:#94a3b8;">{{ $err->created_at->diffForHumans() }}</span>
+                    @if($err->method)
+                    <span style="font-size:10px;font-weight:700;color:#64748b;background:#f1f5f9;padding:1px 6px;border-radius:4px;">{{ $err->method }}</span>
+                    @endif
+                </div>
+                <form method="POST" action="{{ route('ceo.monitoring.error.resolve', $err->id) }}" style="margin:0;">
+                    @csrf
+                    <button type="submit" style="background:none;border:1px solid {{ $c['border'] }};color:{{ $c['text'] }};font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;cursor:pointer;">✓ Resolve</button>
+                </form>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:{{ $c['text'] }};margin-bottom:4px;word-break:break-all;">{{ $err->exception_class }}</div>
+            <div style="font-size:12px;color:#374151;margin-bottom:6px;word-break:break-all;">{{ $err->message }}</div>
+            <div style="font-size:10px;color:#94a3b8;display:flex;flex-wrap:wrap;gap:12px;">
+                @if($err->file) <span title="{{ $err->file }}">📄 {{ basename($err->file) }}:{{ $err->line }}</span> @endif
+                @if($err->url) <span>🔗 {{ Str::limit($err->url, 60) }}</span> @endif
+                @if($err->user_id) <span>👤 User #{{ $err->user_id }} ({{ $err->user_role }})</span> @endif
+                @if($err->ip_address) <span>🌐 {{ $err->ip_address }}</span> @endif
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
 </div>
-@endif
 
 {{-- Revenue & Totals --}}
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">

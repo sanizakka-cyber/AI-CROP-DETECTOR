@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Diagnosis;
+use App\Models\ErrorLog;
 use App\Models\LoginHistory;
 use App\Models\Payment;
 use App\Models\Subscription;
@@ -108,8 +109,11 @@ class MonitoringController extends Controller
         $failedJobs = DB::table('failed_jobs')->count();
         $pendingJobs = DB::table('jobs')->count();
 
-        // ── Error Log Snapshot ──────────────────────────────────────────────
-        $recentErrors = $this->recentErrors();
+        // ── Error Log Snapshot (DB-backed) ──────────────────────────────────
+        $recentErrors = ErrorLog::where('resolved', false)
+            ->latest()
+            ->take(15)
+            ->get();
 
         return view('ceo.monitoring', compact(
             'dbStatus', 'aiStatus', 'queueStatus',
@@ -181,23 +185,12 @@ class MonitoringController extends Controller
         }
     }
 
-    private function recentErrors(): array
+    public function resolveError(\Illuminate\Http\Request $request, int $id)
     {
-        $logPath = storage_path('logs/laravel.log');
-        if (! file_exists($logPath)) return [];
-
-        try {
-            $lines  = array_reverse(file($logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
-            $errors = [];
-            foreach ($lines as $line) {
-                if (count($errors) >= 8) break;
-                if (str_contains($line, '.ERROR') || str_contains($line, '.CRITICAL')) {
-                    $errors[] = mb_substr(trim($line), 0, 180);
-                }
-            }
-            return $errors;
-        } catch (\Exception $e) {
-            return [];
-        }
+        ErrorLog::where('id', $id)->update([
+            'resolved'    => true,
+            'resolved_at' => now(),
+        ]);
+        return back()->with('success', 'Error marked as resolved.');
     }
 }

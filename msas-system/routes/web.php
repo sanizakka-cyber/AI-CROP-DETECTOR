@@ -26,11 +26,14 @@ Route::view('/', 'welcome');
 Route::view('/application-submitted', 'auth.application-submitted')->name('application.submitted');
 
 // Language / Locale switcher (works logged in or out)
-Route::post('/locale', [LocaleController::class, 'set'])->name('locale.set');
+Route::post('/locale', [LocaleController::class, 'set'])->middleware('throttle:30,1')->name('locale.set');
 
 // ── Public legal pages (no auth required) ────────────────────────────────────
 Route::get('/privacy-policy', [\App\Http\Controllers\ComplianceController::class, 'publicPrivacy'])->name('legal.privacy');
 Route::get('/terms',          [\App\Http\Controllers\ComplianceController::class, 'terms'])->name('legal.terms');
+Route::get('/refund-policy',  [\App\Http\Controllers\ComplianceController::class, 'refund'])->name('legal.refund');
+Route::get('/faq',            [\App\Http\Controllers\ComplianceController::class, 'faq'])->name('legal.faq');
+Route::get('/help',           [\App\Http\Controllers\ComplianceController::class, 'help'])->name('legal.help');
 
 // Services Public Routes (Redirects to register/login for now to prevent 404s)
 Route::prefix('services')->name('services.')->group(function () {
@@ -187,8 +190,9 @@ Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-
 
 // ── CEO Monitoring + BI (ceo + admin) ─────────────────────────────────────────
 Route::middleware(['auth', 'role:ceo,admin'])->prefix('ceo')->name('ceo.')->group(function () {
-    Route::get('/monitoring',              [\App\Http\Controllers\MonitoringController::class, 'index'])      ->name('monitoring');
-    Route::get('/monitoring/health.json',  [\App\Http\Controllers\MonitoringController::class, 'healthJson']) ->name('monitoring.health');
+    Route::get('/monitoring',                         [\App\Http\Controllers\MonitoringController::class, 'index'])        ->name('monitoring');
+    Route::get('/monitoring/health.json',             [\App\Http\Controllers\MonitoringController::class, 'healthJson'])   ->name('monitoring.health');
+    Route::post('/monitoring/errors/{id}/resolve',    [\App\Http\Controllers\MonitoringController::class, 'resolveError']) ->name('monitoring.error.resolve');
     Route::get('/bi',                      [\App\Http\Controllers\BiController::class, 'index'])              ->name('bi');
 });
 
