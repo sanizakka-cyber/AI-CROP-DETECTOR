@@ -329,8 +329,8 @@
         var crop = document.getElementById('market-crop').value;
         var region = document.getElementById('market-region').value || 'Nigeria';
         var result = document.getElementById('market-result');
-        if (!crop) { result.innerHTML = '<span style="color:#f59e0b;">Please enter a crop name.</span>'; return; }
-        result.innerHTML = '<span class="text-slate-400">⏳ Fetching market prices...</span>';
+        if (!crop) { result.textContent = 'Please enter a crop name.'; return; }
+        result.textContent = '⏳ Fetching market prices...';
         var fd = new FormData();
         fd.append('crop', crop);
         fd.append('region', region);
@@ -338,16 +338,21 @@
         fetch('/ai/market', { method: 'POST', body: fd })
             .then(function(r) { return r.json(); })
             .then(function(d) {
-                if (d.error) { result.innerHTML = '<span style="color:#ef4444;">⚠ ' + d.error + '</span>'; return; }
-                var html = '';
+                result.textContent = '';
+                if (d.error) { var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='⚠ ' + d.error; result.appendChild(e); return; }
+                function safeRow(prefix, val, cls, styles) {
+                    if (!val) return;
+                    var el = document.createElement('div'); if (cls) el.className = cls; if (styles) el.setAttribute('style', styles);
+                    el.textContent = prefix ? prefix + val : val; result.appendChild(el);
+                }
                 var summary = d.summary || d.analysis || d.market_analysis || d.recommendation || '';
-                if (summary) html += '<div class="mb-2">' + summary + '</div>';
-                if (d.current_price) html += '<div class="text-xs text-slate-500">💰 Current Price: ' + d.current_price + '</div>';
-                if (d.price_trend) html += '<div class="text-xs text-slate-500">📊 Trend: ' + d.price_trend + '</div>';
-                if (d.best_time_to_sell) html += '<div class="mt-2 p-3 rounded-lg text-xs" style="background:#fffbeb;border-left:3px solid #F4A300;color:#92400e;">' + d.best_time_to_sell + '</div>';
-                result.innerHTML = html || JSON.stringify(d, null, 2);
+                safeRow('', summary, 'mb-2', null);
+                safeRow('💰 Current Price: ', d.current_price, 'text-xs text-slate-500', null);
+                safeRow('📊 Trend: ', d.price_trend, 'text-xs text-slate-500', null);
+                safeRow('', d.best_time_to_sell, 'mt-2 p-3 rounded-lg text-xs', 'background:#fffbeb;border-left:3px solid #F4A300;color:#92400e;');
+                if (!result.hasChildNodes()) result.textContent = JSON.stringify(d, null, 2);
             })
-            .catch(function() { result.innerHTML = '<span style="color:#ef4444;">⚠ Market service temporarily unavailable.</span>'; });
+            .catch(function() { result.textContent = '⚠ Market service temporarily unavailable.'; });
     }
     </script>
 </x-app-layout>

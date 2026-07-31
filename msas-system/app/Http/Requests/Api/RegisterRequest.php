@@ -13,7 +13,7 @@ class RegisterRequest extends FormRequest
         return [
             'name'     => ['required', 'string', 'max:160'],
             'phone'    => ['required', 'string', 'max:20', 'unique:users,phone'],
-            'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::min(8)->mixedCase()->numbers()],
+            'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
             'role'     => ['sometimes', 'string', 'in:farmer,vet,agronomist,agro-dealer,extension-officer'],
             'language' => ['sometimes', 'string', 'in:en,ha'],
             'state'    => ['sometimes', 'string', 'max:100'],

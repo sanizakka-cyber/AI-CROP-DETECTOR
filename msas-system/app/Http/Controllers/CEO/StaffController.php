@@ -7,10 +7,13 @@ use App\Mail\StaffWelcomeMail;
 use App\Models\RbacAuditLog;
 use App\Models\StaffRole;
 use App\Models\User;
+use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class StaffController extends Controller
 {
@@ -78,7 +81,7 @@ class StaffController extends Controller
             'last_name'            => $data['last_name'],
             'email'                => $data['email'],
             'phone'                => $data['phone'] ?? null,
-            'password'             => Hash::make('Welcome@123'),
+            'password'             => Hash::make(Str::random(32)),
             'role'                 => $data['role'],
             'department'           => $data['department'] ?? null,
             'state'                => $data['state'] ?? null,
@@ -103,15 +106,17 @@ class StaffController extends Controller
             'staff_roles' => $data['staff_role_ids'] ?? [],
         ]);
 
-        // Send welcome email with login credentials directly to the staff member
+        // Send welcome email with a one-time password-set link — never email a plain credential
         try {
-            Mail::to($user->email)->send(new StaffWelcomeMail($user, 'Welcome@123', isReset: false));
+            $token = Password::broker()->createToken($user);
+            $resetLink = url(route('password.reset', ['token' => $token, 'email' => urlencode($user->email)], false));
+            Mail::to($user->email)->send(new StaffWelcomeMail($user, $resetLink, isReset: false));
         } catch (\Throwable $e) {
             Log::warning('StaffWelcomeMail failed to send', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }
 
         return redirect()->route('ceo.staff.show', $user)
-                         ->with('success', "Staff account for {$user->name} created. Login credentials have been emailed to {$user->email}. They must change their password on first login.");
+                         ->with('success', "Staff account for {$user->name} created. A password setup link has been emailed to {$user->email}.");
     }
 
     public function show(User $user)
@@ -215,20 +220,22 @@ class StaffController extends Controller
     public function resetPassword(User $user)
     {
         $user->update([
-            'password'             => Hash::make('Welcome@123'),
+            'password'             => Hash::make(Str::random(32)),
             'force_password_reset' => true,
         ]);
 
         RbacAuditLog::record('password_reset', 'User', $user->id, $user->name, null, ['force_password_reset' => true]);
 
-        // Email the new temporary password directly to the staff member
+        // Email a password-reset link — never email a plain credential
         try {
-            Mail::to($user->email)->send(new StaffWelcomeMail($user, 'Welcome@123', isReset: true));
+            $token = Password::broker()->createToken($user);
+            $resetLink = url(route('password.reset', ['token' => $token, 'email' => urlencode($user->email)], false));
+            Mail::to($user->email)->send(new StaffWelcomeMail($user, $resetLink, isReset: true));
         } catch (\Throwable $e) {
             Log::warning('StaffWelcomeMail (reset) failed to send', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }
 
-        return back()->with('success', "Password reset for {$user->name}. New temporary credentials have been emailed to {$user->email}. They must change their password on next login.");
+        return back()->with('success', "Password reset for {$user->name}. A password-reset link has been emailed to {$user->email}.");
     }
 
     public function removeRole(Request $request, User $user)

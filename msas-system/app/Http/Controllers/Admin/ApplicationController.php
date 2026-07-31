@@ -90,6 +90,6 @@ class ApplicationController extends Controller
     {
         return response($document->content_base64 ? base64_decode($document->content_base64) : '', 200)
             ->header('Content-Type', $document->mime_type)
-            ->header('Content-Disposition', 'inline; filename="' . $document->original_name . '"');
+            ->header('Content-Disposition', 'inline; filename="' . preg_replace('/[\r\n"\\\\]/', '_', basename($document->original_name)) . '"');
     }
 }
