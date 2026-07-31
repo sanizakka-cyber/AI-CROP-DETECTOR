@@ -33,7 +33,7 @@ WORKDIR /var/www/html
 
 # ── Install PHP deps (layer-cached when composer.lock unchanged) ───────────────
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer update --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
 
