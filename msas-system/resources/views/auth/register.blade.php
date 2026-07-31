@@ -414,6 +414,24 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 </div>{{-- end x-data --}}
 
 @push('scripts')
+@php
+$roleMap = [
+    'farmer'               => __('Farmer'),
+    'vet'                  => __('Veterinarian'),
+    'agronomist'           => __('Agronomist'),
+    'agro-dealer'          => __('Agro Dealer'),
+    'equipment-dealer'     => __('Equipment Dealer'),
+    'agribusiness-owner'   => __('Agribusiness Owner'),
+    'cooperative'          => __('Cooperative'),
+    'government-agency'    => __("Gov't Agency"),
+    'ngo'                  => __('NGO'),
+    'research-institution' => __('Research Inst.'),
+    'input-supplier'       => __('Input Supplier'),
+    'logistics-provider'   => __('Logistics'),
+    'investor'             => __('Investor'),
+    'general-user'         => __('General User'),
+];
+@endphp
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 // ── Identifier auto-detection ─────────────────────────────────────────────
@@ -548,22 +566,7 @@ function regWizard() {
             ward:        '{{ $oldWard }}',
         },
 
-        roleMap: @json([
-            'farmer'               => __('Farmer'),
-            'vet'                  => __('Veterinarian'),
-            'agronomist'           => __('Agronomist'),
-            'agro-dealer'          => __('Agro Dealer'),
-            'equipment-dealer'     => __('Equipment Dealer'),
-            'agribusiness-owner'   => __('Agribusiness Owner'),
-            'cooperative'          => __('Cooperative'),
-            'government-agency'    => __("Gov't Agency"),
-            'ngo'                  => __('NGO'),
-            'research-institution' => __('Research Inst.'),
-            'input-supplier'       => __('Input Supplier'),
-            'logistics-provider'   => __('Logistics'),
-            'investor'             => __('Investor'),
-            'general-user'         => __('General User'),
-        ]),
+        roleMap: @json($roleMap),
 
         init() {
             if (this.role && this.roleMap[this.role]) {
