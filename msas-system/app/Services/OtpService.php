@@ -80,14 +80,16 @@ class OtpService
             throw new \RuntimeException('No verification code found. Please request a new code.');
         }
 
-        if ($otp->tooManyAttempts()) {
-            Log::warning('OTP verify: too many attempts', ['hint' => $this->hint($identifier), 'type' => $type]);
-            throw new OtpLockedException('Too many incorrect attempts. Please request a new verification code.');
-        }
-
+        // Check expiry before attempts — an expired code should always say "expired",
+        // even if the user also exceeded the attempt limit.
         if ($otp->isExpired()) {
             Log::info('OTP verify: expired', ['hint' => $this->hint($identifier), 'type' => $type, 'expired_at' => $otp->expires_at]);
             throw new OtpExpiredException('Verification code has expired. Request another code.');
+        }
+
+        if ($otp->tooManyAttempts()) {
+            Log::warning('OTP verify: too many attempts', ['hint' => $this->hint($identifier), 'type' => $type]);
+            throw new OtpLockedException('Too many incorrect attempts. Please request a new verification code.');
         }
 
         if (! Hash::check($plain, $otp->code)) {
@@ -118,11 +120,13 @@ class OtpService
      */
     public function sendViaEmail(string $email, string $plain, string $firstName = 'User', ?int $userId = null, string $otpType = 'registration'): bool
     {
-        // Guard: catch misconfigured mail settings before attempting send
-        $username = config('mail.mailers.smtp.username', '');
-        if (empty($username) || str_contains(strtolower($username), 'your_gmail') || str_contains($username, 'YOUR_GMAIL')) {
-            Log::error('OTP email not sent: MAIL_USERNAME is not configured in .env', [
+        // Guard: catch unconfigured mail host (placeholder value) before attempting send.
+        // Note: username check removed — API-key mailers (Resend, Postmark, SES) have no username.
+        $host = config('mail.mailers.smtp.host', '');
+        if (empty($host) || $host === '127.0.0.1') {
+            Log::error('OTP email not sent: MAIL_HOST is not configured for production', [
                 'email_hint' => $this->hint($email),
+                'host'       => $host ?: '(empty)',
             ]);
             OtpDeliveryLog::record(
                 userId:         $userId ?? User::where('email', $email)->value('id'),
@@ -131,7 +135,7 @@ class OtpService
                 channel:        'email',
                 delivered:      false,
                 provider:       'smtp',
-                error:          'MAIL_USERNAME not configured — placeholder value detected in .env',
+                error:          'MAIL_HOST not configured for production — localhost/empty detected',
             );
             return false;
         }
