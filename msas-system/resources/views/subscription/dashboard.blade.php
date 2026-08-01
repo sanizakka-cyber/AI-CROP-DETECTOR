@@ -29,7 +29,13 @@
 @if(!$activeSub && !$latestSub)
 @php $isProfessional = !in_array(auth()->user()->role, ['farmer', 'ceo', 'admin', 'general-user']); @endphp
 <div style="text-align:center;padding:60px 24px;background:#fff;border-radius:16px;border:2px dashed #e2e8f0;">
-    <div style="font-size:56px;margin-bottom:16px;">{{ $isProfessional ? '💼' : '🌾' }}</div>
+    <div style="width:72px;height:72px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:#0F6B3E12;">
+        @if($isProfessional)
+        <svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        @else
+        <svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 2 2 2c0 5 5 10 10 10zm0 0c0-5 5-10 10-10-5 0-10 5-10 10"/></svg>
+        @endif
+    </div>
     <div style="font-size:22px;font-weight:800;color:#0f172a;margin-bottom:8px;">No Active Subscription</div>
     <div style="font-size:14px;color:#64748b;max-width:420px;margin:0 auto 24px;">
         @if($isProfessional)
@@ -92,7 +98,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
         <div>
             <div style="color:rgba(255,255,255,0.6);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Auto-Renewal</div>
             <div style="font-size:16px;font-weight:800;color:{{ $plan->auto_renew ? '#1FA84A' : '#F4A300' }};">
-                {{ $plan->auto_renew ? '✓ Enabled' : '✗ Disabled' }}
+                {{ $plan->auto_renew ? 'Enabled' : 'Disabled' }}
             </div>
             @if($plan->isActive())
             <form method="POST" action="{{ route('subscription.toggle.autorenew') }}" style="margin-top:6px;">
@@ -133,13 +139,13 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
         @php
         $meters = [
-            'ai_scans_per_month' => ['label' => 'AI Scans Used',     'icon' => '🔬', 'color' => '#F4A300'],
-            'livestock_records'  => ['label' => 'Livestock Records', 'icon' => '🐄', 'color' => '#1FA84A'],
-            'reports_per_month'  => ['label' => 'Reports Generated', 'icon' => '📊', 'color' => '#2D9CDB'],
+            'ai_scans_per_month' => ['label' => 'AI Scans Used',     'path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',                                                                                                                                                          'color' => '#F4A300'],
+            'livestock_records'  => ['label' => 'Livestock Records', 'path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>',                                                                                                                                    'color' => '#1FA84A'],
+            'reports_per_month'  => ['label' => 'Reports Generated', 'path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>', 'color' => '#2D9CDB'],
         ];
         if (in_array($activeSub->plan, ['basic_pro', 'premium'])) {
-            $meters['vet_consultations_per_cycle']        = ['label' => 'Vet Consultations',  'icon' => '🩺', 'color' => '#0D9488'];
-            $meters['agronomist_consultations_per_cycle'] = ['label' => 'Agro Consultations', 'icon' => '🌱', 'color' => '#7C3AED'];
+            $meters['vet_consultations_per_cycle']        = ['label' => 'Vet Consultations',  'path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>',  'color' => '#0D9488'];
+            $meters['agronomist_consultations_per_cycle'] = ['label' => 'Agro Consultations', 'path' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 2 2 2c0 5 5 10 10 10zm0 0c0-5 5-10 10-10-5 0-10 5-10 10"/>',                                                                                                    'color' => '#7C3AED'];
         }
         @endphp
         @foreach($meters as $mkey => $m)
@@ -152,7 +158,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
         <div style="background:#f8fafc;border-radius:10px;padding:14px 16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:18px;">{{ $m['icon'] }}</span>
+                    <svg width="18" height="18" fill="none" stroke="{{ $m['color'] }}" stroke-width="1.8" viewBox="0 0 24 24">{!! $m['path'] !!}</svg>
                     <span style="font-size:12px;font-weight:700;color:#374151;">{{ $m['label'] }}</span>
                 </div>
                 <span style="font-size:13px;font-weight:800;color:{{ $isWarning ? '#dc2626' : '#0f172a' }};">
@@ -167,11 +173,12 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
                 <div style="height:100%;width:{{ $pct }}%;background:{{ $isWarning ? 'linear-gradient(90deg,#F4A300,#dc2626)' : "linear-gradient(90deg,{$m['color']},#0F6B3E)" }};border-radius:4px;transition:width 0.3s;"></div>
             </div>
             @if($isWarning)
-            <div style="color:#dc2626;font-size:11px;font-weight:600;margin-top:6px;">
-                ⚠ Approaching limit — <a href="{{ route('subscription.plans') }}" style="color:#dc2626;text-decoration:underline;">Upgrade</a>
+            <div style="color:#dc2626;font-size:11px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px;">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                Approaching limit — <a href="{{ route('subscription.plans') }}" style="color:#dc2626;text-decoration:underline;">Upgrade</a>
             </div>
             @elseif($isUnlimited)
-            <div style="color:#1FA84A;font-size:11px;font-weight:600;margin-top:4px;">✓ Unlimited on your plan</div>
+            <div style="color:#1FA84A;font-size:11px;font-weight:600;margin-top:4px;display:flex;align-items:center;gap:4px;"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Unlimited on your plan</div>
             @endif
         </div>
         @endforeach
@@ -205,7 +212,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
     @if($nextPlan)
     @php $nc = config('subscription.plans.'.$nextPlan); @endphp
     <a href="{{ route('subscription.plans') }}" style="background:linear-gradient(135deg,{{ $nc['badge_color'] }},{{ $nc['badge_color'] }}cc);color:#fff;border-radius:12px;padding:16px;text-decoration:none;display:block;">
-        <div style="font-size:20px;margin-bottom:8px;">⬆</div>
+        <div style="margin-bottom:8px;"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg></div>
         <div style="font-size:14px;font-weight:800;margin-bottom:2px;">Upgrade to {{ $nc['name'] }}</div>
         <div style="font-size:11px;opacity:0.8;">Unlock more features</div>
     </a>
@@ -213,7 +220,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
 
     <!-- Cancel -->
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;" x-data="{ open: false }">
-        <div style="font-size:20px;margin-bottom:8px;">⏸</div>
+        <div style="margin-bottom:8px;"><svg width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
         <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:2px;">Cancel Subscription</div>
         <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Access continues until {{ $activeSub->endsAt()->format('M d') }}</div>
         <button @click="open=true" style="background:#fee2e2;color:#dc2626;border:none;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">
@@ -244,7 +251,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
 
     <!-- Support -->
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
-        <div style="font-size:20px;margin-bottom:8px;">💬</div>
+        <div style="margin-bottom:8px;"><svg width="22" height="22" fill="none" stroke="#0F6B3E" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
         <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:2px;">Need Help?</div>
         <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Contact our support team</div>
         <a href="mailto:sanizakka@gmail.com" style="background:#f0fdf4;color:#0F6B3E;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block;">

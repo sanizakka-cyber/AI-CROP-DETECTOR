@@ -5,7 +5,7 @@
             @php $greetingKey = now()->hour < 12 ? 'Good morning' : (now()->hour < 17 ? 'Good afternoon' : 'Good evening'); @endphp
             <h1 style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">
                 <span data-i18n="{{ $greetingKey }}">{{ __($greetingKey) }}</span>,
-                {{ auth()->user()->displayFirstName }} 👋
+                {{ auth()->user()->displayFirstName }}
             </h1>
             <p style="font-size:13px;color:#64748b;margin:4px 0 0;" data-i18n="Here's what's happening on your farm today">{{ __("Here's what's happening on your farm today") }}</p>
         </div>
@@ -30,7 +30,7 @@
 {{-- No subscription — prominent upgrade CTA --}}
 <div style="background:linear-gradient(135deg,#0B2447,#0F6B3E);border-radius:16px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
     <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(244,163,0,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">⭐</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(244,163,0,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="22" height="22" fill="none" stroke="#F4A300" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg></div>
         <div>
             <div style="color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;" data-i18n="No Active Subscription">{{ __('No Active Subscription') }}</div>
             <div style="color:#fff;font-size:16px;font-weight:800;margin-top:2px;" data-i18n="Start your 14-day free trial today">{{ __('Start your 14-day free trial today') }}</div>
@@ -64,7 +64,7 @@
 <div style="background:linear-gradient(135deg,#0B2447,#0F6B3E);border-radius:16px;padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:relative;overflow:hidden;">
     <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.04);top:-40px;right:60px;"></div>
     <div style="display:flex;align-items:center;gap:12px;position:relative;">
-        <div style="width:40px;height:40px;border-radius:10px;background:{{ $planCfg['badge_color'] ?? '#1FA84A' }};display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
+        <div style="width:40px;height:40px;border-radius:10px;background:{{ $planCfg['badge_color'] ?? '#1FA84A' }};display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg></div>
         <div>
             <div style="color:rgba(255,255,255,0.6);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;" data-i18n="Active Plan">{{ __('Active Plan') }}</div>
             <div style="color:#fff;font-size:16px;font-weight:800;">{{ $planCfg['name'] ?? ucfirst($subPlan) }}</div>
@@ -321,7 +321,7 @@ function dismissOnboarding() {
         <div style="padding:0 4px;">
             @forelse($recentAnimals as $animal)
             <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f8fafc;">
-                <div style="width:38px;height:38px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🐄</div>
+                <div style="width:38px;height:38px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg></div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {{ $animal->name ?? 'Unnamed' }} <span style="font-weight:400;color:#94a3b8;">#{{ $animal->tag_number ?? '—' }}</span>
@@ -337,7 +337,7 @@ function dismissOnboarding() {
             </div>
             @empty
             <div style="text-align:center;padding:32px 20px;">
-                <div style="font-size:36px;margin-bottom:10px;">🐄</div>
+                <div style="width:56px;height:56px;border-radius:16px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;"><svg width="28" height="28" fill="none" stroke="#0F6B3E" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg></div>
                 <p style="font-size:13px;color:#64748b;margin-bottom:10px;" data-i18n="No animals registered yet">{{ __('No animals registered yet') }}</p>
                 <a href="{{ route('farmer.livestock') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;" data-i18n="Add your first animal">{{ __('Add your first animal') }}</a> →
             </div>
@@ -530,7 +530,7 @@ function loadWeather() {
         .then(function(d) {
             result.textContent = '';
             if (d.error) {
-                var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='⚠ ' + d.error; result.appendChild(e); return;
+                var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='Error: ' + d.error; result.appendChild(e); return;
             }
             function safeAppend(prefix, val, styles) {
                 if (!val) return;
@@ -539,12 +539,12 @@ function loadWeather() {
             }
             var summary = d.summary || d.forecast || d.advisory || d.recommendation || '';
             safeAppend('', summary, 'margin-bottom:10px;');
-            safeAppend('🌡 Temperature: ', d.temperature, 'font-size:12px;color:#64748b;');
-            safeAppend('🌧 Rainfall: ', d.rainfall, 'font-size:12px;color:#64748b;');
+            safeAppend('Temp: ', d.temperature, 'font-size:12px;color:#64748b;');
+            safeAppend('Rainfall: ', d.rainfall, 'font-size:12px;color:#64748b;');
             safeAppend('', d.farming_advice, 'margin-top:8px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #0F6B3E;border-radius:6px;font-size:12px;color:#166534;');
             if (!result.hasChildNodes()) result.textContent = JSON.stringify(d, null, 2);
         })
-        .catch(function() { result.textContent = '⚠ Weather service temporarily unavailable.'; });
+        .catch(function() { result.textContent = 'Weather service temporarily unavailable.'; });
 }
 </script>
 </x-app-layout>

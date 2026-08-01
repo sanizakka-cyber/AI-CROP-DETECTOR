@@ -60,7 +60,7 @@
                     <div>
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">{{ $ind['title'] }}</p>
                         <p class="text-3xl font-black {{ $colors[$ind['color']]['num'] }} mt-1 leading-none">{{ $ind['value'] }}</p>
-                        <p class="text-xs {{ $ind['up'] ? 'text-emerald-500' : 'text-red-500' }} font-semibold mt-1.5">{{ $ind['up'] ? '↑' : '↓' }} {{ $ind['change'] }}</p>
+                        <p class="text-xs {{ $ind['up'] ? 'text-emerald-500' : 'text-red-500' }} font-semibold mt-1.5 flex items-center gap-0.5">@if($ind['up'])<svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l8 16H4L12 4z"/></svg>@else<svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20L4 4h16L12 20z"/></svg>@endif {{ $ind['change'] }}</p>
                     </div>
                     <div class="w-10 h-10 {{ $colors[$ind['color']]['bg'] }} rounded-xl flex items-center justify-center flex-shrink-0">
                         <svg class="w-5 h-5 {{ $colors[$ind['color']]['ic'] }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $ind['icon'] }}"/></svg>

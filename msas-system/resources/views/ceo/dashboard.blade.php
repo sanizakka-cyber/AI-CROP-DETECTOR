@@ -114,7 +114,7 @@
             ['New Today',        number_format($newUsersToday),                   number_format($newUsersWeek).' this week',                      '#2563eb', null],
             ['Revenue Today',    '₦'.number_format($payRevenue['today']),         '₦'.number_format($payRevenue['month']).' this month',          '#16a34a', $revenueGrowth],
             ['MRR',              '₦'.number_format($mrr),                         '₦'.number_format($arr).' ARR',                                '#7c3aed', null],
-            ['Net Profit',       '₦'.number_format($netProfit),                   ($revenueGrowth>=0?'↑':'↓').abs($revenueGrowth).'% vs last mo','#0369a1', $revenueGrowth],
+            ['Net Profit',       '₦'.number_format($netProfit),                   ($revenueGrowth>=0?'+':'-').abs($revenueGrowth).'% vs last mo','#0369a1', $revenueGrowth],
             ['AI Scans Today',   number_format($aiStats['today']),                number_format($aiStats['total']).' total',                      '#0D9488', null],
             ['Avg Confidence',   $aiStats['avg_conf'].'%',                        'across all AI diagnoses',                                     $aiStats['avg_conf']>=75?'#16a34a':($aiStats['avg_conf']>=50?'#d97706':'#dc2626'), null],
             ['Active Subs',      number_format($subStats['active']),              number_format($subStats['trial']).' on trial',                  '#be185d', $subStats['growth_pct']],
@@ -128,7 +128,7 @@
             <div class="bi-num mt-1" style="color:#0f172a;font-size:22px;">{{ $pv }}</div>
             <div class="bi-sub">{{ $ps }}</div>
             @if($pt !== null)
-            <div class="mt-1.5 {{ $pt >= 0 ? 'trend-u' : 'trend-d' }}">{{ $pt >= 0 ? '▲' : '▼' }} {{ abs($pt) }}%</div>
+            <div class="mt-1.5 flex items-center gap-0.5 {{ $pt >= 0 ? 'trend-u' : 'trend-d' }}">@if($pt >= 0)<svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l8 16H4L12 4z"/></svg>@else<svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20L4 4h16L12 20z"/></svg>@endif {{ abs($pt) }}%</div>
             @endif
         </div>
         @endforeach
