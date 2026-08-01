@@ -85,9 +85,9 @@
     </style>
 </head>
 <body class="antialiased"
-      x-data="{ sidebarOpen: true, notifOpen: false, profileOpen: false, langOpen: false }"
-      @msas-close-overlays.window="notifOpen=false; profileOpen=false; langOpen=false"
-      @keydown.escape.window="notifOpen=false; profileOpen=false; langOpen=false">
+      x-data="{ sidebarOpen: true }"
+      @msas-close-overlays.window="$store.ui.closeAll()"
+      @keydown.escape.window="$store.ui.closeAll()">
 
 <div class="flex h-screen overflow-hidden">
 
@@ -482,11 +482,11 @@
                     }
                 @endphp
                 <div class="relative">
-                    <button @click="notifOpen = !notifOpen; profileOpen = false; langOpen = false" class="notif-btn" aria-label="Notifications" :aria-expanded="notifOpen.toString()">
+                    <button @click="$store.ui.toggle('notif')" class="notif-btn" aria-label="Notifications" :aria-expanded="$store.ui.is('notif').toString()">
                         <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                         @if($notifCount > 0)<span class="notif-badge">{{ $notifCount > 99 ? '99+' : $notifCount }}</span>@endif
                     </button>
-                    <div x-show="notifOpen" @click.outside="notifOpen=false" x-cloak
+                    <div x-show="$store.ui.is('notif')" @click.outside="$store.ui.closeAll()" x-cloak
                          class="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
                         <div class="p-4 border-b border-slate-100 flex items-center justify-between">
                             <span class="font-bold text-slate-800 text-sm">Notifications</span>
@@ -523,22 +523,22 @@
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="relative" @click.outside="langOpen=false">
+                <div class="relative" @click.outside="$store.ui.closeAll()">
                     @php
                         $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
                         $cur = app()->getLocale();
                         $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
-                    <button @click="langOpen = !langOpen; notifOpen = false; profileOpen = false" :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
+                    <button @click="$store.ui.toggle('lang')" :aria-expanded="$store.ui.is('lang').toString()" aria-haspopup="true" aria-label="Select language"
                             class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
                         <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
                         <span class="hidden sm:inline" data-locale-current="code">{{ strtoupper($cur) }}</span>
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
-                             :style="langOpen ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
+                             :style="$store.ui.is('lang') ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
                             <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    <div x-show="langOpen" x-cloak
+                    <div x-show="$store.ui.is('lang')" x-cloak
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
@@ -568,7 +568,7 @@
 
                 <!-- Profile dropdown -->
                 <div class="relative">
-                    <button @click="profileOpen = !profileOpen; notifOpen = false; langOpen = false" class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
+                    <button @click="$store.ui.toggle('profile')" class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
                         <img src="{{ auth()->user()->avatarUrl }}"
                              alt="" class="w-8 h-8 rounded-lg object-cover">
                         <div class="hidden sm:block text-left">
@@ -586,7 +586,7 @@
                         </div>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <div x-show="profileOpen" @click.outside="profileOpen=false" x-cloak
+                    <div x-show="$store.ui.is('profile')" @click.outside="$store.ui.closeAll()" x-cloak
                          class="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
                         <div class="p-4 border-b border-slate-100">
                             <div class="font-bold text-sm text-slate-800">{{ auth()->user()->name ?: auth()->user()->email }}</div>
@@ -954,6 +954,7 @@
 <style>@keyframes fb-spin{to{transform:rotate(360deg)}}</style>
 <script>
 function openFeedbackModal() {
+    if (window.Alpine) window.Alpine.store('ui').closeAll();
     window.dispatchEvent(new CustomEvent('msas-close-overlays'));
     const modal = document.getElementById('fb-modal');
     modal.style.display = 'flex';
