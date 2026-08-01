@@ -16,14 +16,16 @@
     {{-- KPIs --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @foreach([
-            ['label'=>'My Listings',     'value'=>$myListings,                        'sub'=>"{$activeListings} active",       'icon'=>'📦', 'color'=>'blue'],
-            ['label'=>'Total Orders',     'value'=>$totalOrders,                       'sub'=>"{$pendingOrders} pending",        'icon'=>'🛒', 'color'=>'amber'],
-            ['label'=>'Revenue',          'value'=>'₦'.number_format($totalRevenue),   'sub'=>'from paid orders',               'icon'=>'💰', 'color'=>'green'],
-            ['label'=>'Farmers Nearby',   'value'=>number_format($farmersInState),     'sub'=>auth()->user()->state ?? 'your state', 'icon'=>'🌾', 'color'=>'emerald'],
+            ['label'=>'My Listings',     'value'=>$myListings,                        'sub'=>"{$activeListings} active",           'color'=>'#0288D1', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>'],
+            ['label'=>'Total Orders',     'value'=>$totalOrders,                       'sub'=>"{$pendingOrders} pending",           'color'=>'#d97706', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>'],
+            ['label'=>'Revenue',          'value'=>'₦'.number_format($totalRevenue),   'sub'=>'from paid orders',                 'color'=>'#0F6B3E', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+            ['label'=>'Farmers Nearby',   'value'=>number_format($farmersInState),     'sub'=>auth()->user()->state ?? 'your state', 'color'=>'#059669', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 2 2 2c0 5 5 10 10 10zm0 0c0-5 5-10 10-10-5 0-10 5-10 10"/>'],
         ] as $c)
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-2xl">{{ $c['icon'] }}</span>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:{{ $c['color'] }}18">
+                    <svg width="18" height="18" fill="none" stroke="{{ $c['color'] }}" stroke-width="1.8" viewBox="0 0 24 24">{!! $c['path'] !!}</svg>
+                </div>
                 <span class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ $c['label'] }}</span>
             </div>
             <p class="text-2xl font-extrabold text-slate-800">{{ $c['value'] }}</p>
@@ -35,13 +37,15 @@
     {{-- Quick Actions --}}
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         @foreach([
-            ['label'=>'List Product', 'icon'=>'📦', 'route'=>'marketplace.sell', 'desc'=>'Add to marketplace'],
-            ['label'=>'View Orders',  'icon'=>'🛒', 'route'=>'marketplace',       'desc'=>'All incoming orders'],
-            ['label'=>'Marketplace',  'icon'=>'🏪', 'route'=>'marketplace',       'desc'=>'Browse all products'],
+            ['label'=>'List Product', 'color'=>'#0288D1', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>',                                                                                                                                                                   'route'=>'marketplace.sell', 'desc'=>'Add to marketplace'],
+            ['label'=>'View Orders',  'color'=>'#d97706', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>',                                                                           'route'=>'marketplace',       'desc'=>'All incoming orders'],
+            ['label'=>'Marketplace',  'color'=>'#0F6B3E', 'path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>',                                                                           'route'=>'marketplace',       'desc'=>'Browse all products'],
         ] as $a)
         <a href="{{ route($a['route']) }}"
            class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:-translate-y-0.5 transition flex items-center gap-4">
-            <div class="text-3xl">{{ $a['icon'] }}</div>
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background:{{ $a['color'] }}1a">
+                <svg width="22" height="22" fill="none" stroke="{{ $a['color'] }}" stroke-width="1.8" viewBox="0 0 24 24">{!! $a['path'] !!}</svg>
+            </div>
             <div>
                 <p class="font-bold text-slate-700">{{ $a['label'] }}</p>
                 <p class="text-xs text-slate-400">{{ $a['desc'] }}</p>
@@ -57,7 +61,9 @@
         </div>
         @if(collect($recentOrders)->isEmpty())
         <div class="text-center py-12 text-slate-400">
-            <p class="text-4xl mb-2">🛒</p>
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style="background:#d9770618">
+                <svg width="28" height="28" fill="none" stroke="#d97706" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
             <p class="font-semibold">No orders yet</p>
             <p class="text-sm mt-1">List products on the marketplace to start receiving orders.</p>
         </div>
