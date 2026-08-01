@@ -85,7 +85,7 @@
         #main-nav.scrolled .nav-user-name{color:#111;}
 
         /* ── Hero ── */
-        .hero-bg{background:linear-gradient(135deg,rgba(27,94,32,.88) 0%,rgba(46,125,50,.80) 55%,rgba(2,136,209,.65) 100%),url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80&auto=format&fit=crop') center/cover no-repeat;}
+        .hero-bg{background:linear-gradient(110deg,rgba(11,36,71,.93) 0%,rgba(15,107,62,.82) 50%,rgba(15,107,62,.55) 100%),url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80&auto=format&fit=crop') center 40%/cover no-repeat;}
 
         /* ── Section shared ── */
         .section-tag{display:inline-flex;align-items:center;gap:.4rem;background:var(--green-light);color:var(--green);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.3rem .85rem;border-radius:999px;margin-bottom:.5rem;}
@@ -93,9 +93,13 @@
         .section-sub{font-size:.9rem;color:#555;max-width:580px;margin:0 auto;line-height:1.65;}
 
         /* ── Solutions ── */
-        .sol-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:.875rem .625rem;text-align:center;transition:all .3s;cursor:pointer;}
-        .sol-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(46,125,50,.15);border-color:var(--green);}
-        .sol-icon{width:38px;height:38px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:1.05rem;color:var(--green);margin:0 auto .5rem;}
+        .sol-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:1rem .75rem;text-align:center;transition:all .28s;cursor:pointer;position:relative;overflow:hidden;}
+        .sol-card::before{content:'';position:absolute;inset:0;border-radius:13px;background:linear-gradient(135deg,rgba(46,125,50,.07),rgba(2,136,209,.05));opacity:0;transition:opacity .28s;}
+        .sol-card:hover::before{opacity:1;}
+        .sol-card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(46,125,50,.18);border-color:var(--green);}
+        .sol-card>*{position:relative;z-index:1;}
+        .sol-icon{width:42px;height:42px;border-radius:11px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--green);margin:0 auto .6rem;transition:background .28s,color .28s;}
+        .sol-card:hover .sol-icon{background:var(--green);color:#fff;}
 
         /* ── Feature cards ── */
         .feat-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.125rem;display:flex;gap:.75rem;align-items:flex-start;transition:all .3s;}
@@ -371,10 +375,20 @@
                     Empowering Agriculture<br/>with <span class="text-yellow-300">Artificial Intelligence</span>
                 </h1>
                 <p class="text-green-100 text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-xl">Helping farmers, livestock owners, agribusinesses, governments and development partners make smarter decisions through AI, data and digital innovation.</p>
-                <div class="flex flex-wrap gap-2 md:gap-3">
-                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-bold text-sm md:text-base shadow-lg transition hover:-translate-y-1" style="background:var(--green);color:#fff;box-shadow:0 8px 24px rgba(46,125,50,.45)"><i class="fa-solid fa-seedling"></i> Start Farming</a>
+                <div class="flex flex-wrap gap-2 md:gap-3 mb-6 md:mb-8">
+                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-bold text-sm md:text-base shadow-lg transition hover:-translate-y-1" style="background:var(--green);color:#fff;box-shadow:0 8px 24px rgba(46,125,50,.45)"><i class="fa-solid fa-seedling"></i> Start Farming Free</a>
                     <a href="#ai-assistant" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/15 backdrop-blur border border-white/30 text-white hover:bg-white/25 transition"><i class="fa-solid fa-play text-xs"></i> Watch Demo</a>
-                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 transition"><i class="fa-solid fa-download text-xs"></i> Download App</a>
+                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-5 md:px-7 py-3 md:py-3.5 rounded-xl font-semibold text-sm md:text-base bg-white/10 backdrop-blur border border-white/20 text-white hover:bg-white/20 transition"><i class="fa-solid fa-mobile-screen text-xs"></i> Get Mobile App</a>
+                </div>
+                {{-- Trust strip --}}
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-green-100" style="font-size:11px;font-weight:600;letter-spacing:.04em;">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-green-300 text-xs"></i>NDPR Compliant</span>
+                    <span class="opacity-40">|</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-star text-yellow-300 text-xs"></i>14-Day Free Trial</span>
+                    <span class="opacity-40">|</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-users text-green-300 text-xs"></i>20,000+ Farmers</span>
+                    <span class="opacity-40">|</span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-check-circle text-green-300 text-xs"></i>No Credit Card Required</span>
                 </div>
             </div>
             {{-- Right: stacked stat cards (hidden on mobile — they appear in stats bar below) --}}
@@ -388,6 +402,18 @@
                         <div class="font-heading font-extrabold text-xl leading-none text-gray-900">{{ $num }}</div>
                         <div class="text-gray-400 text-xs font-medium mt-0.5">{{ $label }}</div>
                     </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Mobile stats strip — desktop sees the sidebar cards --}}
+        <div class="lg:hidden mt-6 pb-2">
+            <div class="grid grid-cols-3 gap-2.5">
+                @foreach([['20K+','Farmers'],['36 States','Coverage'],['99.9%','Uptime']] as [$n,$l])
+                <div class="bg-white/15 backdrop-blur-sm border border-white/20 rounded-xl py-3 text-center">
+                    <div class="font-heading font-extrabold text-white text-lg leading-none">{{ $n }}</div>
+                    <div class="text-green-200 mt-0.5" style="font-size:10px;font-weight:600;">{{ $l }}</div>
                 </div>
                 @endforeach
             </div>
@@ -449,9 +475,9 @@
         </div>
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 md:gap-3">
             @foreach([
-                ['Crop Farming','seedling','services.crops'],
-                ['Livestock','cow','services.livestock'],
-                ['Poultry','egg','services.poultry'],
+                ['Crop Farming','seedling','register'],
+                ['Livestock','cow','register'],
+                ['Poultry','egg','register'],
                 ['Fish Farming','fish','register'],
                 ['Greenhouse','house','register'],
                 ['Marketplace','store','marketplace'],
@@ -460,7 +486,7 @@
                 ['Weather Intelligence','cloud-sun','register'],
                 ['Satellite Monitoring','satellite-dish','register'],
                 ['Inventory Management','boxes-stacking','register'],
-                ['Farm Finance','coins','services.finance'],
+                ['Farm Finance','coins','register'],
                 ['Insurance','shield-halved','register'],
                 ['Extension Services','person-chalkboard','register'],
                 ['GIS Mapping','map-location-dot','register'],
@@ -795,7 +821,7 @@
                     <div class="flex gap-0.5 text-yellow-400 mb-3">@for($i=0;$i<5;$i++)<i class="fa-solid fa-star text-sm"></i>@endfor</div>
                     <p class="text-gray-600 text-sm leading-relaxed mb-4 italic">&ldquo;{{ $text }}&rdquo;</p>
                     <div class="flex items-center gap-3">
-                        <img loading="lazy" src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                        <img loading="lazy" src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-10 h-10 rounded-full object-cover shrink-0" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($name) }}&background=2E7D32&color=fff&size=80&bold=true&rounded=true'">
                         <div><div class="font-bold text-gray-800 text-sm">{{ $name }}</div><div class="text-gray-400 text-xs">{{ $role }}</div></div>
                     </div>
                 </div>
