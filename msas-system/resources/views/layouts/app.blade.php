@@ -357,15 +357,15 @@
             @if($role === 'logistics-provider')
             <div x-show="sidebarOpen" class="nav-section">Fleet</div>
             <a href="{{ route('logistics.vehicles') }}" class="nav-link {{ request()->routeIs('logistics.vehicles') ? 'active' : '' }}">
-                <span class="nav-icon">🚛</span>
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
                 <span x-show="sidebarOpen">My Vehicles</span>
             </a>
             <a href="{{ route('logistics.drivers') }}" class="nav-link {{ request()->routeIs('logistics.drivers') ? 'active' : '' }}">
-                <span class="nav-icon">👨‍✈️</span>
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></span>
                 <span x-show="sidebarOpen">Drivers</span>
             </a>
             <a href="{{ route('logistics.deliveries') }}" class="nav-link {{ request()->routeIs('logistics.deliveries') ? 'active' : '' }}">
-                <span class="nav-icon">📦</span>
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
                 <span x-show="sidebarOpen">Deliveries</span>
             </a>
             @endif
@@ -646,7 +646,7 @@
             @php $imp = \App\Models\User::find(session('impersonate.original_id')); @endphp
             <div class="sticky top-0 z-50 bg-amber-500 text-amber-950 text-xs font-bold px-4 py-2 flex items-center justify-between gap-3 shadow-sm">
                 <div class="flex items-center gap-2">
-                    <span class="text-base">👁</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>
                         Viewing as <strong>{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</strong>
                         ({{ auth()->user()->role }})
@@ -826,15 +826,20 @@
 #chat-send{padding:8px 14px;background:#0F6B3E;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
 </style>
 
-<button id="msas-chat-btn" title="AI Farm Assistant" onclick="toggleChat()">🌿</button>
+<button id="msas-chat-btn" title="AI Farm Assistant" onclick="toggleChat()">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+</button>
 
 <div id="msas-chat-modal">
     <div id="chat-header">
-        <div id="chat-header-title">🌿 MSAS AI Assistant</div>
+        <div id="chat-header-title">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            MSAS AI Assistant
+        </div>
         <button id="chat-close" onclick="toggleChat()">×</button>
     </div>
     <div id="chat-messages">
-        <div class="chat-bubble bot">Hello! I'm your MSAS AI farming assistant. Ask me anything about crops, pests, livestock, market prices, or weather. 🌱</div>
+        <div class="chat-bubble bot">Hello! I'm your MSAS AI farming assistant. Ask me anything about crops, pests, livestock, market prices, or weather.</div>
     </div>
     <div id="chat-footer">
         <input type="text" id="chat-input" placeholder="Ask about your farm…" onkeydown="if(event.key==='Enter')sendChat()">
@@ -914,7 +919,7 @@
             <button onclick="closeFeedbackModal()" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">&times;</button>
         </div>
         <div id="fb-success" class="hidden" style="text-align:center;padding:24px 0;">
-            <div style="font-size:40px;margin-bottom:12px;">🎉</div>
+            <div style="margin-bottom:12px;display:flex;justify-content:center;"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#f0fdf4"/><path stroke="#0F6B3E" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="M14 24l8 8 12-14"/></svg></div>
             <div style="font-weight:800;color:#0F6B3E;font-size:16px;">Feedback Submitted Successfully</div>
             <div style="font-size:13px;color:#64748b;margin-top:6px;">Thank you for helping improve MSAS FarmAI.</div>
             <div id="fb-ref" style="margin-top:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;color:#166534;letter-spacing:0.05em;"></div>
