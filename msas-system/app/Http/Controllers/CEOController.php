@@ -440,6 +440,38 @@ class CEOController extends Controller
             $newUsersToday = $newUsersWeek = $verifiedUsers = $verifyRate = 0;
         }
 
+        // ── Wallet Stats ───────────────────────────────────────────
+        try {
+            $walletStats = [
+                'total_balance'       => \App\Models\Wallet::sum('balance'),
+                'pending_withdrawals' => DB::table('wallet_transactions')
+                                            ->where('type', 'withdrawal')
+                                            ->where('status', 'pending')
+                                            ->count(),
+                'withdrawals_value'   => DB::table('wallet_transactions')
+                                            ->where('type', 'withdrawal')
+                                            ->where('status', 'pending')
+                                            ->sum('amount'),
+            ];
+        } catch (\Exception $e) {
+            $walletStats = ['total_balance' => 0, 'pending_withdrawals' => 0, 'withdrawals_value' => 0];
+        }
+
+        // ── Risk Metrics ───────────────────────────────────────────
+        try {
+            $failedPaymentsToday = Payment::where('status', 'failed')
+                ->whereDate('created_at', today())
+                ->count();
+            $pendingVerifications = User::whereIn('role', [
+                'vet','agronomist','agro-dealer','equipment-dealer','agribusiness-owner',
+                'cooperative','government-agency','ngo','research-institution',
+                'input-supplier','logistics-provider','investor',
+            ])->where('application_status', 'pending')->count();
+        } catch (\Exception $e) {
+            $failedPaymentsToday  = 0;
+            $pendingVerifications = $pendingExperts;
+        }
+
         return view('ceo.dashboard', compact(
             'totalUsers','activeUsers','pendingExperts',
             'totalAnimals','totalDiagnoses','pendingConsults',
@@ -459,7 +491,8 @@ class CEOController extends Controller
             'payRevenue',
             'mrr','arr','churnRate','conversionRate',
             'newUsersToday','newUsersWeek','verifiedUsers','verifyRate',
-            'revTimeSeries','geoChart'
+            'revTimeSeries','geoChart',
+            'walletStats','failedPaymentsToday','pendingVerifications'
         ));
     }
 
