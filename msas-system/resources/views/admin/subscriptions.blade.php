@@ -19,21 +19,21 @@
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px;">
     @php
     $statCards = [
-        ['label'=>'Total Records',    'val'=>$stats['total'],     'icon'=>'📋', 'color'=>'#0B2447'],
-        ['label'=>'Active',           'val'=>$stats['active'],    'icon'=>'✅', 'color'=>'#15803d'],
-        ['label'=>'Free Trials',      'val'=>$stats['trial'],     'icon'=>'🎁', 'color'=>'#2D9CDB'],
-        ['label'=>'Expired',          'val'=>$stats['expired'],   'icon'=>'⌛', 'color'=>'#dc2626'],
-        ['label'=>'Cancelled',        'val'=>$stats['cancelled'], 'icon'=>'❌', 'color'=>'#64748b'],
-        ['label'=>'Suspended',        'val'=>$stats['suspended'], 'icon'=>'🚫', 'color'=>'#92400e'],
-        ['label'=>'No Plan',          'val'=>$stats['no_plan'],   'icon'=>'👤', 'color'=>'#94a3b8'],
-        ['label'=>'Monthly Revenue',  'val'=>'₦'.number_format($stats['revenue_monthly']), 'icon'=>'📅', 'color'=>'#0D9488'],
-        ['label'=>'Annual Revenue',   'val'=>'₦'.number_format($stats['revenue_annual']),  'icon'=>'📆', 'color'=>'#7C3AED'],
-        ['label'=>'Total Revenue',    'val'=>'₦'.number_format($stats['revenue']),         'icon'=>'💰', 'color'=>'#F4A300'],
+        ['label'=>'Total Records',    'val'=>$stats['total'],     'color'=>'#0B2447','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>'],
+        ['label'=>'Active',           'val'=>$stats['active'],    'color'=>'#15803d','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+        ['label'=>'Free Trials',      'val'=>$stats['trial'],     'color'=>'#2D9CDB','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+        ['label'=>'Expired',          'val'=>$stats['expired'],   'color'=>'#dc2626','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+        ['label'=>'Cancelled',        'val'=>$stats['cancelled'], 'color'=>'#64748b','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+        ['label'=>'Suspended',        'val'=>$stats['suspended'], 'color'=>'#92400e','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
+        ['label'=>'No Plan',          'val'=>$stats['no_plan'],   'color'=>'#94a3b8','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>'],
+        ['label'=>'Monthly Revenue',  'val'=>'₦'.number_format($stats['revenue_monthly']), 'color'=>'#0D9488','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>'],
+        ['label'=>'Annual Revenue',   'val'=>'₦'.number_format($stats['revenue_annual']),  'color'=>'#7C3AED','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>'],
+        ['label'=>'Total Revenue',    'val'=>'₦'.number_format($stats['revenue']),         'color'=>'#F4A300','path'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'],
     ];
     @endphp
     @foreach($statCards as $sc)
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:14px 16px;">
-        <div style="font-size:20px;margin-bottom:4px;">{{ $sc['icon'] }}</div>
+        <div style="margin-bottom:6px;"><svg width="20" height="20" fill="none" stroke="{{ $sc['color'] }}" stroke-width="1.8" viewBox="0 0 24 24">{!! $sc['path'] !!}</svg></div>
         <div style="font-size:18px;font-weight:800;color:{{ $sc['color'] }};font-variant-numeric:tabular-nums;">{{ $sc['val'] }}</div>
         <div style="font-size:10px;color:#64748b;font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.3px;">{{ $sc['label'] }}</div>
     </div>
@@ -80,11 +80,11 @@
                 </div>
             </div>
             <div style="font-size:10px;color:#64748b;display:flex;flex-wrap:wrap;gap:5px;">
-                <span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">🤖 AI: {{ $aiVal }}</span>
-                <span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">🐄 Stock: {{ $liveVal }}</span>
-                @if($vetDisp !== '—')<span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">🏥 Vet: {{ $vetDisp }}</span>@endif
-                @if($agroDisp !== '—')<span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">🌾 Agro: {{ $agroDisp }}</span>@endif
-                @if($hasMarket)<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:4px;">🛒 Market</span>@endif
+                <span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">AI: {{ $aiVal }}</span>
+                <span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">Stock: {{ $liveVal }}</span>
+                @if($vetDisp !== '—')<span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">Vet: {{ $vetDisp }}</span>@endif
+                @if($agroDisp !== '—')<span style="background:#f1f5f9;padding:2px 7px;border-radius:4px;">Agro: {{ $agroDisp }}</span>@endif
+                @if($hasMarket)<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:4px;">Market</span>@endif
                 @if($ps['expired'] > 0)<span style="background:#fef2f2;color:#dc2626;padding:2px 7px;border-radius:4px;">{{ $ps['expired'] }} expired</span>@endif
             </div>
         </div>
@@ -244,7 +244,7 @@
                 @empty
                 <tr>
                     <td colspan="4" style="text-align:center;padding:48px 20px;">
-                        <div style="font-size:32px;margin-bottom:8px;">🎉</div>
+                        <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                         <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;">All farmers have subscriptions</div>
                         <div style="font-size:12px;color:#94a3b8;">No farmers without a plan were found.</div>
                     </td>

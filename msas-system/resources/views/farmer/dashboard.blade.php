@@ -94,7 +94,7 @@
     <button onclick="dismissOnboarding()" title="Dismiss"
         style="position:absolute;top:14px;right:16px;background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌱</div>
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0F6B3E,#1FA84A);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 2 2 2c0 5 5 10 10 10zm0 0c0-5 5-10 10-10-5 0-10 5-10 10"/></svg></div>
         <div>
             <div style="font-size:15px;font-weight:800;color:#0f172a;">{{ __('Get Started') }} ({{ $doneCount }}/{{ count($onboardingSteps) }} {{ __('done') }})</div>
             <div style="font-size:12px;color:#64748b;">{{ __('Complete these steps to unlock the full power of MSAS FarmAI') }}</div>
@@ -354,7 +354,7 @@ function dismissOnboarding() {
         <div style="padding:0 4px;">
             @forelse($recentFlocks as $flock)
             <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f8fafc;">
-                <div style="width:38px;height:38px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🐔</div>
+                <div style="width:38px;height:38px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" fill="none" stroke="#b45309" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7c0 2.21-3.58 4-8 4S4 9.21 4 7s3.58-4 8-4 8 1.79 8 4zm-16 5c0 2.21 3.58 4 8 4s8-1.79 8-4M4 12v5c0 2.21 3.58 4 8 4s8-1.79 8-4v-5"/></svg></div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:12px;font-weight:700;color:#0f172a;font-family:monospace;">{{ $flock->batch_number }}</div>
                     <div style="font-size:11px;color:#64748b;margin-top:1px;">{{ $flock->bird_type }} · {{ number_format($flock->quantity) }} birds</div>
@@ -365,7 +365,7 @@ function dismissOnboarding() {
             </div>
             @empty
             <div style="text-align:center;padding:32px 20px;">
-                <div style="font-size:36px;margin-bottom:10px;">🐔</div>
+                <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="40" height="40" fill="none" stroke="#b45309" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7c0 2.21-3.58 4-8 4S4 9.21 4 7s3.58-4 8-4 8 1.79 8 4zm-16 5c0 2.21 3.58 4 8 4s8-1.79 8-4M4 12v5c0 2.21 3.58 4 8 4s8-1.79 8-4v-5"/></svg></div>
                 <p style="font-size:13px;color:#64748b;margin-bottom:10px;" data-i18n="No poultry flocks yet">{{ __('No poultry flocks yet') }}</p>
                 <a href="{{ route('farmer.poultry') }}" style="font-size:13px;color:#b45309;font-weight:700;text-decoration:none;" data-i18n="Register a flock">{{ __('Register a flock') }}</a> →
             </div>
@@ -485,13 +485,13 @@ function dismissOnboarding() {
 <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,.05);overflow:hidden;margin-top:24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f1f5f9;cursor:pointer;" onclick="toggleWeatherWidget()">
         <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:36px;height:36px;background:linear-gradient(135deg,#0ea5e9,#2D9CDB);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌦️</div>
+            <div style="width:36px;height:36px;background:linear-gradient(135deg,#0ea5e9,#2D9CDB);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg></div>
             <div>
                 <div style="font-weight:800;font-size:14px;color:#0f172a;">AI Weather Advisory</div>
                 <div style="font-size:11px;color:#94a3b8;">Farming-specific forecast for your region</div>
             </div>
         </div>
-        <div id="weather-chevron" style="color:#94a3b8;font-size:18px;transition:transform .2s;">▼</div>
+        <div id="weather-chevron" style="color:#94a3b8;transition:transform .2s;display:flex;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
     </div>
 
     <div id="weather-body" style="display:none;padding:16px 20px;">
@@ -520,7 +520,7 @@ function loadWeather() {
     var loc = document.getElementById('weather-location').value || 'Nigeria';
     var crop = document.getElementById('weather-crop').value;
     var result = document.getElementById('weather-result');
-    result.innerHTML = '<span style="color:#94a3b8;">⏳ Loading AI weather advisory...</span>';
+    result.innerHTML = '<span style="color:#94a3b8;">Loading AI weather advisory...</span>';
     var fd = new FormData();
     fd.append('location', loc);
     if (crop) fd.append('crop', crop);

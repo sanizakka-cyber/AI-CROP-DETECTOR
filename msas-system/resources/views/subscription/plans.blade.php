@@ -35,7 +35,7 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
 @if(!$activeSub && !$user->latestSubscription())
 <div style="background:linear-gradient(135deg,#0F6B3E,#1FA84A);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
     <div>
-        <div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;">🎉 Start with a 14-Day Free Trial</div>
+        <div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Start with a 14-Day Free Trial</div>
         <div style="color:rgba(255,255,255,0.8);font-size:13px;">15 AI Smart Scans · Basic Farm Dashboard · Marketplace Preview · No credit card required</div>
     </div>
     <a href="{{ route('subscription.subscribe') }}" style="display:none;"></a>
@@ -70,11 +70,11 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
                 <div style="position:relative;">
                     <select name="plan" x-model="qplan"
                         style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;outline:none;">
-                        <option value="basic">🏠 Basic Plan — ₦2,500/month</option>
-                        <option value="basic_pro">🌿 Basic Pro Plan — ₦5,000/month</option>
-                        <option value="premium">⭐ Premium Plan — ₦10,000/month</option>
-                        <option value="enterprise">🏢 Enterprise Plan — ₦30,000/month</option>
-                        <option value="enterprise_plus">💎 Enterprise Plus — ₦75,000/month</option>
+                        <option value="basic">Basic Plan — ₦2,500/month</option>
+                        <option value="basic_pro">Basic Pro Plan — ₦5,000/month</option>
+                        <option value="premium">Premium Plan — ₦10,000/month</option>
+                        <option value="enterprise">Enterprise Plan — ₦30,000/month</option>
+                        <option value="enterprise_plus">Enterprise Plus — ₦75,000/month</option>
                     </select>
                     <div style="position:absolute;right:11px;top:50%;transform:translateY(-50%);pointer-events:none;">
                         <svg width="14" height="14" fill="none" stroke="#64748b" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
@@ -288,7 +288,7 @@ $planIcons = [
     <div style="padding:0 20px 20px;">
         @if($isCurrent)
             <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px;border:1.5px solid #bbf7d0;">
-                <span style="color:#15803d;font-weight:700;font-size:13px;">✓ Your Current Plan</span>
+                <span style="color:#15803d;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" fill="none" stroke="#15803d" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Your Current Plan</span>
             </div>
         @elseif($activeSub && $activeSub->planLevel() > $p['plan_level'])
             <form method="POST" action="{{ route('subscription.subscribe') }}">
@@ -518,7 +518,7 @@ $rowIdx    = 0;
 <!-- Trial Notice -->
 @if(!$activeSub && !$latestSub)
 <div style="background:linear-gradient(135deg,#f0fdf4,#e0f2fe);border:1px solid #bbf7d0;border-radius:14px;padding:20px 24px;margin-top:24px;text-align:center;">
-    <div style="font-size:28px;margin-bottom:8px;">🎉</div>
+    <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
     <div style="font-size:17px;font-weight:800;color:#0f172a;margin-bottom:6px;">Start with a 14-Day Free Trial</div>
     <div style="font-size:13px;color:#475569;">No credit card required. Try any plan free for 14 days. Cancel anytime.</div>
 </div>

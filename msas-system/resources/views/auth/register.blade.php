@@ -76,14 +76,14 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
     <div class="reg-progress" x-show="step > 0">
         <div class="reg-step">
             <div class="reg-step-circle" :class="step > 1 ? 'done' : step === 1 ? 'active' : 'inactive'">
-                <span x-show="step > 1">✓</span><span x-show="step <= 1">1</span>
+                <span x-show="step > 1"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span><span x-show="step <= 1">1</span>
             </div>
             <div class="reg-step-label" :class="step >= 1 ? 'active' : 'inactive'">{{ __('Role') }}</div>
         </div>
         <div class="reg-step-line" :class="step > 1 ? 'done' : ''"></div>
         <div class="reg-step">
             <div class="reg-step-circle" :class="step > 2 ? 'done' : step === 2 ? 'active' : 'inactive'">
-                <span x-show="step > 2">✓</span><span x-show="step <= 2">2</span>
+                <span x-show="step > 2"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span><span x-show="step <= 2">2</span>
             </div>
             <div class="reg-step-label" :class="step >= 2 ? 'active' : 'inactive'">{{ __('Details') }}</div>
         </div>

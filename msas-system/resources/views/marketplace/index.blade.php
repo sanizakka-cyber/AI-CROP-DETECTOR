@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-wrap justify-between items-center gap-3">
             <h2 class="font-semibold text-xl text-slate-800 leading-tight flex items-center gap-2">
-                <span class="text-2xl">🛒</span> {{ __('Marketplace') }}
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg> {{ __('Marketplace') }}
             </h2>
             <span class="text-sm text-slate-500 font-medium">
                 {{ $items->total() }} {{ \Illuminate\Support\Str::plural('product', $items->total()) }} available
@@ -97,14 +97,14 @@
                         loading="lazy"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                 @else
-                    <div class="w-full h-full flex items-center justify-center text-5xl text-slate-200 bg-slate-50">📦</div>
+                    <div class="w-full h-full flex items-center justify-center bg-slate-50"><svg width="48" height="48" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11"/></svg></div>
                 @endif
                 <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold border {{ $stockClass }}">
                     {{ $stockLabel }}
                 </span>
                 @if($product->is_featured)
-                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-white">
-                    ⭐ Featured
+                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-white flex items-center gap-0.5">
+                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Featured
                 </span>
                 @endif
             </div>
@@ -150,7 +150,7 @@
     </div>
     @else
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 md:p-16 text-center">
-            <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-4xl mx-auto mb-5 border border-emerald-100">🛒</div>
+            <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-emerald-100"><svg width="36" height="36" fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
             <h3 class="text-xl font-bold text-slate-800 mb-2">
                 @if(request('search') || request('category'))No Products Found
                 @else No Products Available Yet @endif
@@ -195,7 +195,7 @@
             </button>
 
             <div class="text-center mb-5">
-                <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">📦</div>
+                <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3"><svg width="28" height="28" fill="none" stroke="#059669" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11"/></svg></div>
                 <h3 id="modal-title" class="text-lg font-extrabold text-slate-800"></h3>
                 <p id="modal-category" class="text-xs text-emerald-600 font-bold uppercase tracking-wider mt-0.5"></p>
             </div>
@@ -292,13 +292,13 @@
     <div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer" onclick="toggleMarketWidget()">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style="background:linear-gradient(135deg,#F4A300,#f59e0b);">📈</div>
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#F4A300,#f59e0b);"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><polyline stroke-linecap="round" stroke-linejoin="round" points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline stroke-linecap="round" stroke-linejoin="round" points="16 7 22 7 22 13"/></svg></div>
                 <div>
                     <div class="font-extrabold text-slate-800 text-sm">AI Market Price Advisor</div>
                     <div class="text-[11px] text-slate-400">Get real-time crop price intelligence</div>
                 </div>
             </div>
-            <span id="market-chevron" class="text-slate-400 text-lg transition-transform duration-200">▼</span>
+            <span id="market-chevron" class="text-slate-400 transition-transform duration-200 inline-flex"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
         </div>
         <div id="market-body" class="hidden px-5 py-4">
             <div class="flex flex-wrap gap-2 mb-3">
@@ -330,7 +330,7 @@
         var region = document.getElementById('market-region').value || 'Nigeria';
         var result = document.getElementById('market-result');
         if (!crop) { result.textContent = 'Please enter a crop name.'; return; }
-        result.textContent = '⏳ Fetching market prices...';
+        result.textContent = 'Fetching market prices...';
         var fd = new FormData();
         fd.append('crop', crop);
         fd.append('region', region);
@@ -339,7 +339,7 @@
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 result.textContent = '';
-                if (d.error) { var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='⚠ ' + d.error; result.appendChild(e); return; }
+                if (d.error) { var e = document.createElement('span'); e.style.color='#ef4444'; e.textContent='Error: ' + d.error; result.appendChild(e); return; }
                 function safeRow(prefix, val, cls, styles) {
                     if (!val) return;
                     var el = document.createElement('div'); if (cls) el.className = cls; if (styles) el.setAttribute('style', styles);
@@ -347,12 +347,12 @@
                 }
                 var summary = d.summary || d.analysis || d.market_analysis || d.recommendation || '';
                 safeRow('', summary, 'mb-2', null);
-                safeRow('💰 Current Price: ', d.current_price, 'text-xs text-slate-500', null);
-                safeRow('📊 Trend: ', d.price_trend, 'text-xs text-slate-500', null);
+                safeRow('Current Price: ', d.current_price, 'text-xs text-slate-500', null);
+                safeRow('Trend: ', d.price_trend, 'text-xs text-slate-500', null);
                 safeRow('', d.best_time_to_sell, 'mt-2 p-3 rounded-lg text-xs', 'background:#fffbeb;border-left:3px solid #F4A300;color:#92400e;');
                 if (!result.hasChildNodes()) result.textContent = JSON.stringify(d, null, 2);
             })
-            .catch(function() { result.textContent = '⚠ Market service temporarily unavailable.'; });
+            .catch(function() { result.textContent = 'Market service temporarily unavailable.'; });
     }
     </script>
 </x-app-layout>
