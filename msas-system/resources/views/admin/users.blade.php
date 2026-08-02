@@ -35,7 +35,7 @@
 
             <button onclick="document.getElementById('addUserModal').classList.remove('hidden')"
                     class="w-full md:w-auto bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition font-bold flex items-center justify-center gap-2">
-                <span>➕</span> Add New User
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> Add New User
             </button>
         </div>
 

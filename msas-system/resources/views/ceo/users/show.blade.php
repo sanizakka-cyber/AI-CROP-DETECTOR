@@ -13,7 +13,7 @@
             <div class="flex gap-2">
                 <a href="{{ route('ceo.users.edit', $user) }}"
                    class="px-4 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-semibold hover:bg-[#047857] transition">
-                    ✏ Edit Profile
+                    <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Edit Profile
                 </a>
                 @if($user->id !== auth()->id() && !session('impersonate.original_id'))
                 <a href="{{ route('impersonate.start', $user) }}"
@@ -29,10 +29,10 @@
     <div class="max-w-4xl space-y-5">
 
         @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-semibold">✓ {{ session('success') }}</div>
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}</div>
         @endif
         @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-semibold">⚠ {{ session('error') }}</div>
+        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> {{ session('error') }}</div>
         @endif
 
         {{-- Profile Card --}}
@@ -53,7 +53,7 @@
                                 {{ $user->is_active ? 'Active' : 'Suspended' }}
                             </span>
                             @if($user->is_verified)
-                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700">✓ Verified</span>
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 inline-flex items-center gap-0.5"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Verified</span>
                             @else
                             <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500">Unverified</span>
                             @endif
@@ -73,7 +73,7 @@
                             <button type="submit"
                                 onclick="return confirm('{{ $user->is_active ? 'Suspend' : 'Activate' }} this account?')"
                                 class="px-4 py-2 rounded-xl text-sm font-semibold transition {{ $user->is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }}">
-                                {{ $user->is_active ? '⏸ Suspend' : '▶ Activate' }}
+                                {{ $user->is_active ? 'Suspend' : 'Activate' }}
                             </button>
                         </form>
                         {{-- Delete --}}
@@ -82,7 +82,7 @@
                             <button type="submit"
                                 onclick="return confirm('PERMANENTLY delete {{ addslashes($user->name) }}? This action CANNOT be undone.')"
                                 class="px-4 py-2 bg-red-100 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-200 transition">
-                                🗑 Delete
+                                <svg class="w-3.5 h-3.5 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Delete
                             </button>
                         </form>
                         @endif
