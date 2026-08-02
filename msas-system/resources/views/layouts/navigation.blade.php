@@ -284,7 +284,7 @@
                     <button @click="langOpen=!langOpen"
                         :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language"
                         class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition border border-slate-200">
-                        {{ match($loc){ 'ha'=>'🇳🇬 HA','fr'=>'🇫🇷 FR','yo'=>'🇳🇬 YO','ig'=>'🇳🇬 IG',default=>'🇬🇧 EN' } }}
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> {{ strtoupper($loc) }}
                         <svg class="w-3 h-3 text-slate-400 transition-transform duration-200" :class="langOpen ? 'rotate-180' : ''"
                              fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                     </button>
@@ -297,12 +297,12 @@
                          x-transition:leave-end="opacity-0 scale-95"
                          style="display:none;transform-origin:top right"
                         class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
-                        @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yorùbá'],['ig','🇳🇬','Igbo'],['ff','🇳🇬','Fulfulde'],['ar','🇸🇦','العربية']] as [$code,$flag,$name])
+                        @foreach([['en','English'],['ha','Hausa'],['fr','Francais'],['yo','Yoruba'],['ig','Igbo'],['ff','Fulfulde'],['ar','Arabic']] as [$code,$name])
                         <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">@csrf<input type="hidden" name="locale" value="{{ $code }}">
                         <button type="submit" data-locale-code="{{ $code }}" @click="langOpen=false"
                             class="w-full text-left px-3 py-2 text-xs hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $loc === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
-                            {{ $flag }} {{ $name }}
-                            @if($loc === $code)<span class="ml-auto" data-locale-check="{{ $code }}">✓</span>@endif
+                            {{ $name }}
+                            @if($loc === $code)<span class="ml-auto" data-locale-check="{{ $code }}"><svg width="12" height="12" fill="none" stroke="#0F6B3E" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>@endif
                         </button></form>
                         @endforeach
                     </div>

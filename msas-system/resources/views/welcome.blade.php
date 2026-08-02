@@ -201,12 +201,12 @@
                      x-transition:leave-end="opacity-0 scale-95"
                      style="display:none;transform-origin:top right"
                     class="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-36 z-50">
-                    @foreach([['en','🇬🇧','English'],['ha','🇳🇬','Hausa'],['fr','🇫🇷','Français'],['yo','🇳🇬','Yoruba'],['ig','🇳🇬','Igbo']] as [$code,$flag,$name])
+                    @foreach([['en','English'],['ha','Hausa'],['fr','Francais'],['yo','Yoruba'],['ig','Igbo']] as [$code,$name])
                     <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
                     <button type="submit" @click="langOpen=false"
                         class="w-full text-left px-3 py-2 text-sm hover:bg-green-50 hover:text-green-700 flex items-center gap-2 {{ $locale === $code ? 'font-bold text-green-700' : 'text-gray-700' }}">
-                        <span>{{ $flag }}</span> {{ $name }}
-                        @if($locale === $code)<span class="ml-auto text-xs text-green-700">✓</span>@endif
+                        {{ $name }}
+                        @if($locale === $code)<span class="ml-auto"><svg width="12" height="12" fill="none" stroke="#15803d" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>@endif
                     </button></form>
                     @endforeach
                 </div>
@@ -326,9 +326,9 @@
         <div class="px-4 py-2 border-b border-gray-100">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Language</p>
             <div class="flex flex-wrap gap-1.5">
-                @foreach([['en','🇬🇧','EN'],['ha','🇳🇬','HA'],['fr','🇫🇷','FR'],['yo','🇳🇬','YO'],['ig','🇳🇬','IG']] as [$code,$flag,$label])
+                @foreach([['en','EN'],['ha','HA'],['fr','FR'],['yo','YO'],['ig','IG']] as [$code,$label])
                 <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
-                <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition {{ session('locale','en') === $code ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 hover:bg-green-50' }}">{{ $flag }} {{ $label }}</button></form>
+                <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition {{ session('locale','en') === $code ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 hover:bg-green-50' }}">{{ $label }}</button></form>
                 @endforeach
             </div>
         </div>
@@ -649,22 +649,22 @@
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
                             <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2.5px 3px;">
-                                <div style="font-size:4.5px;color:#15803d;font-weight:600;">🌾 Crop</div>
+                                <div style="font-size:4.5px;color:#15803d;font-weight:600;">Crop</div>
                                 <div style="font-size:10px;font-weight:800;color:#14532d;line-height:1.1;">95%</div>
                                 <div style="font-size:4px;color:#16a34a;">Health</div>
                             </div>
                             <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:2.5px 3px;">
-                                <div style="font-size:4.5px;color:#d97706;font-weight:600;">🐄 Stock</div>
+                                <div style="font-size:4.5px;color:#d97706;font-weight:600;">Stock</div>
                                 <div style="font-size:10px;font-weight:800;color:#78350f;line-height:1.1;">128</div>
                                 <div style="font-size:4px;color:#d97706;">Animals</div>
                             </div>
                             <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:4px;padding:2.5px 3px;">
-                                <div style="font-size:4.5px;color:#7c3aed;font-weight:600;">🐔 Birds</div>
+                                <div style="font-size:4.5px;color:#7c3aed;font-weight:600;">Birds</div>
                                 <div style="font-size:10px;font-weight:800;color:#4c1d95;line-height:1.1;">2.4K</div>
                                 <div style="font-size:4px;color:#7c3aed;">Poultry</div>
                             </div>
                             <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2.5px 3px;">
-                                <div style="font-size:4.5px;color:#1d4ed8;font-weight:600;">🌦 Temp</div>
+                                <div style="font-size:4.5px;color:#1d4ed8;font-weight:600;">Temp</div>
                                 <div style="font-size:10px;font-weight:800;color:#1e3a8a;line-height:1.1;">28°C</div>
                                 <div style="font-size:4px;color:#3b82f6;">Lt. Rain</div>
                             </div>
@@ -679,7 +679,7 @@
                             </div>
                         </div>
                         <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;gap:2px;">
-                            <span style="font-size:6px;">⚠️</span>
+                            <svg width="6" height="6" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                             <span style="font-size:4.5px;color:#92400e;font-weight:600;">Irrigation needed · Field A2</span>
                         </div>
                     </div>
@@ -734,7 +734,7 @@
                             </div>
                         </div>
                         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2.5px 4px;display:flex;align-items:flex-start;gap:2px;">
-                            <span style="font-size:7px;flex-shrink:0;">🤖</span>
+                            <svg width="7" height="7" fill="none" stroke="#1e40af" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                             <span style="font-size:4.5px;color:#1e40af;font-weight:600;line-height:1.4;">AI: Apply 30kg NPK to<br>Maize field by Jul 20</span>
                         </div>
                     </div>
@@ -754,7 +754,7 @@
                                 <span style="font-size:4.5px;color:#fff;font-weight:600;">LIVE</span>
                             </span>
                         </div>
-                        <div style="font-size:4.5px;color:#6b7280;padding:0 1px;">📍 Katsina State</div>
+                        <div style="font-size:4.5px;color:#6b7280;padding:0 1px;">Katsina State</div>
                         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:4px;padding:2.5px 4px;display:flex;align-items:center;justify-content:space-between;">
                             <div><div style="font-size:5px;font-weight:700;color:#1f2937;">Maize</div><div style="font-size:4px;color:#9ca3af;">per 100kg</div></div>
                             <div style="text-align:right;"><div style="font-size:6.5px;font-weight:800;color:#15803d;">₦68k</div><div style="font-size:4.5px;color:#16a34a;font-weight:700;">▲ 2.1%</div></div>
