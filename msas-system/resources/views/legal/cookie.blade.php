@@ -38,7 +38,7 @@ td{padding:10px 14px;border:1px solid #e2e8f0;vertical-align:top;color:#334155}
 <body>
 
 <nav class="nav">
-    <a href="{{ route('welcome') }}" class="nav-brand">🌿 MSAS FarmAI</a>
+    <a href="{{ route('welcome') }}" class="nav-brand" style="display:inline-flex;align-items:center;gap:6px;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg> MSAS FarmAI</a>
     <div class="nav-links">
         <a href="{{ route('legal.privacy') }}">Privacy</a>
         <a href="{{ route('legal.terms') }}">Terms</a>

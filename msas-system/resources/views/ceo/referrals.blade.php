@@ -27,7 +27,7 @@
     <tbody>
     @forelse($leaders as $i => $leader)
     <tr style="border-top:1px solid #f1f5f9;{{ $i===0?'background:#fffbeb;':'' }}">
-        <td style="padding:12px 16px;font-size:16px;">{{ $i===0?'🥇':($i===1?'🥈':($i===2?'🥉':$i+1)) }}</td>
+        <td style="padding:12px 16px;text-align:center;font-size:14px;font-weight:900;color:{{ $i===0?'#b45309':($i===1?'#64748b':($i===2?'#92400e':'#94a3b8')) }};">{{ $i+1 }}</td>
         <td style="padding:12px 16px;font-weight:700;color:#0f172a;">{{ $leader->first_name }} {{ $leader->last_name }}</td>
         <td style="padding:12px 16px;color:#64748b;">{{ $leader->state ?: '—' }}</td>
         <td style="padding:12px 16px;text-align:center;font-weight:900;font-size:18px;color:#0F6B3E;">{{ $leader->referral_count }}</td>

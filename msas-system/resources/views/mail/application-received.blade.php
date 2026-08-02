@@ -49,7 +49,7 @@ body{margin:0;padding:0;background:#f1f5f9;font-family:'Inter',Arial,sans-serif;
 
         <div class="steps">
             <div class="step">
-                <div class="step-num">✓</div>
+                <div class="step-num">&#10003;</div>
                 <div class="step-text"><strong>Application Submitted</strong><br>Your registration and documents have been received.</div>
             </div>
             <div class="step">
@@ -63,7 +63,7 @@ body{margin:0;padding:0;background:#f1f5f9;font-family:'Inter',Arial,sans-serif;
         </div>
 
         <div class="info-box">
-            <p>⏱ Review typically takes <strong>1–3 business days</strong>. We may contact you if additional information is needed.</p>
+            <p>Review typically takes <strong>1–3 business days</strong>. We may contact you if additional information is needed.</p>
         </div>
 
         <p class="text">If you have any questions, please contact us at <a href="mailto:{{ config('mail.from.address') }}" style="color:#0F6B3E;font-weight:700;">{{ config('mail.from.address') }}</a>.</p>

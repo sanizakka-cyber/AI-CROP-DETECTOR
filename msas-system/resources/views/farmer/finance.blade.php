@@ -69,7 +69,7 @@
                                 @empty
                                     <tr>
                                         <td colspan="5" class="px-4 py-8 text-center text-slate-500">
-                                            <div class="text-4xl mb-2 opacity-50">🧾</div>
+                                            <div class="mb-2 flex justify-center opacity-50"><svg width="36" height="36" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg></div>
                                             No financial records found.
                                         </td>
                                     </tr>

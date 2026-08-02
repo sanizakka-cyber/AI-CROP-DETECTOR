@@ -139,8 +139,8 @@
                             <p class="text-xs text-slate-500 font-semibold mt-0.5">Consultations</p>
                         </div>
                     </div>
-                    <div class="mt-2 p-3 {{ config('app.debug') ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200' }} rounded-xl text-xs font-semibold {{ config('app.debug') ? 'text-red-700' : 'text-emerald-700' }}">
-                        {{ config('app.debug') ? '⚠ Debug mode is ON — disable before production deployment.' : '✓ System running in production mode.' }}
+                    <div class="mt-2 p-3 {{ config('app.debug') ? 'bg-red-50 border border-red-200' : 'bg-emerald-50 border border-emerald-200' }} rounded-xl text-xs font-semibold {{ config('app.debug') ? 'text-red-700' : 'text-emerald-700' }} flex items-center gap-2">
+                        @if(config('app.debug'))<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Debug mode is ON — disable before production deployment.@else<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> System running in production mode.@endif
                     </div>
                 </div>
             </div>

@@ -501,7 +501,7 @@ $rowIdx    = 0;
     </div>
     <div style="padding:0 24px 24px;">
         @if($isCurrent)
-            <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px;border:1.5px solid #bbf7d0;"><span style="color:#15803d;font-weight:700;font-size:13px;">✓ Your Current Plan</span></div>
+            <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px;border:1.5px solid #bbf7d0;"><span style="color:#15803d;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" fill="none" stroke="#15803d" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Your Current Plan</span></div>
         @elseif($activeSub && $activeSub->planLevel() > $p['plan_level'])
             <form method="POST" action="{{ route('subscription.subscribe') }}">@csrf<input type="hidden" name="plan" value="{{ $key }}"><input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'"><button type="submit" style="width:100%;padding:12px;border-radius:10px;border:2px solid {{ $p['badge_color'] }};background:transparent;color:{{ $p['badge_color'] }};font-size:14px;font-weight:700;cursor:pointer;">Downgrade to {{ $p['name'] }}</button></form>
         @else

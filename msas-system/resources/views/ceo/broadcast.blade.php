@@ -34,7 +34,7 @@
             </div>
             <div>
                 <label style="font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:6px;">Icon</label>
-                <input type="text" name="icon" value="{{ old('icon') }}" maxlength="5" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;text-align:center;box-sizing:border-box;" placeholder="📢">
+                <input type="text" name="icon" value="{{ old('icon') }}" maxlength="5" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;text-align:center;box-sizing:border-box;" placeholder="icon">
             </div>
         </div>
         <div style="margin-bottom:20px;">

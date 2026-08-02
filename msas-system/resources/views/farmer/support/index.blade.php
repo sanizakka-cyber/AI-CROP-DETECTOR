@@ -27,7 +27,7 @@
     </a>
     @empty
     <div style="text-align:center;padding:48px 20px;">
-        <div style="font-size:40px;margin-bottom:12px;">🎫</div>
+        <div style="margin-bottom:12px;display:flex;justify-content:center;"><svg width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg></div>
         <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:6px;">No tickets yet</div>
         <div style="font-size:12px;color:#94a3b8;margin-bottom:20px;">Submit a support request and our team will respond within 24 hours.</div>
         <a href="{{ route('support.create') }}" style="background:#0F6B3E;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;">Open a Ticket</a>

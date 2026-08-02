@@ -10,7 +10,7 @@
 
             @if($user->force_password_reset)
             <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6 flex items-start gap-3">
-                <span class="text-2xl">⚠️</span>
+                <svg width="22" height="22" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                 <div>
                     <p class="font-bold text-amber-800">Temporary Password Detected</p>
                     <p class="text-sm text-amber-700 mt-1">Your account was provisioned with a temporary password. You must set a new secure password before you can access the system.</p>
