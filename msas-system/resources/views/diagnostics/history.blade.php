@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center flex-wrap gap-3">
             <h2 class="font-semibold text-xl text-slate-800 leading-tight flex items-center gap-2">
-                <span class="text-2xl">📋</span> {{ __('AI Diagnostic Reports') }}
+                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> {{ __('AI Diagnostic Reports') }}
             </h2>
             <a href="{{ route('diagnostics.scan') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition flex items-center gap-2 text-sm">
                 <i class="fa-solid fa-camera text-xs"></i> <span data-i18n="New Scan">{{ __('New Scan') }}</span>
@@ -26,16 +26,16 @@
             $urgency = $diagnosis->urgency_level ?? 'Medium';
 
             $theme = match(true) {
-                $sev === 'Critical'                => ['border'=>'border-red-500',    'hbg'=>'bg-red-600',    'htext'=>'text-white',   'ibg'=>'bg-red-50',    'badge'=>'bg-red-100 text-red-800 border-red-200',   'icon'=>'🔴'],
-                $sev === 'Severe'                  => ['border'=>'border-orange-500', 'hbg'=>'bg-orange-500', 'htext'=>'text-white',   'ibg'=>'bg-orange-50', 'badge'=>'bg-orange-100 text-orange-800 border-orange-200','icon'=>'🟠'],
-                $sev === 'Moderate'                => ['border'=>'border-amber-500',  'hbg'=>'bg-amber-500',  'htext'=>'text-white',   'ibg'=>'bg-amber-50',  'badge'=>'bg-amber-100 text-amber-800 border-amber-200',  'icon'=>'🟡'],
-                $sev === 'Mild'                    => ['border'=>'border-yellow-400', 'hbg'=>'bg-yellow-400', 'htext'=>'text-slate-900','ibg'=>'bg-yellow-50', 'badge'=>'bg-yellow-100 text-yellow-800 border-yellow-200','icon'=>'🟡'],
-                ($diagnosis->health_status ?? '') === 'Healthy' => ['border'=>'border-emerald-500','hbg'=>'bg-emerald-600','htext'=>'text-white','ibg'=>'bg-emerald-50','badge'=>'bg-emerald-100 text-emerald-800 border-emerald-200','icon'=>'🟢'],
-                default                            => ['border'=>'border-blue-400',   'hbg'=>'bg-blue-600',   'htext'=>'text-white',   'ibg'=>'bg-blue-50',   'badge'=>'bg-blue-100 text-blue-800 border-blue-200',   'icon'=>'🔵'],
+                $sev === 'Critical'                => ['border'=>'border-red-500',    'hbg'=>'bg-red-600',    'htext'=>'text-white',   'ibg'=>'bg-red-50',    'badge'=>'bg-red-100 text-red-800 border-red-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#dc2626"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sev === 'Severe'                  => ['border'=>'border-orange-500', 'hbg'=>'bg-orange-500', 'htext'=>'text-white',   'ibg'=>'bg-orange-50', 'badge'=>'bg-orange-100 text-orange-800 border-orange-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#f97316"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sev === 'Moderate'                => ['border'=>'border-amber-500',  'hbg'=>'bg-amber-500',  'htext'=>'text-white',   'ibg'=>'bg-amber-50',  'badge'=>'bg-amber-100 text-amber-800 border-amber-200',  'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sev === 'Mild'                    => ['border'=>'border-yellow-400', 'hbg'=>'bg-yellow-400', 'htext'=>'text-slate-900','ibg'=>'bg-yellow-50', 'badge'=>'bg-yellow-100 text-yellow-800 border-yellow-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
+                ($diagnosis->health_status ?? '') === 'Healthy' => ['border'=>'border-emerald-500','hbg'=>'bg-emerald-600','htext'=>'text-white','ibg'=>'bg-emerald-50','badge'=>'bg-emerald-100 text-emerald-800 border-emerald-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#10b981"><circle cx="5" cy="5" r="5"/></svg>'],
+                default                            => ['border'=>'border-blue-400',   'hbg'=>'bg-blue-600',   'htext'=>'text-white',   'ibg'=>'bg-blue-50',   'badge'=>'bg-blue-100 text-blue-800 border-blue-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#3b82f6"><circle cx="5" cy="5" r="5"/></svg>'],
             };
 
             // ── Type label ────────────────────────────────────────────────────
-            $typeIcon  = match($diagnosis->type) { 'plant'=>'🌿', 'soil'=>'🌱', default=>'🐄' };
+            $typeIcon  = match($diagnosis->type) { 'plant'=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg>', 'soil'=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22v-5m0 0c-2-1-5-1.5-7 0m7 0c2-1 5-1.5 7 0M5 21h14M12 17V8m0-5v2M9 5.5C9 4 10 3 12 3s3 1 3 2.5"/></svg>', default=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5S3 9 3 7.5A2.5 2.5 0 018 7.5H9M4.5 10.5H19.5M19.5 10.5S21 9 21 7.5A2.5 2.5 0 0016 7.5H15M19.5 10.5V16M4.5 10.5V16M7 16v3m10-3v3M7 16h10"/></svg>' };
             $typeLbl   = match($diagnosis->type) { 'plant'=>'Crop / Plant', 'soil'=>'Soil Assessment', default=>'Livestock' };
 
             // ── Build plain TTS text ──────────────────────────────────────────
@@ -73,7 +73,7 @@
             {{-- ── Card Header ──────────────────────────────────────────────── --}}
             <div class="{{ $theme['hbg'] }} {{ $theme['htext'] }} px-5 py-3 flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-2.5">
-                    <span class="text-xl">{{ $typeIcon }}</span>
+                    <span>{!! $typeIcon !!}</span>
                     <div>
                         <div class="font-extrabold text-sm leading-tight">{{ $diagnosis->subject_name ?? $typeLbl }}</div>
                         @if($diagnosis->scientific_name && $diagnosis->scientific_name !== 'Unknown')
@@ -90,7 +90,7 @@
             {{-- ── AI Unavailable Banner (only for failed scans) ───────────────── --}}
             @if($diagnosis->status === 'needs_review')
             <div class="bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-start gap-3">
-                <span class="text-xl shrink-0">🔄</span>
+                <svg width="22" height="22" fill="none" stroke="#b45309" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115-6.7M20 15a9 9 0 01-15 6.7"/></svg>
                 <div class="flex-1 min-w-0">
                     <p class="font-bold text-amber-800 text-sm">AI Engine was unavailable during this scan</p>
                     <p class="text-xs text-amber-700 mt-0.5">Your image was saved. Please run a new scan — if this keeps happening, the AI service may be temporarily offline.</p>
@@ -113,14 +113,14 @@
                     onchange="ttsChangeLang('{{ $ttsId }}', this.value, '{{ route('diagnostics.translate') }}')"
                     data-translate-url="{{ route('diagnostics.translate') }}"
                     class="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400">
-                    <option value="en"  {{ $defaultTtsLang === 'en' ? 'selected' : '' }}>🇺🇸 English</option>
-                    <option value="ha"  {{ $defaultTtsLang === 'ha' ? 'selected' : '' }}>🇳🇬 Hausa</option>
-                    <option value="fr"  {{ $defaultTtsLang === 'fr' ? 'selected' : '' }}>🇫🇷 Français</option>
-                    <option value="yo"  {{ $defaultTtsLang === 'yo' ? 'selected' : '' }}>🇳🇬 Yorùbá</option>
-                    <option value="ig"  {{ $defaultTtsLang === 'ig' ? 'selected' : '' }}>🇳🇬 Igbo</option>
-                    <option value="ff"  {{ $defaultTtsLang === 'ff' ? 'selected' : '' }}>🇳🇬 Fulfulde</option>
-                    <option value="ar"  {{ $defaultTtsLang === 'ar' ? 'selected' : '' }}>🇸🇦 Arabic</option>
-                    <option value="sw"  {{ $defaultTtsLang === 'sw' ? 'selected' : '' }}>🌍 Swahili</option>
+                    <option value="en"  {{ $defaultTtsLang === 'en' ? 'selected' : '' }}>English</option>
+                    <option value="ha"  {{ $defaultTtsLang === 'ha' ? 'selected' : '' }}>Hausa</option>
+                    <option value="fr"  {{ $defaultTtsLang === 'fr' ? 'selected' : '' }}>Francais</option>
+                    <option value="yo"  {{ $defaultTtsLang === 'yo' ? 'selected' : '' }}>Yoruba</option>
+                    <option value="ig"  {{ $defaultTtsLang === 'ig' ? 'selected' : '' }}>Igbo</option>
+                    <option value="ff"  {{ $defaultTtsLang === 'ff' ? 'selected' : '' }}>Fulfulde</option>
+                    <option value="ar"  {{ $defaultTtsLang === 'ar' ? 'selected' : '' }}>Arabic</option>
+                    <option value="sw"  {{ $defaultTtsLang === 'sw' ? 'selected' : '' }}>Swahili</option>
                 </select>
 
                 {{-- Controls --}}
@@ -194,7 +194,7 @@
                             <i class="fa-solid fa-closed-captioning text-emerald-400"></i>
                             <span data-i18n="Transcript">{{ __('Transcript') }}</span>
                         </span>
-                        <button onclick="ttsToggleTranscript('{{ $ttsId }}')" class="text-[10px] text-slate-500 hover:text-slate-300 transition">✕ Hide</button>
+                        <button onclick="ttsToggleTranscript('{{ $ttsId }}')" class="text-[10px] text-slate-500 hover:text-slate-300 transition">Hide</button>
                     </div>
                     <div id="{{ $ttsId }}-transcript-box"
                          class="text-xs text-slate-300 leading-relaxed max-h-36 overflow-y-auto p-2 bg-slate-800 rounded-lg">
@@ -239,7 +239,7 @@
                         @if($sev)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Severity">{{ __('Severity') }}</span>
-                            <span class="font-extrabold">{{ $theme['icon'] }} {{ $sev }}</span>
+                            <span class="font-extrabold inline-flex items-center gap-1">{!! $theme['icon'] !!} {{ $sev }}</span>
                         </div>
                         @endif
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border
@@ -439,14 +439,14 @@
 
                             @if($myFeedback)
                             <span class="px-3 py-1 rounded-full text-xs font-bold {{ $myFeedback->rating === 'thumbs_up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
-                                {{ $myFeedback->rating === 'thumbs_up' ? '👍 Marked Accurate' : '👎 Marked Inaccurate' }}
+                                {{ $myFeedback->rating === 'thumbs_up' ? 'Marked Accurate' : 'Marked Inaccurate' }}
                             </span>
                             <button onclick="toggleSection('fb-{{ $diagnosis->id }}')" class="text-[10px] text-slate-400 hover:text-slate-600 ml-auto">Edit</button>
                             @else
                             <button onclick="submitFeedback('{{ $diagnosis->id }}','thumbs_up')"
-                                class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold transition">👍 <span data-i18n="Accurate">{{ __('Accurate') }}</span></button>
+                                class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold transition"><span data-i18n="Accurate">{{ __('Accurate') }}</span></button>
                             <button onclick="submitFeedback('{{ $diagnosis->id }}','thumbs_down')"
-                                class="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-full text-xs font-bold transition">👎 <span data-i18n="Not Accurate">{{ __('Not Accurate') }}</span></button>
+                                class="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-full text-xs font-bold transition"><span data-i18n="Not Accurate">{{ __('Not Accurate') }}</span></button>
                             @endif
                         </div>
 
@@ -473,7 +473,7 @@
 
         @empty
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
-            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-5xl mx-auto mb-4">🗂️</div>
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg></div>
             <h3 class="text-xl font-bold text-slate-800 mb-2" data-i18n="No Scans Yet">{{ __('No Scans Yet') }}</h3>
             <p class="text-slate-500 mb-6 max-w-sm mx-auto text-sm" data-i18n="Upload a photo of a plant, animal, or soil sample to get an instant AI-powered diagnosis.">{{ __('Upload a photo of a plant, animal, or soil sample to get an instant AI-powered diagnosis.') }}</p>
             <a href="{{ route('diagnostics.scan') }}" class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-700 hover:-translate-y-0.5 transition text-sm">
@@ -733,7 +733,7 @@
                                     || voices.find(function(v){ return v.lang.startsWith('en'); });
                         if (engVoice) u.voice = engVoice;
                         setVoiceWarning(id,
-                            '⚠ Your browser has no ' + langCode + ' voice. The translated text is shown above. Install a ' + code.toUpperCase() + ' voice pack in your device settings for audio in this language.');
+                            'No ' + langCode + ' voice available. The translated text is shown above. Install a ' + code.toUpperCase() + ' voice pack in your device settings for audio in this language.');
                     }
                 }
 
@@ -950,7 +950,7 @@
                 var newMap = buildTranscript(id, text);
                 if (newMap) wordMaps[id] = newMap;
                 if (source === 'mymemory') {
-                    setVoiceWarning(id, 'ℹ Translated via MyMemory (AI engine unavailable)');
+                    setVoiceWarning(id, 'Translated via MyMemory (AI engine unavailable)');
                 } else {
                     setVoiceWarning(id, null);
                 }
@@ -986,7 +986,7 @@
                     if (translated) {
                         applyTranslation(translated, 'mymemory');
                     } else {
-                        setVoiceWarning(id, '⚠ Translation unavailable — narrating in English');
+                        setVoiceWarning(id, 'Translation unavailable — narrating in English');
                     }
                     onTranslationDone(wasActive);
                 });
