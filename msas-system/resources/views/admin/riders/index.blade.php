@@ -70,7 +70,7 @@
                             </td>
                             <td class="px-4 py-3 text-sm font-semibold text-slate-700">{{ $rider->rider_deliveries ?? 0 }}</td>
                             <td class="px-4 py-3 text-sm text-slate-700">
-                                {{ $rider->rider_rating ? number_format($rider->rider_rating, 1) . ' ★' : '—' }}
+                                @if($rider->rider_rating){{ number_format($rider->rider_rating, 1) }}&nbsp;<svg width="11" height="11" fill="#f59e0b" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>@else&mdash;@endif
                             </td>
                             <td class="px-4 py-3">
                                 @if($rider->is_active)

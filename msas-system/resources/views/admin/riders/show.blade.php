@@ -40,7 +40,7 @@
                 @foreach([
                     ['label'=>'Total Deliveries', 'val'=>$rider->rider_deliveries ?? 0],
                     ['label'=>'Success Rate',      'val'=>($successRate ?? 0).'%'],
-                    ['label'=>'Rating',            'val'=>$rider->rider_rating ? number_format($rider->rider_rating,1).' ★' : 'N/A'],
+                    ['label'=>'Rating',            'val'=>$rider->rider_rating ? number_format($rider->rider_rating,1).'/5' : 'N/A'],
                     ['label'=>'Active Orders',     'val'=>$activeOrders],
                 ] as $s)
                 <div class="bg-slate-50 rounded-xl p-3 text-center">
