@@ -14,7 +14,7 @@
 
         @if(session('success'))
         <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2">
-            ✓ {{ session('success') }}
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}
             <a href="{{ route('marketplace.cart') }}" class="ml-auto font-bold underline">View Cart ({{ $cartCount }})</a>
         </div>
         @endif
@@ -30,7 +30,7 @@
                 @if($product->image_url)
                     <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
                 @else
-                    <span class="text-8xl text-slate-200">📦</span>
+                    <svg width="80" height="80" fill="none" stroke="#e2e8f0" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 @endif
             </div>
 
@@ -67,7 +67,7 @@
                     <p class="text-xs font-bold text-slate-400 uppercase mb-1">Sold by</p>
                     <p class="font-bold text-slate-700">{{ $product->dealer->first_name }} {{ $product->dealer->last_name }}</p>
                     @if($product->dealer->state)
-                    <p class="text-xs text-slate-400 mt-0.5">📍 {{ $product->dealer->state }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5 flex items-center gap-1"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> {{ $product->dealer->state }}</p>
                     @endif
                 </div>
                 @endif
@@ -134,7 +134,7 @@
             <div class="flex items-baseline justify-between border-b pb-3">
                 <h2 class="font-extrabold text-slate-800 text-lg">Reviews
                     @if($product->rating_count > 0)
-                    <span class="text-sm font-semibold text-amber-500 ml-2">★ {{ number_format($product->rating, 1) }}</span>
+                    <span class="text-sm font-semibold text-amber-500 ml-2 inline-flex items-center gap-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:inline"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> {{ number_format($product->rating, 1) }}</span>
                     <span class="text-xs text-slate-400">({{ $product->rating_count }})</span>
                     @endif
                 </h2>
@@ -151,7 +151,7 @@
                         @for($i=1;$i<=5;$i++)
                         <label class="cursor-pointer text-2xl leading-none">
                             <input type="radio" name="rating" value="{{ $i }}" class="sr-only" {{ old('rating')==$i?'checked':'' }}>
-                            <span class="star text-slate-300 hover:text-amber-400" data-val="{{ $i }}">★</span>
+                            <span class="star" data-val="{{ $i }}" style="display:inline-flex;color:#cbd5e1;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
                         </label>
                         @endfor
                     </div>
@@ -163,8 +163,8 @@
             </form>
             @elseif($userReview)
             <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
-                <p class="text-sm font-bold text-emerald-800">Your Review
-                    <span class="text-amber-500 ml-1">{{ str_repeat('★', $userReview->rating) }}<span class="text-slate-300">{{ str_repeat('★', 5 - $userReview->rating) }}</span></span>
+                <p class="text-sm font-bold text-emerald-800 flex items-center gap-1">Your Review
+                    <span class="ml-1 inline-flex items-center">{!! str_repeat('<svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" style="display:inline"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', $userReview->rating) . str_repeat('<svg width="14" height="14" viewBox="0 0 24 24" fill="#cbd5e1" style="display:inline"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', 5 - $userReview->rating) !!}</span>
                 </p>
                 <p class="text-sm text-slate-600 mt-1">{{ $userReview->review }}</p>
                 <form method="POST" action="{{ route('marketplace.reviews.delete', $userReview) }}" class="mt-2" onsubmit="return confirm('Delete your review?')">
@@ -189,7 +189,7 @@
                                 {{ strtoupper(substr($review->user->first_name ?? 'U', 0, 1)) }}
                             </div>
                             <span class="text-sm font-semibold text-slate-700">{{ $review->user->first_name ?? 'User' }} {{ substr($review->user->last_name ?? '', 0, 1) }}.</span>
-                            <span class="text-amber-400 text-sm">{{ str_repeat('★', $review->rating) }}<span class="text-slate-200">{{ str_repeat('★', 5 - $review->rating) }}</span></span>
+                            <span class="inline-flex items-center">{!! str_repeat('<svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" style="display:inline"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', $review->rating) . str_repeat('<svg width="14" height="14" viewBox="0 0 24 24" fill="#e2e8f0" style="display:inline"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', 5 - $review->rating) !!}</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="text-xs text-slate-400">{{ $review->created_at->diffForHumans() }}</span>
@@ -250,10 +250,10 @@
                 @foreach($related as $r)
                 <a href="{{ route('marketplace.show', $r) }}"
                    class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col">
-                    <div class="aspect-square bg-slate-50 flex items-center justify-center text-4xl text-slate-200">
+                    <div class="aspect-square bg-slate-50 flex items-center justify-center">
                         @if($r->image_url)
                         <img src="{{ $r->image_url }}" alt="{{ $r->name }}" class="w-full h-full object-cover">
-                        @else 📦 @endif
+                        @else <svg width="40" height="40" fill="none" stroke="#e2e8f0" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> @endif
                     </div>
                     <div class="p-3">
                         <p class="text-xs font-semibold text-slate-800 line-clamp-2">{{ $r->name }}</p>

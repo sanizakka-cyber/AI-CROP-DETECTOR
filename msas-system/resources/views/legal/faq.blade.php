@@ -69,7 +69,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- Getting Started --}}
     <div class="category" data-cat>
-        <div class="category-title">🌱 Getting Started</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg> Getting Started</div>
 
         <div class="faq-item">
             <div class="faq-q">What is MSAS FarmAI? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
@@ -105,7 +105,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- AI Smart Scan --}}
     <div class="category" data-cat>
-        <div class="category-title">🤖 AI Smart Scan</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 9H5M7 12H5M7 15H5M17 9h2M17 12h2M17 15h2M9 7V5M12 7V5M15 7V5M9 17v2M12 17v2M15 17v2"/></svg> AI Smart Scan</div>
 
         <div class="faq-item">
             <div class="faq-q">How accurate is the AI diagnosis? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
@@ -136,7 +136,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- Subscriptions & Billing --}}
     <div class="category" data-cat>
-        <div class="category-title">💳 Subscriptions &amp; Billing</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" d="M2 10h20M6 15h2"/></svg> Subscriptions &amp; Billing</div>
 
         <div class="faq-item">
             <div class="faq-q">What plans are available? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
@@ -168,7 +168,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- Account & Security --}}
     <div class="category" data-cat>
-        <div class="category-title">🔐 Account &amp; Security</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 11V7a5 5 0 0110 0v4"/></svg> Account &amp; Security</div>
 
         <div class="faq-item">
             <div class="faq-q">I forgot my password. How do I reset it? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
@@ -188,7 +188,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- Marketplace --}}
     <div class="category" data-cat>
-        <div class="category-title">🛒 Marketplace</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg> Marketplace</div>
 
         <div class="faq-item">
             <div class="faq-q">How do I buy agro-inputs on the marketplace? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
@@ -203,7 +203,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     {{-- Technical --}}
     <div class="category" data-cat>
-        <div class="category-title">⚙️ Technical</div>
+        <div class="category-title"><svg width="16" height="16" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg> Technical</div>
 
         <div class="faq-item">
             <div class="faq-q">Which browsers and devices are supported? <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
