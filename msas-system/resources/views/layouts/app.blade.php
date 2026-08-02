@@ -525,13 +525,12 @@
                 <!-- Language Switcher -->
                 <div class="relative" @click.outside="$store.ui.closeAll()">
                     @php
-                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français'];
+                        $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yoruba','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Francais'];
                         $cur = app()->getLocale();
-                        $flags = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷'];
                     @endphp
                     <button @click="$store.ui.toggle('lang')" :aria-expanded="$store.ui.is('lang').toString()" aria-haspopup="true" aria-label="Select language"
                             class="notif-btn" style="width:auto;padding:0 10px;gap:5px;font-size:12px;font-weight:700;color:#475569;">
-                        <span data-locale-current="flag">{{ $flags[$cur] ?? '🌍' }}</span>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span class="hidden sm:inline" data-locale-current="code">{{ strtoupper($cur) }}</span>
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
                              :style="$store.ui.is('lang') ? 'transform:rotate(180deg);transition:transform 0.2s' : 'transition:transform 0.2s'">
@@ -554,9 +553,8 @@
                             <button type="submit" data-locale-code="{{ $code }}" @click="open=false"
                                 class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-slate-50 transition text-left {{ $cur === $code ? 'font-bold' : '' }}"
                                 style="{{ $cur === $code ? 'color:#0F6B3E;' : 'color:#475569;' }}">
-                                <span>{{ $flags[$code] }}</span>
                                 <span>{{ $name }}</span>
-                                @if($cur === $code)<span class="ml-auto text-xs" style="color:#0F6B3E;" data-locale-check="{{ $code }}">✓</span>@endif
+                                @if($cur === $code)<span class="ml-auto" data-locale-check="{{ $code }}"><svg width="12" height="12" fill="none" stroke="#0F6B3E" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>@endif
                             </button>
                         </form>
                         @endforeach
@@ -655,7 +653,7 @@
                 </div>
                 <a href="{{ route('impersonate.leave') }}"
                    class="bg-amber-900 hover:bg-amber-800 text-amber-100 px-3 py-1 rounded-lg text-[11px] font-bold transition">
-                    ✕ Leave Impersonation
+                    Leave Impersonation
                 </a>
             </div>
             @endif
@@ -709,7 +707,7 @@
     window.MSAS_TRANS  = {!! json_encode($allTrans, JSON_HEX_TAG | JSON_HEX_AMP) !!};
     window.MSAS_LOCALE = '{{ app()->getLocale() }}';
 
-    var flagMap = { en:'🇬🇧', ha:'🇳🇬', fr:'🇫🇷', yo:'🇳🇬', ig:'🇳🇬', ff:'🇳🇬', ar:'🇸🇦' };
+    var flagMap = {};
     var nameMap = { en:'English', ha:'Hausa', fr:'Français', yo:'Yorùbá', ig:'Igbo', ff:'Fulfulde', ar:'العربية' };
     var overlayMsgs = { en:'Switching language…', ha:'Ana canza harshe…', fr:'Changement de langue…', yo:'Ń paarọ èdè…', ig:'Na-agbanwe asụsụ…', ff:'Binnditii hakkunde picce…', ar:'جارٍ تغيير اللغة...' };
 
@@ -739,7 +737,7 @@
         /* Update current-locale indicators */
         document.querySelectorAll('[data-locale-current]').forEach(function(el) {
             var t = el.getAttribute('data-locale-current');
-            if (t === 'flag') el.textContent = flagMap[locale] || '🌍';
+            if (t === 'flag') { /* flag display removed */ }
             if (t === 'code') el.textContent = locale.toUpperCase();
             if (t === 'name') el.textContent = nameMap[locale] || locale;
         });
@@ -792,7 +790,7 @@
             var newCheck = document.createElement('span');
             newCheck.setAttribute('data-locale-check', locale);
             newCheck.style.cssText = 'margin-left:auto;font-size:12px;color:#0F6B3E;';
-            newCheck.textContent = '✓';
+            newCheck.innerHTML = '<svg width="12" height="12" fill="none" stroke="#0F6B3E" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
             btn.appendChild(newCheck);
         } else {
             check.style.display = '';
@@ -928,7 +926,7 @@
         <form id="fb-form" onsubmit="submitFeedback(event)">
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-                @foreach(['general'=>'General','bug'=>'Bug Report','feature'=>'Feature Request','praise'=>'Praise 🎉'] as $val=>$label)
+                @foreach(['general'=>'General','bug'=>'Bug Report','feature'=>'Feature Request','praise'=>'Praise'] as $val=>$label)
                 <label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;font-size:12px;font-weight:600;color:#475569;transition:background 0.15s;" class="fb-type-label">
                     <input type="radio" name="type" value="{{ $val }}" {{ $val==='general'?'checked':'' }} style="accent-color:#0F6B3E;" onchange="fbSyncType(this)"> {{ $label }}
                 </label>
@@ -938,7 +936,7 @@
                 @for($i=1;$i<=5;$i++)
                 <button type="button" onclick="setRating({{ $i }})" data-rating="{{ $i }}"
                     style="flex:1;padding:6px 0;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;font-size:18px;cursor:pointer;transition:all 0.15s;"
-                    class="fb-star">{{ $i <= 3 ? ($i==1?'😟':($i==2?'😐':'🙂')) : ($i==4?'😊':'🤩') }}</button>
+                    class="fb-star">{{ $i }}</button>
                 @endfor
                 <input type="hidden" name="rating" id="fb-rating">
             </div>
@@ -1077,7 +1075,7 @@ $__showNps  = $__authUser->role === 'farmer'
     <button onclick="submitNps({{ $i }},this)" style="width:28px;height:28px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;color:#475569;">{{ $i }}</button>
     @endfor
     </div>
-    <div id="nps-thanks" style="display:none;text-align:center;margin-top:12px;font-size:13px;font-weight:700;color:#0F6B3E;">Thank you! 🙏</div>
+    <div id="nps-thanks" style="display:none;text-align:center;margin-top:12px;font-size:13px;font-weight:700;color:#0F6B3E;">Thank you!</div>
 </div>
 <script>
 function submitNps(score, btn) {

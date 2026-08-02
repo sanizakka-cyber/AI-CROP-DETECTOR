@@ -223,12 +223,11 @@
         @php
             $guestLocale  = app()->getLocale();
             $guestLocales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yorùbá','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Français','ar'=>'العربية'];
-            $guestFlags   = ['en'=>'🇬🇧','ha'=>'🇳🇬','yo'=>'🇳🇬','ig'=>'🇳🇬','ff'=>'🇳🇬','fr'=>'🇫🇷','ar'=>'🇸🇦'];
         @endphp
         <div style="position:absolute;top:12px;right:16px;" x-data="{ open: false }" @click.outside="open=false" @keydown.escape.window="open=false">
             <button @click="open = !open" :aria-expanded="open.toString()" aria-haspopup="true"
                 style="display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;">
-                <span>{{ $guestFlags[$guestLocale] ?? '🌍' }}</span>
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>{{ strtoupper($guestLocale) }}</span>
                 <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" :style="open ? 'transform:rotate(180deg)' : ''"><path stroke-linecap="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
@@ -247,9 +246,8 @@
                     <input type="hidden" name="locale" value="{{ $code }}">
                     <button type="submit" @click="open=false"
                         style="width:100%;display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;background:none;border:none;cursor:pointer;color:{{ $guestLocale === $code ? '#0F6B3E' : '#475569' }};font-weight:{{ $guestLocale === $code ? '700' : '400' }}; text-align:left;">
-                        <span>{{ $guestFlags[$code] }}</span>
                         <span>{{ $name }}</span>
-                        @if($guestLocale === $code)<span style="margin-left:auto;color:#0F6B3E;">✓</span>@endif
+                        @if($guestLocale === $code)<span style="margin-left:auto;color:#0F6B3E;"><svg width="12" height="12" fill="none" stroke="#0F6B3E" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></span>@endif
                     </button>
                 </form>
                 @endforeach

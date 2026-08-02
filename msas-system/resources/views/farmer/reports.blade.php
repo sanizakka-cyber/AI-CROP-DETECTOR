@@ -24,7 +24,7 @@ $reportTypes = [
         'key'     => 'livestock',
         'title'   => 'Livestock Report',
         'desc'    => 'All registered animals with health status, breed, weight, and history.',
-        'icon'    => '🐄',
+        'icon'    => '<svg width="28" height="28" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5S3 9 3 7.5A2.5 2.5 0 018 7.5H9M4.5 10.5H19.5M19.5 10.5S21 9 21 7.5A2.5 2.5 0 0016 7.5H15M19.5 10.5V16M4.5 10.5V16M7 16v3m10-3v3M7 16h10"/></svg>',
         'color'   => '#0F6B3E',
         'bg'      => '#f0fdf4',
         'count'   => $livestock->count(),
@@ -34,7 +34,7 @@ $reportTypes = [
         'key'     => 'finance',
         'title'   => 'Financial Report',
         'desc'    => 'Complete income and expense records with net farm balance summary.',
-        'icon'    => '💰',
+        'icon'    => '<svg width="28" height="28" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>',
         'color'   => '#7c3aed',
         'bg'      => '#f5f3ff',
         'count'   => $finances->count(),
@@ -44,7 +44,7 @@ $reportTypes = [
         'key'     => 'consultations',
         'title'   => 'Vet Consultations',
         'desc'    => 'All veterinary consultation requests with status and priority levels.',
-        'icon'    => '🩺',
+        'icon'    => '<svg width="28" height="28" fill="none" stroke="#2D9CDB" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>',
         'color'   => '#2D9CDB',
         'bg'      => '#eff6ff',
         'count'   => $consultations->count(),
@@ -54,7 +54,7 @@ $reportTypes = [
         'key'     => 'poultry',
         'title'   => 'Poultry Report',
         'desc'    => 'All poultry batches with bird types, quantities, and acquisition dates.',
-        'icon'    => '🐔',
+        'icon'    => '<svg width="28" height="28" fill="none" stroke="#F4A300" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
         'color'   => '#F4A300',
         'bg'      => '#fffbeb',
         'count'   => $poultry->count(),
@@ -68,7 +68,7 @@ $reportTypes = [
     <!-- Card Header -->
     <div style="padding:18px 20px;background:{{ $r['bg'] }};border-bottom:1px solid {{ $r['color'] }}18;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-            <span style="font-size:28px;">{{ $r['icon'] }}</span>
+            <span style="line-height:1;flex-shrink:0">{!! $r['icon'] !!}</span>
             <div>
                 <div style="font-size:15px;font-weight:800;color:#0f172a;">{{ $r['title'] }}</div>
                 <div style="font-size:20px;font-weight:900;color:{{ $r['color'] }};">{{ $r['count'] }} <span style="font-size:11px;color:#64748b;font-weight:500;">{{ $r['label'] }}</span></div>
@@ -106,17 +106,17 @@ $reportTypes = [
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:20px;">
             @php
             $summaryCards = [
-                ['label' => 'Total Livestock',    'val' => $livestock->count(),           'color' => '#0F6B3E', 'icon' => '🐄'],
-                ['label' => 'Poultry Batches',    'val' => $poultry->count(),             'color' => '#F4A300', 'icon' => '🐔'],
-                ['label' => 'Total Income',        'val' => '₦'.number_format($totalIncome),  'color' => '#1FA84A', 'icon' => '📈'],
-                ['label' => 'Total Expenses',      'val' => '₦'.number_format($totalExpense), 'color' => '#dc2626', 'icon' => '📉'],
-                ['label' => 'Net Balance',         'val' => '₦'.number_format($totalIncome - $totalExpense), 'color' => ($totalIncome >= $totalExpense ? '#0F6B3E' : '#dc2626'), 'icon' => '💹'],
-                ['label' => 'Vet Consultations',  'val' => $consultations->count(),       'color' => '#2D9CDB', 'icon' => '🩺'],
+                ['label' => 'Total Livestock',    'val' => $livestock->count(),           'color' => '#0F6B3E', 'icon' => '<svg width="18" height="18" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5S3 9 3 7.5A2.5 2.5 0 018 7.5H9M4.5 10.5H19.5M19.5 10.5S21 9 21 7.5A2.5 2.5 0 0016 7.5H15M19.5 10.5V16M4.5 10.5V16M7 16v3m10-3v3M7 16h10"/></svg>'],
+                ['label' => 'Poultry Batches',    'val' => $poultry->count(),             'color' => '#F4A300', 'icon' => '<svg width="18" height="18" fill="none" stroke="#F4A300" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>'],
+                ['label' => 'Total Income',        'val' => '₦'.number_format($totalIncome),  'color' => '#1FA84A', 'icon' => '<svg width="18" height="18" fill="none" stroke="#1FA84A" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>'],
+                ['label' => 'Total Expenses',      'val' => '₦'.number_format($totalExpense), 'color' => '#dc2626', 'icon' => '<svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17H5m0 0v-8m0 8l8-8 4 4 6-6"/></svg>'],
+                ['label' => 'Net Balance',         'val' => '₦'.number_format($totalIncome - $totalExpense), 'color' => ($totalIncome >= $totalExpense ? '#0F6B3E' : '#dc2626'), 'icon' => '<svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>'],
+                ['label' => 'Vet Consultations',  'val' => $consultations->count(),       'color' => '#2D9CDB', 'icon' => '<svg width="18" height="18" fill="none" stroke="#2D9CDB" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>'],
             ];
             @endphp
             @foreach($summaryCards as $sc)
             <div style="background:#f8fafc;border-radius:10px;padding:14px 16px;border:1px solid #f1f5f9;">
-                <div style="font-size:18px;margin-bottom:6px;">{{ $sc['icon'] }}</div>
+                <div style="margin-bottom:6px;line-height:1;">{!! $sc['icon'] !!}</div>
                 <div style="font-size:18px;font-weight:800;color:{{ $sc['color'] }};">{{ $sc['val'] }}</div>
                 <div style="font-size:11px;color:#64748b;font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:0.05em;">{{ $sc['label'] }}</div>
             </div>

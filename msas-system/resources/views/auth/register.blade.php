@@ -105,26 +105,26 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;">
             @foreach([
-                ['farmer',              '🌾','Farmer','Crops, livestock & farm management'],
-                ['vet',                 '💉','Veterinarian','Animal health & diagnostics'],
-                ['agronomist',          '🌿','Agronomist','Crop advisory & soil science'],
-                ['agro-dealer',         '🏪','Agro Dealer','Inputs, seeds & agro products'],
-                ['equipment-dealer',    '🚜','Equipment Dealer','Farm machinery & equipment'],
-                ['agribusiness-owner',  '💼','Agribusiness Owner','Agri enterprises & processing'],
-                ['cooperative',         '🏢','Cooperative','Farmer groups & cooperatives'],
-                ['government-agency',   '🏛','Gov\'t Agency','Policy, extension & regulation'],
-                ['ngo',                 '🌍','NGO','Development & humanitarian aid'],
-                ['research-institution','🎓','Research Inst.','Agriculture research & academia'],
-                ['input-supplier',      '📦','Input Supplier','Fertilisers, chemicals & seeds'],
-                ['logistics-provider',  '🚛','Logistics','Transport & cold chain'],
-                ['investor',            '📈','Investor','Agri finance & investments'],
-                ['general-user',        '👤','General User','Learning & staying informed'],
+                ['farmer',              '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg>','Farmer','Crops, livestock & farm management'],
+                ['vet',                 '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>','Veterinarian','Animal health & diagnostics'],
+                ['agronomist',          '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>','Agronomist','Crop advisory & soil science'],
+                ['agro-dealer',         '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>','Agro Dealer','Inputs, seeds & agro products'],
+                ['equipment-dealer',    '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>','Equipment Dealer','Farm machinery & equipment'],
+                ['agribusiness-owner',  '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>','Agribusiness Owner','Agri enterprises & processing'],
+                ['cooperative',         '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>','Cooperative','Farmer groups & cooperatives'],
+                ['government-agency',   '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>','Gov\'t Agency','Policy, extension & regulation'],
+                ['ngo',                 '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>','NGO','Development & humanitarian aid'],
+                ['research-institution','<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6M6 11v5a6 6 0 006 6 6 6 0 006-6v-5"/></svg>','Research Inst.','Agriculture research & academia'],
+                ['input-supplier',      '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11"/></svg>','Input Supplier','Fertilisers, chemicals & seeds'],
+                ['logistics-provider',  '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>','Logistics','Transport & cold chain'],
+                ['investor',            '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>','Investor','Agri finance & investments'],
+                ['general-user',        '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>','General User','Learning & staying informed'],
             ] as [$rval, $icon, $rtitle, $rdesc])
             <button type="button"
                 class="role-card"
                 :class="role === '{{ $rval }}' ? 'selected' : ''"
                 @click="selectRole('{{ $rval }}', '{{ $rtitle }}')">
-                <span class="role-icon">{{ $icon }}</span>
+                <span class="role-icon">{!! $icon !!}</span>
                 <span>
                     <span class="role-title">{{ __($rtitle) }}</span>
                     <span class="role-desc">{{ __($rdesc) }}</span>
@@ -444,12 +444,12 @@ function detectIdentifier(val) {
     if (!val) { badge.style.display='none'; return; }
     if (isValidEmail(val)) {
         badge.style.display='block';
-        badge.textContent='📧 Email';
+        badge.textContent='Email';
         badge.style.background='#dbeafe'; badge.style.color='#1d4ed8';
         icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>';
     } else if (isValidPhone(val)) {
         badge.style.display='block';
-        badge.textContent='📱 Phone';
+        badge.textContent='Phone';
         badge.style.background='#dcfce7'; badge.style.color='#15803d';
         icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>';
     } else {
