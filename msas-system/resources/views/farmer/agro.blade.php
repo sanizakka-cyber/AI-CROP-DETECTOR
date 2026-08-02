@@ -89,7 +89,7 @@
                                 @empty
                                     <tr>
                                         <td colspan="5" class="px-4 py-12 text-center text-slate-400">
-                                            <div class="text-5xl mb-3">🌱</div>
+                                            <div class="mb-3 flex justify-center"><svg width="48" height="48" fill="none" stroke="#0F6B3E" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg></div>
                                             <p class="font-semibold">No advisory requests yet.</p>
                                             <button onclick="document.getElementById('addModal').classList.remove('hidden')"
                                                     class="mt-3 text-[#0F6B3E] font-bold text-sm hover:underline">
@@ -139,7 +139,7 @@
                         <label class="cursor-pointer">
                             <input type="radio" name="channel" value="in_app" class="peer sr-only" required checked onchange="updateAgroFee(1500)">
                             <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-[#1FA84A] peer-checked:bg-emerald-50 transition">
-                                <div class="text-lg mb-0.5">💬</div>
+                                <div class="mb-0.5 flex justify-center"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
                                 <div class="text-xs font-bold">In-App</div>
                                 <div class="text-xs text-emerald-600 font-bold">₦1,500</div>
                             </div>
@@ -147,7 +147,7 @@
                         <label class="cursor-pointer">
                             <input type="radio" name="channel" value="whatsapp" class="peer sr-only" onchange="updateAgroFee(2500)">
                             <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-green-500 peer-checked:bg-green-50 transition">
-                                <div class="text-lg mb-0.5">📱</div>
+                                <div class="mb-0.5 flex justify-center"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" d="M12 18h.01"/></svg></div>
                                 <div class="text-xs font-bold">WhatsApp</div>
                                 <div class="text-xs text-emerald-600 font-bold">₦2,500</div>
                             </div>
@@ -155,7 +155,7 @@
                         <label class="cursor-pointer">
                             <input type="radio" name="channel" value="phone_call" class="peer sr-only" onchange="updateAgroFee(3500)">
                             <div class="border-2 border-slate-200 rounded-lg p-3 text-center peer-checked:border-amber-500 peer-checked:bg-amber-50 transition">
-                                <div class="text-lg mb-0.5">📞</div>
+                                <div class="mb-0.5 flex justify-center"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
                                 <div class="text-xs font-bold">Phone Call</div>
                                 <div class="text-xs text-emerald-600 font-bold">₦3,500</div>
                             </div>

@@ -57,8 +57,12 @@ $pc = $priorityColors[$consult->priority ?? 'low'];
     <!-- Card Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#0B2447,#0F6B3E);flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">
-                {{ $consult->case_type === 'crop' ? '🌾' : '🐄' }}
+            <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+                @if($consult->case_type === 'crop')
+                <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg>
+                @else
+                <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                @endif
             </div>
             <div>
                 <div style="color:rgba(255,255,255,0.65);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">
@@ -95,10 +99,10 @@ $pc = $priorityColors[$consult->priority ?? 'low'];
             @if($consult->channel)
             <div style="background:#f0fdf4;border-radius:8px;padding:8px 12px;border:1px solid #bbf7d0;">
                 <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;margin-bottom:2px;">Consult Channel</div>
-                <div style="font-size:12px;font-weight:700;color:#0f172a;">
-                    @if($consult->channel === 'in_app') 💬 In-App Chat
-                    @elseif($consult->channel === 'whatsapp') 📱 WhatsApp
-                    @else 📞 Phone Call
+                <div style="font-size:12px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:5px;">
+                    @if($consult->channel === 'in_app') <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg> In-App Chat
+                    @elseif($consult->channel === 'whatsapp') <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" d="M12 18h.01"/></svg> WhatsApp
+                    @else <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> Phone Call
                     @endif
                     &nbsp;·&nbsp; ₦{{ number_format($consult->fee ?? 0) }}
                 </div>
@@ -116,7 +120,7 @@ $pc = $priorityColors[$consult->priority ?? 'low'];
 
 @empty
 <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:48px 24px;text-align:center;">
-    <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+    <div style="margin-bottom:16px;display:flex;justify-content:center;"><svg width="48" height="48" fill="none" stroke="#0F6B3E" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
     <div style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:8px;">All Clear!</div>
     <div style="font-size:14px;color:#64748b;">No pending consultations. All farmer cases have been handled.</div>
     <a href="{{ route('vet.dashboard') }}" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#0F6B3E;color:#fff;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;">
