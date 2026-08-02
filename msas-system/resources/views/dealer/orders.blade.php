@@ -14,7 +14,7 @@
         </div>
 
         @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium">✓ {{ session('success') }}</div>
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}</div>
         @endif
 
         {{-- Stats --}}
@@ -75,7 +75,7 @@
                     <div class="flex items-center gap-2">
                         <span class="px-3 py-1 rounded-full text-xs font-bold {{ $sc }}">{{ ucfirst($order->status) }}</span>
                         @if($order->payment_status === 'paid')
-                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">✓ Paid</span>
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold inline-flex items-center gap-1"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Paid</span>
                         @else
                             <span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs">Unpaid</span>
                         @endif

@@ -34,7 +34,7 @@
             </div>
             <div>
                 <label style="font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:6px;">Icon</label>
-                <input type="text" name="icon" value="{{ old('icon','📢') }}" maxlength="5" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;text-align:center;box-sizing:border-box;">
+                <input type="text" name="icon" value="{{ old('icon') }}" maxlength="5" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;text-align:center;box-sizing:border-box;" placeholder="📢">
             </div>
         </div>
         <div style="margin-bottom:20px;">
@@ -44,7 +44,7 @@
         @if($errors->any())
         <div style="background:#fef2f2;border-radius:10px;padding:12px 16px;color:#dc2626;font-size:12px;margin-bottom:16px;">{{ $errors->first() }}</div>
         @endif
-        <button type="submit" onclick="return confirm('Send this broadcast to all matched users?')" style="background:#0F6B3E;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;width:100%;">📢 Send Broadcast</button>
+        <button type="submit" onclick="return confirm('Send this broadcast to all matched users?')" style="background:#0F6B3E;color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg> Send Broadcast</button>
         </form>
     </div>
 </div>
