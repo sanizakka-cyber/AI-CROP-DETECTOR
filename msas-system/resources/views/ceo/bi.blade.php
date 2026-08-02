@@ -167,7 +167,7 @@
             <div style="text-align:right;flex-shrink:0;">
                 <div style="font-size:14px;font-weight:900;color:#0F6B3E;">{{ $expert->consult_count }}</div>
                 @if($expert->avg_rating)
-                <div style="font-size:10px;color:#b45309;">★ {{ number_format($expert->avg_rating,1) }}</div>
+                <div style="font-size:10px;color:#b45309;display:flex;align-items:center;gap:2px;"><svg width="10" height="10" fill="#b45309" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg> {{ number_format($expert->avg_rating,1) }}</div>
                 @endif
             </div>
         </div>
@@ -190,7 +190,7 @@
         @php $pct = $totalScans > 0 ? round($count / $totalScans * 100) : 0; $col = $scanColors[$type] ?? '#94a3b8'; @endphp
         <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;">
-                <span style="color:#475569;text-transform:capitalize;">🌿 {{ $type }}</span>
+                <span style="color:#475569;text-transform:capitalize;display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg> {{ $type }}</span>
                 <span style="color:{{ $col }};">{{ $pct }}%</span>
             </div>
             <div style="background:#f1f5f9;border-radius:6px;height:12px;">
