@@ -31,11 +31,11 @@
         <div class="bg-{{ $healthColor }}-50 border border-{{ $healthColor }}-200 rounded-2xl px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 @if($failedChecks === 0)
-                <span class="text-2xl">✅</span>
+                <svg width="28" height="28" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 @elseif($failedChecks <= 3)
-                <span class="text-2xl">⚠️</span>
+                <svg width="28" height="28" fill="none" stroke="#d97706" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                 @else
-                <span class="text-2xl">❌</span>
+                <svg width="28" height="28" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 @endif
                 <div>
                     <p class="font-extrabold text-{{ $healthColor }}-800 text-base">{{ $healthLabel }}</p>
@@ -63,8 +63,8 @@
                 @foreach($items as $item)
                 <div class="flex items-center justify-between px-6 py-3 {{ $item['ok'] ? '' : 'bg-red-50/40' }}">
                     <div class="flex items-center gap-2.5">
-                        <span class="text-sm {{ $item['ok'] ? 'text-emerald-500' : 'text-red-500' }}">
-                            {{ $item['ok'] ? '✓' : '✗' }}
+                        <span class="{{ $item['ok'] ? 'text-emerald-500' : 'text-red-500' }}">
+                            @if($item['ok'])<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>@else<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>@endif
                         </span>
                         <span class="text-sm font-mono text-slate-700">{{ $item['name'] }}</span>
                     </div>
@@ -87,7 +87,7 @@
             </div>
             @if(count($logErrors) === 0)
             <div class="px-6 py-8 text-center text-sm text-slate-400">
-                No ERROR or CRITICAL entries in recent log. 🎉
+                No ERROR or CRITICAL entries in recent log.
             </div>
             @else
             <div class="divide-y divide-slate-50 overflow-x-auto">
