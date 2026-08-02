@@ -9,7 +9,7 @@
         </div>
 
         @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium">✓ {{ session('success') }}</div>
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}</div>
         @endif
         @if(session('error'))
         <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">{{ session('error') }}</div>
@@ -17,7 +17,7 @@
 
         @if($items->isEmpty())
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm py-16 text-center">
-            <div class="text-5xl mb-4">🛒</div>
+            <div class="mb-4 flex justify-center"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
             <h3 class="font-extrabold text-slate-700 text-lg mb-2">Your cart is empty</h3>
             <p class="text-slate-400 text-sm mb-5">Browse the marketplace to find products.</p>
             <a href="{{ route('marketplace') }}" class="px-6 py-2.5 bg-[#0F6B3E] text-white rounded-xl text-sm font-bold hover:bg-[#047857] transition">
@@ -36,7 +36,7 @@
                     <div class="w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden border border-slate-100">
                         @if($p->image_url)
                         <img src="{{ $p->image_url }}" alt="{{ $p->name }}" class="w-full h-full object-cover">
-                        @else 📦 @endif
+                        @else <svg width="32" height="32" fill="none" stroke="#e2e8f0" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg> @endif
                     </div>
                     <div class="flex-1 min-w-0">
                         <a href="{{ route('marketplace.show', $p) }}" class="font-bold text-slate-800 text-sm hover:underline line-clamp-1">{{ $p->name }}</a>
@@ -53,7 +53,7 @@
                     </div>
                     <form method="POST" action="{{ route('marketplace.cart.remove', $p->id) }}" class="flex-shrink-0">
                         @csrf
-                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs font-semibold" title="Remove">✕</button>
+                        <button type="submit" class="text-red-400 hover:text-red-600 text-xs font-semibold" title="Remove">&times;</button>
                     </form>
                 </div>
                 @endforeach

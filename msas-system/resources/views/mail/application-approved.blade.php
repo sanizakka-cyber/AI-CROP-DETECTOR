@@ -41,7 +41,7 @@ body{margin:0;padding:0;background:#f1f5f9;font-family:'Inter',Arial,sans-serif;
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <p class="success-title">Application Approved! 🎉</p>
+            <p class="success-title">Application Approved!</p>
         </div>
 
         <p class="text">
@@ -54,9 +54,9 @@ body{margin:0;padding:0;background:#f1f5f9;font-family:'Inter',Arial,sans-serif;
         <a href="{{ route('login') }}" class="cta-btn">Log In to MSAS FarmAI →</a>
 
         <div class="details">
-            <p>✅ <strong>Account Status:</strong> Active</p>
-            <p>👤 <strong>Role:</strong> {{ $user->roleLabel }}</p>
-            <p>📧 <strong>Login Email:</strong> {{ $user->email }}</p>
+            <p><strong>Account Status:</strong> Active</p>
+            <p><strong>Role:</strong> {{ $user->roleLabel }}</p>
+            <p><strong>Login Email:</strong> {{ $user->email }}</p>
         </div>
 
         <p class="text">
