@@ -19,7 +19,7 @@
     {{-- Vehicle Cards --}}
     @if($vehicles->isEmpty())
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm text-center py-16 text-slate-400">
-        <p class="text-5xl mb-3">🚛</p>
+        <div class="mb-3 flex justify-center"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 19a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm13 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg></div>
         <p class="font-semibold text-slate-600">No vehicles registered yet</p>
         <p class="text-sm mt-1">Add your first vehicle to start managing deliveries.</p>
     </div>
@@ -65,7 +65,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">Register Vehicle</h3>
-            <button onclick="document.getElementById('modal-add-vehicle').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-add-vehicle').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" action="{{ route('logistics.vehicles.store') }}" class="p-6 space-y-3">
             @csrf
@@ -97,7 +97,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">Edit Vehicle</h3>
-            <button onclick="document.getElementById('modal-edit-vehicle').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-edit-vehicle').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" id="form-edit-vehicle" class="p-6 space-y-3">
             @csrf @method('PUT')

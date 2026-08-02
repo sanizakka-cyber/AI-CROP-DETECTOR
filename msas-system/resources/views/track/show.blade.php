@@ -47,7 +47,7 @@
 <div class="container">
 
     <div class="logo">
-        <div class="logo-mark">🌿</div>
+        <div class="logo-mark"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg></div>
         <span class="logo-text">MSAS FarmAI</span>
     </div>
 
@@ -84,7 +84,7 @@
             @foreach($timeline as $i => $step)
             <div class="timeline-step {{ $step['done'] ? 'done' : '' }}">
                 <div class="timeline-dot {{ $step['done'] ? 'done' : 'pending' }}">
-                    {{ $step['done'] ? '✓' : ($i+1) }}
+                    @if($step['done'])<svg width="14" height="14" fill="none" stroke="#fff" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>@else{{ $i+1 }}@endif
                 </div>
                 <div class="timeline-label {{ $step['done'] ? 'done' : '' }}">{{ $step['label'] }}</div>
             </div>

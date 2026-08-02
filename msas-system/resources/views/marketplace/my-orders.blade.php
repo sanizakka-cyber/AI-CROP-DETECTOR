@@ -14,7 +14,7 @@
         </div>
 
         @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium">✓ {{ session('success') }}</div>
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}</div>
         @endif
 
         {{-- Stats --}}
@@ -76,7 +76,7 @@
                     <div class="flex items-center gap-2">
                         <span class="px-3 py-1 rounded-full text-xs font-bold {{ $sc }}">{{ ucfirst($order->status) }}</span>
                         @if($order->payment_status === 'paid')
-                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">✓ Paid</span>
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold inline-flex items-center gap-1"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Paid</span>
                         @endif
                     </div>
                 </div>
@@ -91,7 +91,7 @@
             </a>
             @empty
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 py-16 text-center">
-                <div class="text-5xl mb-3">🛒</div>
+                <div class="mb-3 flex justify-center"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
                 <p class="font-semibold text-slate-600">No orders yet</p>
                 <p class="text-sm text-slate-400 mt-1 mb-5">Start shopping on the marketplace.</p>
                 <a href="{{ route('marketplace') }}" class="px-5 py-2 bg-[#0F6B3E] text-white rounded-xl text-sm font-bold hover:bg-[#047857] transition">
