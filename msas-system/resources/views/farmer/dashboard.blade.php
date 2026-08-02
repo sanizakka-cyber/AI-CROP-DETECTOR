@@ -384,7 +384,7 @@ function dismissOnboarding() {
         <div style="padding:0 4px;">
             @forelse($recentConsults as $consult)
             <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f8fafc;">
-                <div style="width:38px;height:38px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🩺</div>
+                <div style="width:38px;height:38px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="20" height="20" fill="none" stroke="#3b82f6" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {{ ucfirst($consult->animal_type ?? 'Livestock') }} Consultation
@@ -401,11 +401,11 @@ function dismissOnboarding() {
             @empty
             <div style="text-align:center;padding:32px 20px;">
                 @if(!$activeSub || !$activeSub->hasFeature('vet_service_requests'))
-                <div style="font-size:36px;margin-bottom:10px;">🔒</div>
+                <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
                 <p style="font-size:13px;color:#64748b;margin-bottom:10px;" data-i18n="Vet consultations require Pro plan">{{ __('Vet consultations require Pro plan') }}</p>
                 <a href="{{ route('subscription.plans') }}" style="font-size:13px;color:#2D9CDB;font-weight:700;text-decoration:none;" data-i18n="Upgrade to Pro">{{ __('Upgrade to Pro') }}</a> →
                 @else
-                <div style="font-size:36px;margin-bottom:10px;">🩺</div>
+                <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#3b82f6" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>
                 <p style="font-size:13px;color:#64748b;margin-bottom:10px;" data-i18n="No consultations yet">{{ __('No consultations yet') }}</p>
                 <a href="{{ route('farmer.vet') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;" data-i18n="Request a vet consult">{{ __('Request a vet consult') }}</a> →
                 @endif
@@ -423,7 +423,7 @@ function dismissOnboarding() {
         <div style="padding:0 4px;">
             @forelse($recentScans as $scan)
             <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f8fafc;">
-                <div style="width:38px;height:38px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔬</div>
+                <div style="width:38px;height:38px;border-radius:10px;background:#f0fdf4;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="20" height="20" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-linecap="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg></div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {{ $scan->disease_name ?? 'AI Scan Result' }}
@@ -439,7 +439,7 @@ function dismissOnboarding() {
             </div>
             @empty
             <div style="text-align:center;padding:32px 20px;">
-                <div style="font-size:36px;margin-bottom:10px;">🔬</div>
+                <div style="margin-bottom:10px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-linecap="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg></div>
                 <p style="font-size:13px;color:#64748b;margin-bottom:10px;" data-i18n="No scans yet">{{ __('No scans yet') }}</p>
                 <a href="{{ route('diagnostics.scan') }}" style="font-size:13px;color:#0F6B3E;font-weight:700;text-decoration:none;" data-i18n="Run your first scan">{{ __('Run your first scan') }}</a> →
             </div>

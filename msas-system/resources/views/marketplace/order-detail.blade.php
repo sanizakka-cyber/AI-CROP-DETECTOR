@@ -14,7 +14,7 @@
         </div>
 
         @if(session('success'))
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium">✓ {{ session('success') }}</div>
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('success') }}</div>
         @endif
 
         {{-- Status Tracker (full delivery timeline) --}}
@@ -39,7 +39,7 @@
                     @endif
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 relative
                         {{ $step['done'] ? 'bg-[#0F6B3E] text-white' : 'bg-slate-100 text-slate-400' }}">
-                        {{ $step['done'] ? '✓' : ($i+1) }}
+                        @if($step['done'])<svg width="16" height="16" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>@else{{ $i+1 }}@endif
                     </div>
                     <p class="text-[10px] font-semibold mt-1 text-center {{ $step['done'] ? 'text-[#0F6B3E]' : 'text-slate-400' }}">
                         {{ $step['label'] }}
@@ -61,7 +61,7 @@
                     <div class="font-extrabold text-slate-800">{{ $order->rider->first_name }} {{ $order->rider->last_name }}</div>
                     <div class="text-sm text-slate-500 mt-0.5">{{ ucfirst($order->rider->vehicle_type ?? 'motorcycle') }}</div>
                     @if($order->rider->rider_rating)
-                    <div class="text-xs text-amber-600 mt-0.5">★ {{ number_format($order->rider->rider_rating, 1) }}</div>
+                    <div class="text-xs text-amber-600 mt-0.5 flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> {{ number_format($order->rider->rider_rating, 1) }}</div>
                     @endif
                 </div>
                 @if($order->rider->phone)
@@ -103,7 +103,7 @@
 
         @if($order->buyer_confirmed_at)
         <div class="bg-green-50 border border-green-200 rounded-2xl p-5 flex items-center gap-3">
-            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-extrabold text-lg flex-shrink-0">✓</div>
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"><svg width="20" height="20" fill="none" stroke="#15803d" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
             <div>
                 <div class="font-bold text-green-800">Delivery Confirmed</div>
                 <div class="text-xs text-green-600">You confirmed this order on {{ $order->buyer_confirmed_at->format('M d, Y @ g:i A') }}</div>
@@ -119,10 +119,10 @@
                 @if($order->dealer)
                 <p class="font-semibold text-slate-700">{{ $order->dealer->first_name }} {{ $order->dealer->last_name }}</p>
                 @if($order->dealer->phone)
-                <p class="text-sm text-slate-400 mt-1">📞 {{ $order->dealer->phone }}</p>
+                <p class="text-sm text-slate-400 mt-1 flex items-center gap-1"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> {{ $order->dealer->phone }}</p>
                 @endif
                 @if($order->dealer->email)
-                <p class="text-sm text-slate-400 mt-0.5">✉ {{ $order->dealer->email }}</p>
+                <p class="text-sm text-slate-400 mt-0.5 flex items-center gap-1"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg> {{ $order->dealer->email }}</p>
                 @endif
                 @else
                 <p class="text-sm text-slate-400">Seller info not available.</p>
