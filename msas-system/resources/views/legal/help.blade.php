@@ -63,15 +63,15 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
     <p>We're here to help. Choose the option that works best for you.</p>
     <div class="hero-channels">
         <div class="hero-channel">
-            <span style="font-size:22px;">📧</span>
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             <div><strong>Email</strong><span>support@msasagro.com</span></div>
         </div>
         <div class="hero-channel">
-            <span style="font-size:22px;">📞</span>
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
             <div><strong>Phone</strong><span>+234 (0) 800 MSAS FARM</span></div>
         </div>
         <div class="hero-channel">
-            <span style="font-size:22px;">💬</span>
+            <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             <div><strong>In-app Chat</strong><span>Available in your dashboard</span></div>
         </div>
     </div>
@@ -87,42 +87,42 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
     <div class="grid">
 
         <div class="card">
-            <div class="card-icon" style="background:#f0fdf4;">🤖</div>
+            <div class="card-icon" style="background:#f0fdf4;"><svg width="22" height="22" fill="none" stroke="#16a34a" stroke-width="1.8" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 9H5M7 12H5M7 15H5M17 9h2M17 12h2M17 15h2M9 7V5M12 7V5M15 7V5M9 17v2M12 17v2M15 17v2"/></svg></div>
             <h3>AI Smart Scan</h3>
             <p>Having trouble uploading a photo, getting a result, or understanding a diagnosis? Check our scan guide.</p>
             <a href="{{ route('legal.faq') }}#ai">AI Scan FAQ →</a>
         </div>
 
         <div class="card">
-            <div class="card-icon" style="background:#eff6ff;">💳</div>
+            <div class="card-icon" style="background:#eff6ff;"><svg width="22" height="22" fill="none" stroke="#3b82f6" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" d="M2 10h20M6 15h2"/></svg></div>
             <h3>Billing &amp; Subscriptions</h3>
             <p>Questions about your plan, billing date, invoices, or upgrading? We can help immediately.</p>
             <a href="{{ route('legal.refund') }}">Refund Policy →</a>
         </div>
 
         <div class="card">
-            <div class="card-icon" style="background:#fefce8;">🔐</div>
+            <div class="card-icon" style="background:#fefce8;"><svg width="22" height="22" fill="none" stroke="#ca8a04" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
             <h3>Account &amp; Login</h3>
             <p>Locked out of your account, not receiving the verification code, or need to reset your password?</p>
             <a href="{{ route('password.request') }}">Reset Password →</a>
         </div>
 
         <div class="card">
-            <div class="card-icon" style="background:#fdf4ff;">🛒</div>
+            <div class="card-icon" style="background:#fdf4ff;"><svg width="22" height="22" fill="none" stroke="#9333ea" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
             <h3>Marketplace</h3>
             <p>Order not arrived, wrong item delivered, or want to become a seller? Raise a support ticket.</p>
             <a href="mailto:support@msasagro.com?subject=Marketplace%20Issue">Email Support →</a>
         </div>
 
         <div class="card">
-            <div class="card-icon" style="background:#fff7ed;">🌍</div>
+            <div class="card-icon" style="background:#fff7ed;"><svg width="22" height="22" fill="none" stroke="#ea580c" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             <h3>Language &amp; Voice</h3>
             <p>The platform is available in English, Hausa, Yoruba, Igbo, Fulfulde, and French. Switch from the top nav.</p>
             <a href="{{ route('legal.faq') }}">View FAQ →</a>
         </div>
 
         <div class="card">
-            <div class="card-icon" style="background:#f0fdf4;">📊</div>
+            <div class="card-icon" style="background:#f0fdf4;"><svg width="22" height="22" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
             <h3>Reports &amp; Data</h3>
             <p>Need to export your farm data, download a diagnosis report, or understand a financial record?</p>
             <a href="{{ route('legal.privacy') }}#export">Data Rights →</a>
