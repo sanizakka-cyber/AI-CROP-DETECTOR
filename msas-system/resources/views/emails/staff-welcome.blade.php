@@ -62,7 +62,7 @@
     </div>
 
     <div class="notice">
-      ⚠ This link expires in 60 minutes. If it expires, ask your administrator to reset your password again.
+      This link expires in 60 minutes. If it expires, ask your administrator to reset your password again.
       Do not forward this email to anyone.
     </div>
 

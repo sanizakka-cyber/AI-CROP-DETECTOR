@@ -76,7 +76,7 @@
                                 <td class="px-4 py-3 text-slate-500 text-xs">{{ $farmer->created_at->format('M d, Y') }}</td>
                                 <td class="px-4 py-3 text-center">
                                     @if($farmer->is_pilot)
-                                    <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">✓ Pilot</span>
+                                    <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Pilot</span>
                                     @else
                                     <span class="text-slate-300 text-xs">—</span>
                                     @endif

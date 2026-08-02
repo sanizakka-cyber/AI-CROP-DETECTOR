@@ -15,7 +15,7 @@
 </head>
 <body>
     <div class="card">
-        <div style="font-size:48px;">🔍</div>
+        <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
         <h1>Order Not Found</h1>
         <p>We couldn't find an order with number <strong>{{ $orderNumber }}</strong>. Please check and try again.</p>
         <a href="https://ai.msasagro.com">Back to MSAS</a>

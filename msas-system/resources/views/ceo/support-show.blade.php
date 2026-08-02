@@ -28,7 +28,7 @@
         @foreach($ticket->replies as $reply)
         <div style="background:{{ $reply->is_staff ? '#f0fdf4' : '#fff' }};border-radius:14px;border:1px solid {{ $reply->is_staff ? '#bbf7d0' : '#e2e8f0' }};padding:20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:12px;font-weight:700;color:{{ $reply->is_staff ? '#0F6B3E' : '#0f172a' }};">{{ $reply->is_staff ? '🛡️ '.$reply->user->first_name.' (Staff)' : $reply->user->first_name.' (Farmer)' }}</span>
+                <span style="font-size:12px;font-weight:700;color:{{ $reply->is_staff ? '#0F6B3E' : '#0f172a' }};display:inline-flex;align-items:center;gap:4px;">@if($reply->is_staff)<svg width="13" height="13" fill="none" stroke="#0F6B3E" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> {{ $reply->user->first_name }} (Staff)@else {{ $reply->user->first_name }} (Farmer) @endif</span>
                 <span style="font-size:11px;color:#94a3b8;">{{ $reply->created_at->format('M d, Y H:i') }}</span>
             </div>
             <div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ $reply->message }}</div>

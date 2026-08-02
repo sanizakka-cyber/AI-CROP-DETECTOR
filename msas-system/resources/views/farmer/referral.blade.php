@@ -10,7 +10,7 @@
         <div style="font-size:36px;font-weight:900;letter-spacing:0.12em;margin-bottom:12px;font-family:monospace;">{{ $user->referral_code }}</div>
         <div style="font-size:12px;opacity:0.8;margin-bottom:20px;">Share this link or code with fellow farmers to earn rewards when they join MSAS FarmAI.</div>
         <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 16px;font-size:12px;font-family:monospace;word-break:break-all;margin-bottom:16px;">{{ $referralLink }}</div>
-        <button onclick="navigator.clipboard.writeText('{{ $referralLink }}').then(()=>this.textContent='✓ Copied!')" style="background:#fff;color:#0F6B3E;border:none;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;">Copy Referral Link</button>
+        <button onclick="navigator.clipboard.writeText('{{ $referralLink }}').then(()=>this.textContent='Copied!')" style="background:#fff;color:#0F6B3E;border:none;padding:12px 28px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;">Copy Referral Link</button>
     </div>
 
     <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">

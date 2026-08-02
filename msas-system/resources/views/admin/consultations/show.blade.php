@@ -129,7 +129,7 @@
                         {{ $e->first_name }} {{ $e->last_name }}
                         ({{ ucfirst(str_replace('-', ' ', $e->role)) }})
                         {{ $e->state ? '· ' . $e->state : '' }}
-                        {{ $e->is_verified ? '✓' : '' }}
+                        {!! $e->is_verified ? '&#10003;' : '' !!}
                     </option>
                     @endforeach
                 </select>

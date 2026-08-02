@@ -439,7 +439,7 @@
                 @empty
                 <tr>
                     <td colspan="7" style="text-align:center;padding:48px 20px;">
-                        <div style="font-size:32px;margin-bottom:8px;">🔍</div>
+                        <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
                         <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;">No subscriptions found</div>
                         <div style="font-size:12px;color:#94a3b8;">
                             @if(request()->hasAny(['search','plan','status']))

@@ -87,8 +87,8 @@ $serverExpiry = $expiresAt ?? null;
 
     {{-- Status / success message --}}
     @if(session('status'))
-    <div style="margin:12px 0;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;font-size:13px;color:#15803d;font-weight:600;">
-        ✓ {{ session('status') }}
+    <div style="margin:12px 0;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;font-size:13px;color:#15803d;font-weight:600;display:flex;align-items:center;gap:6px;">
+        <svg width="13" height="13" fill="none" stroke="#15803d" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ session('status') }}
     </div>
     @endif
 

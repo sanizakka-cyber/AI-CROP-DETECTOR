@@ -46,7 +46,7 @@ body{margin:0;padding:0;background:#f1f5f9;font-family:'Inter',Arial,sans-serif;
 
         <div class="info-box">
             <p>
-                📩 If you believe this is an error or you have additional documentation to provide,
+                If you believe this is an error or you have additional documentation to provide,
                 please contact us at
                 <a href="mailto:{{ config('mail.from.address') }}" style="color:#1d4ed8;font-weight:700;">{{ config('mail.from.address') }}</a>
                 and we will be happy to assist you.

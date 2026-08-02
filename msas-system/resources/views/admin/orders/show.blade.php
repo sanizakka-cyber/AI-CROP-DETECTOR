@@ -33,7 +33,7 @@
                         {{ $badge['label'] }}
                     </span>
                     @if($order->payment_status === 'paid')
-                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">✓ Paid</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 inline-flex items-center gap-1"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Paid</span>
                     @else
                     <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">Unpaid</span>
                     @endif
