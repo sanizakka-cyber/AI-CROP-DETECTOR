@@ -33,7 +33,7 @@
     <div class="header-sub">Modern Smart Agriculture System</div>
   </div>
   <div class="body">
-    <h1 class="hi">Welcome, {{ $user->first_name }}! 🌱</h1>
+    <h1 class="hi">Welcome, {{ $user->first_name }}!</h1>
     <p>Your account is verified and ready. MSAS FarmAI puts AI-powered crop and livestock diagnostics, expert consultations, and a full farm management suite right in your hands.</p>
 
     <p style="font-weight:700;color:#0f172a;margin-bottom:8px;">Here's how to get started in 4 steps:</p>
@@ -72,11 +72,11 @@
     <a href="{{ config('app.url') }}/subscription/plans" class="cta-alt">Start Free 14-Day Trial</a>
 
     <div class="tip">
-      💡 <strong>Tip:</strong> The AI scan works best in good lighting. Hold your phone 20–30 cm from the affected area and keep it steady before taking the photo.
+      <strong>Tip:</strong> The AI scan works best in good lighting. Hold your phone 20–30 cm from the affected area and keep it steady before taking the photo.
     </div>
 
     <p>If you have any questions or need help, reply to this email or use the in-app support chat anytime.</p>
-    <p style="color:#0f172a;font-weight:700;">Welcome to the future of farming. 🚜</p>
+    <p style="color:#0f172a;font-weight:700;">Welcome to the future of farming.</p>
   </div>
   <div class="footer">
     <p>MSAS FarmAI · Modern Smart Agriculture System · Nigeria</p>

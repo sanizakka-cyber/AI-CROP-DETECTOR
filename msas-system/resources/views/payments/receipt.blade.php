@@ -7,7 +7,7 @@
         </div>
         <div style="display:flex;gap:10px;">
             <a href="{{ route('payment.history') }}" style="padding:9px 18px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;font-weight:600;color:#374151;text-decoration:none;">← All Payments</a>
-            <button onclick="window.print()" style="background:#0B2447;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Print</button>
+            <button onclick="window.print()" style="background:#0B2447;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg> Print</button>
         </div>
     </div>
 </x-slot>
@@ -25,7 +25,7 @@
 
     {{-- Header --}}
     <div style="background:linear-gradient(135deg,#0B2447,#0F6B3E);padding:32px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:8px;">✅</div>
+        <div style="margin-bottom:12px;display:flex;justify-content:center;"><svg width="48" height="48" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
         <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px;">Payment Successful</div>
         <div style="font-size:14px;color:rgba(255,255,255,0.7);">Thank you for your payment</div>
         <div style="font-size:38px;font-weight:900;color:#fff;margin-top:16px;">₦{{ number_format($payment->amount, 2) }}</div>
@@ -43,7 +43,7 @@
             'Payment Method'   => ucfirst($payment->channel ?? $payment->payment_method ?? 'Online'),
             'Date & Time'      => ($payment->paid_at ?? $payment->created_at)->format('d M Y, H:i'),
             'Status'           => ucfirst($payment->status),
-            'Verified'         => $payment->verification_status === 'verified' ? '✓ Verified' : '—',
+            'Verified'         => $payment->verification_status === 'verified' ? 'Verified' : '—',
         ];
         @endphp
 

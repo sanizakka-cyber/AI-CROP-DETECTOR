@@ -35,7 +35,7 @@
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         @if($deliveries->isEmpty())
         <div class="text-center py-16 text-slate-400">
-            <p class="text-5xl mb-3">📦</p>
+            <div class="mb-3 flex justify-center"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
             <p class="font-semibold text-slate-600">No deliveries found</p>
         </div>
         @else
@@ -97,7 +97,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">New Delivery Request</h3>
-            <button onclick="document.getElementById('modal-add-delivery').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-add-delivery').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" action="{{ route('logistics.deliveries.store') }}" class="p-6 space-y-3">
             @csrf
@@ -138,7 +138,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">Update Delivery Status</h3>
-            <button onclick="document.getElementById('modal-update-status').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-update-status').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" id="form-update-status" class="p-6 space-y-4">
             @csrf @method('PATCH')

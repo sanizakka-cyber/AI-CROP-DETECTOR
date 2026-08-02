@@ -19,7 +19,7 @@
     {{-- Drivers Grid --}}
     @if($drivers->isEmpty())
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm text-center py-16 text-slate-400">
-        <p class="text-5xl mb-3">👨‍✈️</p>
+        <div class="mb-3 flex justify-center"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg></div>
         <p class="font-semibold text-slate-600">No drivers registered yet</p>
         <p class="text-sm mt-1">Add drivers to assign them to delivery jobs.</p>
     </div>
@@ -62,7 +62,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">Add Driver</h3>
-            <button onclick="document.getElementById('modal-add-driver').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-add-driver').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" action="{{ route('logistics.drivers.store') }}" class="p-6 space-y-3">
             @csrf
@@ -88,7 +88,7 @@
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-extrabold text-slate-800">Edit Driver</h3>
-            <button onclick="document.getElementById('modal-edit-driver').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="document.getElementById('modal-edit-driver').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
         <form method="POST" id="form-edit-driver" class="p-6 space-y-3">
             @csrf @method('PUT')
