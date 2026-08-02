@@ -75,7 +75,7 @@ $summary = [
 <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;">
     @if($payments->isEmpty())
     <div style="text-align:center;padding:60px 24px;">
-        <div style="font-size:48px;margin-bottom:12px;">💳</div>
+        <div style="margin-bottom:12px;display:flex;justify-content:center;"><svg width="48" height="48" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M1 10h22"/></svg></div>
         <div style="font-size:18px;font-weight:700;color:#0f172a;">No payments found</div>
         <p style="color:#64748b;font-size:13px;">Your payment history will appear here.</p>
     </div>
