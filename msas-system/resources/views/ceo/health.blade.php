@@ -66,16 +66,16 @@
 
     @php
     $services = [
-        ['key'=>'database', 'name'=>'Database',       'icon'=>'🗄️',  'sub'=>'PostgreSQL · Query latency'],
-        ['key'=>'queue',    'name'=>'Queue Worker',    'icon'=>'⚙️',  'sub'=>'Pending &amp; failed jobs'],
-        ['key'=>'ai',       'name'=>'AI Engine',       'icon'=>'🧠',  'sub'=>'Crop &amp; animal diagnosis'],
-        ['key'=>'paystack', 'name'=>'Paystack',        'icon'=>'💳',  'sub'=>'Payment gateway reachability'],
-        ['key'=>'mail',     'name'=>'Email Service',   'icon'=>'📧',  'sub'=>'SMTP configuration'],
-        ['key'=>'storage',  'name'=>'Disk Storage',    'icon'=>'💾',  'sub'=>'Application &amp; upload storage'],
-        ['key'=>'system',   'name'=>'Server (CPU/RAM)','icon'=>'🖥️',  'sub'=>'Load average &amp; memory'],
-        ['key'=>'ssl',      'name'=>'SSL Certificate', 'icon'=>'🔒',  'sub'=>'HTTPS certificate expiry'],
-        ['key'=>'users',    'name'=>'Active Sessions', 'icon'=>'👥',  'sub'=>'Users active in last 15 min'],
-        ['key'=>'errors',   'name'=>'Error Log',       'icon'=>'🚨',  'sub'=>'Application errors · last 24 h'],
+        ['key'=>'database', 'name'=>'Database',       'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M4 7c0-1.66 3.58-3 8-3s8 1.34 8 3v2c0 1.66-3.58 3-8 3S4 10.66 4 9V7zm0 5c0 1.66 3.58 3 8 3s8-1.34 8-3m-16 0v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/>',  'sub'=>'PostgreSQL · Query latency'],
+        ['key'=>'queue',    'name'=>'Queue Worker',    'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>',  'sub'=>'Pending &amp; failed jobs'],
+        ['key'=>'ai',       'name'=>'AI Engine',       'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707M12 21a9 9 0 01-6.364-15.364A9 9 0 0112 3a9 9 0 016.364 15.364A9 9 0 0112 21z"/>',  'sub'=>'Crop &amp; animal diagnosis'],
+        ['key'=>'paystack', 'name'=>'Paystack',        'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>',  'sub'=>'Payment gateway reachability'],
+        ['key'=>'mail',     'name'=>'Email Service',   'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>',  'sub'=>'SMTP configuration'],
+        ['key'=>'storage',  'name'=>'Disk Storage',    'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>',  'sub'=>'Application &amp; upload storage'],
+        ['key'=>'system',   'name'=>'Server (CPU/RAM)','icon'=>'<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',  'sub'=>'Load average &amp; memory'],
+        ['key'=>'ssl',      'name'=>'SSL Certificate', 'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>',  'sub'=>'HTTPS certificate expiry'],
+        ['key'=>'users',    'name'=>'Active Sessions', 'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>',  'sub'=>'Users active in last 15 min'],
+        ['key'=>'errors',   'name'=>'Error Log',       'icon'=>'<path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>',  'sub'=>'Application errors · last 24 h'],
     ];
     @endphp
 
@@ -94,7 +94,7 @@
          style="background:#fff;border:1.5px solid {{ $c['border'] }};border-radius:12px;padding:18px 18px 14px;background:{{ $c['bg'] }}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
             <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:18px;line-height:1">{{ $svc['icon'] }}</span>
+                <svg width="20" height="20" fill="none" stroke="{{ $c['dot'] }}" stroke-width="1.8" viewBox="0 0 24 24">{!! $svc['icon'] !!}</svg>
                 <div>
                     <div style="font-size:14px;font-weight:700;color:#0B2447">{{ $svc['name'] }}</div>
                     <div style="font-size:11px;color:#64748b;margin-top:1px">{!! $svc['sub'] !!}</div>
@@ -168,17 +168,17 @@
 {{-- ── Backup / Sentry notes ────────────────────────────────────────────── --}}
 <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 18px">
-        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">🗄️ Database Backups</div>
+        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7c0-1.66 3.58-3 8-3s8 1.34 8 3v2c0 1.66-3.58 3-8 3S4 10.66 4 9V7zm0 5c0 1.66 3.58 3 8 3s8-1.34 8-3m-16 0v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg> Database Backups</div>
         <div style="font-size:12px;color:#374151">Managed daily by Render.com PostgreSQL. Verify retention policy in the Render dashboard → Database → Backups. Run a restore test quarterly.</div>
     </div>
     @if(!config('sentry.dsn'))
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 18px">
-        <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:4px">⚡ Sentry Not Active</div>
+        <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:4px;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Sentry Not Active</div>
         <div style="font-size:12px;color:#374151">Run <code style="background:#fff;padding:1px 5px;border-radius:4px;font-size:11px">composer require sentry/sentry-laravel</code> on Render Shell, then set <code style="background:#fff;padding:1px 5px;border-radius:4px;font-size:11px">SENTRY_LARAVEL_DSN</code> to enable real-time alerting.</div>
     </div>
     @else
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 18px">
-        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px">✅ Sentry Active</div>
+        <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Sentry Active</div>
         <div style="font-size:12px;color:#374151">Real-time error monitoring and alerting is configured. Exceptions, JS errors, queue failures, and scheduled task failures are reported to Sentry.</div>
     </div>
     @endif

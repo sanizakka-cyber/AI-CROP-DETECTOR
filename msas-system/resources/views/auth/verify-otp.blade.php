@@ -102,7 +102,7 @@ $serverExpiry = $expiresAt ?? null;
     {{-- ── Email delivery failure banner ── --}}
     @if($emailFailed && !session('status'))
     <div style="margin:12px 0;padding:16px 18px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;text-align:left;">
-        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;">⚠️ Verification email could not be sent</p>
+        <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Verification email could not be sent</p>
         <p style="margin:0 0 12px;font-size:13px;color:#78350f;line-height:1.5;">
             We were unable to deliver the code to <strong>{{ $masked }}</strong>. This is usually a temporary issue.
         </p>
@@ -123,7 +123,7 @@ $serverExpiry = $expiresAt ?? null;
     @if($smsFailed)
     <div class="fallback-panel">
         <p>
-            <strong>⚠️ SMS delivery failed.</strong><br>
+            <strong style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> SMS delivery failed.</strong><br>
             We couldn't send a verification code to <strong>{{ $masked }}</strong>.
             Enter your email address below and we'll send the code there instead.
         </p>
