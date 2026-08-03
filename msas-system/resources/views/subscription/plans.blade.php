@@ -69,7 +69,8 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
                 <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px;">Select Plan</label>
                 <div style="position:relative;">
                     <select name="plan" x-model="qplan"
-                        style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;outline:none;">
+                        style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;"
+                        onfocus="this.style.outline='2px solid #0F6B3E';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">
                         <option value="basic">Basic Plan — ₦2,500/month</option>
                         <option value="basic_pro">Basic Pro Plan — ₦5,000/month</option>
                         <option value="premium">Premium Plan — ₦10,000/month</option>
@@ -85,7 +86,8 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
                 <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px;">Billing Cycle</label>
                 <div style="position:relative;">
                     <select name="billing_cycle" x-model="qcycle"
-                        style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;outline:none;">
+                        style="width:100%;padding:10px 36px 10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:600;color:#0f172a;background:#f8fafc;appearance:none;cursor:pointer;"
+                        onfocus="this.style.outline='2px solid #0F6B3E';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">
                         <option value="monthly">Monthly</option>
                         <option value="yearly">Yearly (Save 17%)</option>
                     </select>

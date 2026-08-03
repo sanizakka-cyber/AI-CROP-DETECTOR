@@ -165,8 +165,8 @@ $farmer = $consultation->farmer;
                 </label>
                 <textarea name="expert_response" required rows="10"
                     placeholder="Provide a detailed diagnosis, recommended medication (name, dosage, frequency), management advice, and follow-up instructions..."
-                    style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;font-size:13px;color:#374151;line-height:1.7;resize:vertical;font-family:inherit;box-sizing:border-box;outline:none;"
-                    onfocus="this.style.borderColor='#0F6B3E'" onblur="this.style.borderColor='#e2e8f0'">{{ old('expert_response') }}</textarea>
+                    style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;font-size:13px;color:#374151;line-height:1.7;resize:vertical;font-family:inherit;box-sizing:border-box;"
+                    onfocus="this.style.outline='none';this.style.borderColor='#0F6B3E';this.style.boxShadow='0 0 0 3px rgba(15,107,62,.15)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">{{ old('expert_response') }}</textarea>
             </div>
 
             <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:9px;padding:12px 14px;margin-bottom:18px;">

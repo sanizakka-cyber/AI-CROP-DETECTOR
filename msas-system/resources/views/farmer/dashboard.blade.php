@@ -497,9 +497,13 @@ function dismissOnboarding() {
     <div id="weather-body" style="display:none;padding:16px 20px;">
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
             <input type="text" id="weather-location" placeholder="Your location (e.g. Kano, Ogun)" value="{{ auth()->user()->state ?? '' }}"
-                   style="flex:1;min-width:160px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;">
+                   aria-label="Your location for weather forecast"
+                   style="flex:1;min-width:160px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;"
+                   onfocus="this.style.outline='none';this.style.borderColor='#0F6B3E';this.style.boxShadow='0 0 0 3px rgba(15,107,62,.12)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
             <input type="text" id="weather-crop" placeholder="Current crop (optional)"
-                   style="flex:1;min-width:130px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;">
+                   aria-label="Current crop for weather advisory"
+                   style="flex:1;min-width:130px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;"
+                   onfocus="this.style.outline='none';this.style.borderColor='#0F6B3E';this.style.boxShadow='0 0 0 3px rgba(15,107,62,.12)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
             <button onclick="loadWeather()" style="padding:8px 18px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">Get Forecast</button>
         </div>
         <div id="weather-result" style="min-height:60px;font-size:13px;color:#475569;line-height:1.6;">

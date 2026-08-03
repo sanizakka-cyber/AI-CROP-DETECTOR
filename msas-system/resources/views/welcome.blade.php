@@ -5,9 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MSAS Agro | Smart Agriculture Platform — Nigeria</title>
     <meta name="description" content="MSAS Agro is Nigeria's leading AI-powered agribusiness platform for farmers, livestock owners, cooperatives, governments and development partners.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MSAS Agro | Smart Agriculture Platform — Nigeria">
+    <meta property="og:description" content="AI-powered diagnostics, veterinary services, agronomy support and enterprise management for Nigeria's agricultural ecosystem.">
+    <meta property="og:url" content="{{ config('app.url') }}">
+    <meta property="og:image" content="{{ asset('images/msas-logo.png') }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="MSAS Agro | Smart Agriculture Platform">
+    <meta name="twitter:description" content="AI-powered agribusiness platform for Nigerian farmers and agri-enterprises.">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700,800|inter:300,400,500,600,700&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" onload="this.onload=null;this.rel='stylesheet'"/>
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer"/></noscript>
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
         :root{--green:#2E7D32;--green-dark:#1B5E20;--green-light:#E8F5E9;--gold:#F9A825;--gold-dark:#F57F17;--blue:#0288D1;--footer-bg:#071f0f;}
@@ -303,14 +313,15 @@
         </div>
 
         {{-- Hamburger --}}
-        <button @click="open=!open" class="md:hidden p-2 rounded-lg transition" :class="scrolled?'text-gray-800 hover:bg-gray-100':'text-white hover:bg-white/10'">
-            <i x-show="!open" class="fa-solid fa-bars text-xl"></i>
-            <i x-show="open"  class="fa-solid fa-xmark text-xl" x-cloak></i>
+        <button @click="open=!open" class="md:hidden p-2 rounded-lg transition" :class="scrolled?'text-gray-800 hover:bg-gray-100':'text-white hover:bg-white/10'"
+                :aria-expanded="open.toString()" aria-controls="mobile-nav-drawer" aria-label="Toggle navigation menu">
+            <svg x-show="!open" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <svg x-show="open" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" x-cloak><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     </div>
 
     {{-- Mobile drawer --}}
-    <div x-show="open" x-cloak
+    <div id="mobile-nav-drawer" x-show="open" x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 -translate-y-2"
          x-transition:enter-end="opacity-100 translate-y-0"
@@ -1031,11 +1042,12 @@
                             <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
                                  alt="Sani Yawale Zakka — Founder &amp; CEO, MSAS Agro"
                                  class="rounded-xl border-2 shadow-md"
+                                 loading="lazy"
                                  style="width:72px;height:72px;min-width:72px;object-fit:cover;object-position:top;display:block;border-color:var(--green);"
                                  onerror="this.src='https://ui-avatars.com/api/?name=Sani+Zakka&background=2E7D32&color=fff&size=120&rounded=false&bold=true'">
                             <div class="absolute flex items-center justify-center bg-white border-2 rounded-full shadow"
                                  style="bottom:-3px;right:-3px;width:17px;height:17px;border-color:var(--green);">
-                                <i class="fa-solid fa-check" style="font-size:7px;color:var(--green)"></i>
+                                <svg width="7" height="7" fill="none" stroke="var(--green)" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                             </div>
                         </div>
                         <div class="min-w-0 flex-1">
@@ -1306,7 +1318,7 @@
                 <div class="flex items-center gap-2 mb-1">
                     {{-- Logo on dark footer background — no extra wrapper needed --}}
                     <div style="width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;">
-                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro"
+                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro" loading="lazy"
                              style="width:100%;height:100%;object-fit:cover;display:block;">
                     </div>
                     <div class="font-heading font-extrabold text-base text-white">MSAS Agro</div>
