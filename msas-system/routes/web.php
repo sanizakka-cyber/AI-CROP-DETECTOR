@@ -610,4 +610,23 @@ Route::middleware(['auth'])->prefix('messages')->name('messages.')->group(functi
 // ── In-app Feedback (all authenticated users) ─────────────────────────────
 Route::middleware(['auth'])->post('/feedback', [\App\Http\Controllers\FeedbackController::class, 'store'])->name('feedback.store');
 
+// ── Sitemap ───────────────────────────────────────────────────────────────
+Route::get('/sitemap.xml', function () {
+    $urls = [
+        ['loc' => url('/'),                           'priority' => '1.0', 'changefreq' => 'weekly'],
+        ['loc' => url('/marketplace'),                'priority' => '0.8', 'changefreq' => 'daily'],
+        ['loc' => url('/track'),                      'priority' => '0.6', 'changefreq' => 'monthly'],
+        ['loc' => url('/legal/terms'),                'priority' => '0.3', 'changefreq' => 'yearly'],
+        ['loc' => url('/legal/privacy'),              'priority' => '0.3', 'changefreq' => 'yearly'],
+        ['loc' => url('/legal/cookies'),              'priority' => '0.2', 'changefreq' => 'yearly'],
+    ];
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+         . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    foreach ($urls as $u) {
+        $xml .= "  <url><loc>{$u['loc']}</loc><changefreq>{$u['changefreq']}</changefreq><priority>{$u['priority']}</priority></url>\n";
+    }
+    $xml .= '</urlset>';
+    return response($xml, 200)->header('Content-Type', 'application/xml');
+})->name('sitemap');
+
 require __DIR__.'/auth.php';

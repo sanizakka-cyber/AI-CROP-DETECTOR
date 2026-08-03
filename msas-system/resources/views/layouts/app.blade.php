@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="MSAS FarmAI — AI-powered farm management, veterinary consultations, agronomy advisory and agribusiness tools for Nigeria's agricultural sector.">
+    <meta name="robots" content="noindex,nofollow">
     <title>MSAS — {{ config('app.name', 'Livestock & Agro Services') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800|poppins:600,700,800&display=swap" rel="stylesheet"/>
@@ -89,12 +91,14 @@
       @msas-close-overlays.window="$store.ui.closeAll()"
       @keydown.escape.window="$store.ui.closeAll()">
 
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-2 focus:left-2 focus:bg-white focus:text-emerald-700 focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold focus:shadow-lg">Skip to main content</a>
+
 <div class="flex h-screen overflow-hidden">
 
     <!-- ══════════════════════════════════════════════════
          SIDEBAR
     ══════════════════════════════════════════════════ -->
-    <aside :class="sidebarOpen ? 'w-64' : 'w-[70px]'" class="sidebar flex flex-col transition-all duration-300 z-30 shadow-2xl flex-shrink-0">
+    <aside id="app-sidebar" :class="sidebarOpen ? 'w-64' : 'w-[70px]'" class="sidebar flex flex-col transition-all duration-300 z-30 shadow-2xl flex-shrink-0" aria-label="{{ __('Main navigation') }}">
 
         <!-- Logo -->
         <div class="sidebar-logo-area h-16 flex items-center px-4 gap-3 flex-shrink-0">
@@ -448,7 +452,10 @@
                     class="w-9 h-9 rounded-lg flex items-center justify-center border transition-all"
                     style="border-color:#e2e8f0; color:#64748b;"
                     onmouseover="this.style.borderColor='#0F6B3E';this.style.color='#0F6B3E'"
-                    onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#64748b'">
+                    onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#64748b'"
+                    :aria-expanded="sidebarOpen.toString()"
+                    aria-controls="app-sidebar"
+                    aria-label="{{ __('Toggle sidebar') }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
                 </button>
 
@@ -468,7 +475,7 @@
                     <div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">
                         <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     </div>
-                    <input class="search-input" type="text" placeholder="{{ __('Search...') }}" data-i18n-placeholder="Search..."/>
+                    <input class="search-input" type="search" placeholder="{{ __('Search...') }}" aria-label="{{ __('Search') }}" data-i18n-placeholder="Search..."/>
                 </div>
 
                 <!-- Notifications -->
@@ -637,7 +644,7 @@
         </header>
 
         <!-- Page Content -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto page-content">
+        <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto page-content">
 
             {{-- ── Impersonation banner ────────────────────────────────────────────── --}}
             @if(session()->has('impersonate.original_id'))

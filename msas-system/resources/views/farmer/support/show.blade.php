@@ -55,7 +55,7 @@
     <form method="POST" action="{{ route('support.reply', $ticket) }}">
     @csrf
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-        <textarea name="message" rows="4" placeholder="Write your reply..." style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;resize:vertical;outline:none;box-sizing:border-box;" required></textarea>
+        <textarea name="message" rows="4" placeholder="Write your reply..." style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;resize:vertical;box-sizing:border-box;" onfocus="this.style.outline='none';this.style.borderColor='#0F6B3E';this.style.boxShadow='0 0 0 3px rgba(15,107,62,.15)'" onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'" required></textarea>
         <div style="margin-top:12px;display:flex;gap:10px;">
             <button type="submit" style="background:#0F6B3E;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">Send Reply</button>
             <a href="{{ route('support.index') }}" style="background:#f1f5f9;color:#475569;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;">← Back</a>
