@@ -24,9 +24,9 @@ class SecurityHeaders
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' https://js.paystack.co https://meet.jit.si https://browser.sentry-cdn.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net",
-            "img-src 'self' data: https://ui-avatars.com",
-            "font-src 'self' data: https://fonts.bunny.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com",
+            "img-src 'self' data: https://ui-avatars.com https://images.unsplash.com",
+            "font-src 'self' data: https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "connect-src 'self' https://api.open-meteo.com https://api.paystack.co https://*.ingest.sentry.io",
             "frame-src 'self' https://meet.jit.si",
             "object-src 'none'",
