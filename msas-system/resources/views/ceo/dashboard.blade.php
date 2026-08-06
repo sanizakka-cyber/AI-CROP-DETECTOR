@@ -658,17 +658,17 @@
         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
         @php
         $userKpis = [
-            ['New Today',     $newUsersToday, '#16a34a','#f0fdf4'],
-            ['New This Week', $newUsersWeek,  '#2563eb','#eff6ff'],
-            ['Total Users',   $totalUsers,    '#0f172a','#f8fafc'],
-            ['Verified',      $verifiedUsers, '#7c3aed','#f5f3ff'],
-            ['Verify Rate',   $verifyRate.'%',($verifyRate>=80?'#16a34a':($verifyRate>=50?'#d97706':'#dc2626')),'#fff'],
+            ['New Today',     $newUsersToday, '#16a34a','#f0fdf4', ''],
+            ['New This Week', $newUsersWeek,  '#2563eb','#eff6ff', ''],
+            ['Total Users',   $totalUsers,    '#0f172a','#f8fafc', ''],
+            ['Verified',      $verifiedUsers, '#7c3aed','#f5f3ff', ''],
+            ['Verify Rate',   $verifyRate,    ($verifyRate>=80?'#16a34a':($verifyRate>=50?'#d97706':'#dc2626')),'#fff','%'],
         ];
         @endphp
-        @foreach($userKpis as [$ul,$uv,$uc,$ubg])
+        @foreach($userKpis as [$ul,$uv,$uc,$ubg,$usuf])
         <div class="bi-card text-center" style="background:{{ $ubg }};border-top:3px solid {{ $uc }};padding:14px;">
             <div class="bi-eyebrow">{{ $ul }}</div>
-            <div class="bi-num mt-1" style="color:{{ $uc }};font-size:22px;">{{ number_format($uv) }}</div>
+            <div class="bi-num mt-1" style="color:{{ $uc }};font-size:22px;">{{ number_format($uv) }}{{ $usuf }}</div>
         </div>
         @endforeach
         </div>
