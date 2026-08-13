@@ -530,7 +530,7 @@
                 </div>
 
                 <!-- Language Switcher -->
-                <div class="relative" @click.outside="$store.ui.closeAll()">
+                <div class="relative">
                     @php
                         $locales = ['en'=>'English','ha'=>'Hausa','yo'=>'Yoruba','ig'=>'Igbo','ff'=>'Fulfulde','fr'=>'Francais'];
                         $cur = app()->getLocale();
@@ -544,7 +544,7 @@
                             <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    <div x-show="$store.ui.is('lang')" x-cloak
+                    <div x-show="$store.ui.is('lang')" @click.outside="$store.ui.closeAll()" x-cloak
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
@@ -557,7 +557,7 @@
                         <form method="POST" action="{{ route('locale.set') }}" class="msas-locale-form">
                             @csrf
                             <input type="hidden" name="locale" value="{{ $code }}">
-                            <button type="submit" data-locale-code="{{ $code }}" @click="open=false"
+                            <button type="submit" data-locale-code="{{ $code }}" @click="$store.ui.closeAll()"
                                 class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-slate-50 transition text-left {{ $cur === $code ? 'font-bold' : '' }}"
                                 style="{{ $cur === $code ? 'color:#0F6B3E;' : 'color:#475569;' }}">
                                 <span>{{ $name }}</span>
