@@ -23,7 +23,7 @@ class SecurityHeaders
         // and stops base-tag / form-action phishing even with inline scripts allowed.
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://js.paystack.co https://meet.jit.si https://browser.sentry-cdn.com",
+            "script-src 'self' 'unsafe-inline' https://js.paystack.co https://meet.jit.si https://browser.sentry-cdn.com https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "img-src 'self' data: https://ui-avatars.com https://images.unsplash.com",
             "font-src 'self' data: https://fonts.bunny.net https://cdnjs.cloudflare.com",

@@ -1,9 +1,42 @@
-<x-app-layout>
-<x-slot name="header">
-    <h2 style="font-size:20px;font-weight:800;color:#0f172a;margin:0;">Platform Changelog</h2>
-</x-slot>
-<div style="padding:24px 0 60px;background:#f1f5f9;min-height:100vh;">
-<div style="max-width:760px;margin:0 auto;padding:0 20px;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog — MSAS FarmAI</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#0f172a;font-size:15px;line-height:1.7}
+.nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-brand{font-weight:800;font-size:17px;color:#0F6B3E;text-decoration:none}
+.nav-links{display:flex;gap:20px;font-size:13px}
+.nav-links a{color:#475569;text-decoration:none;font-weight:500}
+.nav-links a:hover{color:#0F6B3E}
+.hero{background:linear-gradient(135deg,#0B2447 0%,#0d4a2e 60%,#0F6B3E 100%);color:#fff;padding:52px 24px 44px;text-align:center}
+.hero h1{font-size:28px;font-weight:800;margin-bottom:8px}
+.hero p{font-size:14px;opacity:.8}
+.container{max-width:760px;margin:0 auto;padding:48px 24px 80px}
+footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0}
+@media(max-width:600px){.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+    <a href="{{ url('/') }}" class="nav-brand">MSAS FarmAI</a>
+    <div class="nav-links">
+        <a href="{{ route('legal.terms') }}">Terms</a>
+        <a href="{{ route('legal.privacy') }}">Privacy Policy</a>
+        <a href="{{ route('login') }}">Log in</a>
+    </div>
+</nav>
+
+<div class="hero">
+    <h1>Platform Changelog</h1>
+    <p>What's new on MSAS FarmAI</p>
+</div>
+
+<div class="container">
 @php
 $releases = [
     ['version'=>'v1.3 — Phase 10','date'=>'2026-07-28','label'=>'new','items'=>[
@@ -55,5 +88,11 @@ $releases = [
 @endforeach
 
 </div>
-</div>
-</x-app-layout>
+
+<footer>
+    &copy; {{ date('Y') }} MSAS Livestock & Agro Services. All rights reserved. &nbsp;·&nbsp;
+    <a href="{{ route('legal.privacy') }}" style="color:#64748b">Privacy Policy</a>
+</footer>
+
+</body>
+</html>
