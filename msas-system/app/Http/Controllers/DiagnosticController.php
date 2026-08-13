@@ -86,6 +86,12 @@ class DiagnosticController extends Controller
                 ]),
             };
 
+            // AI engine generates the diagnosis text directly in the requesting
+            // locale (see LANGUAGES map in ai-engine/main.py) rather than
+            // translating a stored English diagnosis after the fact.
+            $locale = app()->getLocale();
+            $textFields['language'] = $locale;
+
             foreach ($textFields as $fieldName => $fieldValue) {
                 $body .= "--{$boundary}\r\n";
                 $body .= "Content-Disposition: form-data; name=\"{$fieldName}\"\r\n\r\n";
@@ -242,6 +248,7 @@ class DiagnosticController extends Controller
             'type'            => $request->scan_type,
             'image_path'      => $path,
             'image_thumbnail' => $thumbnail,
+            'language'        => app()->getLocale(),
         ]));
 
         \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
@@ -344,7 +351,96 @@ class DiagnosticController extends Controller
             }
         }
 
-        return view('diagnostics.report', compact('diagnosis', 'user', 'imageB64'));
+        $translated = $this->translatedDiagnosisText($diagnosis);
+
+        return view('diagnostics.report', compact('diagnosis', 'user', 'imageB64', 'translated'));
+    }
+
+    /**
+     * Translate a diagnosis's free-text fields into the current app locale,
+     * in one AI-engine call. Returns [] (falling back to the stored English/
+     * source-language text) when no translation is needed or possible —
+     * never returns a partial/guessed translation.
+     *
+     * Deliberately excludes severity_level, urgency_level, and health_status:
+     * report.blade.php matches those against fixed English values to pick
+     * badge colors, so translating them would break that logic.
+     */
+    private function translatedDiagnosisText(Diagnosis $diagnosis): array
+    {
+        $locale = app()->getLocale();
+        $sourceLanguage = $diagnosis->language ?: 'en';
+
+        if ($locale === 'en' || $locale === $sourceLanguage) {
+            return [];
+        }
+
+        $fields = [
+            'disease_name', 'symptoms_identified', 'cause', 'environmental_factors',
+            'nutrient_deficiencies', 'pest_detection', 'first_aid_steps',
+            'recommended_medication', 'fertilizer_recommendation',
+            'preventive_measures', 'best_practices', 'vet_referral_advice',
+            'explanation', 'recovery_period', 'detected_part',
+        ];
+
+        $original = [];
+        foreach ($fields as $field) {
+            if (!empty($diagnosis->$field)) {
+                $original[$field] = $diagnosis->$field;
+            }
+        }
+
+        $baseUrl = rtrim(config('services.ai_engine.url', ''), '/');
+        $aiKey   = config('services.ai_engine.key', '');
+
+        if (empty($original) || !$baseUrl) {
+            return [];
+        }
+
+        try {
+            $payload  = json_encode($original, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+            $boundary = '----MSASReportTranslateBoundary' . bin2hex(random_bytes(8));
+            $body     = "--{$boundary}\r\n";
+            $body    .= "Content-Disposition: form-data; name=\"text\"\r\n\r\n";
+            $body    .= $payload . "\r\n";
+            $body    .= "--{$boundary}\r\n";
+            $body    .= "Content-Disposition: form-data; name=\"target_language\"\r\n\r\n";
+            $body    .= $locale . "\r\n";
+            $body    .= "--{$boundary}--\r\n";
+
+            $headers = ['Content-Type' => "multipart/form-data; boundary={$boundary}"];
+            if ($aiKey) {
+                $headers['Authorization'] = "Bearer {$aiKey}";
+            }
+
+            $guzzle = new GuzzleClient(['timeout' => 30, 'http_errors' => false]);
+            $resp   = $guzzle->post("{$baseUrl}/translate", ['body' => $body, 'headers' => $headers]);
+
+            if ($resp->getStatusCode() < 200 || $resp->getStatusCode() >= 300) {
+                Log::warning('Report translation non-200', ['status' => $resp->getStatusCode()]);
+                return [];
+            }
+
+            $data = json_decode((string) $resp->getBody(), true);
+            $raw  = trim((string) ($data['translated_text'] ?? ''));
+            // Strip markdown code fences in case the model adds them despite instructions.
+            $raw  = preg_replace('/^```(?:json)?\s*|\s*```$/', '', $raw);
+
+            $translatedJson = json_decode($raw, true);
+            if (!is_array($translatedJson)) {
+                return [];
+            }
+
+            // Only trust values for fields we actually asked for — never let
+            // the AI response introduce keys we didn't send.
+            return array_filter(
+                array_intersect_key($translatedJson, $original),
+                fn ($v) => is_string($v) && $v !== ''
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Report translation exception', ['error' => $e->getMessage()]);
+            return [];
+        }
     }
 
     public function storeFeedback(Request $request, Diagnosis $diagnosis)

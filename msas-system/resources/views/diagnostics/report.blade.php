@@ -271,6 +271,12 @@ a { color: inherit; text-decoration: none; }
 
 <div class="page">
 
+    @php
+        // Falls back to the stored (source-language) value when no translation
+        // was produced — see DiagnosticController::translatedDiagnosisText().
+        $t = fn($field) => $translated[$field] ?? $diagnosis->$field;
+    @endphp
+
     {{-- ── Report Header ──────────────────────────────────────────────── --}}
     <div class="rpt-header">
         <div>
@@ -279,13 +285,13 @@ a { color: inherit; text-decoration: none; }
             <div class="rpt-id">Report ID: MSAS-{{ str_pad($diagnosis->id, 6, '0', STR_PAD_LEFT) }}</div>
         </div>
         <div class="rpt-meta">
-            <div><strong>Farmer:</strong> {{ $user->name }}</div>
-            <div><strong>Email:</strong> {{ $user->email }}</div>
+            <div><strong>{{ __('Farmer') }}:</strong> {{ $user->name }}</div>
+            <div><strong>{{ __('Email') }}:</strong> {{ $user->email }}</div>
             <div><strong>Scan Type:</strong>
                 {{ match($diagnosis->type) { 'plant'=>'Crop / Plant', 'soil'=>'Soil Assessment', default=>'Livestock' } }}
             </div>
             <div><strong>Date:</strong> {{ $diagnosis->created_at->format('F j, Y  g:i A') }}</div>
-            <div><strong>Status:</strong> {{ ucfirst($diagnosis->status) }}</div>
+            <div><strong>{{ __('Status') }}:</strong> {{ ucfirst($diagnosis->status) }}</div>
         </div>
     </div>
 
@@ -309,13 +315,15 @@ a { color: inherit; text-decoration: none; }
         </div>
         <div class="subject-right">
             @if($diagnosis->severity_level)
+            {{-- Badge color logic matches the stored English enum value directly —
+                 only the trailing label word is translated, never severity_level itself. --}}
             <span class="badge badge-{{ match($diagnosis->severity_level) { 'Critical','Severe'=>'red', 'Moderate'=>'orange', 'Mild'=>'amber', default=>'green' } }}">
-                {{ $diagnosis->severity_level }} Severity
+                {{ $diagnosis->severity_level }} {{ __('Severity') }}
             </span>
             @endif
             @if($diagnosis->urgency_level)
             <span class="badge badge-{{ match($diagnosis->urgency_level) { 'Emergency','High'=>'red', 'Medium'=>'amber', default=>'green' } }}">
-                {{ $diagnosis->urgency_level }} Urgency
+                {{ $diagnosis->urgency_level }} {{ __('Urgency') }}
             </span>
             @endif
             @if($diagnosis->health_status)
@@ -338,14 +346,14 @@ a { color: inherit; text-decoration: none; }
         </div>
         <div>
             <div class="diag-headline">
-                <div class="diag-label">Diagnosis Result</div>
-                <div class="diag-name">{{ $diagnosis->disease_name }}</div>
+                <div class="diag-label">{{ __('Diagnosis') }}</div>
+                <div class="diag-name">{{ $t('disease_name') }}</div>
                 <div class="meta-row">
                     @if($diagnosis->detected_part)
-                    <span class="meta-pill">Part: {{ $diagnosis->detected_part }}</span>
+                    <span class="meta-pill">Part: {{ $t('detected_part') }}</span>
                     @endif
                     @if($diagnosis->recovery_period)
-                    <span class="meta-pill">Recovery: {{ $diagnosis->recovery_period }}</span>
+                    <span class="meta-pill">Recovery: {{ $t('recovery_period') }}</span>
                     @endif
                 </div>
             </div>
@@ -353,7 +361,7 @@ a { color: inherit; text-decoration: none; }
             {{-- Confidence bar --}}
             <div class="conf-bar-wrap">
                 <div class="conf-bar-label">
-                    <span>AI Confidence Score</span>
+                    <span>{{ __('AI Confidence') }}</span>
                     <span>{{ number_format($diagnosis->confidence_score, 1) }}%</span>
                 </div>
                 <div class="conf-bar-bg"><div class="conf-bar-fill"></div></div>
@@ -363,7 +371,7 @@ a { color: inherit; text-decoration: none; }
             <div style="padding: 0 22px 12px">
                 <div class="low-conf-box">
                     <svg width="16" height="16" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                    <p>Confidence is limited. Please capture a clearer image or consult an expert for a definitive diagnosis.</p>
+                    <p>{{ __('Confidence is limited. Please capture a clearer image or consult an expert.') }}</p>
                 </div>
             </div>
             @endif
@@ -379,20 +387,20 @@ a { color: inherit; text-decoration: none; }
         <div class="section-grid">
             @if($diagnosis->symptoms_identified)
             <div class="section-card s-red">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Symptoms Identified</div>
-                <p>{{ $diagnosis->symptoms_identified }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Symptoms') }}</div>
+                <p>{{ $t('symptoms_identified') }}</p>
             </div>
             @endif
             @if($diagnosis->cause)
             <div class="section-card s-slate">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> Root Cause</div>
-                <p>{{ $diagnosis->cause }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Root Cause') }}</div>
+                <p>{{ $t('cause') }}</p>
             </div>
             @endif
             @if($diagnosis->environmental_factors)
             <div class="section-card s-sky">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20a3 3 0 006 0 3 3 0 00-3-2.69V6a3 3 0 00-6 0v11.31A3 3 0 009 20z"/></svg> Environmental Factors</div>
-                <p>{{ $diagnosis->environmental_factors }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20a3 3 0 006 0 3 3 0 00-3-2.69V6a3 3 0 00-6 0v11.31A3 3 0 009 20z"/></svg> {{ __('Environment') }}</div>
+                <p>{{ $t('environmental_factors') }}</p>
             </div>
             @endif
         </div>
@@ -407,14 +415,14 @@ a { color: inherit; text-decoration: none; }
         <div class="section-grid">
             @if($showNutrients)
             <div class="section-card s-lime">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg> Nutrient Deficiency</div>
-                <p>{{ $diagnosis->nutrient_deficiencies }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg> {{ __('Nutrient Deficiency') }}</div>
+                <p>{{ $t('nutrient_deficiencies') }}</p>
             </div>
             @endif
             @if($showPests)
             <div class="section-card s-orange">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg> Pest Detection</div>
-                <p>{{ $diagnosis->pest_detection }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg> {{ __('Pest Detection') }}</div>
+                <p>{{ $t('pest_detection') }}</p>
             </div>
             @endif
         </div>
@@ -423,8 +431,8 @@ a { color: inherit; text-decoration: none; }
         {{-- Immediate Action --}}
         @if($diagnosis->first_aid_steps)
         <div class="action-block">
-            <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Immediate Action Required</div>
-            <p>{{ $diagnosis->first_aid_steps }}</p>
+            <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> {{ __('Immediate Action Required') }}</div>
+            <p>{{ $t('first_aid_steps') }}</p>
         </div>
         @endif
 
@@ -434,14 +442,14 @@ a { color: inherit; text-decoration: none; }
         <div class="section-grid">
             @if($diagnosis->recommended_medication)
             <div class="section-card s-emerald">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg> Recommended Treatment</div>
-                <p>{{ $diagnosis->recommended_medication }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg> {{ __('Recommended Treatment') }}</div>
+                <p>{{ $t('recommended_medication') }}</p>
             </div>
             @endif
             @if($diagnosis->fertilizer_recommendation)
             <div class="section-card s-teal">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg> Fertilizer Recommendation</div>
-                <p>{{ $diagnosis->fertilizer_recommendation }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg> {{ __('Fertilizer') }}</div>
+                <p>{{ $t('fertilizer_recommendation') }}</p>
             </div>
             @endif
         </div>
@@ -453,14 +461,14 @@ a { color: inherit; text-decoration: none; }
         <div class="section-grid">
             @if($diagnosis->preventive_measures)
             <div class="section-card s-violet">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Prevention Measures</div>
-                <p>{{ $diagnosis->preventive_measures }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> {{ __('Prevention') }}</div>
+                <p>{{ $t('preventive_measures') }}</p>
             </div>
             @endif
             @if($diagnosis->best_practices)
             <div class="section-card s-indigo">
-                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg> Best Practices</div>
-                <p>{{ $diagnosis->best_practices }}</p>
+                <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg> {{ __('Best Practices') }}</div>
+                <p>{{ $t('best_practices') }}</p>
             </div>
             @endif
         </div>
@@ -471,8 +479,8 @@ a { color: inherit; text-decoration: none; }
         <div class="section-card s-amber" style="display:flex;gap:10px;align-items:flex-start">
             <svg width="20" height="20" fill="none" stroke="#b45309" stroke-width="1.8" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             <div>
-                <div class="section-label">Expert Recommendation</div>
-                <p>{{ $diagnosis->vet_referral_advice }}</p>
+                <div class="section-label">{{ __('Expert Recommendation') }}</div>
+                <p>{{ $t('vet_referral_advice') }}</p>
             </div>
         </div>
         @endif
@@ -480,8 +488,8 @@ a { color: inherit; text-decoration: none; }
         {{-- Explainable AI --}}
         @if($diagnosis->explanation)
         <div class="explanation-box">
-            <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> Why this diagnosis? (Explainable AI)</div>
-            <p>{{ $diagnosis->explanation }}</p>
+            <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> {{ __('Why this diagnosis?') }} (Explainable AI)</div>
+            <p>{{ $t('explanation') }}</p>
         </div>
         @endif
 

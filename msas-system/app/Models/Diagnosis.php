@@ -41,6 +41,7 @@ class Diagnosis extends Model
         // Explainable AI
         'explanation',
         'status',
+        'language',
     ];
 
     protected $casts = [

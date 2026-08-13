@@ -50,6 +50,7 @@ def _check_auth(request: Request):
 LANGUAGES = {
     "en": "English", "ha": "Hausa", "yo": "Yoruba",
     "ig": "Igbo",    "fr": "French", "ar": "Arabic", "sw": "Swahili",
+    "ff": "Fulfulde",
 }
 
 def _lang_instruction(language: str) -> str:
@@ -837,7 +838,27 @@ async def translate_text(
     if target_language.lower() == "en":
         return {"translated_text": text, "language": "English"}
 
-    prompt = f"""Translate the following agricultural diagnosis report into {lang_name}.
+    # Callers translating several report fields at once send a JSON object
+    # (field name -> text) as `text` instead of a plain string, so we can
+    # translate them all in a single request. Detect that and use a prompt
+    # that preserves keys exactly, so the caller can safely map the response
+    # back onto the same fields.
+    is_json_payload = False
+    try:
+        parsed = json.loads(text)
+        is_json_payload = isinstance(parsed, dict)
+    except (ValueError, TypeError):
+        pass
+
+    if is_json_payload:
+        prompt = f"""Translate the VALUES of this JSON object into {lang_name}. Do NOT translate, rename, or reorder the JSON keys — keep them byte-for-byte identical to the input. Keep technical/agricultural terms accurate; for Hausa, Yoruba, and Igbo use natural everyday language a Nigerian farmer would understand.
+
+JSON:
+{text}
+
+Respond with ONLY a valid JSON object with the exact same keys and translated values. No markdown, no code fences, no commentary."""
+    else:
+        prompt = f"""Translate the following agricultural diagnosis report into {lang_name}.
 
 Keep all technical terms accurate. For Hausa, Yoruba, and Igbo, use natural everyday language that farmers in Nigeria would understand. Keep the same structure and numbered lists.
 
@@ -848,7 +869,7 @@ Provide ONLY the translated text, no explanations or meta-commentary."""
 
     try:
         message = await client.messages.create(
-            model=AI_MODEL, max_tokens=1024,
+            model=AI_MODEL, max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
         translated = message.content[0].text.strip()
