@@ -90,6 +90,20 @@ def _safe_float(val: str, default: float = 0.0) -> float:
     except (ValueError, TypeError):
         return default
 
+def _extract_text(message) -> str:
+    """Return the first text block from a Claude response.
+
+    Extended-thinking models (claude-sonnet-5 and similar) can emit a
+    ThinkingBlock as content[0] before the actual TextBlock answer,
+    especially for complex tasks like image analysis — blindly indexing
+    content[0].text then throws AttributeError. Skip any non-text blocks
+    (thinking, redacted_thinking, etc.) and return the first real one.
+    """
+    for block in message.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    raise HTTPException(status_code=503, detail="AI service error: model returned no text content")
+
 # ── Status ────────────────────────────────────────────────────────────────────
 
 @app.get("/")
@@ -187,7 +201,7 @@ severity | None{lang_note}"""
             model=AI_MODEL, max_tokens=1536,
             messages=[{"role": "user", "content": content}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -294,7 +308,7 @@ If no image was provided, set confidence no higher than 30.{lang_note}"""
             model=AI_MODEL, max_tokens=1536,
             messages=[{"role": "user", "content": content}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -383,7 +397,7 @@ confidence | 0{lang_note}"""
             model=AI_MODEL, max_tokens=1024,
             messages=[{"role": "user", "content": content}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -474,7 +488,7 @@ confidence | 0{lang_note}"""
             model=AI_MODEL, max_tokens=1024,
             messages=[{"role": "user", "content": content}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -563,7 +577,7 @@ answer | <direct answer to the farmer's specific question, if one was asked>{lan
             model=model, max_tokens=1536,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -648,7 +662,7 @@ answer | <specific advice directly addressing the farmer's situation>{lang_note}
             model=model, max_tokens=1536,
             messages=[{"role": "user", "content": prompt}],
         )
-        text = message.content[0].text
+        text = _extract_text(message)
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -738,7 +752,7 @@ COMMUNICATION RULES:
             system=system_prompt,
             messages=messages_list,
         )
-        reply = response.content[0].text.strip()
+        reply = _extract_text(response).strip()
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -797,7 +811,7 @@ If the transcription is too unclear to understand, politely ask the farmer to re
                 "content": f"Farmer said (voice transcription): \"{text}\"{context_note}"
             }],
         )
-        reply = response.content[0].text.strip()
+        reply = _extract_text(response).strip()
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
 
@@ -872,7 +886,7 @@ Provide ONLY the translated text, no explanations or meta-commentary."""
             model=AI_MODEL, max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
-        translated = message.content[0].text.strip()
+        translated = _extract_text(message).strip()
     except anthropic.APIError as e:
         raise HTTPException(status_code=503, detail=f"Translation error: {str(e)}")
 
