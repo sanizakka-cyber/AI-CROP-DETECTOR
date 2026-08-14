@@ -30,7 +30,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "img-src 'self' data: https://ui-avatars.com https://images.unsplash.com",
             "font-src 'self' data: https://fonts.bunny.net https://cdnjs.cloudflare.com",
-            "connect-src 'self' https://api.open-meteo.com https://api.paystack.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
+            "connect-src 'self' https://api.open-meteo.com https://api.paystack.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io https://cdn.jsdelivr.net https://browser.sentry-cdn.com",
             "frame-src 'self' https://meet.jit.si",
             "object-src 'none'",
             "base-uri 'self'",
