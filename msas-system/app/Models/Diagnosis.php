@@ -63,4 +63,45 @@ class Diagnosis extends Model
         return $this->hasOne(\App\Models\DiagnosisFeedback::class)
             ->where('user_id', auth()->id());
     }
+
+    public function narrations()
+    {
+        return $this->hasMany(DiagnosisNarration::class);
+    }
+
+    /**
+     * Plain-text narration script for this diagnosis — the single source of
+     * truth for both the browser speechSynthesis path and server-generated
+     * TTS audio, so the two can never drift out of sync with each other.
+     */
+    public function narrationText(): string
+    {
+        $typeLbl  = match($this->type) { 'plant' => 'Crop / Plant', 'soil' => 'Soil Assessment', default => 'Livestock' };
+        $severity = $this->severity_level ?? '';
+        $urgency  = $this->urgency_level ?? 'Medium';
+
+        $lines = ["AI Diagnostic Report. {$typeLbl} scan."];
+        if ($this->subject_name)                                                   $lines[] = "Subject: {$this->subject_name}.";
+        if ($this->scientific_name && $this->scientific_name !== 'Unknown')        $lines[] = "Scientific name: {$this->scientific_name}.";
+        if ($this->detected_part)                                                  $lines[] = "Detected part: {$this->detected_part}.";
+        if ($this->health_status)                                                  $lines[] = "Health status: {$this->health_status}.";
+        $lines[] = "Condition: {$this->disease_name}.";
+        $lines[] = "Confidence: {$this->confidence_score} percent.";
+        if ($severity)                                                             $lines[] = "Severity: {$severity}.";
+        $lines[] = "Urgency: {$urgency}.";
+        if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: {$this->symptoms_identified}.";
+        if ($this->cause)                                                          $lines[] = "Root cause: {$this->cause}.";
+        if ($this->environmental_factors)                                          $lines[] = "Environmental factors: {$this->environmental_factors}.";
+        if ($this->nutrient_deficiencies && $this->nutrient_deficiencies !== 'None detected') $lines[] = "Nutrient deficiencies: {$this->nutrient_deficiencies}.";
+        if ($this->pest_detection && $this->pest_detection !== 'No pest detected') $lines[] = "Pest detection: {$this->pest_detection}.";
+        if ($this->first_aid_steps)                                                $lines[] = "Immediate action: {$this->first_aid_steps}.";
+        if ($this->recommended_medication)                                         $lines[] = "Treatment: {$this->recommended_medication}.";
+        if ($this->fertilizer_recommendation)                                      $lines[] = "Fertilizer: {$this->fertilizer_recommendation}.";
+        if ($this->preventive_measures)                                            $lines[] = "Prevention: {$this->preventive_measures}.";
+        if ($this->recovery_period)                                                $lines[] = "Estimated recovery: {$this->recovery_period}.";
+        if ($this->vet_referral_advice)                                            $lines[] = "Expert advice: {$this->vet_referral_advice}.";
+        $lines[] = "Always consult a certified specialist before applying any treatment.";
+
+        return implode(' ', $lines);
+    }
 }

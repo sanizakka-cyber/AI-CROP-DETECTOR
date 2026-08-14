@@ -60,6 +60,21 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 — S3-compatible, used for generated TTS narration
+        // audio (Render's own disk is ephemeral, so this can't live there).
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET'),
+            'url' => env('R2_PUBLIC_URL'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

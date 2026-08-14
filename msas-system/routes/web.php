@@ -5,6 +5,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\CEOController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DiagnosticController;
+use App\Http\Controllers\NarrationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DealerProductController;
 use App\Http\Controllers\SubscriptionController;
@@ -66,6 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
         Route::post('/diagnostics/translate', [DiagnosticController::class, 'translate'])->name('diagnostics.translate');
         Route::get('/diagnostics/{diagnosis}/report', [DiagnosticController::class, 'downloadReport'])->name('diagnostics.report');
+        Route::get('/diagnostics/{diagnosis}/narration', [NarrationController::class, 'show'])
+            ->middleware('throttle:20,1')
+            ->name('diagnostics.narration');
     });
 });
 

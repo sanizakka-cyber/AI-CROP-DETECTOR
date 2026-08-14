@@ -57,6 +57,18 @@ return [
         'model' => env('AI_MODEL', 'claude-sonnet-5'),
     ],
 
+    // Server-generated narration audio — see App\Data\TtsLanguages for the
+    // language -> provider/voice map and App\Services\Tts for the providers.
+    'spitch' => [
+        'key'      => env('SPITCH_API_KEY'),
+        'base_url' => env('SPITCH_BASE_URL', 'https://api.spitch.app'),
+    ],
+
+    'tts_openai' => [
+        'key'   => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_TTS_MODEL', 'gpt-4o-mini-tts'),
+    ],
+
     'sms' => [
         'driver' => env('SMS_DRIVER', 'log'), // log | termii | africas_talking | twilio
         'termii' => [

@@ -38,29 +38,9 @@
             $typeIcon  = match($diagnosis->type) { 'plant'=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg>', 'soil'=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22v-5m0 0c-2-1-5-1.5-7 0m7 0c2-1 5-1.5 7 0M5 21h14M12 17V8m0-5v2M9 5.5C9 4 10 3 12 3s3 1 3 2.5"/></svg>', default=>'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5S3 9 3 7.5A2.5 2.5 0 018 7.5H9M4.5 10.5H19.5M19.5 10.5S21 9 21 7.5A2.5 2.5 0 0016 7.5H15M19.5 10.5V16M4.5 10.5V16M7 16v3m10-3v3M7 16h10"/></svg>' };
             $typeLbl   = match($diagnosis->type) { 'plant'=>'Crop / Plant', 'soil'=>'Soil Assessment', default=>'Livestock' };
 
-            // ── Build plain TTS text ──────────────────────────────────────────
-            $ttsLines = ["AI Diagnostic Report. {$typeLbl} scan."];
-            if ($diagnosis->subject_name)     $ttsLines[] = "Subject: {$diagnosis->subject_name}.";
-            if ($diagnosis->scientific_name && $diagnosis->scientific_name !== 'Unknown') $ttsLines[] = "Scientific name: {$diagnosis->scientific_name}.";
-            if ($diagnosis->detected_part)    $ttsLines[] = "Detected part: {$diagnosis->detected_part}.";
-            if ($diagnosis->health_status)    $ttsLines[] = "Health status: {$diagnosis->health_status}.";
-            $ttsLines[] = "Condition: {$diagnosis->disease_name}.";
-            $ttsLines[] = "Confidence: {$diagnosis->confidence_score} percent.";
-            if ($sev)                         $ttsLines[] = "Severity: {$sev}.";
-            $ttsLines[] = "Urgency: {$urgency}.";
-            if ($diagnosis->symptoms_identified) $ttsLines[] = "Symptoms observed: {$diagnosis->symptoms_identified}.";
-            if ($diagnosis->cause)            $ttsLines[] = "Root cause: {$diagnosis->cause}.";
-            if ($diagnosis->environmental_factors) $ttsLines[] = "Environmental factors: {$diagnosis->environmental_factors}.";
-            if ($diagnosis->nutrient_deficiencies && $diagnosis->nutrient_deficiencies !== 'None detected') $ttsLines[] = "Nutrient deficiencies: {$diagnosis->nutrient_deficiencies}.";
-            if ($diagnosis->pest_detection && $diagnosis->pest_detection !== 'No pest detected') $ttsLines[] = "Pest detection: {$diagnosis->pest_detection}.";
-            if ($diagnosis->first_aid_steps)  $ttsLines[] = "Immediate action: {$diagnosis->first_aid_steps}.";
-            if ($diagnosis->recommended_medication) $ttsLines[] = "Treatment: {$diagnosis->recommended_medication}.";
-            if ($diagnosis->fertilizer_recommendation) $ttsLines[] = "Fertilizer: {$diagnosis->fertilizer_recommendation}.";
-            if ($diagnosis->preventive_measures) $ttsLines[] = "Prevention: {$diagnosis->preventive_measures}.";
-            if ($diagnosis->recovery_period)  $ttsLines[] = "Estimated recovery: {$diagnosis->recovery_period}.";
-            if ($diagnosis->vet_referral_advice) $ttsLines[] = "Expert advice: {$diagnosis->vet_referral_advice}.";
-            $ttsLines[] = "Always consult a certified specialist before applying any treatment.";
-            $ttsText = e(implode(' ', $ttsLines));
+            // ── Plain TTS text — shared with server-generated narration audio,
+            // see Diagnosis::narrationText() ──────────────────────────────────
+            $ttsText = $diagnosis->narrationText();
             $ttsId   = 'tts-' . $diagnosis->id;
 
             // ── Feedback ──────────────────────────────────────────────────────
@@ -112,6 +92,7 @@
                 <select id="{{ $ttsId }}-lang"
                     onchange="ttsChangeLang('{{ $ttsId }}', this.value, '{{ route('diagnostics.translate') }}')"
                     data-translate-url="{{ route('diagnostics.translate') }}"
+                    data-narration-url="{{ route('diagnostics.narration', $diagnosis) }}"
                     class="bg-slate-700 border border-slate-600 text-white text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-400">
                     <option value="en"  {{ $defaultTtsLang === 'en' ? 'selected' : '' }}>English</option>
                     <option value="ha"  {{ $defaultTtsLang === 'ha' ? 'selected' : '' }}>Hausa</option>
@@ -177,11 +158,25 @@
                     <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
                     <span data-i18n="Translating...">{{ __('Translating...') }}</span>
                 </div>
+                {{-- Server-TTS status: "Preparing Hausa voice...", "Hausa voice ready.", errors --}}
+                <div id="{{ $ttsId }}-tts-status" class="hidden text-xs flex items-center gap-1 ml-auto"></div>
 
                 {{-- Hidden data stores --}}
                 <span id="{{ $ttsId }}-text" class="hidden">{{ $ttsText }}</span>
                 <span id="{{ $ttsId }}-translated" class="hidden"></span>
                 <span id="{{ $ttsId }}-state" class="hidden">stopped</span>
+                <audio id="{{ $ttsId }}-audio" class="hidden" preload="none"></audio>
+            </div>
+
+            {{-- Real seek bar — only meaningful for server-generated audio; hidden until loaded --}}
+            <div id="{{ $ttsId }}-seek-wrap" class="hidden bg-slate-800 border-t border-slate-700 px-5 py-2 flex items-center gap-2">
+                <span id="{{ $ttsId }}-time-cur" class="text-[10px] text-slate-400 tabular-nums w-9">0:00</span>
+                <input type="range" id="{{ $ttsId }}-seek" min="0" max="100" step="0.1" value="0"
+                    oninput="ttsSeek('{{ $ttsId }}', this.value)"
+                    onmousedown="this.dataset.dragging='1'" onmouseup="this.dataset.dragging=''"
+                    ontouchstart="this.dataset.dragging='1'" ontouchend="this.dataset.dragging=''"
+                    class="flex-1 accent-emerald-400 cursor-pointer" style="height:4px;">
+                <span id="{{ $ttsId }}-time-dur" class="text-[10px] text-slate-400 tabular-nums w-9 text-right">0:00</span>
             </div>
             {{-- Voice warning: shown when device lacks a native voice for the selected language --}}
             <div id="{{ $ttsId }}-voice-warning" class="hidden bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/40 rounded-lg px-4 py-2 text-[11px] text-amber-800 dark:text-amber-300 mt-2 leading-snug"></div>
@@ -530,6 +525,117 @@
         var seekBase       = {};  // id → char offset used in the current utterance
         var pendingOffsets = {};  // id → char offset to seek to on next startSpeaking call
 
+        // ── Server TTS (real audio files) ───────────────────────────────────
+        // Languages with a real server-side TTS provider — see App\Data\TtsLanguages.
+        // English deliberately excluded: browser voices for it are universally
+        // reliable already, so there's no reason to pay for/wait on server audio.
+        var TTS_SERVER_LANGS = @json(array_values(array_diff(\App\Data\TtsLanguages::serverSupportedCodes(), ['en'])));
+        var modes = {}; // id → 'server_tts' | 'browser_tts' (unset = browser_tts)
+
+        function getAudio(id) { return el(id + '-audio'); }
+
+        function formatTime(s) {
+            if (!isFinite(s) || s < 0) s = 0;
+            var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+            return m + ':' + (sec < 10 ? '0' : '') + sec;
+        }
+
+        function setTtsStatus(id, msg, isError) {
+            var s = el(id + '-tts-status');
+            if (!s) return;
+            if (!msg) { s.classList.add('hidden'); s.textContent = ''; return; }
+            s.textContent = msg;
+            s.classList.remove('hidden');
+            s.classList.toggle('text-red-300', !!isError);
+            s.classList.toggle('text-amber-300', !isError);
+        }
+
+        function wireAudioEvents(id) {
+            var audio = getAudio(id);
+            if (!audio || audio.dataset.wired) return;
+            audio.dataset.wired = '1';
+            audio.addEventListener('play', function () { states[id] = 'playing'; updateUI(id, 'playing'); });
+            audio.addEventListener('pause', function () {
+                if (audio.ended) return;
+                states[id] = 'paused'; updateUI(id, 'paused');
+            });
+            audio.addEventListener('ended', function () { states[id] = 'stopped'; updateUI(id, 'stopped'); });
+            audio.addEventListener('error', function () {
+                setTtsStatus(id, 'Playback error — try again.', true);
+                states[id] = 'stopped'; updateUI(id, 'stopped');
+            });
+            audio.addEventListener('loadedmetadata', function () {
+                var dur = el(id + '-time-dur');
+                if (dur) dur.textContent = formatTime(audio.duration);
+                var seekWrap = el(id + '-seek-wrap');
+                if (seekWrap) seekWrap.classList.remove('hidden');
+            });
+            audio.addEventListener('timeupdate', function () {
+                var bar = el(id + '-seek');
+                var cur = el(id + '-time-cur');
+                if (bar && !bar.dataset.dragging) bar.value = audio.duration ? (audio.currentTime / audio.duration * 100) : 0;
+                if (cur) cur.textContent = formatTime(audio.currentTime);
+            });
+        }
+
+        window.ttsSeek = function (id, pct) {
+            var audio = getAudio(id);
+            if (!audio || !audio.duration) return;
+            audio.currentTime = (pct / 100) * audio.duration;
+        };
+
+        /** Load and switch to server-generated audio for `langCode`. Falls back to
+         *  browser mode (via `onFail`) on any failure — never leaves stale audio
+         *  from a different language playing. */
+        function loadServerNarration(id, langCode, label, wasActive, onFail) {
+            var sel = el(id + '-lang');
+            var narrationUrl = sel ? sel.getAttribute('data-narration-url') : '';
+            if (!narrationUrl) { onFail(); return; }
+
+            stopAllPlayback(id);
+            setTtsStatus(id, 'Preparing ' + label + ' voice…', false);
+
+            fetch(narrationUrl + '?language=' + encodeURIComponent(langCode), {
+                headers: { 'Accept': 'application/json' },
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.success || !data.audio_url) { onFail(); return; }
+
+                var audio = getAudio(id);
+                if (!audio) { onFail(); return; }
+                wireAudioEvents(id);
+
+                audio.pause();
+                audio.src = data.audio_url;
+                audio.playbackRate = parseFloat(speeds[id] || 1);
+                audio.volume = parseFloat(volumes[id] !== undefined ? volumes[id] : 1.0);
+
+                var onReady = function () {
+                    audio.removeEventListener('canplay', onReady);
+                    modes[id] = 'server_tts';
+                    setVoiceWarning(id, null);
+                    setTtsStatus(id, label + ' voice ready.', false);
+                    setTimeout(function () { setTtsStatus(id, null); }, 3000);
+                    if (data.transcript) {
+                        var box = el(id + '-transcript-box');
+                        if (box) box.textContent = data.transcript; // plain text — no word timestamps from the provider, so no fake sync
+                    }
+                    if (wasActive) { window.ttsPlay(id); }
+                };
+                audio.addEventListener('canplay', onReady);
+                audio.load();
+            })
+            .catch(onFail);
+        }
+
+        function stopAllPlayback(id) {
+            var audio = getAudio(id);
+            if (audio) audio.pause();
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            stopKeepalive();
+        }
+
         // iOS Safari fires onend instead of pausing — detect and work around it.
         var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -773,6 +879,11 @@
         }
 
         window.ttsPlay = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.play().catch(function () { setTtsStatus(id, 'Tap play again to start audio.', true); });
+                return;
+            }
             if (translating[id]) {
                 var btn = el(id + '-playbtn');
                 if (btn) {
@@ -799,6 +910,11 @@
         };
 
         window.ttsPause = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.pause();
+                return;
+            }
             if (window.speechSynthesis.speaking) {
                 if (isIos) {
                     // iOS Safari fires onend on pause() — save position and stop instead
@@ -814,6 +930,13 @@
         };
 
         window.ttsStop = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) { audio.pause(); audio.currentTime = 0; }
+                states[id] = 'stopped';
+                updateUI(id, 'stopped');
+                return;
+            }
             window.speechSynthesis.cancel();
             states[id] = 'stopped';
             updateUI(id, 'stopped');
@@ -821,6 +944,11 @@
         };
 
         window.ttsReplay = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) { audio.currentTime = 0; audio.play(); }
+                return;
+            }
             delete pendingOffsets[id];
             seekBase[id] = 0;
             currentCharIdx[id] = 0;
@@ -828,6 +956,11 @@
         };
 
         window.ttsRewind = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.currentTime = Math.max(0, audio.currentTime - 10);
+                return;
+            }
             // ~15 seconds at current playback rate (15 chars/s × 15s × rate)
             var jump = Math.round(225 * (parseFloat(speeds[id] || 1)));
             var cur  = currentCharIdx[id] || 0;
@@ -837,6 +970,11 @@
         };
 
         window.ttsFastForward = function(id) {
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.currentTime = Math.min(audio.duration || (audio.currentTime + 10), audio.currentTime + 10);
+                return;
+            }
             var jump     = Math.round(225 * (parseFloat(speeds[id] || 1)));
             var cur      = currentCharIdx[id] || 0;
             var fullText = getDisplayText(id);
@@ -847,6 +985,11 @@
 
         window.ttsSetSpeed = function(id, rate) {
             speeds[id] = parseFloat(rate);
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.playbackRate = parseFloat(rate);
+                return;
+            }
             if (states[id] === 'playing') { cancelThenSpeak(id); }
         };
 
@@ -855,6 +998,11 @@
             // Update label next to slider
             var lbl = el(id + '-vol-label');
             if (lbl) lbl.textContent = Math.round(val * 100) + '%';
+            if (modes[id] === 'server_tts') {
+                var audio = getAudio(id);
+                if (audio) audio.volume = parseFloat(val);
+                return;
+            }
             // Live-update volume without restarting — Web Speech API supports this
             // by cancelling and resuming only if already playing
             if (states[id] === 'playing') { cancelThenSpeak(id); }
@@ -905,7 +1053,12 @@
             });
         }, 600);
 
-        window.ttsChangeLang = function(id, langCode, translateUrl) {
+        /** Existing behavior, unchanged: translate + browser speechSynthesis. */
+        function browserModeChangeLang(id, langCode, translateUrl) {
+            modes[id] = 'browser_tts';
+            var seekWrap = el(id + '-seek-wrap');
+            if (seekWrap) seekWrap.classList.add('hidden');
+
             // English — clear translation and revert to original text
             if (langCode === 'en') {
                 var t = el(id + '-translated');
@@ -991,6 +1144,28 @@
                     onTranslationDone(wasActive);
                 });
             });
+        }
+
+        var TTS_LABELS = { en:'English', ha:'Hausa', yo:'Yoruba', ig:'Igbo', fr:'French', ff:'Fulfulde', ar:'Arabic', sw:'Swahili' };
+
+        window.ttsChangeLang = function (id, langCode, translateUrl) {
+            var wasActive = states[id] === 'playing' || states[id] === 'paused';
+            var label = TTS_LABELS[langCode] || langCode;
+
+            if (TTS_SERVER_LANGS.indexOf(langCode) !== -1) {
+                loadServerNarration(id, langCode, label, wasActive, function () {
+                    // Server TTS unavailable/failed — fall back to existing browser path,
+                    // with a clear "using device voice" indicator per spec.
+                    setTtsStatus(id, 'Using device voice.', false);
+                    browserModeChangeLang(id, langCode, translateUrl);
+                    if (wasActive) { setTimeout(function () { window.ttsPlay(id); }, 150); }
+                });
+                return;
+            }
+
+            // Not server-capable (English fast-path, or Fulfulde with no provider at all)
+            setTtsStatus(id, null);
+            browserModeChangeLang(id, langCode, translateUrl);
         };
     })();
     </script>
