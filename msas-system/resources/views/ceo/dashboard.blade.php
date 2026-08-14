@@ -76,7 +76,7 @@
                 ];
                 @endphp
                 @foreach($bannerKpis as [$bk, $bv, $bi])
-                <div class="text-center px-4 py-2.5 rounded-xl min-w-[80px]" style="background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);">
+                <div class="text-center px-4 py-2.5 rounded-xl min-w-[80px]" style="background:rgba(0,0,0,0.22);backdrop-filter:blur(8px);">
                     <div class="text-lg font-black leading-none">{{ $bv }}</div>
                     <div class="text-[9px] text-emerald-200 font-semibold mt-1 uppercase tracking-wider">{{ $bk }}</div>
                 </div>
