@@ -13,6 +13,7 @@ class OtpMail extends Mailable
         public readonly string $code,
         public readonly int    $ttlMinutes,
         public readonly string $otpType = 'registration',
+        public readonly ?string $verifyUrl = null,
     ) {}
 
     public function envelope(): Envelope
@@ -39,6 +40,19 @@ class OtpMail extends Mailable
             ? 'Use the code below to reset your MSAS password:'
             : 'Use the verification code below to confirm your account:';
 
+        $linkBlock = '';
+        if ($this->verifyUrl) {
+            $url = htmlspecialchars($this->verifyUrl, ENT_QUOTES);
+            $linkBlock = <<<HTML
+        <p style="margin:20px 0 0;font-size:13px;color:#6b7280;text-align:center;">
+          Checking this email on a different device? You can also verify by tapping the button below instead of typing the code.
+        </p>
+        <div style="text-align:center;margin:14px 0 0;">
+          <a href="{$url}" style="display:inline-block;background:#0F6B3E;color:#fff;font-size:14px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px;">Verify My Account</a>
+        </div>
+HTML;
+        }
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -64,6 +78,7 @@ class OtpMail extends Mailable
         <p style="margin:0 0 8px;font-size:13px;color:#6b7280;text-align:center;">
           Do not share this code with anyone.
         </p>
+        {$linkBlock}
         <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;text-align:center;">
           If you did not request this, you can safely ignore this email.
         </p>

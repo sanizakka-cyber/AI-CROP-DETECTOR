@@ -45,6 +45,14 @@ Route::middleware('guest')->group(function () {
     Route::post('verify-otp/resend',         [OtpVerificationController::class, 'resend'])         ->name('otp.resend')         ->middleware('throttle:3,1');
     Route::post('verify-otp/cancel',         [OtpVerificationController::class, 'cancel'])         ->name('otp.cancel');
     Route::post('verify-otp/switch-to-email',[OtpVerificationController::class, 'switchToEmail'])  ->name('otp.switch.email')   ->middleware('throttle:3,1');
+
+    // Device-independent alternative to the OTP page above: the OTP page is gated by
+    // server-side session state from the browser that submitted registration, so a user
+    // checking their email on a different device/browser can never reach it. This signed
+    // link (embedded in the same OTP email) verifies straight from the email itself.
+    Route::get('verify-account/{user}', [OtpVerificationController::class, 'verifyByLink'])
+        ->middleware(['signed', 'throttle:10,1'])
+        ->name('verification.link');
 });
 
 Route::middleware('auth')->group(function () {

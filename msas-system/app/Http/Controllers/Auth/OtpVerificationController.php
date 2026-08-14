@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 class OtpVerificationController extends Controller
@@ -129,6 +130,53 @@ class OtpVerificationController extends Controller
         return redirect()->route('login');
     }
 
+    /**
+     * Verify via the signed link sent alongside the OTP code — works regardless of
+     * which device/browser/session the user is on, unlike show()/verify() above which
+     * depend on the session that started registration.
+     */
+    public function verifyByLink(Request $request, User $user): RedirectResponse
+    {
+        if (! $request->hasValidSignature()) {
+            return redirect()->route('login')->withErrors([
+                'code' => 'This verification link is invalid or has expired. Please request a new one from the login page.',
+            ]);
+        }
+
+        // Idempotent — clicking an already-used link (or clicking it after verifying
+        // via the OTP code instead) just signs the user in rather than erroring.
+        if ($user->is_verified || $user->email_verified_at) {
+            Auth::login($user);
+            $request->session()->regenerate();
+            return redirect()->route('dashboard')->with('status', 'Your account is already verified.');
+        }
+
+        $user->update(['email_verified_at' => now(), 'is_verified' => true]);
+
+        $this->auditOtpEvent('otp.verified_via_link', $user->id, 'registration', $user->email ?? '');
+
+        $pendingPlan = $request->session()->get('pending_plan', '');
+        $this->clearOtpSession($request);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        if ($user->email && $user->role === 'farmer') {
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($user));
+            } catch (\Exception $e) {
+                Log::error('WelcomeMail failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        if ($pendingPlan && $user->role === 'farmer') {
+            return redirect()->route('subscription.plans')
+                ->with('status', 'Account verified! Choose a plan to start your free 14-day trial.');
+        }
+
+        return redirect()->route('dashboard')->with('status', 'Account verified! Welcome to MSAS.');
+    }
+
     /** Cancel OTP verification, clear the session, and audit the cancellation. */
     public function cancel(Request $request): RedirectResponse
     {
@@ -177,7 +225,12 @@ class OtpVerificationController extends Controller
                 : $identifier;
             $failed = ! $this->otp->sendViaSms($normalized, $plain, $uid, $context);
         } else {
-            $failed = ! $this->otp->sendViaEmail($identifier, $plain, $firstName, $uid, $context);
+            // Registration resends also carry the device-independent verify link (see
+            // verifyByLink() above) — password resets don't need one.
+            $verifyUrl = ($context === 'registration' && $uid)
+                ? URL::temporarySignedRoute('verification.link', now()->addMinutes(OtpService::TTL_MINUTES), ['user' => $uid])
+                : null;
+            $failed = ! $this->otp->sendViaEmail($identifier, $plain, $firstName, $uid, $context, $verifyUrl);
         }
 
         $request->session()->put([

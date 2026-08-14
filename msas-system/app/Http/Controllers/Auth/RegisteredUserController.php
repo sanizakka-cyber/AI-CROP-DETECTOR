@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
@@ -198,8 +199,13 @@ class RegisteredUserController extends Controller
         }
 
         // Email farmer: OTP verification flow
-        $plain       = $this->otp->generate($identifier, 'registration');
-        $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration');
+        $plain     = $this->otp->generate($identifier, 'registration');
+        $verifyUrl = URL::temporarySignedRoute(
+            'verification.link',
+            now()->addMinutes(OtpService::TTL_MINUTES),
+            ['user' => $user->id]
+        );
+        $emailFailed = ! $this->otp->sendViaEmail($identifier, $plain, $user->first_name, $user->id, 'registration', $verifyUrl);
         $expiresAt   = $this->otp->expiresAt($identifier, 'registration');
 
         try {

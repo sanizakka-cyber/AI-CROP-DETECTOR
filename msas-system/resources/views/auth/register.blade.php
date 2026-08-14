@@ -364,15 +364,21 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             </div>
             {{-- ── END Documents ── --}}
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">
                 <div>
                     <label class="fl">{{ __('Password *') }}</label>
                     <div style="position:relative;">
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-                        <input id="password" class="form-input {{ $errors->has('password') ? 'error' : '' }}" style="padding-left:32px;"
+                        <input id="password" class="form-input {{ $errors->has('password') ? 'error' : '' }}" style="padding-left:32px;padding-right:34px;"
                             type="password" name="password" required autocomplete="new-password" readonly
-                            placeholder="{{ __('Minimum 8 characters') }}"
-                            onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
+                            placeholder="{{ __('Create a password') }}"
+                            oninput="checkPasswordStrength(this.value)"
+                            onfocus="this.removeAttribute('readonly');document.getElementById('pw-requirements').style.display='block';checkPasswordStrength(this.value)"
+                            onclick="this.removeAttribute('readonly')">
+                        <button type="button" onclick="togglePwVisibility('password', this)" aria-label="{{ __('Show password') }}"
+                            style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;color:#94a3b8;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
                     </div>
                     @error('password')<div class="fe">{{ $message }}</div>@enderror
                 </div>
@@ -380,13 +386,75 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
                     <label class="fl">{{ __('Confirm Password *') }}</label>
                     <div style="position:relative;">
                         <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
-                        <input id="password_confirmation" class="form-input" style="padding-left:32px;"
+                        <input id="password_confirmation" class="form-input" style="padding-left:32px;padding-right:34px;"
                             type="password" name="password_confirmation" required autocomplete="new-password" readonly
                             placeholder="{{ __('Re-enter your password') }}"
+                            oninput="checkPasswordMatch()"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
+                        <button type="button" onclick="togglePwVisibility('password_confirmation', this)" aria-label="{{ __('Show password') }}"
+                            style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;color:#94a3b8;">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
                     </div>
+                    <div id="pw-match-msg" style="font-size:11px;margin-top:3px;display:none;"></div>
                 </div>
             </div>
+
+            {{-- Live password requirements checklist — mirrors Rules\Password::min(8)->mixedCase()->numbers()->symbols() in RegisteredUserController --}}
+            <div id="pw-requirements" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 14px;margin-bottom:14px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
+                    <span id="pw-req-len"    class="pw-req" data-label="{{ __('At least 8 characters') }}"></span>
+                    <span id="pw-req-upper"  class="pw-req" data-label="{{ __('One uppercase letter') }}"></span>
+                    <span id="pw-req-lower"  class="pw-req" data-label="{{ __('One lowercase letter') }}"></span>
+                    <span id="pw-req-number" class="pw-req" data-label="{{ __('One number') }}"></span>
+                    <span id="pw-req-symbol" class="pw-req" data-label="{{ __('One symbol (e.g. ! @ # $ %)') }}"></span>
+                </div>
+            </div>
+            <style>
+            .pw-req { font-size:11px; color:#94a3b8; display:flex; align-items:center; gap:5px; }
+            .pw-req::before { content:'○'; font-size:9px; }
+            .pw-req.met { color:#16a34a; font-weight:600; }
+            .pw-req.met::before { content:'●'; }
+            </style>
+            <script>
+            function pwLabel(el) { return el.getAttribute('data-label'); }
+            function checkPasswordStrength(val) {
+                var checks = {
+                    'pw-req-len':    val.length >= 8,
+                    'pw-req-upper':  /[A-Z]/.test(val),
+                    'pw-req-lower':  /[a-z]/.test(val),
+                    'pw-req-number': /[0-9]/.test(val),
+                    'pw-req-symbol': /[^A-Za-z0-9]/.test(val),
+                };
+                Object.keys(checks).forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    el.textContent = pwLabel(el);
+                    el.classList.toggle('met', checks[id]);
+                });
+                checkPasswordMatch();
+            }
+            function checkPasswordMatch() {
+                var pw      = document.getElementById('password').value;
+                var confirm = document.getElementById('password_confirmation').value;
+                var msg     = document.getElementById('pw-match-msg');
+                if (!confirm) { msg.style.display = 'none'; return; }
+                msg.style.display = 'block';
+                if (pw === confirm) {
+                    msg.style.color = '#16a34a';
+                    msg.textContent = '{{ addslashes(__('Passwords match')) }}';
+                } else {
+                    msg.style.color = '#dc2626';
+                    msg.textContent = '{{ addslashes(__('Passwords do not match')) }}';
+                }
+            }
+            function togglePwVisibility(fieldId, btn) {
+                var input = document.getElementById(fieldId);
+                var showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                btn.style.color = showing ? '#94a3b8' : '#0F6B3E';
+            }
+            </script>
 
             <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:16px;padding:10px 12px;background:#f0fdf4;border-radius:9px;border:1px solid #bbf7d0;">
                 <input type="checkbox" id="terms" required style="width:16px;height:16px;border-radius:4px;accent-color:#0F6B3E;cursor:pointer;margin-top:1px;flex-shrink:0;">

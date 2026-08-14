@@ -118,7 +118,7 @@ class OtpService
      * Send OTP via email.
      * Returns true on success, false on failure (logged internally).
      */
-    public function sendViaEmail(string $email, string $plain, string $firstName = 'User', ?int $userId = null, string $otpType = 'registration'): bool
+    public function sendViaEmail(string $email, string $plain, string $firstName = 'User', ?int $userId = null, string $otpType = 'registration', ?string $verifyUrl = null): bool
     {
         // Guard: catch unconfigured mail host (placeholder value) before attempting send.
         // Note: username check removed — API-key mailers (Resend, Postmark, SES) have no username.
@@ -141,7 +141,7 @@ class OtpService
         }
 
         try {
-            Mail::to($email)->send(new OtpMail($firstName, $plain, self::TTL_MINUTES, $otpType));
+            Mail::to($email)->send(new OtpMail($firstName, $plain, self::TTL_MINUTES, $otpType, $verifyUrl));
 
             Log::info('OTP email sent', ['email_hint' => $this->hint($email), 'type' => $otpType]);
 
