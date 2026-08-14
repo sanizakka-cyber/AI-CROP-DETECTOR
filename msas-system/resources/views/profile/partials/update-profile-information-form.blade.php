@@ -98,17 +98,35 @@
             <x-input-error class="mt-2" :messages="$errors->get('phone')" />
         </div>
 
-        {{-- State / LGA --}}
+        {{-- Country / State / LGA / Ward --}}
+        @php
+            $locCountries    = \App\Data\NigeriaLocations::countries();
+            $locNigeriaStates = \App\Data\NigeriaLocations::states();
+        @endphp
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <x-input-label for="state" :value="__('State')" />
-                <x-text-input id="state" name="state" type="text" class="mt-1 block w-full" :value="old('state', $user->state)" />
-                <x-input-error class="mt-2" :messages="$errors->get('state')" />
+                <x-input-label for="country" :value="__('Country')" />
+                <select id="profile-country" name="country" class="mt-1 block w-full"></select>
+                <x-input-error class="mt-2" :messages="$errors->get('country')" />
             </div>
             <div>
+                <x-input-label for="state" :value="__('State / Province')" />
+                <select id="profile-state" name="state" class="mt-1 block w-full"></select>
+                <p id="profile-state-hint" class="text-xs text-gray-400 mt-1" style="display:none">{{ __('Select a country first') }}</p>
+                <x-input-error class="mt-2" :messages="$errors->get('state')" />
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                 <x-input-label for="lga" :value="__('LGA')" />
-                <x-text-input id="lga" name="lga" type="text" class="mt-1 block w-full" :value="old('lga', $user->lga)" />
+                <select id="profile-lga" name="lga" class="mt-1 block w-full"></select>
+                <p id="profile-lga-hint" class="text-xs text-gray-400 mt-1" style="display:none">{{ __('Select a state first') }}</p>
                 <x-input-error class="mt-2" :messages="$errors->get('lga')" />
+            </div>
+            <div>
+                <x-input-label for="ward" :value="__('Ward / Village')" />
+                <x-text-input id="ward" name="ward" type="text" class="mt-1 block w-full" :value="old('ward', $user->ward)" />
+                <x-input-error class="mt-2" :messages="$errors->get('ward')" />
             </div>
         </div>
 
@@ -303,6 +321,92 @@
                 submitting = false;
             }
         });
+    })();
+    </script>
+
+    {{-- Country / State / LGA cascading selects — same Tom Select pattern as registration --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.default.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script>
+    (function () {
+        var NG_STATES = @json($locNigeriaStates);
+        var COUNTRIES = @json($locCountries);
+        var CURRENT   = {
+            country: @json(old('country', $user->country)),
+            state:   @json(old('state', $user->state)),
+            lga:     @json(old('lga', $user->lga)),
+        };
+
+        var tsCountry = new TomSelect('#profile-country', {
+            options:     COUNTRIES.map(function (c) { return { value: c, text: c }; }),
+            placeholder: '{{ addslashes(__('Select country…')) }}',
+            maxItems:    1,
+            onChange:    onCountryChange,
+        });
+
+        var tsState = new TomSelect('#profile-state', {
+            options:     [],
+            placeholder: '{{ addslashes(__('Select state / province…')) }}',
+            maxItems:    1,
+            onChange:    onStateChange,
+        });
+
+        var tsLga = new TomSelect('#profile-lga', {
+            options:     [],
+            placeholder: '{{ addslashes(__('Select LGA…')) }}',
+            maxItems:    1,
+        });
+
+        function onCountryChange(val, silent) {
+            tsState.clear(true);
+            tsState.clearOptions();
+            tsLga.clear(true);
+            tsLga.clearOptions();
+            tsLga.disable();
+            document.getElementById('profile-state-hint').style.display = 'none';
+            document.getElementById('profile-lga-hint').style.display = 'none';
+
+            if (!val) { tsState.disable(); document.getElementById('profile-state-hint').style.display = 'block'; return; }
+
+            if (val === 'Nigeria') {
+                tsState.addOptions(NG_STATES.map(function (s) { return { value: s.name, text: s.name }; }));
+            }
+            // Non-Nigeria: free-text entry via Tom Select's create-on-type behavior
+            tsState.enable();
+        }
+
+        function onStateChange(val) {
+            tsLga.clear(true);
+            tsLga.clearOptions();
+            tsLga.disable();
+            document.getElementById('profile-lga-hint').style.display = 'none';
+
+            if (!val) { document.getElementById('profile-lga-hint').style.display = 'block'; return; }
+
+            if (tsCountry.getValue() === 'Nigeria') {
+                var found = NG_STATES.find(function (s) { return s.name === val; });
+                if (found && found.lgas.length) {
+                    tsLga.addOptions(found.lgas.map(function (l) { return { value: l, text: l }; }));
+                    tsLga.enable();
+                }
+            }
+        }
+
+        tsState.disable();
+        tsLga.disable();
+
+        // Restore the user's existing/old() location on load
+        if (CURRENT.country) {
+            tsCountry.setValue(CURRENT.country, true);
+            onCountryChange(CURRENT.country, true);
+            if (CURRENT.state) {
+                tsState.setValue(CURRENT.state, true);
+                onStateChange(CURRENT.state);
+                if (CURRENT.lga) tsLga.setValue(CURRENT.lga, true);
+            }
+        } else {
+            document.getElementById('profile-state-hint').style.display = 'block';
+        }
     })();
     </script>
 </section>

@@ -37,8 +37,10 @@ class ProfileController extends Controller
             'last_name'     => ['required', 'string', 'max:100'],
             'email'         => ['required', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
             'phone'         => ['nullable', 'string', 'max:20'],
+            'country'       => ['nullable', 'string', 'max:100'],
             'state'         => ['nullable', 'string', 'max:100'],
             'lga'           => ['nullable', 'string', 'max:100'],
+            'ward'          => ['nullable', 'string', 'max:150'],
             'profile_photo' => ['nullable', 'mimes:jpeg,jpg,png,gif,webp', 'max:2048'],
         ]);
 
@@ -62,8 +64,10 @@ class ProfileController extends Controller
         $user->last_name   = $validated['last_name'];
         $user->email       = $validated['email'];
         $user->phone       = $validated['phone'] ?? null;
+        $user->country     = $validated['country'] ?? null;
         $user->state       = $validated['state'] ?? null;
         $user->lga         = $validated['lga'] ?? null;
+        $user->ward        = $validated['ward'] ?? null;
 
         if (isset($validated['profile_photo'])) {
             $user->profile_photo = $validated['profile_photo'];

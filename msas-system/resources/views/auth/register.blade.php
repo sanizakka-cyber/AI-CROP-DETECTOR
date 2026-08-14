@@ -436,7 +436,14 @@ $roleMap = [
 <script>
 // ── Identifier auto-detection ─────────────────────────────────────────────
 function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-function isValidPhone(v) { return /^(\+?234|0)[789]\d{9}$/.test(v.replace(/[\s\-\(\)]/g,'')); }
+function isValidPhone(v) {
+    // Mirrors App\Traits\NormalizesPhone::looksLikePhone() server-side — Nigerian
+    // local/country-code shorthand, plus general international E.164 so users
+    // outside Nigeria (per the country selector above) aren't blocked.
+    var clean = v.replace(/[\s\-\(\)]/g, '');
+    if (/^(\+?234|0)[789]\d{9}$/.test(clean)) return true;
+    return /^\+[1-9]\d{6,14}$/.test(clean);
+}
 
 function detectIdentifier(val) {
     const badge = document.getElementById('s2-id-badge');
@@ -603,7 +610,7 @@ function regWizard() {
             if (!ln)  msgs.push('Last name is required.');
             if (!id)  msgs.push('Email address or phone number is required.');
             else if (!isValidEmail(id) && !isValidPhone(id))
-                      msgs.push('Enter a valid email address or Nigerian phone number.');
+                      msgs.push('Enter a valid email address or phone number.');
             if (!co)  msgs.push('Please select your country.');
             if (!st)  msgs.push('Please select your state / province.');
 
