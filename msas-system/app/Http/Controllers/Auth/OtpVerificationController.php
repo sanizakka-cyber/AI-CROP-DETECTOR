@@ -14,11 +14,11 @@ use App\Services\OtpService;
 use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
-use Illuminate\View\View;
 
 class OtpVerificationController extends Controller
 {
@@ -27,7 +27,7 @@ class OtpVerificationController extends Controller
     public function __construct(private OtpService $otp) {}
 
     /** Show the OTP entry screen with no-store cache headers to prevent back-button replay. */
-    public function show(Request $request): View|RedirectResponse
+    public function show(Request $request): Response|RedirectResponse
     {
         if (! $request->session()->has('otp_identifier')) {
             return redirect()->route('login');
