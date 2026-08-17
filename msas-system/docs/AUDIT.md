@@ -12,7 +12,8 @@ Living document for the system-wide role-based dashboard synchronization effort.
 | 4 | Dead-button sweep + shared-component consolidation | **Complete** 2026-08-17 — all 7 dead nav links wired to real routes; the "second navigation system" was confirmed dead code and deleted rather than merged. Shared dashboard/scan component work deferred (see §9) |
 | 5 | UI contrast / mobile responsiveness pass | **Complete (static-analysis scope)** 2026-08-17 — see §10. No browser/screenshot tool available this session; fixed everything verifiable from code, flagged what needs visual testing |
 | 6 | Scope decision: expand scan/voice/report access beyond current 5 roles? | **Closed** 2026-08-17 — decided against expansion; access stays as-is |
-| 7 | Final Implementation & QA round (code-verifiable scope only — see §11-13) | **Complete within code-verifiable scope** 2026-08-17, including error-handling infrastructure + 1/22 dashboard rollout (§11.4). Explicitly does not include browser/device/OTP/payment/live-audio testing — no such tool exists in this environment; see §12-13 for the manual test checklist and honest evidence report |
+| 7 | Final Implementation & QA round (code-verifiable scope only — see §11-13) | **Complete within code-verifiable scope** 2026-08-17, including error-handling infrastructure + full 22/22 dashboard rollout (§11.4). Explicitly does not include browser/device/OTP/payment/live-audio testing — no such tool exists in this environment; see §12-13 for the manual test checklist and honest evidence report |
+| 8 | CEO Overview redesign: phase-by-phase executive summary of all 8 modules | **Complete** 2026-08-17 — see §14. Existing top nav preserved unchanged; Overview now also summarizes every module with Quick Nav, anchors, and "View Full Module" links. CEOController's ~27 data methods converted to the same honest-error pattern as Phase 7, benefiting all 9 CEO pages at once |
 
 No code changes have been made as part of Phase 1. Everything below is factual inventory, gathered by reading the codebase directly (file:line references throughout), not a proposal.
 
@@ -322,4 +323,25 @@ Honest status, not "everything is fixed":
 | Permission-system consolidation | **Not done** — closed as documented debt per your Phase 3 decision |
 | Scan/voice access expansion | **Not done** — closed per your Phase 6 decision |
 
-**Remaining issues, stated plainly:** error-state handling on 21 of 22 dashboards, the rest of the shared component library, and all interactive/visual/device/live-service testing are real, uncompleted work. Nothing above is claimed done that wasn't actually verified in code, and nothing requiring a browser or device is claimed done at all.
+**Remaining issues, stated plainly:** error-state handling is complete for all 22 controller-owned dashboards; the rest of the shared component library and all interactive/visual/device/live-service testing are real, uncompleted work. Nothing above is claimed done that wasn't actually verified in code, and nothing requiring a browser or device is claimed done at all.
+
+---
+
+## 14. CEO Overview Redesign — Phase-by-Phase Executive Summary
+
+Turned the CEO Overview page into a full executive command center: every module (Risk Center, Financial, AI Analytics, Marketplace, Operations, Geographic, Users & Subscriptions, System) now has a compact real-data summary directly on Overview, alongside the existing top navigation (unchanged) — giving both a scroll-through system summary and instant per-module navigation, as requested.
+
+**What was built:**
+- **Quick Navigation ("Jump to")** — 8 pill links at the top of Overview, each scrolling smoothly to its section via `#anchor` (`html { scroll-behavior: smooth }`, with `scroll-margin-top` on each section so the sticky nav bar doesn't cover the heading on arrival).
+- **8 anchored phase sections** (`#risk-center`, `#financial`, `#ai-analytics`, `#marketplace`, `#operations`, `#geographic`, `#users-subscriptions`, `#system`), each a compact 3-4 KPI summary, not a reproduction of the full module page.
+- **"View Full Module →" button** on every section, linking to the real existing route for that page (`ceo.risk-center`, `ceo.financial`, `ceo.ai-analytics`, etc.) — clicking the top-nav item still goes there directly too, satisfying "both ways" navigation.
+- **New AI Analytics summary data** (`CEOController::aiAnalyticsSummaryMetrics()`): total/today/week/month scan counts, average confidence, pending-review count, failed-scan count, and top 5 states by scan volume — computed fresh, not reused from the legacy `aiStatsMetrics()` (which still carries the old crop/livestock split kept only for the pulse tile).
+- **New Geographic coverage data** (`geographicSummaryMetrics()`): distinct states/LGAs with at least one user, plus top state by user count and by scan count from the existing `geoChartMetrics()`.
+- **New System activity data** (`systemActivityMetrics()`): last 5 `AuditLog` entries (real model, `user_id`/`action`/`model`/`created_at`) with the acting user's name — nothing fabricated, and nothing beyond what a CEO/admin is already authorized to see.
+- **Risk Center summary deliberately kept simple**: raw counts (disease alerts, failed payments, pending expert/verification approvals) rather than replicating the full page's derived "critical/warning" classification logic, which lives only in that page's view — duplicating it into Overview too would have created two places that could drift out of sync on the exact same severity thresholds.
+
+**Honest data requirement (explicitly required):** every one of these new figures, plus every pre-existing Overview figure, now goes through the same `safe()`/`<x-dashboard-error-banner>` pattern built in Phase 7 — extracted into a reusable `App\Http\Controllers\Concerns\HasSafeDashboardQueries` trait so `DashboardController` and `CEOController` share one implementation instead of two copies. This meant converting **all ~27 of `CEOController`'s private data methods** (not just the new ones), which benefits all 9 CEO pages simultaneously since those methods are shared helpers — e.g. `orderStatsMetrics()` feeds Overview, Risk Center, and Marketplace, so fixing it once fixes honesty on all three. If a query fails, the CEO sees "Some dashboard data couldn't be loaded" naming which stat, never a silent 0 presented as real.
+
+**Not duplicated:** confirmed each phase section shows only summary figures — no tables, no full charts, no forms reproduced from the actual module pages, matching the explicit "summary only" requirement.
+
+**Not done / needs your testing (same limitation as every prior phase):** no browser tool exists here, so responsive behavior (mobile stacking, no horizontal overflow), the actual smooth-scroll animation, and clicking through every Quick Nav item / View Full Module button / top-nav item have not been visually verified — only code-reviewed. Recommended to spot-check on a phone and desktop before considering this fully done.

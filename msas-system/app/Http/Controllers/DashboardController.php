@@ -2,32 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HasSafeDashboardQueries;
 use App\Models\Diagnosis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    // ── Dashboard query error tracking ──────────────────────────────
-    // Dashboard queries have historically swallowed failures and shown 0/empty
-    // instead of surfacing them (confirmed across all 22 dashboards during the
-    // role/permission audit). safe() preserves that same fallback behavior so
-    // a broken query still can't crash the page, but also records which stat
-    // failed so the view can show a real error banner instead of a silent 0.
-    private array $dashboardErrors = [];
-
-    private function safe(string $label, \Closure $query, mixed $fallback = 0): mixed
-    {
-        try {
-            return $query();
-        } catch (\Throwable $e) {
-            Log::error("[Dashboard:{$label}] " . $e->getMessage());
-            $this->dashboardErrors[] = $label;
-            return $fallback;
-        }
-    }
+    use HasSafeDashboardQueries;
 
     // ── Role-Based Dashboard Router ────────────────────────────────
     public function dispatch()

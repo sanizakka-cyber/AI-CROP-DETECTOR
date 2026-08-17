@@ -11,6 +11,8 @@
 
     @include('ceo.partials.nav')
 
+    <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
     <div class="space-y-4">
         <div class="bi-section-eyebrow">Geographic Intelligence</div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">

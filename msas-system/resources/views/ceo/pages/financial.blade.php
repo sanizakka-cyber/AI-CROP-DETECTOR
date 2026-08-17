@@ -22,6 +22,8 @@
 
     @include('ceo.partials.nav')
 
+    <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
     <div class="space-y-4">
         <div class="bi-section-eyebrow">Financial Intelligence</div>
 

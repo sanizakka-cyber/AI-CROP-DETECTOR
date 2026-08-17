@@ -9,6 +9,8 @@
 
     @include('ceo.partials.nav')
 
+    <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
     {{-- ═══════════════════════════════════════════════════════════
          RISK & ALERT CENTER
     ═══════════════════════════════════════════════════════════ --}}
