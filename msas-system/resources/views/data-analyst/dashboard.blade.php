@@ -138,7 +138,7 @@
                     Recent Diagnostic Activity
                 </h3>
                 @if($recentConsults->count())
-                <div class="overflow-y-auto max-h-52">
+                <div class="overflow-x-auto overflow-y-auto max-h-52">
                     <table class="w-full text-sm">
                         <thead class="sticky top-0 bg-white">
                             <tr class="border-b border-gray-100">
@@ -163,7 +163,7 @@
                     </table>
                 </div>
                 @else
-                <div class="flex flex-col items-center justify-center h-44 text-gray-300">
+                <div class="flex flex-col items-center justify-center h-44 text-gray-400">
                     <svg class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
                     <p class="text-sm">No activity yet</p>
                 </div>

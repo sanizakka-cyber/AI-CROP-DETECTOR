@@ -10,7 +10,7 @@ Living document for the system-wide role-based dashboard synchronization effort.
 | 2 | Security: verify the two Phase 1 findings against actual exploitability | **Complete** — 2026-08-17, both downgraded, no code change (see §5) |
 | 3 | Permission-system reconciliation (pick one authoritative system) | **Closed** 2026-08-17 — role-spelling/assignment-gap items resolved; the 3 systems aren't causing a live bug, left as documented debt per your call |
 | 4 | Dead-button sweep + shared-component consolidation | **Complete** 2026-08-17 — all 7 dead nav links wired to real routes; the "second navigation system" was confirmed dead code and deleted rather than merged. Shared dashboard/scan component work deferred (see §9) |
-| 5 | UI contrast / mobile responsiveness pass | Not started |
+| 5 | UI contrast / mobile responsiveness pass | **Complete (static-analysis scope)** 2026-08-17 — see §10. No browser/screenshot tool available this session; fixed everything verifiable from code, flagged what needs visual testing |
 | 6 | CEO analytics / location dropdown / voice-narration reach expansion (if approved) | Not started |
 
 No code changes have been made as part of Phase 1. Everything below is factual inventory, gathered by reading the codebase directly (file:line references throughout), not a proposal.
@@ -177,14 +177,38 @@ Confirmed fully isolated to one page: `diagnostics/history.blade.php`, reachable
 
 ---
 
-## 9. Recommendations for Sequencing
+## 9. UI Contrast & Mobile Responsiveness (Phase 5)
+
+**Important limitation, stated upfront:** this session has no browser or screenshot tool. The one confirmed real contrast bug this whole audit found (the CEO KPI-pill washing out — a pale mint-green on a near-transparent white background) was found because you sent a screenshot, not from reading code. Phase 5 is therefore a *static-analysis* sweep — real code patterns, not visual verification — across all 22 role dashboards plus the HR/Finance pages wired up in Phase 4. Anything below that would benefit from an actual look on a phone should still get one.
+
+**Searched for:** the exact confirmed-bug pattern (low-opacity white/light backgrounds paired with light text) elsewhere; very light gray text classes (`text-gray-200/300`) outside dark containers; `<table>` elements with no horizontal-scroll wrapper (the classic mobile-breakage source); fixed pixel widths with no responsive variant.
+
+**Result — the confirmed bug pattern doesn't exist anywhere else.** Every other `rgba(255,255,255,0.0x)` usage found sits on an opaque dark gradient card, not a light background, and uses no blur — the specific combination that caused the original bug. No fixed-width elements were found that actually break mobile flow (the few over 300px are decorative absolutely-positioned elements or modal `max-width`, not layout-breaking).
+
+**Fixed — 3 tables missing horizontal-scroll wrappers** (would force the whole page to scroll sideways on narrow screens instead of just the table):
+- `logistics/dashboard.blade.php:73` — 5-column recent-deliveries table, the most consequential of the three.
+- `subscription/dashboard.blade.php:269` — subscription history table.
+- `agribusiness-owner/dashboard.blade.php:71` — 3-column recent-orders table, lower risk but fixed for consistency.
+- `data-analyst/dashboard.blade.php:141` — had `overflow-y-auto` for its scrollable height but no `overflow-x-auto`; added.
+
+**Fixed — 3 low-contrast empty-state messages** using `text-gray-300` (very light) directly on white cards, with no dark container to justify it:
+- `data-analyst/dashboard.blade.php:166` — "No activity yet" empty state.
+- `monitoring-evaluation/dashboard.blade.php:166,202` — "No geographic data" and "No data available" empty states.
+
+All three changed to `text-gray-400` — not an arbitrary pick: grepped the rest of the app first (`admin/wallets/index.blade.php:80`, `admin/wallets/withdrawals.blade.php:60,123`, `wallet/show.blade.php:67`) and confirmed `text-gray-400` is the established convention for this exact "no data yet" empty-state pattern everywhere else in the codebase. This matches these three to the existing design system rather than picking a new value.
+
+**Not attempted in this phase:** interactive mobile behavior (dropdown/modal overlap, sidebar collapse behavior, notification panel positioning) — these are exactly the kind of thing that needs a real device or screenshot to verify, and guessing at a fix without seeing the actual failure risks the same mistake this audit corrected itself out of twice already (Phase 2's two downgraded findings). If you spot any of these on an actual phone, that's real, actionable evidence — send it and it goes straight to a fix, the same way the original CEO KPI-pill bug did.
+
+---
+
+## 10. Recommendations for Sequencing
 
 Given the findings above, the original 29-section request breaks down into genuinely distinct pieces of work with different risk profiles:
 
 - **Phase 2 (security verification) — complete.** Both findings verified against actual reachability/exploitability rather than fixed reflexively. Both downgraded to LOW once checked against what's really exposed (see §5) — no code changed, since the "fix" implied for each would have either broken a legitimate feature (VetController's outbreak-awareness page) or risked an unverifiable change to a live payment flow (mobile-callback). This is the correct outcome of a verify-before-fixing pass, not a skipped step.
-- **Phase 3 (foundational, higher risk) — in progress.** Reconcile the three permission systems into one authoritative source, fix the role-spelling inconsistencies, decide the `financial-institution`/`rider` assignability gap. Touches `routes/web.php` broadly — needs careful regression testing per role since there's no test suite and no local PHP available to lint/run this app.
+- **Phase 3 (foundational) — closed.** Role-spelling and assignment-gap items verified and fixed where real (`financial-institution`); the `rider` "gap" was a mischaracterization, corrected. The 3-permission-system question isn't a live bug — closed as documented debt per your direction rather than forcing a broad `routes/web.php` migration with no test suite to catch regressions.
 - **Phase 4 (consolidation) — complete.** The "merge two navigation systems" premise didn't survive investigation — one was confirmed dead code (deleted). All 7 dead links now point to real, previously-unwired features. The remaining consolidation item — a shared dashboard/scan component reused across roles — is real but large (see §7's implication note) and deferred rather than attempted opportunistically.
-- **Phase 5 (visual/mobile):** Contrast, dead-button sweep beyond navigation, mobile responsiveness — best done role-by-role once Phase 4's shared components exist, so a fix lands once instead of 22 times.
+- **Phase 5 (visual/mobile) — complete within static-analysis scope.** Everything verifiable from code is fixed (see §9). Interactive/visual mobile behavior needs a real device or screenshot to responsibly act on.
 - **Phase 6 (scope decision required):** Whether to expand scan/voice/report access to roles beyond the current 5 is a product decision, not implied by anything currently broken — flagged for explicit sign-off before any code changes.
 
-No code has been changed through Phase 2. Phase 3 is next.
+Phases 1-5 complete. Phase 6 needs your decision before any further code changes.

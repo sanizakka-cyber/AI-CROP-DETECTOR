@@ -68,6 +68,7 @@
             <p class="text-sm mt-1">List products on the marketplace to start receiving orders.</p>
         </div>
         @else
+        <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-100">
@@ -91,6 +92,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         @endif
     </div>
 </div>

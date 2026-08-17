@@ -266,6 +266,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
     <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;">
         <div style="font-size:15px;font-weight:800;color:#0f172a;">Subscription History</div>
     </div>
+    <div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;">
         <thead>
             <tr style="background:#f8fafc;">
@@ -299,6 +300,7 @@ $status = config('subscription.statuses.'.$plan->status) ?? ['label' => ucfirst(
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 @endif
 

@@ -163,7 +163,7 @@
                     @endforeach
                 </div>
                 @else
-                <div class="flex flex-col items-center justify-center h-32 text-gray-300">
+                <div class="flex flex-col items-center justify-center h-32 text-gray-400">
                     <svg class="w-10 h-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
                     <p class="text-sm">No geographic data</p>
                 </div>
@@ -199,7 +199,7 @@
                         </tr>
                         @endforeach
                         @if(empty($monthlySummary))
-                        <tr><td colspan="4" class="py-8 text-center text-gray-300 text-sm">No data available</td></tr>
+                        <tr><td colspan="4" class="py-8 text-center text-gray-400 text-sm">No data available</td></tr>
                         @endif
                     </tbody>
                 </table>
