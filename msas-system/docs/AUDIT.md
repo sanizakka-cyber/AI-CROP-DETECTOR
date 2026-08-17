@@ -7,9 +7,9 @@ Living document for the system-wide role-based dashboard synchronization effort.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Role/permission/dashboard/menu ground-truth audit (this document) | **Complete** — 2026-08-17 |
-| 2 | Security: fix confirmed cross-user diagnosis leak, add per-record authorization | Not started |
-| 3 | Permission-system reconciliation (pick one authoritative system) | Not started |
-| 4 | Dead-button sweep + shared-component consolidation | Not started |
+| 2 | Security: verify the two Phase 1 findings against actual exploitability | **Complete** — 2026-08-17, both downgraded, no code change (see §5) |
+| 3 | Permission-system reconciliation (pick one authoritative system) | **Closed** 2026-08-17 — role-spelling/assignment-gap items resolved; the 3 systems aren't causing a live bug, left as documented debt per your call |
+| 4 | Dead-button sweep + shared-component consolidation | **Complete** 2026-08-17 — all 7 dead nav links wired to real routes; the "second navigation system" was confirmed dead code and deleted rather than merged. Shared dashboard/scan component work deferred (see §9) |
 | 5 | UI contrast / mobile responsiveness pass | Not started |
 | 6 | CEO analytics / location dropdown / voice-narration reach expansion (if approved) | Not started |
 
@@ -47,14 +47,15 @@ The `users.role` column is a plain `string` (`0001_01_01_000003_add_role_to_user
 | operations | ❌ | — | ✅ |
 | admin | ❌ | — | ✅ |
 | ceo | ❌ | — | ✅ |
-| financial-institution | ❌ | — | ⚠️ **gap** — has a dashboard but is in neither the self-register list nor `CEOController::$allRoles` |
-| rider | ❌ | — | ⚠️ **gap** — same issue, only settable by direct role-string edit |
+| financial-institution | ❌ | — | ✅ **fixed Phase 3** — added to `CEOController::$allRoles` (was previously only in QA seeder test data, no real admin assignment path) |
+| rider | ❌ | — | ✅ has its own dedicated flow — `Admin\RiderManagementController::store()` creates riders with `role => 'rider'` directly, plus a full `admin.riders.*` management UI. Not a gap; correctly excluded from the generic `$allRoles` editor since riders carry extra fields (`vehicle_type`, `rider_status`) that dedicated flow handles. **Phase 1 mischaracterized this as a gap** — corrected here. |
 | student | ❌ | — | ⚠️ Referenced in `RoleMiddleware`'s redirect map but not in any assignable-role list found |
 
 **Findings:**
 - `government`/`government-agency`, `researcher`/`research-institution`, and `student`/`general-user` are synonym pairs mapped to the same dashboard — inconsistent naming, not a functional bug today, but a trap for future code that checks one spelling and not the other.
-- `monitoring-evaluation` has **three** spellings in circulation (`monitoring-evaluation`, `m-e-officer`, `me-officer`) across `RoleMiddleware.php` vs. `CEOController::$allRoles` — a role assigned under one spelling could fail a `role:` check written with another.
-- `financial-institution` and `rider` have working dashboards and route middleware but no first-class way to assign the role through the CEO UI — currently only fixable by a direct database edit.
+- **Corrected in Phase 3** — the "three spellings" of `monitoring-evaluation` flagged in the original Phase 1 pass is not a live bug. Every actual *assignment* site (`TestAccountsSeeder`, `StaffAccountsSeeder`, `QAAccountsSeeder`, `admin/users.blade.php`'s role dropdown, `CEOController::$allRoles`, `CEO\StaffController`) uses only `m-e-officer` — that is the sole value ever written to `users.role` for this role. `monitoring-evaluation` and `me-officer`/`me_officer` appear only as defensive extra aliases inside `role:` middleware lists and label-lookup arrays (`RoleMiddleware.php:47-49`, `User.php:113,144-146`) — harmless belt-and-suspenders code, not a source of silent lockouts today. Worth normalizing eventually so a future `role:` check copied from the wrong list doesn't miss `m-e-officer`, but it is not urgent.
+- **Fixed in Phase 3** — `financial-institution` had a working dashboard but no real admin assignment path (only QA seeder test data ever set it). Added to `CEOController::$allRoles` (`CEOController.php:687-693`).
+- **Corrected in Phase 3** — `rider` was mischaracterized as having the same gap. It doesn't: `Admin\RiderManagementController::store()` (`RiderManagementController.php:82`) creates riders directly with a full `admin.riders.*` management UI, correctly kept separate from the generic role editor since riders carry extra fields (`vehicle_type`, `rider_status`) that flow handles.
 - All 12 non-farmer/general-user self-registerable roles go through `application_status = pending` manual approval (`RegisteredUserController.php:95`) before activation — this is intentional gatekeeping, not a bug.
 
 ---
@@ -100,25 +101,21 @@ The `users.role` column is a plain `string` (`0001_01_01_000003_add_role_to_user
 
 ## 3. Menu Availability Per Role
 
-**Two independent navigation implementations exist and can drift out of sync:**
+**Corrected in Phase 4 — there is only one live navigation system, not two.** The Phase 1 pass found a second file, `resources/views/layouts/navigation.blade.php`, with its own independent role-gated menu logic, and treated it as a second live implementation that could drift out of sync with the first. Investigation before attempting a "merge" found `layouts/navigation.blade.php` is **referenced nowhere in the codebase** — no `@include`, no Blade component tag, no `view()` call, in `app/`, `resources/`, `routes/`, or `tests/`. It was Laravel Breeze scaffolding, superseded by the custom sidebar below, and never removed — git history shows it was still being edited during unrelated passes (e.g. an emoji-removal sweep) purely because nobody realized it was dead. **Deleted in Phase 4** rather than merged, since there was nothing live to merge into.
 
-1. **`resources/views/layouts/app.blade.php`** — the sidebar used by `<x-app-layout>` (148 views, essentially the whole authenticated app). Role gating is a long chain of `@if($role === 'x')` / `in_array($role, [...])` blocks (`app.blade.php:156` onward), not a config array or policy:
-   - AI Smart Scan link: `farmer, admin, ceo, vet, agronomist` (`app.blade.php:147`) — matches the `diagnostics.*` route gate exactly.
-   - CEO/Admin Management section (`159`): Users & Staff; CEO-only (`165`): Staff Management, Staff Roles, Monitoring, BI, Pilot, Feedback, Invite Codes, Support, Broadcast, Audit Log, Referrals, NPS. Shared ceo+admin: Reports, Applications, Subscriptions.
-   - Per-role sections: farmer (`244`), vet (`275`), agronomist (`292`), finance (`305`), hr (`322`), agro-dealer (`335`), equipment-dealer (`348`), logistics-provider (`361`), agribusiness-owner (`378`), input-supplier (`387`).
-   - "My Plan" (subscription) link shown to everyone except `ceo, admin, general-user` (`396`) — matches `RequireSubscription`'s bypass list exactly (see section 6).
-   - "General" section (Marketplace, My Profile) shown to all roles unconditionally (`416`).
+**`resources/views/layouts/app.blade.php`** is the one real navigation system — the sidebar used by `<x-app-layout>` (148 views, essentially the whole authenticated app). Role gating is a long chain of `@if($role === 'x')` / `in_array($role, [...])` blocks (`app.blade.php:156` onward), not a config array or policy:
+- AI Smart Scan link: `farmer, admin, ceo, vet, agronomist` (`app.blade.php:147`) — matches the `diagnostics.*` route gate exactly.
+- CEO/Admin Management section (`159`): Users & Staff; CEO-only (`165`): Staff Management, Staff Roles, Monitoring, BI, Pilot, Feedback, Invite Codes, Support, Broadcast, Audit Log, Referrals, NPS. Shared ceo+admin: Reports, Applications, Subscriptions.
+- Per-role sections: farmer (`244`), vet (`275`), agronomist (`292`), finance (`305`), hr (`322`), agro-dealer (`335`), equipment-dealer (`348`), logistics-provider (`361`), agribusiness-owner (`378`), input-supplier (`387`).
+- "My Plan" (subscription) link shown to everyone except `ceo, admin, general-user` (`396`) — matches `RequireSubscription`'s bypass list exactly (see section 6).
+- "General" section (Marketplace, My Profile) shown to all roles unconditionally (`416`).
 
-2. **`resources/views/layouts/navigation.blade.php`** — a *separate* top-nav used on non-`x-app-layout` pages, with its **own independent** role→dashboard `match()` (`navigation.blade.php:30-63`) and its own set of role-gated dropdowns: ceo (`73`), admin (`152`), finance (`199`), rider (`205`), farmer (`212`), vet/agronomist (`228`), hr — visible to `hr, admin, ceo` (`235`). Wallet, AI Scan, Marketplace, and Notifications are shown to all roles.
+**Dead links — fixed in Phase 4.** All 7 turned out to be real, fully-built features (`HRController`, `FinanceController`, and the shared `VetController` queue/disease-alerts, which agronomists are already permission-gated for via `role:vet,agronomist`) that were simply never wired into the sidebar — not missing functionality:
+- Agronomist section (`app.blade.php:292`): "Crop Requests" → now `route('vet.queue')` (already server-side filtered to `case_type=crop` for agronomists in `VetController::queue()`). "Soil Reports" → **removed**, no backing feature exists anywhere in the app; added "Disease Alerts" → `route('vet.disease-alerts')` instead, since agronomists had zero sidebar path to it despite already being permitted.
+- Finance section (`app.blade.php:305`): "Income & Expenses" → `route('finance.transactions')`, "Payroll" → `route('finance.payroll')`, "Financial Reports" → `route('finance.reports')` — all three map directly to existing, complete `FinanceController` methods with working views.
+- HR section (`app.blade.php:322`): "Staff Records" → `route('hr.staff')`, "Attendance & Leave" split into "Attendance" → `route('hr.attendance')` and "Leave Requests" → `route('hr.leaves')`, plus added "Payroll" → `route('hr.payroll')` (HR has its own payroll flow, separate from Finance's — previously unreachable from any nav).
 
-**Finding — flagged for Phase 4:** because these two files maintain independent role-to-menu-item mappings, a role or menu item added to one is not guaranteed to be reflected in the other. This is the single biggest "shared component" risk found in the whole audit — it directly matches the request's concern about the same bug appearing in one dashboard after being fixed in another, except here it's two *navigation systems*, not two dashboards.
-
-**Dead links found during this pass** (present in `app.blade.php`, `href="#"`, not wired to any route):
-- Agronomist section (`app.blade.php:292`): "Crop Requests", "Soil Reports"
-- Finance section (`app.blade.php:305`): "Income & Expenses", "Payroll", "Financial Reports"
-- HR section (`app.blade.php:322`): "Staff Records", "Attendance & Leave"
-
-These are exactly the kind of "decorative buttons that appear functional but do nothing" flagged in the request. Not fixed in this phase (documentation only) — carried into Phase 4.
+No new features were built — every link above points to a controller method and view that already existed and worked, just wasn't linked.
 
 ---
 
@@ -138,10 +135,10 @@ No permission package is installed (`composer.json` has no `spatie/laravel-permi
 
 ## 5. Access Control / Security Findings
 
-These are confirmed by reading the code, not yet fixed. Ranked by severity.
+Ranked by severity. Items 1 and 2 were flagged HIGH/MEDIUM-HIGH in the Phase 1 pass based on reading the controller code alone; Phase 2 verified both against what's actually reachable/exploitable and downgraded them. Corrected assessment below — **no code changed for either.**
 
-1. **🔴 HIGH — Cross-user diagnosis data exposure.** `VetController.php:176`: any user with role `vet` or `agronomist` can browse **all** farmers' diagnoses, filtered only by scan type (`plant` vs `animal`), not by assignment or authorization. There is no `DiagnosisPolicy` anywhere in the app — the ownership check added to `DiagnosticController::downloadReport()` earlier this session is currently the *only* per-record diagnosis authorization check that exists. `VetController.php:156` similarly runs an unfiltered outbreak aggregation across all users' diagnoses (aggregate-only, lower severity, but still worth reviewing for what it exposes). **Proposed for Phase 2.**
-2. **🟠 MEDIUM-HIGH — Unauthenticated payment lookup.** `GET /payment/mobile-callback` (`routes/api.php:289-291`, `PaymentApiController::mobileCallback` at line 120) has no auth middleware — only `throttle:20,1` — and returns full payment details to anyone who supplies a valid Paystack `reference`/`trxref` query parameter, with no check that the caller is the payment's owner. References are not typically guessable, but this is still an ownership-check gap on sensitive financial data. **Proposed for Phase 2.**
+1. **🟡 LOW (downgraded from HIGH) — VetController diagnosis query bypasses the assignment model, but exposes no private data.** `VetController.php:176`'s query does read across all users' diagnoses without an ownership/assignment filter, and `VetController.php:156` similarly aggregates across all users. But `vet/disease-alerts.blade.php` — the only view consuming this data — renders exclusively `disease_name`, `type`, `status`, and a relative timestamp: no farmer identity, no image, no confidence score, and no link to the individual report. There's no path from this page to a private record, and a vet directly guessing a `/diagnostics/{id}/report` URL is already blocked by the ownership check added to `DiagnosticController::downloadReport()` (owner, `ceo`, or `admin` only). Functionally this is closer to an anonymized epidemiological trend dashboard than a data leak — and restricting it to "assigned cases only" would break the actual point of an outbreak early-warning feature, which needs visibility beyond the vet's own cases. **No fix applied.** If tightened later, it should be for architectural consistency (routing through the same assignment concept Consultations use), not because private data is exposed today.
+2. **🟢 LOW (downgraded from MEDIUM-HIGH) — Payment mobile-callback lookup is unauthenticated by necessity, and the reference isn't practically guessable.** `GET /payment/mobile-callback` (`routes/api.php:289-291`, `PaymentApiController::mobileCallback`) has no auth middleware — it's the Paystack redirect target (`PaymentApiController.php:34` sets it as `callback_url`) for an in-app-browser flow, so the caller genuinely has no identity to check "ownership" against; requiring auth here would break the redirect. The reference itself is `Payment::generateReference()` → `Str::random(12)` over a 62-character alphabet (~3×10²¹ possibilities), combined with `throttle:20,1` — brute-forcing a valid reference is infeasible, so real exploitability requires already knowing a specific other user's reference through some other channel (not this endpoint). **No fix applied** — trimming the response payload was considered but the mobile app's consumption of this endpoint's JSON body couldn't be located in `mobile/` to confirm a field-removal wouldn't break live payment confirmation; changing an unverifiable payment-flow response was judged riskier than the (low) exposure it would reduce.
 3. **🟡 LOW — Role-string typos/aliases create silent authorization gaps**, not leaks: e.g. a user assigned `me-officer` when a `role:` check was written for `m-e-officer` would simply be locked out of their own dashboard, not exposed to someone else's data. Documented in section 1; fix belongs in Phase 3 (permission reconciliation), since it's really a symptom of there being no canonical role list.
 4. **✅ Notifications correctly scoped.** Both notification stacks (`NotificationController` web, `NotificationApiController` mobile) filter every read/write by `user_id` — no leak found, no action needed.
 5. **✅ Narration/TTS correctly scoped.** `NarrationController.php:23` enforces `$diagnosis->user_id === auth()->id()` — matches the ownership pattern, no action needed.
@@ -184,10 +181,10 @@ Confirmed fully isolated to one page: `diagnostics/history.blade.php`, reachable
 
 Given the findings above, the original 29-section request breaks down into genuinely distinct pieces of work with different risk profiles:
 
-- **Phase 2 (security, no UI risk):** Fix the VetController diagnosis leak with a proper ownership/assignment check; add ownership check to the payment mobile-callback endpoint. Small, contained, high value, low risk of breaking other roles.
-- **Phase 3 (foundational, higher risk):** Reconcile the three permission systems into one authoritative source, fix the role-spelling inconsistencies, decide the `financial-institution`/`rider` assignability gap. Touches `routes/web.php` broadly — needs careful regression testing per role since there's no test suite and no local PHP available to lint/run this app.
-- **Phase 4 (consolidation):** Merge the two navigation implementations into one, remove the confirmed dead links, build the first real shared dashboard component (starting with whichever is cheapest — likely a stat-card partial — before attempting a shared scan/report component).
+- **Phase 2 (security verification) — complete.** Both findings verified against actual reachability/exploitability rather than fixed reflexively. Both downgraded to LOW once checked against what's really exposed (see §5) — no code changed, since the "fix" implied for each would have either broken a legitimate feature (VetController's outbreak-awareness page) or risked an unverifiable change to a live payment flow (mobile-callback). This is the correct outcome of a verify-before-fixing pass, not a skipped step.
+- **Phase 3 (foundational, higher risk) — in progress.** Reconcile the three permission systems into one authoritative source, fix the role-spelling inconsistencies, decide the `financial-institution`/`rider` assignability gap. Touches `routes/web.php` broadly — needs careful regression testing per role since there's no test suite and no local PHP available to lint/run this app.
+- **Phase 4 (consolidation) — complete.** The "merge two navigation systems" premise didn't survive investigation — one was confirmed dead code (deleted). All 7 dead links now point to real, previously-unwired features. The remaining consolidation item — a shared dashboard/scan component reused across roles — is real but large (see §7's implication note) and deferred rather than attempted opportunistically.
 - **Phase 5 (visual/mobile):** Contrast, dead-button sweep beyond navigation, mobile responsiveness — best done role-by-role once Phase 4's shared components exist, so a fix lands once instead of 22 times.
 - **Phase 6 (scope decision required):** Whether to expand scan/voice/report access to roles beyond the current 5 is a product decision, not implied by anything currently broken — flagged for explicit sign-off before any code changes.
 
-No code has been changed in this phase. Next step is agreeing which phase to execute first.
+No code has been changed through Phase 2. Phase 3 is next.

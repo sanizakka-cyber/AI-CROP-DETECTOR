@@ -689,7 +689,7 @@ class CEOController extends Controller
             'agribusiness-owner','input-supplier','cooperative','government-agency','ngo',
             'research-institution','investor','extension-officer','field-officer',
             'data-analyst','m-e-officer','customer-support','hr','finance','operations',
-            'general-user','admin','ceo',
+            'general-user','admin','ceo','financial-institution',
         ];
         return view('ceo.users.edit', compact('user', 'allRoles'));
     }

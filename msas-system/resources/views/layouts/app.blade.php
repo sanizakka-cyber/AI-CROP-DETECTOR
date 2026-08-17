@@ -291,28 +291,28 @@
             {{-- Agronomist --}}
             @if($role === 'agronomist')
             <div x-show="sidebarOpen" class="nav-section" data-i18n="Agronomy">{{ __('Agronomy') }}</div>
-            <a href="#" class="nav-link">
+            <a href="{{ route('vet.queue') }}" class="nav-link {{ request()->routeIs('vet.queue','vet.show','vet.respond') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Crop Requests">{{ __('Crop Requests') }}</span>
             </a>
-            <a href="#" class="nav-link">
-                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
-                <span x-show="sidebarOpen" data-i18n="Soil Reports">{{ __('Soil Reports') }}</span>
+            <a href="{{ route('vet.disease-alerts') }}" class="nav-link {{ request()->routeIs('vet.disease-alerts') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></span>
+                <span x-show="sidebarOpen" data-i18n="Disease Alerts">{{ __('Disease Alerts') }}</span>
             </a>
             @endif
 
             {{-- Finance --}}
             @if($role === 'finance')
             <div x-show="sidebarOpen" class="nav-section" data-i18n="Finance">{{ __('Finance') }}</div>
-            <a href="#" class="nav-link">
+            <a href="{{ route('finance.transactions') }}" class="nav-link {{ request()->routeIs('finance.transactions') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Income & Expenses">{{ __('Income & Expenses') }}</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('finance.payroll') }}" class="nav-link {{ request()->routeIs('finance.payroll') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Payroll">{{ __('Payroll') }}</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('finance.reports') }}" class="nav-link {{ request()->routeIs('finance.reports') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Financial Reports">{{ __('Financial Reports') }}</span>
             </a>
@@ -321,13 +321,21 @@
             {{-- HR --}}
             @if($role === 'hr')
             <div x-show="sidebarOpen" class="nav-section" data-i18n="Human Resources">{{ __('Human Resources') }}</div>
-            <a href="#" class="nav-link">
+            <a href="{{ route('hr.staff') }}" class="nav-link {{ request()->routeIs('hr.staff') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></span>
                 <span x-show="sidebarOpen" data-i18n="Staff Records">{{ __('Staff Records') }}</span>
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('hr.attendance') }}" class="nav-link {{ request()->routeIs('hr.attendance') ? 'active' : '' }}">
                 <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></span>
-                <span x-show="sidebarOpen" data-i18n="Attendance & Leave">{{ __('Attendance & Leave') }}</span>
+                <span x-show="sidebarOpen" data-i18n="Attendance">{{ __('Attendance') }}</span>
+            </a>
+            <a href="{{ route('hr.leaves') }}" class="nav-link {{ request()->routeIs('hr.leaves') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
+                <span x-show="sidebarOpen" data-i18n="Leave Requests">{{ __('Leave Requests') }}</span>
+            </a>
+            <a href="{{ route('hr.payroll') }}" class="nav-link {{ request()->routeIs('hr.payroll') ? 'active' : '' }}">
+                <span class="nav-icon"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg></span>
+                <span x-show="sidebarOpen" data-i18n="Payroll">{{ __('Payroll') }}</span>
             </a>
             @endif
 
