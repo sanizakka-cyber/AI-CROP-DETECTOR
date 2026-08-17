@@ -337,8 +337,11 @@ class DiagnosticController extends Controller
 
     public function downloadReport(Diagnosis $diagnosis)
     {
-        abort_if($diagnosis->user_id !== auth()->id(), 403);
-        $user = auth()->user();
+        $viewer = auth()->user();
+        $isOwner = $diagnosis->user_id === $viewer->id;
+        $isCeoOrAdmin = in_array($viewer->role, ['ceo', 'admin'], true);
+        abort_if(!$isOwner && !$isCeoOrAdmin, 403);
+        $user = $diagnosis->user;
 
         // Prefer the stored thumbnail (survives container restarts); fall back to
         // reading the file from disk (works if storage symlink exists and file not deleted).

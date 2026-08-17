@@ -27,9 +27,118 @@ use Carbon\Carbon;
 
 class CEOController extends Controller
 {
-    public function index()
+    // ── Dashboard Pages ──────────────────────────────────────────────
+    // Each method below renders one routed CEO dashboard page, calling only
+    // the data helpers that page's view actually needs. This replaces the
+    // former single index() that computed all ~40 variables for every page
+    // load regardless of which section the CEO wanted to see.
+
+    public function overview()
     {
-        // ── KPI Metrics ────────────────────────────────────────────
+        $kpi    = $this->kpiMetrics();
+        $rev    = $this->revenueMetrics();
+        $health = $this->platformHealthMetrics($kpi['totalDiagnoses'], $kpi['totalUsers'], $kpi['activeUsers']);
+
+        return view('ceo.pages.overview', array_merge(
+            $kpi, $rev, $health,
+            $this->payRevenueMetrics(),
+            $this->aiStatsMetrics(),
+            $this->subStatsMetrics(),
+            $this->orderStatsMetrics(),
+            $this->mrrChurnMetrics(),
+            $this->userRegistrationMetrics($kpi['totalUsers'])
+        ));
+    }
+
+    public function riskCenter()
+    {
+        $kpi = $this->kpiMetrics();
+
+        return view('ceo.pages.risk-center', array_merge(
+            ['pendingExperts' => $kpi['pendingExperts']],
+            $this->diseaseAlertsMetrics(),
+            $this->riskMetrics($kpi['pendingExperts']),
+            $this->orderStatsMetrics(),
+            $this->mrrChurnMetrics(),
+            $this->walletStatsMetrics()
+        ));
+    }
+
+    public function financial()
+    {
+        return view('ceo.pages.financial', array_merge(
+            $this->payRevenueMetrics(),
+            $this->mrrChurnMetrics(),
+            $this->revTimeSeriesMetrics(),
+            $this->walletStatsMetrics(),
+            $this->subStatsMetrics()
+        ));
+    }
+
+    public function marketplace()
+    {
+        return view('ceo.pages.marketplace', array_merge(
+            $this->orderStatsMetrics(),
+            $this->topProductsMetrics()
+        ));
+    }
+
+    public function operations()
+    {
+        $kpi = $this->kpiMetrics();
+
+        return view('ceo.pages.operations', array_merge(
+            ['pendingExperts' => $kpi['pendingExperts']],
+            $this->logisticsStatsMetrics(),
+            $this->consultStatsMetrics($kpi['pendingConsults']),
+            $this->attendanceMetrics(),
+            $this->pendingLeavesMetrics(),
+            $this->marketplaceStatsMetrics()
+        ));
+    }
+
+    public function geographic()
+    {
+        return view('ceo.pages.geographic', array_merge(
+            $this->geoChartMetrics(),
+            $this->stateActivityMetrics()
+        ));
+    }
+
+    public function usersSubs()
+    {
+        $kpi = $this->kpiMetrics();
+
+        return view('ceo.pages.users-subs', array_merge(
+            $this->userRegistrationMetrics($kpi['totalUsers']),
+            ['totalUsers' => $kpi['totalUsers']],
+            $this->monthlyGrowthMetrics(),
+            $this->usersByRoleMetrics(),
+            $this->subStatsMetrics()
+        ));
+    }
+
+    public function system()
+    {
+        $kpi    = $this->kpiMetrics();
+        $health = $this->platformHealthMetrics($kpi['totalDiagnoses'], $kpi['totalUsers'], $kpi['activeUsers']);
+
+        return view('ceo.pages.system', array_merge(
+            ['pendingExperts' => $kpi['pendingExperts']],
+            $health,
+            $this->marketplaceStatsMetrics(),
+            $this->recentUsersMetrics(),
+            $this->diseaseAlertsMetrics()
+        ));
+    }
+
+    // ── Dashboard Data Helpers ───────────────────────────────────────
+    // Each helper below is the exact query block that used to live inline
+    // in the old index() method, unchanged — just extracted so the route
+    // methods above can call only what their page needs.
+
+    private function kpiMetrics(): array
+    {
         try {
             $totalUsers     = User::count();
             $activeUsers    = User::where('is_active', true)->count();
@@ -46,7 +155,11 @@ class CEOController extends Controller
             $pendingConsults = Consultation::where('status','pending')->count();
         } catch (\Exception $e) { $totalDiagnoses = 0; $pendingConsults = 0; }
 
-        // ── Revenue ────────────────────────────────────────────────
+        return compact('totalUsers','activeUsers','pendingExperts','totalAnimals','totalDiagnoses','pendingConsults');
+    }
+
+    private function revenueMetrics(): array
+    {
         try {
             $totalRevenue     = Finance::where('type','Income')->sum('amount');
             $totalExpenses    = Finance::where('type','Expense')->sum('amount');
@@ -64,7 +177,11 @@ class CEOController extends Controller
                            ? round((($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100, 1)
                            : 0;
 
-        // ── Users by Role ──────────────────────────────────────────
+        return compact('totalRevenue','totalExpenses','thisMonthRevenue','lastMonthRevenue','netProfit','revenueGrowth');
+    }
+
+    private function usersByRoleMetrics(): array
+    {
         try {
             $usersByRole = User::select('role', DB::raw('count(*) as count'))
                               ->groupBy('role')
@@ -74,26 +191,11 @@ class CEOController extends Controller
             $usersByRole = collect();
         }
 
-        // ── Monthly Revenue Chart (last 6 months) — cached 5 min ──
-        try {
-            $revenueChart = Cache::remember('ceo:revenue_chart', 300, function () {
-                return collect(range(5, 0))->map(function ($i) {
-                    $month = now()->subMonths($i);
-                    $rows  = Finance::selectRaw("type, SUM(amount) as total")
-                        ->whereMonth('transaction_date', $month->month)
-                        ->whereYear('transaction_date', $month->year)
-                        ->groupBy('type')
-                        ->pluck('total', 'type');
-                    return [
-                        'month'   => $month->format('M'),
-                        'income'  => $rows['Income']  ?? 0,
-                        'expense' => $rows['Expense'] ?? 0,
-                    ];
-                });
-            });
-        } catch (\Exception $e) { $revenueChart = collect(); }
+        return compact('usersByRole');
+    }
 
-        // ── Monthly User Growth (last 6 months) — cached 5 min ────
+    private function monthlyGrowthMetrics(): array
+    {
         try {
             $monthlyGrowth = Cache::remember('ceo:monthly_growth', 300, function () {
                 return collect(range(5, 0))->map(function ($i) {
@@ -118,31 +220,35 @@ class CEOController extends Controller
             ]);
         }
 
-        // ── Diagnosis Type Split ────────────────────────────────────
-        try {
-            $cropDiagnoses      = Consultation::where('case_type','crop')->count();
-            $livestockDiagnoses = Consultation::where('case_type','livestock')->count();
-        } catch (\Exception $e) {
-            $cropDiagnoses = 0; $livestockDiagnoses = 0;
-        }
+        return compact('monthlyGrowth');
+    }
 
-        // ── State Activity ──────────────────────────────────────────
+    private function stateActivityMetrics(): array
+    {
         try {
             $stateActivity = User::select('state', DB::raw('count(*) as count'))
                 ->whereNotNull('state')->groupBy('state')
                 ->orderByDesc('count')->take(6)->pluck('count','state')->toArray();
         } catch (\Exception $e) { $stateActivity = []; }
 
-        // ── Platform Health Score (composite) ──────────────────────
+        return compact('stateActivity');
+    }
+
+    private function platformHealthMetrics(int $totalDiagnoses, int $totalUsers, int $activeUsers): array
+    {
         try {
             $resolvedCases = Consultation::where('status','resolved')->count();
         } catch (\Exception $e) { $resolvedCases = 0; }
         $resolutionRate = $totalDiagnoses > 0 ? round(($resolvedCases / $totalDiagnoses) * 100) : 0;
-        $activePct        = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100) : 0;
-        $platformHealth   = (int) round(($resolutionRate * 0.4) + ($activePct * 0.4) + 20);
-        $platformHealth   = min(100, max(0, $platformHealth));
+        $activePct      = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100) : 0;
+        $platformHealth = (int) round(($resolutionRate * 0.4) + ($activePct * 0.4) + 20);
+        $platformHealth = min(100, max(0, $platformHealth));
 
-        // ── Recent User Activity ────────────────────────────────────
+        return compact('resolutionRate','activePct','platformHealth');
+    }
+
+    private function recentUsersMetrics(): array
+    {
         try {
             $recentUsers = User::latest()->take(8)->get();
         } catch (\Exception $e) {
@@ -150,24 +256,40 @@ class CEOController extends Controller
             $recentUsers = collect();
         }
 
-        // ── Attendance Today ────────────────────────────────────────
+        return compact('recentUsers');
+    }
+
+    private function attendanceMetrics(): array
+    {
         try {
             $presentToday = Attendance::whereDate('date', today())->where('status','present')->count();
             $staffCount   = User::whereNotIn('role', ['farmer','agro-dealer'])->count();
         } catch (\Exception $e) { $presentToday = 0; $staffCount = 0; }
 
-        // ── Pending Leave Requests ──────────────────────────────────
+        return compact('presentToday','staffCount');
+    }
+
+    private function pendingLeavesMetrics(): array
+    {
         try {
             $pendingLeaves = LeaveRequest::where('status','pending')->count();
         } catch (\Exception $e) { $pendingLeaves = 0; }
 
-        // ── Marketplace Stats ───────────────────────────────────────
+        return compact('pendingLeaves');
+    }
+
+    private function marketplaceStatsMetrics(): array
+    {
         try {
             $marketItems     = Product::where('status','active')->where('is_approved', true)->count();
             $pendingListings = Product::where('is_approved', false)->count();
         } catch (\Exception $e) { $marketItems = 0; $pendingListings = 0; }
 
-        // ── Disease Alerts (live — top diseases needing review, last 30 days) ──
+        return compact('marketItems','pendingListings');
+    }
+
+    private function diseaseAlertsMetrics(): array
+    {
         try {
             $diseaseAlerts = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
                 ->where('created_at', '>=', now()->subDays(30))
@@ -187,7 +309,11 @@ class CEOController extends Controller
                 ->toArray();
         } catch (\Exception $e) { $diseaseAlerts = []; }
 
-        // ── Subscription Analytics ─────────────────────────────────
+        return compact('diseaseAlerts');
+    }
+
+    private function subStatsMetrics(): array
+    {
         try {
             $planKeys = array_keys(config('subscription.plans', []));
             $subStats = Cache::remember('ceo:sub_stats', 120, function () use ($planKeys) {
@@ -234,7 +360,11 @@ class CEOController extends Controller
             ];
         }
 
-        // ── Marketplace / Orders ───────────────────────────────────────
+        return compact('subStats');
+    }
+
+    private function orderStatsMetrics(): array
+    {
         try {
             $orderStats = Cache::remember('ceo:order_stats', 120, function () {
                 return [
@@ -255,6 +385,12 @@ class CEOController extends Controller
             Log::warning('[CEO] orderStats failed: ' . $e->getMessage());
             $orderStats = ['total'=>0,'pending'=>0,'processing'=>0,'shipped'=>0,'delivered'=>0,'cancelled'=>0,'gmv'=>0,'gmv_month'=>0];
         }
+
+        return compact('orderStats');
+    }
+
+    private function topProductsMetrics(): array
+    {
         try {
             $topProducts = Product::select('id', 'name', 'selling_price', 'category')
                 ->selectRaw('(SELECT COUNT(*) FROM order_items WHERE order_items.product_id = products.id) as order_count')
@@ -264,7 +400,11 @@ class CEOController extends Controller
                 ->get();
         } catch (\Exception $e) { $topProducts = collect(); }
 
-        // ── AI Smart Scan Analytics ────────────────────────────────
+        return compact('topProducts');
+    }
+
+    private function aiStatsMetrics(): array
+    {
         try {
             $aiStats = Cache::remember('ceo:ai_stats', 120, function () {
                 return [
@@ -290,7 +430,11 @@ class CEOController extends Controller
             $aiStats = ['today'=>0,'this_month'=>0,'total'=>0,'avg_conf'=>0,'crop_total'=>0,'live_total'=>0,'soil_total'=>0,'top_diseases'=>collect()];
         }
 
-        // ── Consultation Detail Stats ──────────────────────────────
+        return compact('aiStats');
+    }
+
+    private function consultStatsMetrics(int $pendingConsults): array
+    {
         try {
             $consultStats = [
                 'pending'     => Consultation::where('status', 'pending')->count(),
@@ -304,7 +448,11 @@ class CEOController extends Controller
             $consultStats = ['pending'=>$pendingConsults,'in_progress'=>0,'completed'=>0,'avg_hours'=>0];
         }
 
-        // ── Logistics Stats ────────────────────────────────────────
+        return compact('consultStats');
+    }
+
+    private function logisticsStatsMetrics(): array
+    {
         try {
             $logisticsStats = [
                 'pending_dispatch' => Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count(),
@@ -317,7 +465,11 @@ class CEOController extends Controller
             $logisticsStats = ['pending_dispatch'=>0,'riders_available'=>0,'riders_busy'=>0,'in_transit'=>0,'delivered'=>0];
         }
 
-        // ── Granular Revenue (Payment model) ──────────────────────
+        return compact('logisticsStats');
+    }
+
+    private function payRevenueMetrics(): array
+    {
         try {
             $payRevenue = Cache::remember('ceo:pay_revenue', 120, function () {
                 return [
@@ -332,7 +484,11 @@ class CEOController extends Controller
             $payRevenue = ['today'=>0,'week'=>0,'month'=>0,'year'=>0,'total'=>0];
         }
 
-        // ── Revenue Time-Series (daily 14 days / weekly 8 weeks / monthly 12 mo) ─
+        return compact('payRevenue');
+    }
+
+    private function revTimeSeriesMetrics(): array
+    {
         try {
             $revTimeSeries = Cache::remember('ceo:rev_timeseries', 120, function () {
                 // Daily: last 14 days
@@ -376,7 +532,11 @@ class CEOController extends Controller
             ];
         }
 
-        // ── Geographic: top 8 states — users + diagnoses ──────────
+        return compact('revTimeSeries');
+    }
+
+    private function geoChartMetrics(): array
+    {
         try {
             $geoChart = Cache::remember('ceo:geo_chart', 300, function () {
                 $states = User::whereNotNull('state')
@@ -400,7 +560,11 @@ class CEOController extends Controller
             $geoChart = collect();
         }
 
-        // ── MRR / ARR / Churn / Conversion ────────────────────────
+        return compact('geoChart');
+    }
+
+    private function mrrChurnMetrics(): array
+    {
         try {
             $plans = config('subscription.plans', []);
             $activeSubsByPlan = Subscription::where('status', 'active')
@@ -430,7 +594,11 @@ class CEOController extends Controller
             $churnRate = $conversionRate = 0;
         }
 
-        // ── User Registration Breakdown ────────────────────────────
+        return compact('mrr','arr','churnRate','conversionRate');
+    }
+
+    private function userRegistrationMetrics(int $totalUsers): array
+    {
         try {
             $newUsersToday = User::whereDate('created_at', today())->count();
             $newUsersWeek  = User::where('created_at', '>=', now()->startOfWeek())->count();
@@ -440,7 +608,11 @@ class CEOController extends Controller
             $newUsersToday = $newUsersWeek = $verifiedUsers = $verifyRate = 0;
         }
 
-        // ── Wallet Stats ───────────────────────────────────────────
+        return compact('newUsersToday','newUsersWeek','verifiedUsers','verifyRate');
+    }
+
+    private function walletStatsMetrics(): array
+    {
         try {
             $walletStats = [
                 'total_balance'       => \App\Models\Wallet::sum('balance'),
@@ -457,7 +629,11 @@ class CEOController extends Controller
             $walletStats = ['total_balance' => 0, 'pending_withdrawals' => 0, 'withdrawals_value' => 0];
         }
 
-        // ── Risk Metrics ───────────────────────────────────────────
+        return compact('walletStats');
+    }
+
+    private function riskMetrics(int $pendingExperts): array
+    {
         try {
             $failedPaymentsToday = Payment::where('status', 'failed')
                 ->whereDate('created_at', today())
@@ -472,28 +648,7 @@ class CEOController extends Controller
             $pendingVerifications = $pendingExperts;
         }
 
-        return view('ceo.dashboard', compact(
-            'totalUsers','activeUsers','pendingExperts',
-            'totalAnimals','totalDiagnoses','pendingConsults',
-            'totalRevenue','totalExpenses','netProfit',
-            'thisMonthRevenue','revenueGrowth',
-            'usersByRole','revenueChart','recentUsers',
-            'presentToday','staffCount','pendingLeaves',
-            'marketItems','pendingListings','diseaseAlerts',
-            'monthlyGrowth','cropDiagnoses','livestockDiagnoses',
-            'stateActivity','platformHealth','resolutionRate','activePct',
-            'subStats',
-            // New metrics
-            'orderStats','topProducts',
-            'aiStats',
-            'consultStats',
-            'logisticsStats',
-            'payRevenue',
-            'mrr','arr','churnRate','conversionRate',
-            'newUsersToday','newUsersWeek','verifiedUsers','verifyRate',
-            'revTimeSeries','geoChart',
-            'walletStats','failedPaymentsToday','pendingVerifications'
-        ));
+        return compact('failedPaymentsToday','pendingVerifications');
     }
 
     // ── User Management ────────────────────────────────────────────

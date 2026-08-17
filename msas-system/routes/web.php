@@ -150,7 +150,17 @@ Route::middleware(['auth'])->group(function () {
 
 // CEO Routes
 Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
-    Route::get('/ceo',              [CEOController::class, 'index'])->name('ceo.dashboard');
+    Route::redirect('/ceo', '/ceo/overview')->name('ceo.dashboard');
+    Route::get('/ceo/overview',     [CEOController::class, 'overview'])->name('ceo.overview');
+    Route::get('/ceo/risk-center',  [CEOController::class, 'riskCenter'])->name('ceo.risk-center');
+    Route::get('/ceo/financial',    [CEOController::class, 'financial'])->name('ceo.financial');
+    Route::get('/ceo/ai-analytics', [\App\Http\Controllers\CeoScanAnalyticsController::class, 'index'])->name('ceo.ai-analytics');
+    Route::get('/ceo/ai-analytics/export', [\App\Http\Controllers\CeoScanAnalyticsController::class, 'exportCsv'])->name('ceo.ai-analytics.export');
+    Route::get('/ceo/marketplace',  [CEOController::class, 'marketplace'])->name('ceo.marketplace');
+    Route::get('/ceo/operations',   [CEOController::class, 'operations'])->name('ceo.operations');
+    Route::get('/ceo/geographic',   [CEOController::class, 'geographic'])->name('ceo.geographic');
+    Route::get('/ceo/users-subs',   [CEOController::class, 'usersSubs'])->name('ceo.users-subs');
+    Route::get('/ceo/system',       [CEOController::class, 'system'])->name('ceo.system');
     Route::get('/ceo/users',        [CEOController::class, 'users'])->name('ceo.users');
     Route::get('/ceo/users/{user}',      [CEOController::class, 'showUser'])->name('ceo.users.show');
     Route::get('/ceo/users/{user}/edit', [CEOController::class, 'editUser'])->name('ceo.users.edit');
