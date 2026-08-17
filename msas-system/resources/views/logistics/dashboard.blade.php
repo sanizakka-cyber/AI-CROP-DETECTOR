@@ -1,6 +1,8 @@
 <x-app-layout>
 <div class="max-w-7xl mx-auto space-y-6">
 
+    <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
     {{-- Header --}}
     <div class="flex items-start justify-between">
         <div>

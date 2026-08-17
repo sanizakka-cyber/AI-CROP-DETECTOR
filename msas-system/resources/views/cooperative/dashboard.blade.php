@@ -3,6 +3,8 @@
 
     <div class="space-y-6 max-w-7xl mx-auto">
 
+        <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
         {{-- Hero --}}
         <div class="bg-gradient-to-r from-emerald-900 to-[#0F6B3E] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
             <div class="absolute right-0 top-0 w-56 h-56 bg-emerald-400/10 rounded-full blur-3xl"></div>

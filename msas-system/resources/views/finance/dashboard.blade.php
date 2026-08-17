@@ -3,6 +3,8 @@
 
     <div class="space-y-6">
 
+        <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
         {{-- Banner --}}
         <div class="bg-gradient-to-r from-slate-900 to-[#0F6B3E] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
             <div class="absolute right-0 top-0 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl"></div>
