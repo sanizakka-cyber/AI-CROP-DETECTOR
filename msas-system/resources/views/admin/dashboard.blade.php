@@ -11,6 +11,8 @@
 
     <div class="space-y-6">
 
+        <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
         {{-- Flash --}}
         @foreach(['success','error','info'] as $t)
         @if(session($t))

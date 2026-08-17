@@ -74,50 +74,46 @@ class DashboardController extends Controller
     // ── Admin Dashboard ────────────────────────────────────────────
     public function admin()
     {
-        try { $totalUsers = \App\Models\User::count(); } catch (\Exception $e) { $totalUsers = 0; }
-        try { $activeUsers = \App\Models\User::where('is_active', true)->count(); } catch (\Exception $e) { $activeUsers = 0; }
-        try { $pendingApprovals = \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count(); } catch (\Exception $e) { $pendingApprovals = 0; }
-        try { $recentUsers = \App\Models\User::latest()->take(10)->get(); } catch (\Exception $e) { $recentUsers = collect(); }
-        try { $usersByRole = \App\Models\User::select('role', DB::raw('count(*) as count'))->groupBy('role')->pluck('count','role'); } catch (\Exception $e) { $usersByRole = collect(); }
-        try { $newThisMonth = \App\Models\User::whereMonth('created_at', now()->month)->count(); } catch (\Exception $e) { $newThisMonth = 0; }
-        try { $totalAnimals = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
-        try { $totalConsults = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsults = 0; }
-        try {
-            $monthlyGrowth = collect(range(5, 0))->map(fn($i) => [
-                'label' => now()->subMonths($i)->format('M'),
-                'users' => \App\Models\User::whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->count(),
-            ]);
-        } catch (\Exception $e) { $monthlyGrowth = collect(); }
+        $totalUsers = $this->safe('total users', fn() => \App\Models\User::count());
+        $activeUsers = $this->safe('active users', fn() => \App\Models\User::where('is_active', true)->count());
+        $pendingApprovals = $this->safe('pending approvals', fn() => \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count());
+        $recentUsers = $this->safe('recent users', fn() => \App\Models\User::latest()->take(10)->get(), collect());
+        $usersByRole = $this->safe('users by role', fn() => \App\Models\User::select('role', DB::raw('count(*) as count'))->groupBy('role')->pluck('count','role'), collect());
+        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->count());
+        $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
+        $totalConsults = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
+        $monthlyGrowth = $this->safe('monthly user growth', fn() => collect(range(5, 0))->map(fn($i) => [
+            'label' => now()->subMonths($i)->format('M'),
+            'users' => \App\Models\User::whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->count(),
+        ]), collect());
 
         // ── Order Operations Stats ──────────────────────────────────────────────
-        try { $ordersToday       = \App\Models\Order::whereDate('created_at', today())->count(); } catch (\Exception $e) { $ordersToday = 0; }
-        try { $ordersUnassigned  = \App\Models\Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count(); } catch (\Exception $e) { $ordersUnassigned = 0; }
-        try { $ordersInTransit   = \App\Models\Order::where('rider_status', 'in_transit')->count(); } catch (\Exception $e) { $ordersInTransit = 0; }
-        try { $ordersPending     = \App\Models\Order::where('status', 'pending')->count(); } catch (\Exception $e) { $ordersPending = 0; }
-        try { $ordersDelivered   = \App\Models\Order::where('status', 'delivered')->count(); } catch (\Exception $e) { $ordersDelivered = 0; }
-        try { $ridersAvailable   = \App\Models\User::where('role', 'rider')->where('rider_status', 'available')->count(); } catch (\Exception $e) { $ridersAvailable = 0; }
-        try { $ridersBusy        = \App\Models\User::where('role', 'rider')->where('rider_status', 'busy')->count(); } catch (\Exception $e) { $ridersBusy = 0; }
-        try { $revenueToday      = \App\Models\Order::whereDate('created_at', today())->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $revenueToday = 0; }
-        try {
-            $recentOrders = \App\Models\Order::with(['buyer:id,first_name,last_name','dealer:id,first_name,last_name','rider:id,first_name,last_name'])
-                ->latest()->take(6)->get();
-        } catch (\Exception $e) { $recentOrders = collect(); }
+        $ordersToday       = $this->safe('orders today', fn() => \App\Models\Order::whereDate('created_at', today())->count());
+        $ordersUnassigned  = $this->safe('unassigned orders', fn() => \App\Models\Order::whereIn('status', ['confirmed','processing'])->whereNull('rider_id')->count());
+        $ordersInTransit   = $this->safe('orders in transit', fn() => \App\Models\Order::where('rider_status', 'in_transit')->count());
+        $ordersPending     = $this->safe('pending orders', fn() => \App\Models\Order::where('status', 'pending')->count());
+        $ordersDelivered   = $this->safe('delivered orders', fn() => \App\Models\Order::where('status', 'delivered')->count());
+        $ridersAvailable   = $this->safe('available riders', fn() => \App\Models\User::where('role', 'rider')->where('rider_status', 'available')->count());
+        $ridersBusy        = $this->safe('busy riders', fn() => \App\Models\User::where('role', 'rider')->where('rider_status', 'busy')->count());
+        $revenueToday      = $this->safe('revenue today', fn() => \App\Models\Order::whereDate('created_at', today())->where('payment_status','paid')->sum('total'));
+        $recentOrders = $this->safe('recent orders', fn() => \App\Models\Order::with(['buyer:id,first_name,last_name','dealer:id,first_name,last_name','rider:id,first_name,last_name'])
+            ->latest()->take(6)->get(), collect());
 
         // ── Consultation Stats ──────────────────────────────────────────────────
-        try { $consultsOpen        = \App\Models\Consultation::where('status','open')->count(); } catch (\Exception $e) { $consultsOpen = 0; }
-        try { $consultsUnassigned  = \App\Models\Consultation::whereNull('expert_id')->where('status','open')->count(); } catch (\Exception $e) { $consultsUnassigned = 0; }
-        try { $consultsResolved    = \App\Models\Consultation::where('status','resolved')->count(); } catch (\Exception $e) { $consultsResolved = 0; }
-        try {
-            $recentConsults = \App\Models\Consultation::with(['farmer:id,first_name,last_name','expert:id,first_name,last_name,role'])
-                ->latest()->take(6)->get();
-        } catch (\Exception $e) { $recentConsults = collect(); }
+        $consultsOpen        = $this->safe('open consultations', fn() => \App\Models\Consultation::where('status','open')->count());
+        $consultsUnassigned  = $this->safe('unassigned consultations', fn() => \App\Models\Consultation::whereNull('expert_id')->where('status','open')->count());
+        $consultsResolved    = $this->safe('resolved consultations', fn() => \App\Models\Consultation::where('status','resolved')->count());
+        $recentConsults = $this->safe('recent consultations', fn() => \App\Models\Consultation::with(['farmer:id,first_name,last_name','expert:id,first_name,last_name,role'])
+            ->latest()->take(6)->get(), collect());
 
         // ── Application / Verification Stats ───────────────────────────────────
         // Must match ApplicationController::index() query exactly so the counter = the page count
-        try { $pendingVerifications = \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count(); } catch (\Exception $e) { $pendingVerifications = 0; }
+        $pendingVerifications = $this->safe('pending verifications', fn() => \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count());
 
         // ── Wallet Stats ────────────────────────────────────────────────────────
-        try { $pendingWithdrawals = \App\Models\WalletTransaction::where('type','hold')->where('status','pending')->count(); } catch (\Exception $e) { $pendingWithdrawals = 0; }
+        $pendingWithdrawals = $this->safe('pending withdrawals', fn() => \App\Models\WalletTransaction::where('type','hold')->where('status','pending')->count());
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('admin.dashboard', compact(
             'totalUsers','activeUsers','pendingApprovals','recentUsers',
@@ -125,7 +121,7 @@ class DashboardController extends Controller
             'ordersToday','ordersUnassigned','ordersInTransit','ordersPending',
             'ordersDelivered','ridersAvailable','ridersBusy','revenueToday','recentOrders',
             'consultsOpen','consultsUnassigned','consultsResolved','recentConsults',
-            'pendingVerifications','pendingWithdrawals'
+            'pendingVerifications','pendingWithdrawals','dashboardErrors'
         ));
     }
 
@@ -173,27 +169,31 @@ class DashboardController extends Controller
     // ── Vet Dashboard ──────────────────────────────────────────────
     public function vet()
     {
-        try { $pendingConsultations = \App\Models\Consultation::where('status','pending')->count(); } catch (\Exception $e) { $pendingConsultations = 0; }
-        try { $completedToday = \App\Models\Consultation::where('status','resolved')->whereDate('updated_at', today())->count(); } catch (\Exception $e) { $completedToday = 0; }
-        try { $pendingQueue = \App\Models\Consultation::with('user')->where('status','pending')->latest()->take(8)->get(); } catch (\Exception $e) { $pendingQueue = collect(); }
-        try { $totalFarmers = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
-        try { $totalHandled = \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count(); } catch (\Exception $e) { $totalHandled = 0; }
+        $pendingConsultations = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','pending')->count());
+        $completedToday = $this->safe('completed today', fn() => \App\Models\Consultation::where('status','resolved')->whereDate('updated_at', today())->count());
+        $pendingQueue = $this->safe('pending queue', fn() => \App\Models\Consultation::with('user')->where('status','pending')->latest()->take(8)->get(), collect());
+        $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
+        $totalHandled = $this->safe('total handled', fn() => \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count());
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('vet.dashboard', compact(
-            'pendingConsultations','completedToday','pendingQueue','totalFarmers','totalHandled'
+            'pendingConsultations','completedToday','pendingQueue','totalFarmers','totalHandled','dashboardErrors'
         ));
     }
 
     // ── Agronomist Dashboard ───────────────────────────────────────
     public function agronomist()
     {
-        try { $pendingConsults = \App\Models\Consultation::where('status','pending')->count(); } catch (\Exception $e) { $pendingConsults = 0; }
-        try { $reviewedDiagnoses = \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count(); } catch (\Exception $e) { $reviewedDiagnoses = 0; }
-        try { $recentConsults = \App\Models\Consultation::with('user')->latest()->take(8)->get(); } catch (\Exception $e) { $recentConsults = collect(); }
-        try { $totalFarmers = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
+        $pendingConsults = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','pending')->count());
+        $reviewedDiagnoses = $this->safe('reviewed diagnoses', fn() => \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count());
+        $recentConsults = $this->safe('recent consultations', fn() => \App\Models\Consultation::with('user')->latest()->take(8)->get(), collect());
+        $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('agronomist.dashboard', compact(
-            'pendingConsults','reviewedDiagnoses','recentConsults','totalFarmers'
+            'pendingConsults','reviewedDiagnoses','recentConsults','totalFarmers','dashboardErrors'
         ));
     }
 
@@ -201,15 +201,17 @@ class DashboardController extends Controller
     public function dealer()
     {
         $user = auth()->user();
-        try { $myListings    = \App\Models\Product::where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $myListings = 0; }
-        try { $activeListings = \App\Models\Product::where('dealer_id', $user->id)->where('status', 'active')->count(); } catch (\Exception $e) { $activeListings = 0; }
-        try { $pendingOrders  = \App\Models\Order::where('dealer_id', $user->id)->where('status', 'pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
-        try { $recentItems    = \App\Models\Product::where('dealer_id', $user->id)->latest()->take(8)->get(); } catch (\Exception $e) { $recentItems = collect(); }
-        try { $totalMarketItems = \App\Models\Product::where('status', 'active')->count(); } catch (\Exception $e) { $totalMarketItems = 0; }
-        try { $revenue = \App\Models\Order::where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'); } catch (\Exception $e) { $revenue = 0; }
+        $myListings    = $this->safe('my listings', fn() => \App\Models\Product::where('dealer_id', $user->id)->count());
+        $activeListings = $this->safe('active listings', fn() => \App\Models\Product::where('dealer_id', $user->id)->where('status', 'active')->count());
+        $pendingOrders  = $this->safe('pending orders', fn() => \App\Models\Order::where('dealer_id', $user->id)->where('status', 'pending')->count());
+        $recentItems    = $this->safe('recent items', fn() => \App\Models\Product::where('dealer_id', $user->id)->latest()->take(8)->get(), collect());
+        $totalMarketItems = $this->safe('total market items', fn() => \App\Models\Product::where('status', 'active')->count());
+        $revenue = $this->safe('revenue', fn() => \App\Models\Order::where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'));
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('dealer.dashboard', compact(
-            'myListings','activeListings','pendingOrders','recentItems','totalMarketItems','revenue'
+            'myListings','activeListings','pendingOrders','recentItems','totalMarketItems','revenue','dashboardErrors'
         ));
     }
 
@@ -441,14 +443,16 @@ class DashboardController extends Controller
     // ── HR Dashboard ───────────────────────────────────────────────
     public function hr()
     {
-        try { $staffCount = \App\Models\User::whereNotIn('role',['farmer','agro-dealer'])->count(); } catch (\Exception $e) { $staffCount = 0; }
-        try { $presentToday = \App\Models\Attendance::whereDate('date', today())->where('status','present')->count(); } catch (\Exception $e) { $presentToday = 0; }
-        try { $pendingLeaves = \App\Models\LeaveRequest::where('status','pending')->count(); } catch (\Exception $e) { $pendingLeaves = 0; }
-        try { $recentStaff = \App\Models\User::whereNotIn('role',['farmer','agro-dealer'])->latest()->take(10)->get(); } catch (\Exception $e) { $recentStaff = collect(); }
-        try { $absentToday = \App\Models\Attendance::whereDate('date', today())->where('status','absent')->count(); } catch (\Exception $e) { $absentToday = 0; }
+        $staffCount = $this->safe('staff count', fn() => \App\Models\User::whereNotIn('role',['farmer','agro-dealer'])->count());
+        $presentToday = $this->safe('present today', fn() => \App\Models\Attendance::whereDate('date', today())->where('status','present')->count());
+        $pendingLeaves = $this->safe('pending leaves', fn() => \App\Models\LeaveRequest::where('status','pending')->count());
+        $recentStaff = $this->safe('recent staff', fn() => \App\Models\User::whereNotIn('role',['farmer','agro-dealer'])->latest()->take(10)->get(), collect());
+        $absentToday = $this->safe('absent today', fn() => \App\Models\Attendance::whereDate('date', today())->where('status','absent')->count());
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('hr.dashboard', compact(
-            'staffCount','presentToday','pendingLeaves','recentStaff','absentToday'
+            'staffCount','presentToday','pendingLeaves','recentStaff','absentToday','dashboardErrors'
         ));
     }
 
@@ -456,12 +460,15 @@ class DashboardController extends Controller
     public function equipmentDealer()
     {
         $user = auth()->user();
-        try { $totalProducts  = DB::table('products')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalProducts = 0; }
-        try { $totalOrders    = DB::table('orders')->where('dealer_id', $user->id)->count(); } catch (\Exception $e) { $totalOrders = 0; }
-        try { $pendingOrders  = DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count(); } catch (\Exception $e) { $pendingOrders = 0; }
-        try { $totalRevenue   = DB::table('orders')->where('dealer_id', $user->id)->where('status','confirmed')->sum('total'); } catch (\Exception $e) { $totalRevenue = 0; }
-        try { $recentOrders   = DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(5)->get(); } catch (\Exception $e) { $recentOrders = collect(); }
-        return view('equipment-dealer.dashboard', compact('totalProducts','totalOrders','pendingOrders','totalRevenue','recentOrders'));
+        $totalProducts  = $this->safe('total products', fn() => DB::table('products')->where('dealer_id', $user->id)->count());
+        $totalOrders    = $this->safe('total orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->count());
+        $pendingOrders  = $this->safe('pending orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count());
+        $totalRevenue   = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','confirmed')->sum('total'));
+        $recentOrders   = $this->safe('recent orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(5)->get(), collect());
+
+        $dashboardErrors = $this->dashboardErrors;
+
+        return view('equipment-dealer.dashboard', compact('totalProducts','totalOrders','pendingOrders','totalRevenue','recentOrders','dashboardErrors'));
     }
 
     // ── Cooperative Dashboard ──────────────────────────────────────
