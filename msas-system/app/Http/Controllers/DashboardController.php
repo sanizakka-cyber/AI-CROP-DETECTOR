@@ -260,23 +260,25 @@ class DashboardController extends Controller
     // ── Operations Dashboard ───────────────────────────────────────
     public function operations()
     {
-        try { $totalUsers = \App\Models\User::count(); } catch (\Exception $e) { $totalUsers = 0; }
-        try { $activeUsers = \App\Models\User::where('is_active', true)->count(); } catch (\Exception $e) { $activeUsers = 0; }
-        try { $newThisWeek = \App\Models\User::where('created_at', '>=', now()->startOfWeek())->count(); } catch (\Exception $e) { $newThisWeek = 0; }
-        try { $newThisMonth = \App\Models\User::whereMonth('created_at', now()->month)->count(); } catch (\Exception $e) { $newThisMonth = 0; }
-        try { $totalConsultations = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsultations = 0; }
-        try { $totalAnimals = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
-        try { $recentRegistrations = \App\Models\User::latest()->take(10)->get(); } catch (\Exception $e) { $recentRegistrations = collect(); }
+        $totalUsers = $this->safe('total users', fn() => \App\Models\User::count());
+        $activeUsers = $this->safe('active users', fn() => \App\Models\User::where('is_active', true)->count());
+        $newThisWeek = $this->safe('new users this week', fn() => \App\Models\User::where('created_at', '>=', now()->startOfWeek())->count());
+        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->count());
+        $totalConsultations = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
+        $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
+        $recentRegistrations = $this->safe('recent registrations', fn() => \App\Models\User::latest()->take(10)->get(), collect());
         // Uptime = (total users who logged in last 30 days / total active users) as platform health proxy
-        try {
+        $systemUptime = $this->safe('system uptime', function () use ($activeUsers) {
             $activeUsers30d = \App\Models\User::where('is_active', true)
                 ->where('last_seen', '>=', now()->subDays(30))->count();
-            $systemUptime = $activeUsers > 0 ? round(($activeUsers30d / $activeUsers) * 100, 1) . '%' : 'N/A';
-        } catch (\Exception $e) { $systemUptime = 'N/A'; }
+            return $activeUsers > 0 ? round(($activeUsers30d / $activeUsers) * 100, 1) . '%' : 'N/A';
+        }, 'N/A');
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('operations.dashboard', compact(
             'totalUsers','activeUsers','newThisWeek','newThisMonth',
-            'totalConsultations','totalAnimals','recentRegistrations','systemUptime'
+            'totalConsultations','totalAnimals','recentRegistrations','systemUptime','dashboardErrors'
         ));
     }
 
@@ -305,66 +307,66 @@ class DashboardController extends Controller
     // ── M&E Officer Dashboard ─────────────────────────────────────
     public function monitoringEvaluation()
     {
-        try { $totalFarmers = \App\Models\User::where('role','farmer')->count(); } catch (\Exception $e) { $totalFarmers = 0; }
-        try { $totalAnimals = \App\Models\Animal::count(); } catch (\Exception $e) { $totalAnimals = 0; }
-        try { $totalConsults = \App\Models\Consultation::count(); } catch (\Exception $e) { $totalConsults = 0; }
-        try { $resolvedCases = \App\Models\Consultation::where('status','resolved')->count(); } catch (\Exception $e) { $resolvedCases = 0; }
-        try { $stateActivity = \App\Models\User::select('state', DB::raw('count(*) as count'))->whereNotNull('state')->groupBy('state')->orderByDesc('count')->take(8)->pluck('count','state')->toArray(); } catch (\Exception $e) { $stateActivity = []; }
-        try {
-            $monthlySummary = collect(range(5, 0))->map(function ($i) {
-                $month = now()->subMonths($i);
-                $total = \App\Models\Consultation::whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count();
-                $resolved = \App\Models\Consultation::where('status','resolved')->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count();
-                return [
-                    'month'           => $month->format('M Y'),
-                    'farmers'         => \App\Models\User::where('role','farmer')->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count(),
-                    'consults'        => $total,
-                    'resolution_rate' => $total > 0 ? round(($resolved / $total) * 100) : 0,
-                ];
-            })->toArray();
-        } catch (\Exception $e) { $monthlySummary = []; }
+        $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
+        $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
+        $totalConsults = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
+        $resolvedCases = $this->safe('resolved cases', fn() => \App\Models\Consultation::where('status','resolved')->count());
+        $stateActivity = $this->safe('state activity', fn() => \App\Models\User::select('state', DB::raw('count(*) as count'))->whereNotNull('state')->groupBy('state')->orderByDesc('count')->take(8)->pluck('count','state')->toArray(), []);
+        $monthlySummary = $this->safe('monthly summary', fn() => collect(range(5, 0))->map(function ($i) {
+            $month = now()->subMonths($i);
+            $total = \App\Models\Consultation::whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count();
+            $resolved = \App\Models\Consultation::where('status','resolved')->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count();
+            return [
+                'month'           => $month->format('M Y'),
+                'farmers'         => \App\Models\User::where('role','farmer')->whereMonth('created_at', $month->month)->whereYear('created_at', $month->year)->count(),
+                'consults'        => $total,
+                'resolution_rate' => $total > 0 ? round(($resolved / $total) * 100) : 0,
+            ];
+        })->toArray(), []);
 
         // ── Live KPIs (replacing all hardcoded values) ─────────────
-        try {
+        $scanAdoptionRate = $this->safe('scan adoption rate', function () use ($totalFarmers) {
             $farmersWithScans = \App\Models\Diagnosis::distinct('user_id')->count('user_id');
-            $scanAdoptionRate = $totalFarmers > 0 ? round(($farmersWithScans / $totalFarmers) * 100) : 0;
-        } catch (\Exception $e) { $scanAdoptionRate = 0; }
+            return $totalFarmers > 0 ? round(($farmersWithScans / $totalFarmers) * 100) : 0;
+        });
 
-        try {
+        $vetResponseRate = $this->safe('vet response rate', function () use ($totalConsults) {
             $consultsWithResponse = \App\Models\Consultation::whereNotNull('expert_response')->count();
-            $vetResponseRate = $totalConsults > 0 ? round(($consultsWithResponse / $totalConsults) * 100) : 0;
-        } catch (\Exception $e) { $vetResponseRate = 0; }
+            return $totalConsults > 0 ? round(($consultsWithResponse / $totalConsults) * 100) : 0;
+        });
 
-        try {
+        $farmerRetention = $this->safe('farmer retention', function () use ($totalFarmers) {
             $activeRecentFarmers = \App\Models\User::where('role','farmer')
                 ->where('last_seen', '>=', now()->subDays(30))->count();
-            $farmerRetention = $totalFarmers > 0 ? round(($activeRecentFarmers / $totalFarmers) * 100) : 0;
-        } catch (\Exception $e) { $farmerRetention = 0; }
+            return $totalFarmers > 0 ? round(($activeRecentFarmers / $totalFarmers) * 100) : 0;
+        });
 
-        try {
+        $aiAccuracy = $this->safe('AI accuracy', function () {
             $totalDiag = \App\Models\Diagnosis::count();
             $confirmedDiag = \App\Models\Diagnosis::where('status','reviewed')->count();
-            $aiAccuracy = $totalDiag > 0 ? round(($confirmedDiag / $totalDiag) * 100) : 0;
-        } catch (\Exception $e) { $aiAccuracy = 0; }
+            return $totalDiag > 0 ? round(($confirmedDiag / $totalDiag) * 100) : 0;
+        });
 
-        try {
+        $marketplaceUtilisation = $this->safe('marketplace utilisation', function () use ($totalFarmers) {
             $farmersWhoOrdered = \App\Models\Order::whereHas('buyer', fn($q) => $q->where('role','farmer'))
                 ->distinct('buyer_id')->count('buyer_id');
-            $marketplaceUtilisation = $totalFarmers > 0 ? round(($farmersWhoOrdered / $totalFarmers) * 100) : 0;
-        } catch (\Exception $e) { $marketplaceUtilisation = 0; }
+            return $totalFarmers > 0 ? round(($farmersWhoOrdered / $totalFarmers) * 100) : 0;
+        });
 
-        try {
-            $extensionVisitsThisMonth = DB::table('extension_visits')
-                ->whereMonth('visit_date', now()->month)->whereYear('visit_date', now()->year)->count();
-            $extensionAdvisories = DB::table('extension_advisory')
-                ->whereMonth('created_at', now()->month)->count();
-        } catch (\Exception $e) { $extensionVisitsThisMonth = 0; $extensionAdvisories = 0; }
+        [$extensionVisitsThisMonth, $extensionAdvisories] = $this->safe('extension activity', function () {
+            return [
+                DB::table('extension_visits')->whereMonth('visit_date', now()->month)->whereYear('visit_date', now()->year)->count(),
+                DB::table('extension_advisory')->whereMonth('created_at', now()->month)->count(),
+            ];
+        }, [0, 0]);
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('monitoring-evaluation.dashboard', compact(
             'totalFarmers','totalAnimals','totalConsults','resolvedCases',
             'stateActivity','monthlySummary','scanAdoptionRate','vetResponseRate',
             'farmerRetention','aiAccuracy','marketplaceUtilisation',
-            'extensionVisitsThisMonth','extensionAdvisories'
+            'extensionVisitsThisMonth','extensionAdvisories','dashboardErrors'
         ));
     }
 
@@ -390,57 +392,57 @@ class DashboardController extends Controller
     // ── Customer Support Dashboard ────────────────────────────────
     public function customerSupport()
     {
-        try { $recentUsers = \App\Models\User::latest()->take(10)->get(); } catch (\Exception $e) { $recentUsers = collect(); }
-        try { $totalUsers = \App\Models\User::count(); } catch (\Exception $e) { $totalUsers = 0; }
+        $recentUsers = $this->safe('recent users', fn() => \App\Models\User::latest()->take(10)->get(), collect());
+        $totalUsers = $this->safe('total users', fn() => \App\Models\User::count());
 
         // ── Live ticket stats from support_tickets table ───────────
-        try { $openTickets = DB::table('support_tickets')->where('status','open')->count(); } catch (\Exception $e) { $openTickets = 0; }
-        try { $resolvedToday = DB::table('support_tickets')->where('status','resolved')->whereDate('updated_at', today())->count(); } catch (\Exception $e) { $resolvedToday = 0; }
-        try { $pendingTickets = DB::table('support_tickets')->where('status','in_progress')->count(); } catch (\Exception $e) { $pendingTickets = 0; }
-        try { $totalTickets = DB::table('support_tickets')->count(); } catch (\Exception $e) { $totalTickets = 0; }
-        try { $recentTickets = DB::table('support_tickets')->orderByDesc('created_at')->take(10)->get(); } catch (\Exception $e) { $recentTickets = collect(); }
+        $openTickets = $this->safe('open tickets', fn() => DB::table('support_tickets')->where('status','open')->count());
+        $resolvedToday = $this->safe('resolved today', fn() => DB::table('support_tickets')->where('status','resolved')->whereDate('updated_at', today())->count());
+        $pendingTickets = $this->safe('pending tickets', fn() => DB::table('support_tickets')->where('status','in_progress')->count());
+        $totalTickets = $this->safe('total tickets', fn() => DB::table('support_tickets')->count());
+        $recentTickets = $this->safe('recent tickets', fn() => DB::table('support_tickets')->orderByDesc('created_at')->take(10)->get(), collect());
 
         // Category breakdown
-        try {
-            $techIssues        = DB::table('support_tickets')->where('category','technical')->count();
-            $loginIssues       = DB::table('support_tickets')->where('category','login')->count();
-            $marketplaceIssues = DB::table('support_tickets')->where('category','marketplace')->count();
-            $aiQueryIssues     = DB::table('support_tickets')->where('category','ai-query')->count();
-            $generalIssues     = DB::table('support_tickets')->where('category','general')->count();
-        } catch (\Exception $e) {
-            $techIssues = $loginIssues = $marketplaceIssues = $aiQueryIssues = $generalIssues = 0;
-        }
+        [$techIssues, $loginIssues, $marketplaceIssues, $aiQueryIssues, $generalIssues] = $this->safe('ticket categories', function () {
+            return [
+                DB::table('support_tickets')->where('category','technical')->count(),
+                DB::table('support_tickets')->where('category','login')->count(),
+                DB::table('support_tickets')->where('category','marketplace')->count(),
+                DB::table('support_tickets')->where('category','ai-query')->count(),
+                DB::table('support_tickets')->where('category','general')->count(),
+            ];
+        }, [0, 0, 0, 0, 0]);
 
         // Average first-reply time in hours (PostgreSQL-compatible)
-        try {
-            $avgResponseTime = DB::table('ticket_replies as r')
-                ->join('support_tickets as t', 't.id', '=', 'r.ticket_id')
-                ->whereRaw('r.created_at = (SELECT MIN(r2.created_at) FROM ticket_replies r2 WHERE r2.ticket_id = t.id)')
-                ->whereColumn('r.user_id', '!=', 't.user_id')
-                ->selectRaw('ROUND(AVG(EXTRACT(EPOCH FROM (r.created_at::timestamp - t.created_at::timestamp)) / 3600)::numeric, 1) as avg_hours')
-                ->value('avg_hours') ?? 0;
-        } catch (\Exception $e) { $avgResponseTime = 0; }
+        $avgResponseTime = $this->safe('avg response time', fn() => DB::table('ticket_replies as r')
+            ->join('support_tickets as t', 't.id', '=', 'r.ticket_id')
+            ->whereRaw('r.created_at = (SELECT MIN(r2.created_at) FROM ticket_replies r2 WHERE r2.ticket_id = t.id)')
+            ->whereColumn('r.user_id', '!=', 't.user_id')
+            ->selectRaw('ROUND(AVG(EXTRACT(EPOCH FROM (r.created_at::timestamp - t.created_at::timestamp)) / 3600)::numeric, 1) as avg_hours')
+            ->value('avg_hours') ?? 0);
 
         // SLA compliance: tickets resolved within 24 h / all resolved tickets (PostgreSQL-compatible)
-        try {
+        $slaCompliance = $this->safe('SLA compliance', function () {
             $resolvedTotal = DB::table('support_tickets')->where('status','resolved')->count();
             $withinSla     = DB::table('support_tickets')->where('status','resolved')
                 ->whereRaw('EXTRACT(EPOCH FROM (updated_at::timestamp - created_at::timestamp)) / 3600 <= 24')->count();
-            $slaCompliance = $resolvedTotal > 0 ? round(($withinSla / $resolvedTotal) * 100) : 100;
-        } catch (\Exception $e) { $slaCompliance = 0; }
+            return $resolvedTotal > 0 ? round(($withinSla / $resolvedTotal) * 100) : 100;
+        });
 
         // Satisfaction from diagnoses feedback as a proxy (no dedicated feedback table yet)
-        try {
+        $satisfactionScore = $this->safe('satisfaction score', function () {
             $positiveReviews = \App\Models\Diagnosis::where('status','reviewed')->count();
             $totalReviewed   = \App\Models\Diagnosis::count();
-            $satisfactionScore = $totalReviewed > 0 ? round(($positiveReviews / $totalReviewed) * 100) : 0;
-        } catch (\Exception $e) { $satisfactionScore = 0; }
+            return $totalReviewed > 0 ? round(($positiveReviews / $totalReviewed) * 100) : 0;
+        });
+
+        $dashboardErrors = $this->dashboardErrors;
 
         return view('customer-support.dashboard', compact(
             'recentUsers','totalUsers','openTickets','resolvedToday','pendingTickets',
             'totalTickets','recentTickets','avgResponseTime','satisfactionScore',
             'slaCompliance','techIssues','loginIssues','marketplaceIssues',
-            'aiQueryIssues','generalIssues'
+            'aiQueryIssues','generalIssues','dashboardErrors'
         ));
     }
 

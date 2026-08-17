@@ -14,6 +14,8 @@
 
     <div class="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
 
+        <x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
         <!-- Hero Banner -->
         <div class="bg-gradient-to-r from-[#0B2447] to-[#2D9CDB] rounded-2xl p-8 text-white shadow-lg relative overflow-hidden mb-8">
             <div class="absolute right-0 top-0 w-56 h-56 bg-blue-400/10 rounded-full blur-3xl"></div>
