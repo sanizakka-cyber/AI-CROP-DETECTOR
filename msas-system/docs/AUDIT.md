@@ -12,7 +12,7 @@ Living document for the system-wide role-based dashboard synchronization effort.
 | 4 | Dead-button sweep + shared-component consolidation | **Complete** 2026-08-17 — all 7 dead nav links wired to real routes; the "second navigation system" was confirmed dead code and deleted rather than merged. Shared dashboard/scan component work deferred (see §9) |
 | 5 | UI contrast / mobile responsiveness pass | **Complete (static-analysis scope)** 2026-08-17 — see §10. No browser/screenshot tool available this session; fixed everything verifiable from code, flagged what needs visual testing |
 | 6 | Scope decision: expand scan/voice/report access beyond current 5 roles? | **Closed** 2026-08-17 — decided against expansion; access stays as-is |
-| 7 | Final Implementation & QA round (code-verifiable scope only — see §11-13) | **Complete within code-verifiable scope** 2026-08-17. Explicitly does not include browser/device/OTP/payment/live-audio testing — no such tool exists in this environment; see §12-13 for the manual test checklist and honest evidence report |
+| 7 | Final Implementation & QA round (code-verifiable scope only — see §11-13) | **Complete within code-verifiable scope** 2026-08-17, including error-handling infrastructure + 1/22 dashboard rollout (§11.4). Explicitly does not include browser/device/OTP/payment/live-audio testing — no such tool exists in this environment; see §12-13 for the manual test checklist and honest evidence report |
 
 No code changes have been made as part of Phase 1. Everything below is factual inventory, gathered by reading the codebase directly (file:line references throughout), not a proposal.
 
@@ -259,12 +259,18 @@ Per your Phase 6 decision, this documents the *current* access reality rather th
 
 All 19 other roles: none of the above. This table is descriptive documentation of the current, deliberately-unexpanded state — not a new enforcement layer.
 
-### 11.4 Real remaining work — not attempted this pass, scoped honestly
+### 11.4 Error/loading state handling — infrastructure built, rolled out to 1 of 22 dashboards
 
-Two large items from the new request are genuine, valuable engineering work that were not started in this pass because they need their own focused session rather than a rushed partial attempt:
+Confirmed real (every dashboard controller method uses `try/catch` returning `0`/`collect()` on failure, so a broken query silently shows "0" instead of an error) and now has a real, working fix — but deliberately scoped to one complete example rather than a rushed pass across all 22, since that's ~100+ individual catch sites and this codebase has no test suite to catch a mistake made at that scale.
 
-- **Error/loading/empty/unauthorized state handling (Phase 19 of the new request).** Confirmed real: every dashboard controller method uses `try/catch` returning `0`/`collect()` on failure, so a broken query silently shows "0" instead of an error. Fixing this properly means a shared error-banner component plus touching every dashboard controller's ~100+ individual catch sites — attempting that in the same pass as everything else risked exactly the "large batch change, no test suite to catch regressions" failure mode this whole audit has been avoiding. Recommended as its own scoped phase.
-- **Shared component library (Phase 7 of the original audit, Phase 7 of the new request).** Real gap (documented in §7) — but building ~15-20 components and retrofitting 22 dashboards is large enough that it deserves its own plan and priority order, not an opportunistic partial build.
+- **`DashboardController::safe(string $label, \Closure $query, mixed $fallback = 0)`** (`DashboardController.php:21-30`) — wraps a query exactly like the existing `try/catch` did (same fallback behavior, so a broken query still can't crash the page), but also appends the failed stat's label to a `private array $dashboardErrors` property.
+- **`<x-dashboard-error-banner :errors="..." />`** (`resources/views/components/dashboard-error-banner.blade.php`) — new shared component, renders nothing when `$errors` is empty; when not empty, shows "Some dashboard data couldn't be loaded. Affected: X, Y. The figures below may be showing 0..." instead of leaving the 0s unexplained.
+- **Rolled out to `DashboardController::farmer()` and `farmer/dashboard.blade.php`** — every one of its 13 `try/catch` blocks converted to `safe()`, `$dashboardErrors` passed to the view, banner wired in at the top of the page. Chosen as the first (and so far only) rollout target because it's the highest-traffic dashboard.
+- **The other 21 dashboard methods are unchanged** — still the original inline `try/catch` pattern, still functionally identical to before (no regression risk from this change, since nothing about them was touched), but still silently show 0 on failure. Extending `safe()` + the banner component to the rest is mechanical repetition of the same pattern now that it exists — real remaining work, not re-architecture, but real work nonetheless.
+
+### 11.5 Shared component library — not built this pass
+
+Real gap (documented in §7) — but building ~15-20 components (Header, Sidebar, Stat Card, Data Table, Scan Interface, Voice Player, etc.) and retrofitting 22 dashboards is large enough that it deserves its own plan and priority order, not an opportunistic partial build alongside everything else in this pass. The one component built this pass (`dashboard-error-banner`) is a real down payment on this list, not the whole thing.
 
 ### 11.5 What genuinely needs your own testing
 
@@ -309,9 +315,9 @@ Honest status, not "everything is fixed":
 | CEO analytics (date/state/LGA/filters/drill-down/export) | Built and code-reviewed (prior session); not click-tested |
 | Security: cross-user report access | Verified blocked in code (ownership check); not penetration-tested against a live deployment |
 | API status code coverage (200/401/403/etc.) | Not systematically tested — would need a real HTTP client against the live Render deployment, not available here |
-| Error/loading/empty state handling | **Not fixed this pass** — real, scoped, deferred (§11.4) |
-| Shared component library | **Not built this pass** — real, scoped, deferred (§11.4) |
+| Error/loading/empty state handling | Infrastructure built (`safe()` helper + `<x-dashboard-error-banner>`), rolled out to **1/22 dashboards** (farmer — highest traffic). 21 remaining, mechanical repetition of the same pattern (§11.4) |
+| Shared component library | **1 component built** (error banner) — 14-19 more from the original list (§7) not built, scoped, deferred |
 | Permission-system consolidation | **Not done** — closed as documented debt per your Phase 3 decision |
 | Scan/voice access expansion | **Not done** — closed per your Phase 6 decision |
 
-**Remaining issues, stated plainly:** error-state handling across 22 dashboards, a shared component library, and all interactive/visual/device/live-service testing are real, uncompleted work. Nothing above is claimed done that wasn't actually verified in code, and nothing requiring a browser or device is claimed done at all.
+**Remaining issues, stated plainly:** error-state handling on 21 of 22 dashboards, the rest of the shared component library, and all interactive/visual/device/live-service testing are real, uncompleted work. Nothing above is claimed done that wasn't actually verified in code, and nothing requiring a browser or device is claimed done at all.

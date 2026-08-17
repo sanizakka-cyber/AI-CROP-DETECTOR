@@ -25,6 +25,8 @@
     $planCfg   = $activeSub ? (config('subscription.plans.'.$subPlan) ?? []) : null;
 @endphp
 
+<x-dashboard-error-banner :errors="$dashboardErrors ?? []" />
+
 {{-- ── Subscription Status Banner ───────────────────────────────────── --}}
 @if(!$activeSub)
 {{-- No subscription — prominent upgrade CTA --}}

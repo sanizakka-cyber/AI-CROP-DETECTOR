@@ -5,10 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Diagnosis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    // ── Dashboard query error tracking ──────────────────────────────
+    // Dashboard queries have historically swallowed failures and shown 0/empty
+    // instead of surfacing them (confirmed across all 22 dashboards during the
+    // role/permission audit). safe() preserves that same fallback behavior so
+    // a broken query still can't crash the page, but also records which stat
+    // failed so the view can show a real error banner instead of a silent 0.
+    private array $dashboardErrors = [];
+
+    private function safe(string $label, \Closure $query, mixed $fallback = 0): mixed
+    {
+        try {
+            return $query();
+        } catch (\Throwable $e) {
+            Log::error("[Dashboard:{$label}] " . $e->getMessage());
+            $this->dashboardErrors[] = $label;
+            return $fallback;
+        }
+    }
+
     // ── Role-Based Dashboard Router ────────────────────────────────
     public function dispatch()
     {
@@ -118,29 +138,35 @@ class DashboardController extends Controller
     public function farmer()
     {
         $user = auth()->user();
-        try { $animalsCount       = \App\Models\Animal::where('user_id', $user->id)->count(); } catch (\Exception $e) { $animalsCount = 0; }
-        try { $poultryCount       = \App\Models\PoultryRecord::where('user_id', $user->id)->count(); } catch (\Exception $e) { $poultryCount = 0; }
-        try { $diagnosesCount     = \App\Models\Diagnosis::where('user_id', $user->id)->count(); } catch (\Exception $e) { $diagnosesCount = 0; }
-        try { $recentScans        = \App\Models\Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(); } catch (\Exception $e) { $recentScans = collect(); }
-        try { $pendingVetConsults  = \App\Models\Consultation::where('farmer_id', $user->id)->where('status', 'pending')->count(); } catch (\Exception $e) { $pendingVetConsults = 0; }
-        try { $recentAnimals      = \App\Models\Animal::where('user_id', $user->id)->latest()->take(5)->get(); } catch (\Exception $e) { $recentAnimals = collect(); }
-        try { $recentFlocks       = \App\Models\PoultryRecord::where('user_id', $user->id)->latest()->take(3)->get(); } catch (\Exception $e) { $recentFlocks = collect(); }
-        try { $recentConsults     = \App\Models\Consultation::where('farmer_id', $user->id)->latest()->take(4)->get(); } catch (\Exception $e) { $recentConsults = collect(); }
-        try { $totalIncome        = \App\Models\Finance::where('user_id', $user->id)->where('type', 'Income')->sum('amount'); } catch (\Exception $e) { $totalIncome = 0; }
-        try { $totalExpense       = \App\Models\Finance::where('user_id', $user->id)->where('type', 'Expense')->sum('amount'); } catch (\Exception $e) { $totalExpense = 0; }
-        try { $recentFinances     = \App\Models\Finance::where('user_id', $user->id)->latest('transaction_date')->take(5)->get(); } catch (\Exception $e) { $recentFinances = collect(); }
+        $animalsCount        = $this->safe('livestock count', fn() => \App\Models\Animal::where('user_id', $user->id)->count());
+        $poultryCount        = $this->safe('poultry count', fn() => \App\Models\PoultryRecord::where('user_id', $user->id)->count());
+        $diagnosesCount      = $this->safe('scan count', fn() => \App\Models\Diagnosis::where('user_id', $user->id)->count());
+        $recentScans         = $this->safe('recent scans', fn() => \App\Models\Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(), collect());
+        $pendingVetConsults  = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('farmer_id', $user->id)->where('status', 'pending')->count());
+        $recentAnimals       = $this->safe('recent livestock', fn() => \App\Models\Animal::where('user_id', $user->id)->latest()->take(5)->get(), collect());
+        $recentFlocks        = $this->safe('recent poultry', fn() => \App\Models\PoultryRecord::where('user_id', $user->id)->latest()->take(3)->get(), collect());
+        $recentConsults      = $this->safe('recent consultations', fn() => \App\Models\Consultation::where('farmer_id', $user->id)->latest()->take(4)->get(), collect());
+        $totalIncome         = $this->safe('income total', fn() => \App\Models\Finance::where('user_id', $user->id)->where('type', 'Income')->sum('amount'));
+        $totalExpense        = $this->safe('expense total', fn() => \App\Models\Finance::where('user_id', $user->id)->where('type', 'Expense')->sum('amount'));
+        $recentFinances      = $this->safe('recent finances', fn() => \App\Models\Finance::where('user_id', $user->id)->latest('transaction_date')->take(5)->get(), collect());
         $netBalance = $totalIncome - $totalExpense;
-        try { $scanCheck = app(\App\Services\SubscriptionLimitService::class)->canScan($user); } catch (\Exception $e) { $scanCheck = ['allowed'=>true,'used'=>0,'limit'=>-1,'remaining'=>-1,'plan'=>'free']; }
+        $scanCheck = $this->safe(
+            'scan limit check',
+            fn() => app(\App\Services\SubscriptionLimitService::class)->canScan($user),
+            ['allowed' => true, 'used' => 0, 'limit' => -1, 'remaining' => -1, 'plan' => 'free']
+        );
 
         $onboardingSteps     = \App\Http\Controllers\FarmerController::onboardingSteps($user);
         $onboardingDone      = collect($onboardingSteps)->every(fn($s) => $s['done']);
         $showOnboarding      = ! $onboardingDone && ! $user->onboarding_dismissed_at;
 
+        $dashboardErrors = $this->dashboardErrors;
+
         return view('farmer.dashboard', compact(
             'animalsCount', 'poultryCount', 'diagnosesCount', 'recentScans', 'pendingVetConsults',
             'recentAnimals', 'recentFlocks', 'recentConsults', 'totalIncome', 'totalExpense',
             'recentFinances', 'netBalance', 'scanCheck',
-            'onboardingSteps', 'showOnboarding'
+            'onboardingSteps', 'showOnboarding', 'dashboardErrors'
         ));
     }
 
