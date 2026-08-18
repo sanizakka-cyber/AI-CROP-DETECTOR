@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Roles;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +23,12 @@ class RoleMiddleware
 
         $user = Auth::user();
 
-        // Check if the user's role is in the allowed roles
-        if (!in_array($user->role, $roles)) {
+        // Canonicalized comparison: a route that lists only one spelling of
+        // a role with known synonyms (e.g. 'monitoring-evaluation') still
+        // correctly admits a user stored under a different spelling of the
+        // same role (e.g. 'm-e-officer', what every seeder actually assigns)
+        // instead of silently denying them.
+        if (!Roles::isAny($user->role, $roles)) {
             // Redirect based on role if they try to access unauthorized area
             $redirectMap = [
                 'ceo'                    => 'ceo.dashboard',
@@ -58,7 +63,7 @@ class RoleMiddleware
                 'student'                => 'farmer.dashboard',
                 'general-user'           => 'dashboard',
             ];
-            $routeName = $redirectMap[$user->role] ?? null;
+            $routeName = $redirectMap[Roles::canonical($user->role)] ?? $redirectMap[$user->role] ?? null;
             if ($routeName) {
                 try {
                     return redirect()->route($routeName)->with('error', 'Unauthorized access.');

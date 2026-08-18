@@ -7,6 +7,7 @@ use App\Models\Animal;
 use App\Models\Consultation;
 use App\Models\Diagnosis;
 use App\Models\User;
+use App\Support\Roles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +52,7 @@ class AnalyticsApiController extends Controller
     public function adminSummary(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo','admin','data-analyst','monitoring-evaluation','m-e-officer','me-officer'])) {
+        if (! Roles::isAny($user->role, ['ceo', 'admin', 'data-analyst', 'm-e-officer'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -106,7 +107,7 @@ class AnalyticsApiController extends Controller
     public function outbreaks(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'm-e-officer', 'me-officer', 'government-agency', 'research-institution'])) {
+        if (! Roles::isAny($user->role, ['ceo', 'admin', 'data-analyst', 'm-e-officer', 'government-agency', 'research-institution'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -136,7 +137,7 @@ class AnalyticsApiController extends Controller
     public function outcomes(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'm-e-officer', 'me-officer', 'government-agency', 'research-institution'])) {
+        if (! Roles::isAny($user->role, ['ceo', 'admin', 'data-analyst', 'm-e-officer', 'government-agency', 'research-institution'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
