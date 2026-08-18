@@ -23,8 +23,12 @@ services:
         value: "false"
       - key: APP_URL
         value: https://www.msasagro.com
+      # SECURITY: rotate this in the Render dashboard — it was previously
+      # committed in plaintext to a public repo. Generate a fresh one with
+      # `php artisan key:generate --show` and set it manually (sync: false
+      # means Render will NOT overwrite whatever value is set in the dashboard).
       - key: APP_KEY
-        value: base64:***ROTATED-REDACTED***
+        sync: false
       - key: APP_LOCALE
         value: en
 
@@ -64,11 +68,15 @@ services:
       - key: QUEUE_CONNECTION
         value: sync
 
-      # Logging → Render log viewer
+      # Logging → Render log viewer.
+      # LOG_LEVEL=warning (not error): several security-relevant signals are
+      # logged at warning level (failed webhook signatures, payment amount/
+      # ownership mismatches, OTP lockouts) — at LOG_LEVEL=error they were
+      # silently discarded and never reached the log viewer at all.
       - key: LOG_CHANNEL
         value: stderr
       - key: LOG_LEVEL
-        value: error
+        value: warning
 
       # Domain & CORS
       - key: SANCTUM_STATEFUL_DOMAINS
@@ -81,8 +89,12 @@ services:
       # AI Engine — points to the msas-ai-engine service below
       - key: AI_ENGINE_URL
         value: https://msas-ai-engine.onrender.com
+      # SECURITY: rotate this — it was previously committed in plaintext to a
+      # public repo. Generate a fresh random value and set the SAME value
+      # here and as API_KEY on the msas-ai-engine service below (both in the
+      # Render dashboard — sync: false means this file no longer stores it).
       - key: AI_ENGINE_KEY
-        value: ***ROTATED-REDACTED***
+        sync: false
 
       # Mail — set MAIL_PASSWORD in Render dashboard (not here)
       - key: MAIL_MAILER
@@ -128,9 +140,10 @@ services:
       # Set ANTHROPIC_API_KEY in the Render dashboard (sync: false keeps it secret)
       - key: ANTHROPIC_API_KEY
         sync: false
-      # Must match AI_ENGINE_KEY in the msas-farmai service above
+      # Must match AI_ENGINE_KEY in the msas-farmai service above.
+      # SECURITY: rotate this — see AI_ENGINE_KEY comment above.
       - key: API_KEY
-        value: ***ROTATED-REDACTED***
+        sync: false
 
 # ── PostgreSQL Database ───────────────────────────────────────────────────────
 databases:

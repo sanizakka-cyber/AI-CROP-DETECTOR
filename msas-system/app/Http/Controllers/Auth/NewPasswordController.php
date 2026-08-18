@@ -31,6 +31,14 @@ class NewPasswordController extends Controller
                 ->withErrors(['identifier' => 'Session expired. Please start the reset process again.']);
         }
 
+        // The token was generated at OTP-verification time and round-tripped
+        // through a hidden form field — this was previously generated but
+        // never actually compared against anything, making it decorative.
+        if (! hash_equals((string) $request->session()->get('reset_token'), (string) $request->input('reset_token'))) {
+            return redirect()->route('password.request')
+                ->withErrors(['identifier' => 'Invalid or expired reset session. Please start again.']);
+        }
+
         $request->validate([
             'password' => ['required', 'confirmed', Rules\Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);

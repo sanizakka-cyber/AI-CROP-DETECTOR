@@ -16,6 +16,7 @@
 
     <form method="POST" action="{{ route('password.store') }}" autocomplete="off" id="reset-form">
         @csrf
+        <input type="hidden" name="reset_token" value="{{ session('reset_token') }}">
 
         <div style="margin-bottom:14px;">
             <label style="display:block;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">New Password</label>

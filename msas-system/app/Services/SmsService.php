@@ -27,13 +27,15 @@ class SmsService
             default           => $this->sendLog($phone, $message),
         };
 
-        // Unified audit log entry
-        Log::channel('single')->info('SMS delivery attempt', [
-            'provider'   => $driver,
-            'phone'      => $phone,
-            'success'    => $result['success'],
-            'message_id' => $result['message_id'] ?? null,
-            'error'      => $result['error'] ?? null,
+        // Unified audit log entry — default channel (stderr in production),
+        // not 'single': that writes to the container's local disk, which is
+        // ephemeral on Render and lost on every redeploy/restart.
+        Log::info('SMS delivery attempt', [
+            'provider'    => $driver,
+            'phone_hint'  => substr($phone, 0, 4) . str_repeat('*', max(0, strlen($phone) - 7)) . substr($phone, -3),
+            'success'     => $result['success'],
+            'message_id'  => $result['message_id'] ?? null,
+            'error'       => $result['error'] ?? null,
         ]);
 
         return $result;

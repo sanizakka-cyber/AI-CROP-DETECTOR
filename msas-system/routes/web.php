@@ -198,7 +198,7 @@ Route::middleware(['auth', 'role:ceo'])->prefix('ceo')->name('ceo.')->group(func
     Route::delete('/staff/{user}/remove-role',  [\App\Http\Controllers\CEO\StaffController::class, 'removeRole'])      ->name('staff.remove-role');
 });
 // Report generation also accessible by data-analyst and M&E roles
-Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-e-officer'])->group(function () {
+Route::middleware(['auth', 'role:ceo,admin,data-analyst,monitoring-evaluation,m-e-officer,me-officer'])->group(function () {
     Route::get('/ceo/reports/{type}',     [CEOController::class, 'generateReport'])->name('ceo.reports.generate');
     Route::get('/ceo/reports/{type}/csv', [CEOController::class, 'exportCsv'])->name('ceo.reports.csv');
 });

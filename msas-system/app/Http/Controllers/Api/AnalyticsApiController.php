@@ -51,7 +51,7 @@ class AnalyticsApiController extends Controller
     public function adminSummary(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo','admin','data-analyst','monitoring-evaluation'])) {
+        if (! in_array($user->role, ['ceo','admin','data-analyst','monitoring-evaluation','m-e-officer','me-officer'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -106,7 +106,7 @@ class AnalyticsApiController extends Controller
     public function outbreaks(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'government-agency', 'research-institution'])) {
+        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'm-e-officer', 'me-officer', 'government-agency', 'research-institution'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
@@ -136,7 +136,7 @@ class AnalyticsApiController extends Controller
     public function outcomes(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'government-agency', 'research-institution'])) {
+        if (! in_array($user->role, ['ceo', 'admin', 'data-analyst', 'monitoring-evaluation', 'm-e-officer', 'me-officer', 'government-agency', 'research-institution'])) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 

@@ -271,13 +271,17 @@ Route::middleware('auth.api')->group(function () {
     // ── Subscription (full API) ───────────────────────────────────────────────
     Route::prefix('subscription')->group(function () {
         Route::get('/plans',   [SubscriptionApiController::class, 'plans']);
-        Route::post('/subscribe', [SubscriptionApiController::class, 'subscribe']);
+        Route::post('/subscribe', [SubscriptionApiController::class, 'subscribe'])->middleware('throttle:10,1');
         Route::post('/cancel', [SubscriptionApiController::class, 'cancel']);
         Route::get('/my',      [SubscriptionApiController::class, 'status']);
     });
 
     // ── Payments ────────────────────────────────────────────────────────────
-    Route::prefix('payment')->name('api.payment.')->group(function () {
+    // Throttled: 'initiate'/'verify' accept a user-supplied reference and sit
+    // behind auth only — without a limit an authenticated attacker could
+    // hammer 'verify' guessing references or spam 'initiate' with pending
+    // Paystack transactions.
+    Route::prefix('payment')->name('api.payment.')->middleware('throttle:30,1')->group(function () {
         Route::post('/initiate',         [PaymentApiController::class, 'initiate'])->name('initiate');
         Route::post('/verify',           [PaymentApiController::class, 'verify'])->name('verify');
         Route::get('/history',           [PaymentApiController::class, 'history'])->name('history');
@@ -289,6 +293,11 @@ Route::middleware('auth.api')->group(function () {
 Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCallback'])
     ->middleware('throttle:20,1')
     ->name('api.payment.mobile-callback');
+
+// Mobile subscription callback — same pattern as the payment callback above
+Route::get('/subscription/paystack-callback', [SubscriptionApiController::class, 'paystackCallback'])
+    ->middleware('throttle:20,1')
+    ->name('api.subscription.paystack-callback');
 
 // ── Public Order Tracking (no auth required) ──────────────────────────────────
 Route::get('/track/{orderNumber}', [OrderTrackingApiController::class, 'track'])

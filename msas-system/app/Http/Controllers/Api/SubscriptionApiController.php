@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Services\SubscriptionActivationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class SubscriptionApiController extends Controller
 {
+    public function __construct(private SubscriptionActivationService $subs) {}
+
     public function plans(Request $request): JsonResponse
     {
         $plans     = config('subscription.plans', []);
@@ -43,20 +45,59 @@ class SubscriptionApiController extends Controller
             'cycle' => 'required|in:monthly,yearly',
         ]);
         $activeSub = $user->activeSubscription();
-        if ($activeSub && $activeSub->plan === $data['plan']) {
+        if ($activeSub && $activeSub->plan === $data['plan'] && $activeSub->billing_cycle === $data['cycle'] && $activeSub->status !== 'trial') {
             return response()->json(['error' => 'You are already subscribed to this plan.'], 422);
         }
-        $amount = config("subscription.plans.{$data['plan']}.price.{$data['cycle']}");
-        $ref    = 'MSAS-SUB-' . strtoupper(Str::random(12));
+
+        $amount    = config("subscription.plans.{$data['plan']}.price.{$data['cycle']}");
+        $reference = $this->subs->generateReference();
+
+        if (! config('services.paystack.secret_key') || str_contains(config('services.paystack.secret_key'), 'REPLACE')) {
+            return response()->json(['error' => 'Payment service is not configured.'], 503);
+        }
+
+        $result = $this->subs->initializePaystack(
+            $user, $data['plan'], $data['cycle'], $amount, $reference, $activeSub,
+            route('api.subscription.paystack-callback')
+        );
+
+        if (! $result['success']) {
+            return response()->json(['error' => $result['message']], 502);
+        }
+
         return response()->json([
-            'message'     => 'Proceed to payment to activate your subscription.',
-            'payment_ref' => $ref,
-            'amount'      => $amount,
-            'plan'        => $data['plan'],
-            'cycle'       => $data['cycle'],
-            'plan_name'   => config("subscription.plans.{$data['plan']}.name"),
-            'payment_url' => config('app.url') . '/subscription/pay?ref=' . $ref,
+            'message'            => 'Open authorization_url in an in-app browser to complete payment.',
+            'reference'          => $reference,
+            'amount'             => $amount,
+            'plan'               => $data['plan'],
+            'cycle'              => $data['cycle'],
+            'plan_name'          => config("subscription.plans.{$data['plan']}.name"),
+            'authorization_url'  => $result['authorization_url'],
         ]);
+    }
+
+    /**
+     * Paystack redirects here after the in-app browser completes payment.
+     * Public/unauthenticated (mirrors /api/payment/mobile-callback) — the
+     * paying user is identified from Paystack's own verified metadata, not
+     * from a session, since a webview redirect carries no bearer token.
+     */
+    public function paystackCallback(Request $request): JsonResponse
+    {
+        $reference = $request->query('reference') ?? $request->query('trxref');
+
+        if (! $reference) {
+            return response()->json(['success' => false, 'message' => 'No reference provided.'], 400);
+        }
+
+        $result = $this->subs->verifyAndActivate($reference);
+
+        return response()->json([
+            'success'   => $result['success'],
+            'duplicate' => $result['duplicate'] ?? false,
+            'message'   => $result['message'],
+            'plan'      => $result['plan'] ?? null,
+        ], $result['success'] ? 200 : 422);
     }
 
     public function cancel(Request $request): JsonResponse
