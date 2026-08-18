@@ -54,8 +54,12 @@ class TtsService
             $provider = $this->makeProvider($providerName);
             $result   = $provider->generate($diagnosis->narrationText(), $voice);
 
+            // Private object: the path alone (predictable — diagnosis.id is a
+            // sequential integer) must never be a valid access path. Only
+            // audioUrl()'s signed, short-lived URL — minted after
+            // NarrationController::show()'s ownership check — grants access.
             $path = "narrations/{$diagnosis->id}/{$language}.{$result['format']}";
-            Storage::disk('r2')->put($path, $result['bytes'], 'public');
+            Storage::disk('r2')->put($path, $result['bytes']);
 
             $narration->storage_path = $path;
             $narration->audio_format = $result['format'];
@@ -80,7 +84,13 @@ class TtsService
 
     public function audioUrl(DiagnosisNarration $narration): string
     {
-        return Storage::disk('r2')->url($narration->storage_path);
+        // Signed, 15-minute URL — generated fresh on every call, only ever
+        // reached after NarrationController::show() has already verified the
+        // requesting user owns the diagnosis. Never return a permanent/public
+        // URL: the storage path is keyed by diagnosis_id, a sequential
+        // integer, so a permanent public URL would be a guessable
+        // cross-user access path independent of that ownership check.
+        return Storage::disk('r2')->temporaryUrl($narration->storage_path, now()->addMinutes(15));
     }
 
     private function makeProvider(string $name): TtsProvider
