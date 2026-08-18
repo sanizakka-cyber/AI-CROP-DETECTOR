@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\MobileNotification;
 use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\User;
@@ -178,23 +179,45 @@ class SubscriptionActivationService
 
         if ($method === 'paystack' && $amount > 0 && !Payment::where('reference', $reference)->exists()) {
             $planName = config("subscription.plans.{$plan}.name");
-            Payment::create([
-                'user_id'             => $user->id,
-                'user_type'           => $user->role,
-                'reference'           => $reference,
-                'amount'              => $amount,
-                'currency'            => 'NGN',
-                'status'              => 'success',
-                'payment_method'      => 'paystack',
-                'module'              => 'subscription',
-                'description'         => "{$planName} - " . ucfirst($cycle) . ' subscription',
-                'verification_status' => 'verified',
-                'verified_at'         => now(),
-                'paid_at'             => now(),
-                'receipt_number'      => Payment::generateReceiptNumber(),
-                'metadata'            => ['plan' => $plan, 'billing_cycle' => $cycle],
-            ]);
+            try {
+                Payment::create([
+                    'user_id'             => $user->id,
+                    'user_type'           => $user->role,
+                    'reference'           => $reference,
+                    'amount'              => $amount,
+                    'currency'            => 'NGN',
+                    'status'              => 'success',
+                    'payment_method'      => 'paystack',
+                    'module'              => 'subscription',
+                    'description'         => "{$planName} - " . ucfirst($cycle) . ' subscription',
+                    'verification_status' => 'verified',
+                    'verified_at'         => now(),
+                    'paid_at'             => now(),
+                    'receipt_number'      => Payment::generateReceiptNumber(),
+                    'metadata'            => ['plan' => $plan, 'billing_cycle' => $cycle],
+                ]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Check-then-create isn't atomic: the webhook and the
+                // browser/mobile callback can both reach here for the same
+                // reference within the same instant. The DB's unique
+                // constraint on payments.reference is the real guard — the
+                // loser just means the row already exists, not a real error.
+                if (!str_contains($e->getMessage(), 'payments_reference_unique') && !str_contains(strtolower($e->getMessage()), 'unique')) {
+                    throw $e;
+                }
+                Log::info('Payment row race: reference already created by a concurrent request', ['reference' => $reference]);
+            }
         }
+
+        // Previously the only signal a user got was the immediate page/API
+        // response — nothing persistent in-app or push.
+        MobileNotification::send(
+            $user->id,
+            '🎉 Subscription Activated',
+            'You are now on the ' . config("subscription.plans.{$plan}.name", $plan) . '. Enjoy full access to your plan features.',
+            'subscription',
+            ['subscription_id' => $newSub->id, 'plan' => $plan]
+        );
 
         return $newSub;
     }

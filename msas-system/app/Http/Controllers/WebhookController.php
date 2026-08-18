@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MobileNotification;
 use App\Models\Payment;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
@@ -93,6 +94,18 @@ class WebhookController extends Controller
                 'marketplace'  => $this->activateOrder($payment),
                 default        => null,
             };
+
+            // Users previously only learned a payment succeeded from the
+            // immediate page/API response, with no persistent record.
+            if ($payment->user_id) {
+                MobileNotification::send(
+                    $payment->user_id,
+                    '✅ Payment Received',
+                    ($payment->description ?: 'Your payment') . " — ₦" . number_format((float) $payment->amount) . ' confirmed.',
+                    'payment',
+                    ['payment_id' => $payment->id, 'reference' => $payment->reference, 'module' => $payment->module]
+                );
+            }
         } catch (\Throwable $e) {
             Log::error('Webhook service activation failed', [
                 'payment_id' => $payment->id,

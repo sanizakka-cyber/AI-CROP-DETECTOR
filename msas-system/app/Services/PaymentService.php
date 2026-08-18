@@ -205,15 +205,31 @@ class PaymentService
                 return ['success' => false, 'payment' => null, 'message' => 'User not found.'];
             }
 
-            $payment = $this->createPending(
-                $owner,
-                $reference,
-                ($data['amount'] ?? 0) / 100,
-                $meta['module'] ?? 'unknown',
-                $meta['description'] ?? 'Payment',
-                $meta['module_id'] ?? null,
-                $meta
-            );
+            try {
+                $payment = $this->createPending(
+                    $owner,
+                    $reference,
+                    ($data['amount'] ?? 0) / 100,
+                    $meta['module'] ?? 'unknown',
+                    $meta['description'] ?? 'Payment',
+                    $meta['module_id'] ?? null,
+                    $meta
+                );
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Check-then-create isn't atomic: the webhook and the
+                // browser/mobile callback can race for the same reference.
+                // The DB's unique constraint on payments.reference is the
+                // real guard — the loser just re-reads what the winner
+                // created instead of treating this as a real error.
+                if (!str_contains(strtolower($e->getMessage()), 'unique')) {
+                    throw $e;
+                }
+                $payment = Payment::where('reference', $reference)->first();
+                if (!$payment) {
+                    throw $e;
+                }
+                Log::info('Payment row race: reference already created by a concurrent request', ['reference' => $reference]);
+            }
         }
 
         $payment = $this->markSuccessful($payment, $data);

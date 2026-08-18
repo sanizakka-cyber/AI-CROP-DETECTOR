@@ -15,6 +15,7 @@ use App\Traits\NormalizesPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -119,72 +120,80 @@ class RegisteredUserController extends Controller
             $userData['phone_verified_at'] = null;
         }
 
-        $user = User::create($userData);
+        // User creation, invite/referral redemption, trial start, and document
+        // storage are all-or-nothing: a failure partway through (e.g. a bad
+        // upload) used to leave a half-created account with no trial and no
+        // documents. Wrapped in one transaction so it can't happen anymore.
+        $user = null;
+        $pendingPlan = DB::transaction(function () use ($request, $userData, $role, &$user) {
+            $user = User::create($userData);
 
-        // Redeem invite code if provided (farmers only)
-        $inviteCode = null;
-        if ($role === 'farmer' && $request->filled('invite_code')) {
-            $inviteCode = InviteCode::where('code', strtoupper(trim($request->invite_code)))->first();
-            if ($inviteCode && $inviteCode->isValid()) {
-                $inviteCode->increment('used_count');
-                $user->update(['is_pilot' => true]);
-                // Override pendingPlan with the invite code's plan
-                $request->merge(['plan' => $inviteCode->plan]);
-            }
-        }
-
-        // Referral code redemption
-        if ($role === 'farmer' && $request->filled('ref')) {
-            $referrer = User::where('referral_code', strtoupper(trim($request->ref)))->first();
-            if ($referrer && $referrer->id !== $user->id) {
-                Referral::firstOrCreate(['referrer_id' => $referrer->id, 'referred_id' => $user->id]);
-            }
-        }
-
-        // Preserve plan selection through the verification flow
-        $pendingPlan = $request->input('plan', '');
-        $validPlans  = array_keys(config('subscription.plans', []));
-        if (!in_array($pendingPlan, $validPlans)) {
-            $pendingPlan = '';
-        }
-
-        // Every role that actually uses the subscription system gets its 14-day
-        // trial automatically at registration — it's available from day one, not
-        // something unlocked by clicking Subscribe. ('general-user' is exempt
-        // from subscriptions entirely, same as RequireSubscription's bypass
-        // list.) Defaults to the role's entry-level plan unless the
-        // registration form (or a redeemed invite code, above) specified one.
-        // Subscribing to a paid plan during this trial is handled entirely by
-        // SubscriptionController::subscribe(), which never blocks on an active
-        // trial.
-        if ($role !== 'general-user') {
-            $defaultPlan = $role === 'farmer' ? 'basic' : 'professional_starter';
-            $user->startTrial($pendingPlan ?: $defaultPlan);
-        }
-
-        // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
-        if ($request->hasFile('documents')) {
-            $docLabels = $this->getDocumentLabels($role);
-
-            foreach ($request->file('documents') as $key => $file) {
-                if (! $file || ! $file->isValid()) {
-                    continue;
+            // Redeem invite code if provided (farmers only)
+            if ($role === 'farmer' && $request->filled('invite_code')) {
+                $inviteCode = InviteCode::where('code', strtoupper(trim($request->invite_code)))->first();
+                if ($inviteCode && $inviteCode->isValid()) {
+                    $inviteCode->increment('used_count');
+                    $user->update(['is_pilot' => true]);
+                    // Override pendingPlan with the invite code's plan
+                    $request->merge(['plan' => $inviteCode->plan]);
                 }
-
-                $docType  = is_string($key) ? $key : 'document_' . ($key + 1);
-                $label    = $docLabels[$docType] ?? ucwords(str_replace('_', ' ', $docType));
-
-                UserDocument::create([
-                    'user_id'         => $user->id,
-                    'document_type'   => $docType,
-                    'document_label'  => $label,
-                    'original_name'   => $file->getClientOriginalName(),
-                    'mime_type'       => $file->getMimeType(),
-                    'file_size'       => $file->getSize(),
-                    'content_base64'  => base64_encode(file_get_contents($file->getRealPath())),
-                ]);
             }
-        }
+
+            // Referral code redemption
+            if ($role === 'farmer' && $request->filled('ref')) {
+                $referrer = User::where('referral_code', strtoupper(trim($request->ref)))->first();
+                if ($referrer && $referrer->id !== $user->id) {
+                    Referral::firstOrCreate(['referrer_id' => $referrer->id, 'referred_id' => $user->id]);
+                }
+            }
+
+            // Preserve plan selection through the verification flow
+            $pendingPlan = $request->input('plan', '');
+            $validPlans  = array_keys(config('subscription.plans', []));
+            if (!in_array($pendingPlan, $validPlans)) {
+                $pendingPlan = '';
+            }
+
+            // Every role that actually uses the subscription system gets its 14-day
+            // trial automatically at registration — it's available from day one, not
+            // something unlocked by clicking Subscribe. ('general-user' is exempt
+            // from subscriptions entirely, same as RequireSubscription's bypass
+            // list.) Defaults to the role's entry-level plan unless the
+            // registration form (or a redeemed invite code, above) specified one.
+            // Subscribing to a paid plan during this trial is handled entirely by
+            // SubscriptionController::subscribe(), which never blocks on an active
+            // trial.
+            if ($role !== 'general-user') {
+                $defaultPlan = $role === 'farmer' ? 'basic' : 'professional_starter';
+                $user->startTrial($pendingPlan ?: $defaultPlan);
+            }
+
+            // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
+            if ($request->hasFile('documents')) {
+                $docLabels = $this->getDocumentLabels($role);
+
+                foreach ($request->file('documents') as $key => $file) {
+                    if (! $file || ! $file->isValid()) {
+                        continue;
+                    }
+
+                    $docType  = is_string($key) ? $key : 'document_' . ($key + 1);
+                    $label    = $docLabels[$docType] ?? ucwords(str_replace('_', ' ', $docType));
+
+                    UserDocument::create([
+                        'user_id'         => $user->id,
+                        'document_type'   => $docType,
+                        'document_label'  => $label,
+                        'original_name'   => $file->getClientOriginalName(),
+                        'mime_type'       => $file->getMimeType(),
+                        'file_size'       => $file->getSize(),
+                        'content_base64'  => base64_encode(file_get_contents($file->getRealPath())),
+                    ]);
+                }
+            }
+
+            return $pendingPlan;
+        });
 
         // Non-farmer roles: pending approval path
         if ($needsApproval) {
