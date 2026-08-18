@@ -1325,11 +1325,9 @@
                 </div>
                 <div class="text-xs font-semibold mb-3 md:mb-4" style="color:var(--green)">Smart Agriculture, Better Tomorrow</div>
                 <p class="text-sm leading-relaxed mb-4 md:mb-5 max-w-xs">Nigeria's leading AI-powered agribusiness platform connecting farmers, experts, governments, and development partners.</p>
-                <div class="flex gap-2">
-                    @foreach([['facebook-f','#3b82f6'],['twitter','#38bdf8'],['linkedin-in','#0077b5'],['youtube','#ef4444'],['whatsapp','#25d366']] as [$ico,$col])
-                    <a href="#" class="w-8 h-8 rounded-full flex items-center justify-center transition hover:scale-110" style="background:rgba(255,255,255,.1)" onmouseover="this.style.background='{{ $col }}'" onmouseout="this.style.background='rgba(255,255,255,0.1)'"><i class="fa-brands fa-{{ $ico }} text-gray-300 text-xs"></i></a>
-                    @endforeach
-                </div>
+                {{-- Social links removed until real MSAS Agro social accounts are set up — a
+                     row of icons pointing nowhere is exactly the kind of decorative-but-fake
+                     link this footer previously had for its legal pages too. --}}
             </div>
             {{-- Quick Links --}}
             <div>
@@ -1340,22 +1338,24 @@
                     @endforeach
                 </ul>
             </div>
-            {{-- Resources --}}
+            {{-- Resources — only items with a real destination; Blog/News/Downloads/Training
+                 removed until that content actually exists, rather than linking to "#". --}}
             <div>
                 <h4 class="text-white font-bold text-sm mb-3 md:mb-4">Resources</h4>
                 <ul class="space-y-2 text-sm">
-                    @foreach(['Blog','News & Events','Downloads','FAQs','Training'] as $item)
-                    <li><a href="#" class="hover:text-green-400 transition text-xs md:text-sm">{{ $item }}</a></li>
-                    @endforeach
+                    <li><a href="{{ route('legal.faq') }}" class="hover:text-green-400 transition text-xs md:text-sm">FAQs</a></li>
                 </ul>
             </div>
             {{-- Support --}}
             <div>
                 <h4 class="text-white font-bold text-sm mb-3 md:mb-4">Support</h4>
                 <ul class="space-y-2 text-sm">
-                    @foreach(['Help Center','Contact Us','Privacy Policy','Terms & Conditions','Data Protection'] as $item)
-                    <li><a href="#" class="hover:text-green-400 transition text-xs md:text-sm">{{ $item }}</a></li>
-                    @endforeach
+                    <li><a href="{{ route('legal.help') }}" class="hover:text-green-400 transition text-xs md:text-sm">Help Center</a></li>
+                    <li><a href="{{ route('legal.privacy') }}" class="hover:text-green-400 transition text-xs md:text-sm">Privacy Policy</a></li>
+                    <li><a href="{{ route('legal.terms') }}" class="hover:text-green-400 transition text-xs md:text-sm">Terms &amp; Conditions</a></li>
+                    <li><a href="{{ route('legal.privacy') }}" class="hover:text-green-400 transition text-xs md:text-sm">Data Protection</a></li>
+                    <li><a href="{{ route('legal.cookie') }}" class="hover:text-green-400 transition text-xs md:text-sm">Cookie Policy</a></li>
+                    <li><a href="{{ route('legal.refund') }}" class="hover:text-green-400 transition text-xs md:text-sm">Refund Policy</a></li>
                 </ul>
             </div>
             {{-- Contact --}}
@@ -1385,9 +1385,9 @@
         <div class="border-t border-white/10 pt-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
             <p>&copy; {{ date('Y') }} MSAS Agro. All rights reserved.</p>
             <div class="flex gap-4 md:gap-5">
-                <a href="#" class="hover:text-gray-200 transition">Privacy Policy</a>
-                <a href="#" class="hover:text-gray-200 transition">Terms of Service</a>
-                <a href="#" class="hover:text-gray-200 transition">Data Protection</a>
+                <a href="{{ route('legal.privacy') }}" class="hover:text-gray-200 transition">Privacy Policy</a>
+                <a href="{{ route('legal.terms') }}" class="hover:text-gray-200 transition">Terms of Service</a>
+                <a href="{{ route('legal.privacy') }}" class="hover:text-gray-200 transition">Data Protection</a>
             </div>
         </div>
     </div>

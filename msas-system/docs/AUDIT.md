@@ -14,6 +14,7 @@ Living document for the system-wide role-based dashboard synchronization effort.
 | 6 | Scope decision: expand scan/voice/report access beyond current 5 roles? | **Closed** 2026-08-17 — decided against expansion; access stays as-is |
 | 7 | Final Implementation & QA round (code-verifiable scope only — see §11-13) | **Complete within code-verifiable scope** 2026-08-17, including error-handling infrastructure + full 22/22 dashboard rollout (§11.4). Explicitly does not include browser/device/OTP/payment/live-audio testing — no such tool exists in this environment; see §12-13 for the manual test checklist and honest evidence report |
 | 8 | CEO Overview redesign: phase-by-phase executive summary of all 8 modules | **Complete** 2026-08-17 — see §14. Existing top nav preserved unchanged; Overview now also summarizes every module with Quick Nav, anchors, and "View Full Module" links. CEOController's ~27 data methods converted to the same honest-error pattern as Phase 7, benefiting all 9 CEO pages at once |
+| 9 | Fresh re-verification of role-naming/assignment claims + authorization matrix + landing-page fix + live-test handoff instrument | **Complete for the code-level parts** 2026-08-18 — see §15. Live browser/device/database verification explicitly NOT performed — no such tool exists in this environment; §15.5 hands off the instrument for whoever runs it |
 
 No code changes have been made as part of Phase 1. Everything below is factual inventory, gathered by reading the codebase directly (file:line references throughout), not a proposal.
 
@@ -345,3 +346,77 @@ Turned the CEO Overview page into a full executive command center: every module 
 **Not duplicated:** confirmed each phase section shows only summary figures — no tables, no full charts, no forms reproduced from the actual module pages, matching the explicit "summary only" requirement.
 
 **Not done / needs your testing (same limitation as every prior phase):** no browser tool exists here, so responsive behavior (mobile stacking, no horizontal overflow), the actual smooth-scroll animation, and clicking through every Quick Nav item / View Full Module button / top-nav item have not been visually verified — only code-reviewed. Recommended to spot-check on a phone and desktop before considering this fully done.
+
+---
+
+## 15. Fresh Re-verification, Authorization Matrix, Landing-Page Fix, Live-Test Handoff
+
+A follow-up request specifically asked not to trust the Phase 3 "fixed" claim about role-naming and financial-institution/rider without re-checking, and asked for a live acceptance test across all 24 roles, every dashboard, TTS audio, payments, and OTP. The re-verification was done properly, with fresh evidence below. The live acceptance test was **not** performed and is not claimed to have been — no browser, device, database client, or ability to receive real email/SMS exists in this environment. That boundary hasn't changed since it was first stated in §11, and repeating a request for it doesn't create the capability. What follows is the honest split: what was re-verified, what was newly fixed, and the actual instrument for someone who can run the live tests.
+
+### 15.1 Role-naming — re-verified with fresh evidence, not re-asserted
+
+Grepped the entire codebase again from zero (not reading the earlier summary) for every spelling. Result, with line numbers: `m-e-officer` is the only value written by any code path — `TestAccountsSeeder.php:178`, `StaffAccountsSeeder.php:61`, `QAAccountsSeeder.php:106`, `admin/users.blade.php:180` (the actual role-assignment dropdown), `CEOController.php:705`, `CEO/StaffController.php:269`. `monitoring-evaluation` and `me-officer`/`me_officer` appear only in code that *reads/matches* a role value defensively — `RoleMiddleware.php:47-49`, route middleware alias lists (`web.php:146,200`), `User.php:113,144-146` (label lookups), `AnalyticsApiController.php:54,109,139` (accepted-value lists), `AuthApiController.php:144-145` (label lookups). This confirms the Phase 3 finding rather than merely repeating it.
+
+**What this re-verification cannot do:** confirm the *live production database* has no row with `role = 'monitoring-evaluation'` or `role = 'me-officer'` — that requires a database client this environment doesn't have. If you want that closed with certainty, run:
+```sql
+SELECT id, email, role FROM users WHERE role IN ('monitoring-evaluation', 'me-officer', 'me_officer');
+```
+If it returns rows, those specific accounts need a manual `UPDATE users SET role = 'm-e-officer' WHERE id = ...` — the code-level fix (making `m-e-officer` the sole assignment target going forward) is already in place; only pre-existing bad data, if any, would need this.
+
+### 15.2 financial-institution and rider — re-verified with fresh evidence
+
+`financial-institution`: `CEOController.php:706` fresh-grepped and confirmed present in `$allRoles` (this was the Phase 3 fix — re-confirmed it's actually in the file, not just claimed). The dropdown feeds `updateUser()`'s validation rule (`CEOController.php:719`: `'role' => 'required|string'`, no `in:` whitelist), so any value the dropdown offers saves correctly — confirmed the fix is complete end-to-end, not just at the dropdown. Dashboard route exists and is view-backed: `web.php:92`, `resources/views/financial-institution/dashboard.blade.php`.
+
+`rider`: re-confirmed this was never actually a gap. `Admin\RiderManagementController.php:82` sets `role => 'rider'` directly; the full CRUD route set (`web.php:309-314`: index/create/store/show/toggle/status) sits under `role:admin,ceo` (`web.php:299`) — correctly gated, reachable, and deliberately separate from the generic role editor because riders carry extra fields (`vehicle_type`, `rider_status`) that dedicated flow handles.
+
+**What this re-verification cannot do:** click through the actual admin UI in a browser to confirm the dropdown renders correctly, the save button works, and the resulting dashboard actually loads — that's the live test in §15.5.
+
+### 15.3 Authorization matrix
+
+Traced each function's actual middleware chain fresh, not from memory:
+
+| Function | Route middleware | Additional gate | Authoritative system |
+|---|---|---|---|
+| User suspend | `role:admin,ceo` (`web.php:271`) | `permission:user:suspend_account` (`web.php:274`) | RoleMiddleware (coarse) **+** legacy `role_permissions` table, falling back to StaffRole RBAC if the legacy table doesn't grant it (`PermissionMiddleware.php:65-88`) — an OR, not a conflict: either system granting is sufficient |
+| User delete | `role:admin,ceo` | `permission:user:delete_other` (`web.php:275`) | Same as above |
+| Settings | `role:admin,ceo` | `permission:admin:manage_settings` (`web.php:277`) | Same as above |
+| Staff Roles | `role:ceo` only (`web.php:176`) | none | RoleMiddleware only — deliberately not layered with StaffRole RBAC, since the page that grants RBAC permissions shouldn't be gateable by RBAC itself |
+| AI Scan | `role:farmer,admin,ceo,vet,agronomist` (`web.php:61`) | none | RoleMiddleware only |
+| Diagnostic Report | Same route group | Ownership check in `DiagnosticController::downloadReport()` (owner, or `ceo`/`admin`) | RoleMiddleware (route access) **+** explicit per-record ownership check (controller) — two layers, not competing |
+| Financial | `role:ceo,admin` (`CEOController::financial()`) | none | RoleMiddleware only |
+| CEO Analytics | `role:ceo,admin` (`CeoScanAnalyticsController`) | none | RoleMiddleware only |
+
+**No conflicting behavior found** — every function above has exactly one authoritative answer, even where two mechanisms are layered (they combine as AND for route+ownership, or OR for the two permission stores), not two systems disagreeing. The genuinely unresolved architectural point remains what Phase 3 already said: most of the app relies solely on RoleMiddleware, and the other two systems are real but narrow in scope — not a source of conflicting decisions for any function checked here, but not a single unified system either.
+
+### 15.4 Landing-page links — fixed for real, not just relabeled
+
+The Phase 7 finding (8 dead `href="#"` links on `welcome.blade.php`, including Privacy Policy/Terms/Data Protection) turned out to have an easy real fix rather than needing new pages: **six working public legal/support pages already existed** (`ComplianceController` + `legal.*` route names: `legal.privacy` → `/privacy-policy`, `legal.terms` → `/terms`, `legal.faq` → `/faq`, `legal.help` → `/help`, `legal.cookie` → `/cookie-policy`, `legal.refund` → `/refund-policy`) — the footer simply never linked to them. Confirmed `legal.privacy`'s actual content substantively covers NDPR data protection (Data Protection Officer contact, user rights under the Nigeria Data Protection Regulation — `resources/views/legal/privacy.blade.php:52-128`), so "Data Protection" honestly points to that same page rather than needing separate content.
+
+Fixed: Privacy Policy, Terms & Conditions/Terms of Service (both footer instances), Data Protection, Help Center, FAQs, plus added Cookie Policy and Refund Policy links that existed but weren't surfaced anywhere. Removed rather than left dead (per your explicit instruction to remove until real content exists, not invent it): Blog, News & Events, Downloads, Training, the redundant "Contact Us" text link (real contact info already has its own footer column), and 5 social media icons (no real MSAS Agro social accounts to link to — inventing placeholder URLs would be worse than removing).
+
+### 15.5 Live-test instrument — handoff, not a result
+
+This is the actual acceptance-test matrix, structured exactly as requested, for whoever has a browser, test accounts for each role, and access to the live Render deployment to fill in. Every row starts blank/unknown — filling in "Pass" without running it would be exactly the fabrication this whole request is about avoiding.
+
+| Test Area | Required | Passed | Failed | Evidence |
+|---|---|---|---|---|
+| Roles (login → dashboard → menu → logout, all 24) | 24 | — | — | — |
+| Dashboards (22 role dashboards + CEO 9-page suite) | 31 | — | — | — |
+| Role assignment (financial-institution, rider via their real flows) | 2 | — | — | — |
+| AI Scan end-to-end (farmer, vet, agronomist, admin, ceo) | 5 | — | — | — |
+| TTS languages (en, ha, yo, ig, fr, ff) | 6 | — | — | — |
+| Voice controls (Play/Pause/Resume/Stop/Replay/Rewind/Forward) | 7 | — | — | — |
+| Transcript (opens, correct scan, correct language) | 1 | — | — | — |
+| CEO Analytics filters (date/state/LGA/crop/diagnosis/confidence/status/user) | 8 | — | — | — |
+| CEO scan drill-down (state → LGA → scan → report) | 1 | — | — | — |
+| CEO Overview (Quick Nav, 8 View Full Module links, top nav) | 17 | — | — | — |
+| API status codes on critical endpoints | — | — | — | — |
+| Direct URL security (limited-permission user hitting other-role URLs) | — | — | — | — |
+| Registration → OTP → activation → login | 1 | — | — | — |
+| Payment → Paystack → callback → verification | 1 | — | — | — |
+| Mobile (phone) | 1 pass | — | — | — |
+| Tablet | 1 pass | — | — | — |
+| Desktop (Chrome, Edge) | 2 | — | — | — |
+| Profile dropdown white-box regression check | 1 | — | — | — |
+
+Report results back and they'll be acted on immediately — that's real, fast, high-value work once there's real evidence to act on. Until then, this system is **not** declared 100% complete, per the acceptance rule requested: code-verified and live-tested are being kept distinct, not blurred.
