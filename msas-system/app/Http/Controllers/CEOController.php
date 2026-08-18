@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HasCeoScanFilters;
 use App\Http\Controllers\Concerns\HasSafeDashboardQueries;
+use App\Data\NigeriaLocations;
 use App\Models\User;
 use App\Models\Animal;
 use App\Models\Feedback;
@@ -29,6 +31,7 @@ use Carbon\Carbon;
 class CEOController extends Controller
 {
     use HasSafeDashboardQueries;
+    use HasCeoScanFilters;
 
     // ── Dashboard Pages ──────────────────────────────────────────────
     // Each method below renders one routed CEO dashboard page, calling only
@@ -36,7 +39,7 @@ class CEOController extends Controller
     // former single index() that computed all ~40 variables for every page
     // load regardless of which section the CEO wanted to see.
 
-    public function overview()
+    public function overview(Request $request)
     {
         $kpi    = $this->kpiMetrics();
         $rev    = $this->revenueMetrics();
@@ -50,25 +53,33 @@ class CEOController extends Controller
             $this->orderStatsMetrics(),
             $this->mrrChurnMetrics(),
             $this->userRegistrationMetrics($kpi['totalUsers']),
-            // Phase-by-phase module summaries — compact figures only, the full
-            // page for each module is one click away via "View Full Module".
+            // Every section below mirrors the exact data + components used by
+            // that module's own dedicated CEO page (same helper methods,
+            // reused rather than re-implemented) so Overview is a condensed
+            // version of each page, not a separate simplified summary.
             $this->diseaseAlertsMetrics(),
             $this->riskMetrics($kpi['pendingExperts']),
             $this->walletStatsMetrics(),
+            $this->revTimeSeriesMetrics(),
             $this->aiAnalyticsSummaryMetrics(),
+            $this->severityDistributionMetrics(),
+            $this->aiAnalyticsOverviewMetrics($request),
             $this->topProductsMetrics(),
+            $this->recentMarketplaceActivityMetrics(),
             $this->logisticsStatsMetrics(),
             $this->consultStatsMetrics($kpi['pendingConsults']),
+            $this->recentOperationsActivityMetrics(),
+            $this->attendanceMetrics(),
+            $this->pendingLeavesMetrics(),
             $this->geoChartMetrics(),
             $this->geographicSummaryMetrics(),
+            $this->stateActivityMetrics(),
             $this->usersByRoleMetrics(),
+            $this->monthlyGrowthMetrics(),
             $this->marketplaceStatsMetrics(),
+            $this->recentUsersMetrics(),
             $this->systemActivityMetrics(),
-            $this->recentScansMetrics(),
-            $this->severityDistributionMetrics(),
-            $this->recentTransactionsMetrics(),
-            $this->recentMarketplaceActivityMetrics(),
-            $this->recentOperationsActivityMetrics()
+            $this->recentTransactionsMetrics()
         );
 
         $data['dashboardErrors'] = $this->dashboardErrors;
@@ -678,10 +689,49 @@ class CEOController extends Controller
     // summary, so the CEO never has to click through just to see "what just
     // happened." Kept separate from the filtered/paginated views each module's
     // own dedicated page already provides.
-
-    private function recentScansMetrics(): array
+    //
+    // Real, working filters for the Overview AI Analytics section — same
+    // date-range/state/LGA/crop/diagnosis/confidence/status filtering the
+    // dedicated AI Analytics page uses (CeoScanAnalyticsController), via the
+    // shared HasCeoScanFilters trait, just trimmed to a compact chart/table
+    // for the condensed Overview presentation.
+    private function aiAnalyticsOverviewMetrics(Request $request): array
     {
-        $recentScans = $this->safe('recent scans', fn() => Diagnosis::join('users', 'diagnoses.user_id', '=', 'users.id')
+        $filteredBase = fn () => $this->applyNonGeoFilters(
+            Diagnosis::query()->join('users', 'diagnoses.user_id', '=', 'users.id'),
+            $request
+        )
+            ->when($request->filled('state'), fn ($q) => $q->where('users.state', $request->state))
+            ->when($request->filled('lga'), fn ($q) => $q->where('users.lga', $request->lga));
+
+        $ovFilteredCount = $this->safe('overview ai filtered count', fn () => $filteredBase()->count(), 0);
+
+        $ovFilteredAvgConf = $this->safe('overview ai filtered avg confidence', fn () => round((float) $filteredBase()
+            ->whereNotNull('diagnoses.confidence_score')
+            ->avg('diagnoses.confidence_score')), 0);
+
+        $ovStatusBreakdown = $this->safe('overview ai status breakdown', fn () => $filteredBase()
+            ->select(DB::raw($this->displayStatusCaseSql().' as display_status'), DB::raw('count(*) as cnt'))
+            ->groupBy('display_status')
+            ->pluck('cnt', 'display_status'), collect());
+
+        [$ovFrom, $ovTo] = $this->dateRange($request);
+        $ovDailyRaw = $this->safe('overview ai daily chart', fn () => $filteredBase()
+            ->select(DB::raw('DATE(diagnoses.created_at) as d'), DB::raw('count(*) as cnt'))
+            ->groupBy('d')
+            ->pluck('cnt', 'd'), collect());
+        $ovDailyLabels = collect();
+        $cursor = $ovFrom->copy();
+        while ($cursor->lte($ovTo) && $ovDailyLabels->count() < 31) {
+            $ovDailyLabels->push($cursor->format('Y-m-d'));
+            $cursor->addDay();
+        }
+        $ovDailySeries = $ovDailyLabels->map(fn ($d) => [
+            'label' => Carbon::parse($d)->format('M d'),
+            'value' => (int) ($ovDailyRaw[$d] ?? 0),
+        ]);
+
+        $ovScans = $this->safe('overview ai scans table', fn () => $filteredBase()
             ->select(
                 'diagnoses.id', 'diagnoses.scan_ref', 'diagnoses.subject_name', 'diagnoses.disease_name',
                 'diagnoses.confidence_score', 'diagnoses.severity_level', 'diagnoses.status', 'diagnoses.created_at',
@@ -692,7 +742,12 @@ class CEOController extends Controller
             ->take(8)
             ->get(), collect());
 
-        return compact('recentScans');
+        $ovStates = $this->safe('overview ai states list', fn () => collect(NigeriaLocations::states())->pluck('name'), collect());
+        $ovLgasForState = $request->filled('state')
+            ? (collect(NigeriaLocations::states())->firstWhere('name', $request->state)['lgas'] ?? [])
+            : [];
+
+        return compact('ovFilteredCount', 'ovFilteredAvgConf', 'ovStatusBreakdown', 'ovDailySeries', 'ovScans', 'ovStates', 'ovLgasForState');
     }
 
     private function severityDistributionMetrics(): array
