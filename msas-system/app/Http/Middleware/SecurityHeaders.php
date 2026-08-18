@@ -34,7 +34,15 @@ class SecurityHeaders
             "frame-src 'self' https://meet.jit.si",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self'",
+            // 'self' plus Paystack's checkout domains: subscribe()'s POST to
+            // /subscription/subscribe responds with a server-side redirect
+            // straight to the Paystack authorization_url. CSP's form-action
+            // governs that redirect target too (not just the form's own
+            // action="" attribute), so without these origins the browser
+            // silently blocks the navigation and the user never leaves
+            // MSAS — the backend succeeds but the "Subscribe"/"Upgrade"
+            // button appears to do nothing.
+            "form-action 'self' https://checkout.paystack.com https://standard.paystack.co",
         ]);
         $response->headers->set('Content-Security-Policy', $csp);
 

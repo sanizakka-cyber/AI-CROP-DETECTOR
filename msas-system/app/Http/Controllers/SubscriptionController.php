@@ -86,6 +86,14 @@ class SubscriptionController extends Controller
         $amount    = config("subscription.plans.{$plan}.price.{$cycle}");
         $reference = 'MSAS-' . strtoupper(Str::random(12));
 
+        Log::info('SUBSCRIPTION_INIT', [
+            'user_id' => $user->id,
+            'plan_id' => $plan,
+            'cycle'   => $cycle,
+            'amount'  => $amount,
+            'reference' => $reference,
+        ]);
+
         // If Paystack keys are configured, redirect to payment
         if (config('services.paystack.secret_key') && !str_contains(config('services.paystack.secret_key'), 'REPLACE')) {
             return $this->initializePaystackPayment($user, $plan, $cycle, $amount, $reference, $activeSub);
@@ -128,10 +136,22 @@ class SubscriptionController extends Controller
                 ],
             ]);
 
-            return redirect($response->json('data.authorization_url'));
+            $authUrl = $response->json('data.authorization_url');
+            Log::info('SUBSCRIPTION_AUTHORIZATION_URL_ISSUED', [
+                'user_id'   => $user->id,
+                'reference' => $reference,
+                'auth_url'  => $authUrl,
+            ]);
+
+            return redirect($authUrl);
         }
 
-        Log::error('Paystack initialization failed', ['response' => $response->json()]);
+        Log::error('Paystack initialization failed', [
+            'user_id'   => $user->id,
+            'reference' => $reference,
+            'status'    => $response->status(),
+            'response'  => $response->json(),
+        ]);
         return back()->with('error', 'Payment initialization failed. Please try again or contact support.');
     }
 
@@ -144,9 +164,17 @@ class SubscriptionController extends Controller
             return redirect()->route('subscription.plans')->with('error', 'Invalid payment reference.');
         }
 
+        Log::info('SUBSCRIPTION_CALLBACK_RECEIVED', ['reference' => $reference]);
+
         // Verify transaction with Paystack
         $response = Http::withToken(config('services.paystack.secret_key'))
             ->get(config('services.paystack.payment_url') . "/transaction/verify/{$reference}");
+
+        Log::info('SUBSCRIPTION_VERIFICATION_RESPONSE', [
+            'reference' => $reference,
+            'status'    => $response->status(),
+            'paystack_status' => $response->json('data.status'),
+        ]);
 
         if (!$response->successful() || !$response->json('status') || $response->json('data.status') !== 'success') {
             return redirect()->route('subscription.plans')
@@ -227,6 +255,15 @@ class SubscriptionController extends Controller
             'billing_cycle' => $cycle,
             'amount'        => $amount,
             'method'        => $method,
+        ]);
+
+        Log::info('SUBSCRIPTION_ACTIVATED', [
+            'user_id'         => $user->id,
+            'subscription_id' => $newSub->id,
+            'plan_id'         => $plan,
+            'reference'       => $reference,
+            'amount'          => $amount,
+            'method'          => $method,
         ]);
 
         // Record in unified payments table if a real payment was made
