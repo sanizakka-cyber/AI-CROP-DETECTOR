@@ -26,7 +26,9 @@ class SystemHealthController extends Controller
     }
 
     // ── Aggregate all checks (cached 30 s) ───────────────────────────────────
-    private function health(): array
+    // Public so other controllers (e.g. CEOController's Overview summary) can
+    // reuse the same real health data instead of re-implementing it.
+    public function health(): array
     {
         return Cache::remember('system:health', self::CACHE_TTL, function () {
             return [

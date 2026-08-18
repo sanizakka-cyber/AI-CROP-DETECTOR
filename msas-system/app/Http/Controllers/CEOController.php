@@ -63,7 +63,12 @@ class CEOController extends Controller
             $this->geographicSummaryMetrics(),
             $this->usersByRoleMetrics(),
             $this->marketplaceStatsMetrics(),
-            $this->systemActivityMetrics()
+            $this->systemActivityMetrics(),
+            $this->recentScansMetrics(),
+            $this->severityDistributionMetrics(),
+            $this->recentTransactionsMetrics(),
+            $this->recentMarketplaceActivityMetrics(),
+            $this->recentOperationsActivityMetrics()
         );
 
         $data['dashboardErrors'] = $this->dashboardErrors;
@@ -662,7 +667,75 @@ class CEOController extends Controller
             ->take(5)
             ->get(), collect());
 
-        return compact('recentAuditLogs');
+        // Reuse SystemHealthController's real checks (DB/AI engine/errors/etc.)
+        // rather than showing a fabricated "Operational" label.
+        $systemHealthChecks = $this->safe('system health checks', fn() => app(SystemHealthController::class)->health(), []);
+
+        return compact('recentAuditLogs', 'systemHealthChecks');
+    }
+
+    // ── Overview-page-only: real recent-activity feeds for each module
+    // summary, so the CEO never has to click through just to see "what just
+    // happened." Kept separate from the filtered/paginated views each module's
+    // own dedicated page already provides.
+
+    private function recentScansMetrics(): array
+    {
+        $recentScans = $this->safe('recent scans', fn() => Diagnosis::join('users', 'diagnoses.user_id', '=', 'users.id')
+            ->select(
+                'diagnoses.id', 'diagnoses.scan_ref', 'diagnoses.subject_name', 'diagnoses.disease_name',
+                'diagnoses.confidence_score', 'diagnoses.severity_level', 'diagnoses.status', 'diagnoses.created_at',
+                'users.first_name as user_first_name', 'users.last_name as user_last_name',
+                'users.state as user_state', 'users.lga as user_lga'
+            )
+            ->orderByDesc('diagnoses.created_at')
+            ->take(8)
+            ->get(), collect());
+
+        return compact('recentScans');
+    }
+
+    private function severityDistributionMetrics(): array
+    {
+        $severityDistribution = $this->safe('severity distribution', fn() => Diagnosis::select('severity_level', DB::raw('count(*) as cnt'))
+            ->whereNotNull('severity_level')
+            ->groupBy('severity_level')
+            ->pluck('cnt', 'severity_level'), collect());
+
+        return compact('severityDistribution');
+    }
+
+    private function recentTransactionsMetrics(): array
+    {
+        // Ordered by created_at, not paid_at — Postgres sorts NULL paid_at
+        // (pending/failed payments) first in a DESC order, which would push
+        // old unpaid attempts above genuinely recent successful transactions.
+        $recentTransactions = $this->safe('recent transactions', fn() => Payment::with('user:id,first_name,last_name')
+            ->latest()
+            ->take(6)
+            ->get(), collect());
+
+        return compact('recentTransactions');
+    }
+
+    private function recentMarketplaceActivityMetrics(): array
+    {
+        $recentOrders = $this->safe('recent marketplace orders', fn() => Order::with('buyer:id,first_name,last_name')
+            ->latest()
+            ->take(5)
+            ->get(), collect());
+
+        return compact('recentOrders');
+    }
+
+    private function recentOperationsActivityMetrics(): array
+    {
+        $recentConsultations = $this->safe('recent consultations', fn() => Consultation::with('user:id,first_name,last_name')
+            ->latest()
+            ->take(5)
+            ->get(), collect());
+
+        return compact('recentConsultations');
     }
 
     // ── User Management ────────────────────────────────────────────
