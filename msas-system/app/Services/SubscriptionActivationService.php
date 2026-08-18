@@ -33,11 +33,26 @@ class SubscriptionActivationService
      */
     public function initializePaystack(User $user, string $plan, string $cycle, float $amount, string $reference, ?Subscription $activeSub, string $callbackUrl): array
     {
+        // Phone-only registered users have email = null (see
+        // RegisteredUserController — no email is collected for that signup
+        // path). Paystack's /transaction/initialize requires a real email;
+        // sending null gets silently rejected and surfaces as a generic
+        // "Payment initialization failed" with no clue why. Fall back to
+        // notification_email (same fallback User::routeNotificationForMail()
+        // already uses), and fail with an actionable message — not a Paystack
+        // API call we already know will be rejected — if neither exists.
+        $contactEmail = $user->email ?: $user->notification_email;
+        if (!$contactEmail) {
+            Log::warning('Subscription payment blocked: no email on file', ['user_id' => $user->id]);
+
+            return ['success' => false, 'message' => 'Please add an email address to your profile before subscribing — Paystack requires one to send your payment receipt.'];
+        }
+
         $planName = config("subscription.plans.{$plan}.name");
 
         $response = Http::withToken(config('services.paystack.secret_key'))
             ->post(config('services.paystack.payment_url') . '/transaction/initialize', [
-                'email'        => $user->email,
+                'email'        => $contactEmail,
                 'amount'       => $amount * 100, // kobo
                 'reference'    => $reference,
                 'currency'     => 'NGN',
