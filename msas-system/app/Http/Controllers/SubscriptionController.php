@@ -70,23 +70,19 @@ class SubscriptionController extends Controller
         $cycle     = $request->billing_cycle;
         $activeSub = $user->activeSubscription();
 
-        // Only block if the identical plan is already active and PAID (not trial)
+        // Only block if the identical plan is already active and PAID (not trial) —
+        // a trial never blocks a real purchase, including of the same plan the
+        // trial is already for. "Manage Subscription" is one click away via the
+        // header link on this page.
         if ($activeSub && $activeSub->plan === $plan && $activeSub->billing_cycle === $cycle && $activeSub->status !== 'trial') {
             return back()->with('info', "You already have an active {$plan} plan.");
         }
 
-        // Trial: only once per user
-        $hadTrial = $user->subscriptions()
-            ->where('plan', $plan)
-            ->where('status', 'trial')
-            ->exists();
-
-        if (!$hadTrial && $activeSub === null) {
-            $user->startTrial($plan);
-            return redirect()->route('subscription.dashboard')
-                ->with('success', "Your 14-day free trial of the " . config("subscription.plans.{$plan}.name") . " has started!");
-        }
-
+        // Clicking Subscribe always initiates payment — it never silently starts a
+        // trial instead. The 14-day trial is granted automatically at registration
+        // (RegisteredUserController::store()) so it's available from day one
+        // without ever standing between a user and a purchase they're ready to
+        // make, including on day 1 of that same trial.
         $amount    = config("subscription.plans.{$plan}.price.{$cycle}");
         $reference = 'MSAS-' . strtoupper(Str::random(12));
 

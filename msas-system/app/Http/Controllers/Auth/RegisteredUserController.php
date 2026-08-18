@@ -144,6 +144,20 @@ class RegisteredUserController extends Controller
             $pendingPlan = '';
         }
 
+        // Every role that actually uses the subscription system gets its 14-day
+        // trial automatically at registration — it's available from day one, not
+        // something unlocked by clicking Subscribe. ('general-user' is exempt
+        // from subscriptions entirely, same as RequireSubscription's bypass
+        // list.) Defaults to the role's entry-level plan unless the
+        // registration form (or a redeemed invite code, above) specified one.
+        // Subscribing to a paid plan during this trial is handled entirely by
+        // SubscriptionController::subscribe(), which never blocks on an active
+        // trial.
+        if ($role !== 'general-user') {
+            $defaultPlan = $role === 'farmer' ? 'basic' : 'professional_starter';
+            $user->startTrial($pendingPlan ?: $defaultPlan);
+        }
+
         // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
         if ($request->hasFile('documents')) {
             $docLabels = $this->getDocumentLabels($role);

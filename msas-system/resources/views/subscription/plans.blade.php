@@ -31,15 +31,16 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
 
 @if(!$isProfessional)
 
-{{-- ══ Free Trial Banner ══════════════════════════════════════════════════ --}}
+{{-- ══ Free Trial Banner — shown only if no trial/subscription exists yet
+     (e.g. a professional-role account; farmers get their trial automatically
+     at registration, so they won't normally see this) ══════════════════════ --}}
 @if(!$activeSub && !$user->latestSubscription())
 <div style="background:linear-gradient(135deg,#0F6B3E,#1FA84A);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
     <div>
-        <div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Start with a 14-Day Free Trial</div>
+        <div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 14-Day Free Trial Available</div>
         <div style="color:rgba(255,255,255,0.8);font-size:13px;">15 AI Smart Scans · Basic Farm Dashboard · Marketplace Preview · No credit card required</div>
     </div>
-    <a href="{{ route('subscription.subscribe') }}" style="display:none;"></a>
-    <div style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;">Subscribe to any plan below to activate your free trial →</div>
+    <div style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;">Subscribe to any plan below — pay now, no trial wait required →</div>
 </div>
 @endif
 
@@ -106,13 +107,13 @@ $farmerPlanKeys = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_pl
                                                  (qcycle === 'yearly' ? '₦750,000/yr' : '₦75,000/mo')
                 "></div>
             </div>
-            <button type="submit"
+            <button type="submit" class="subscribe-btn"
                 style="padding:10px 24px;background:#0F6B3E;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Subscribe Now
             </button>
         </form>
-        <p style="font-size:11px;color:#94a3b8;margin-top:10px;">New users get a <strong>14-day free trial</strong> before any payment is required.</p>
+        <p style="font-size:11px;color:#94a3b8;margin-top:10px;">Your <strong>14-day free trial</strong> starts automatically at signup — subscribing here takes you straight to payment any time, even during your trial.</p>
     </div>
 </div>
 
@@ -297,7 +298,7 @@ $planIcons = [
                 @csrf
                 <input type="hidden" name="plan" value="{{ $key }}">
                 <input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'">
-                <button type="submit" style="width:100%;padding:12px;border-radius:10px;border:2px solid {{ $p['badge_color'] }};background:transparent;color:{{ $p['badge_color'] }};font-size:13px;font-weight:700;cursor:pointer;">
+                <button type="submit" class="subscribe-btn" style="width:100%;padding:12px;border-radius:10px;border:2px solid {{ $p['badge_color'] }};background:transparent;color:{{ $p['badge_color'] }};font-size:13px;font-weight:700;cursor:pointer;">
                     Downgrade to {{ $p['name'] }}
                 </button>
             </form>
@@ -306,11 +307,9 @@ $planIcons = [
                 @csrf
                 <input type="hidden" name="plan" value="{{ $key }}">
                 <input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'">
-                <button type="submit"
+                <button type="submit" class="subscribe-btn"
                     style="width:100%;padding:12px;border-radius:10px;border:none;background:{{ $p['badge_color'] }};color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px {{ $p['badge_color'] }}44;">
-                    @if(!$activeSub && !$user->latestSubscription())
-                        Start 14-Day Free Trial
-                    @elseif($activeSub)
+                    @if($activeSub)
                         Upgrade to {{ $p['name'] }}
                     @else
                         Subscribe Now
@@ -505,9 +504,9 @@ $rowIdx    = 0;
         @if($isCurrent)
             <div style="text-align:center;padding:12px;background:#f0fdf4;border-radius:10px;border:1.5px solid #bbf7d0;"><span style="color:#15803d;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" fill="none" stroke="#15803d" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Your Current Plan</span></div>
         @elseif($activeSub && $activeSub->planLevel() > $p['plan_level'])
-            <form method="POST" action="{{ route('subscription.subscribe') }}">@csrf<input type="hidden" name="plan" value="{{ $key }}"><input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'"><button type="submit" style="width:100%;padding:12px;border-radius:10px;border:2px solid {{ $p['badge_color'] }};background:transparent;color:{{ $p['badge_color'] }};font-size:14px;font-weight:700;cursor:pointer;">Downgrade to {{ $p['name'] }}</button></form>
+            <form method="POST" action="{{ route('subscription.subscribe') }}">@csrf<input type="hidden" name="plan" value="{{ $key }}"><input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'"><button type="submit" class="subscribe-btn" style="width:100%;padding:12px;border-radius:10px;border:2px solid {{ $p['badge_color'] }};background:transparent;color:{{ $p['badge_color'] }};font-size:14px;font-weight:700;cursor:pointer;">Downgrade to {{ $p['name'] }}</button></form>
         @else
-            <form method="POST" action="{{ route('subscription.subscribe') }}">@csrf<input type="hidden" name="plan" value="{{ $key }}"><input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'"><button type="submit" style="width:100%;padding:13px;border-radius:10px;border:none;background:{{ $p['badge_color'] }};color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px {{ $p['badge_color'] }}44;">@if(!$activeSub && !$user->latestSubscription()) Start 14-Day Free Trial @elseif($activeSub) Upgrade to {{ $p['name'] }} @else Subscribe Now @endif</button></form>
+            <form method="POST" action="{{ route('subscription.subscribe') }}">@csrf<input type="hidden" name="plan" value="{{ $key }}"><input type="hidden" name="billing_cycle" :value="yearly ? 'yearly' : 'monthly'"><button type="submit" class="subscribe-btn" style="width:100%;padding:13px;border-radius:10px;border:none;background:{{ $p['badge_color'] }};color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px {{ $p['badge_color'] }}44;">@if($activeSub) Upgrade to {{ $p['name'] }} @else Subscribe Now @endif</button></form>
         @endif
     </div>
 </div>
@@ -521,9 +520,28 @@ $rowIdx    = 0;
 @if(!$activeSub && !$latestSub)
 <div style="background:linear-gradient(135deg,#f0fdf4,#e0f2fe);border:1px solid #bbf7d0;border-radius:14px;padding:20px 24px;margin-top:24px;text-align:center;">
     <div style="margin-bottom:8px;display:flex;justify-content:center;"><svg width="36" height="36" fill="none" stroke="#0F6B3E" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-    <div style="font-size:17px;font-weight:800;color:#0f172a;margin-bottom:6px;">Start with a 14-Day Free Trial</div>
-    <div style="font-size:13px;color:#475569;">No credit card required. Try any plan free for 14 days. Cancel anytime.</div>
+    <div style="font-size:17px;font-weight:800;color:#0f172a;margin-bottom:6px;">14-Day Free Trial, No Waiting to Upgrade</div>
+    <div style="font-size:13px;color:#475569;">No credit card required for your trial. Subscribe to any plan above and pay now — you don't have to wait for the trial to end. Cancel anytime.</div>
 </div>
 @endif
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(function (form) {
+        var btn = form.querySelector('.subscribe-btn');
+        if (!btn) return;
+
+        form.addEventListener('submit', function (e) {
+            if (form.dataset.submitting === '1') {
+                e.preventDefault();
+                return;
+            }
+            form.dataset.submitting = '1';
+            btn.disabled = true;
+            btn.innerHTML = 'Processing&hellip;';
+        });
+    });
+});
+</script>
 
 </x-app-layout>

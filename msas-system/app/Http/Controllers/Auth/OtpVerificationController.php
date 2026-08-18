@@ -111,7 +111,7 @@ class OtpVerificationController extends Controller
 
             if ($pendingPlan && $user->role === 'farmer') {
                 return redirect()->route('subscription.plans')
-                    ->with('status', 'Account verified! Choose a plan to start your free 14-day trial.');
+                    ->with('status', 'Account verified! Your 14-day free trial is active — subscribe to a paid plan any time.');
             }
 
             return redirect()->route('dashboard')->with('status', 'Account verified! Welcome to MSAS.');
