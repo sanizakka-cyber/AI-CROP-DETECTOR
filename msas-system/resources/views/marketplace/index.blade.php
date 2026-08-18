@@ -230,6 +230,7 @@
                     </svg>
                     Call Dealer
                 </a>
+                <p id="modal-no-contact" class="hidden text-center text-xs text-slate-400 py-2">No contact details available for this dealer.</p>
             </div>
 
             <p class="text-[11px] text-slate-400 text-center mt-4 leading-relaxed">
@@ -264,13 +265,20 @@
             var waBtn   = document.getElementById('modal-whatsapp-btn');
             var callBtn = document.getElementById('modal-call-btn');
 
+            var noContactMsg = document.getElementById('modal-no-contact');
+
             if(raw) {
                 waBtn.href   = 'https://wa.me/' + raw + '?text=' + msg;
                 callBtn.href = 'tel:+' + raw;
                 callBtn.classList.remove('hidden');
+                waBtn.classList.remove('hidden');
+                noContactMsg.classList.add('hidden');
             } else {
-                waBtn.href = '#';
+                // No phone on file — there is no real destination for either
+                // action, so hide both rather than leaving a dead "#" link.
+                waBtn.classList.add('hidden');
                 callBtn.classList.add('hidden');
+                noContactMsg.classList.remove('hidden');
             }
 
             document.getElementById('contactModal').classList.remove('hidden');

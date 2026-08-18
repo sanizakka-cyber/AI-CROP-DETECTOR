@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MSAS FarmAI Report #{{ $diagnosis->id }}</title>
+<title>MSAS FarmAI Report {{ $diagnosis->scan_ref ?? '#'.$diagnosis->id }}</title>
 <style>
 /* ── Base ──────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -144,8 +144,8 @@ a { color: inherit; text-decoration: none; }
 .conf-bar-bg { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }
 .conf-bar-fill {
     height: 8px; border-radius: 999px;
-    background: {{ $diagnosis->confidence_score >= 80 ? '#10b981' : ($diagnosis->confidence_score >= 60 ? '#f59e0b' : '#ef4444') }};
-    width: {{ min((float)$diagnosis->confidence_score, 100) }}%;
+    background: {{ $diagnosis->confidence_score === null ? '#94a3b8' : ($diagnosis->confidence_score >= 65 ? '#10b981' : '#ef4444') }};
+    width: {{ $diagnosis->confidence_score === null ? 0 : min((float)$diagnosis->confidence_score, 100) }}%;
 }
 
 /* ── Section grid ───────────────────────────────────────────────────── */
@@ -282,7 +282,7 @@ a { color: inherit; text-decoration: none; }
         <div>
             <div class="rpt-logo">MSAS <span>FarmAI</span></div>
             <div style="font-size:11px;opacity:.7;margin-top:4px">Intelligent Agricultural Diagnostic System</div>
-            <div class="rpt-id">Report ID: MSAS-{{ str_pad($diagnosis->id, 6, '0', STR_PAD_LEFT) }}</div>
+            <div class="rpt-id">Report ID: {{ $diagnosis->scan_ref ?? 'MSAS-'.str_pad($diagnosis->id, 6, '0', STR_PAD_LEFT) }}</div>
         </div>
         <div class="rpt-meta">
             <div><strong>{{ __('Farmer') }}:</strong> {{ $user->name }}</div>
@@ -291,7 +291,7 @@ a { color: inherit; text-decoration: none; }
                 {{ match($diagnosis->type) { 'plant'=>'Crop / Plant', 'soil'=>'Soil Assessment', default=>'Livestock' } }}
             </div>
             <div><strong>Date:</strong> {{ $diagnosis->created_at->format('F j, Y  g:i A') }}</div>
-            <div><strong>{{ __('Status') }}:</strong> {{ ucfirst($diagnosis->status) }}</div>
+            <div><strong>{{ __('Status') }}:</strong> {{ $diagnosis->statusLabel }}</div>
         </div>
     </div>
 
@@ -339,10 +339,10 @@ a { color: inherit; text-decoration: none; }
     <div class="scan-row">
         <div class="scan-img-wrap">
             <img id="rpt-scan-img"
-                 src="{{ $imageB64 ?? Storage::disk('public')->url($diagnosis->image_path) }}"
+                 src="{{ $imageB64 ?? route('diagnostics.image', $diagnosis) }}"
                  alt="Scanned Image"
                  onerror="this.onerror=null;this.style.opacity='0.3';">
-            <div class="conf-pill">AI Confidence: {{ number_format($diagnosis->confidence_score, 0) }}%</div>
+            <div class="conf-pill">AI Confidence: {{ $diagnosis->confidence_score === null ? 'N/A' : number_format($diagnosis->confidence_score, 0).'%' }}</div>
         </div>
         <div>
             <div class="diag-headline">
@@ -362,12 +362,19 @@ a { color: inherit; text-decoration: none; }
             <div class="conf-bar-wrap">
                 <div class="conf-bar-label">
                     <span>{{ __('AI Confidence') }}</span>
-                    <span>{{ number_format($diagnosis->confidence_score, 1) }}%</span>
+                    <span>{{ $diagnosis->confidence_score === null ? 'N/A' : number_format($diagnosis->confidence_score, 0).'%' }}</span>
                 </div>
                 <div class="conf-bar-bg"><div class="conf-bar-fill"></div></div>
             </div>
 
-            @if($diagnosis->confidence_score < 60)
+            @if($diagnosis->confidence_score === null)
+            <div style="padding: 0 22px 12px">
+                <div class="low-conf-box">
+                    <svg width="16" height="16" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    <p>{{ __('AI analysis was unavailable for this scan. An expert will review it shortly.') }}</p>
+                </div>
+            </div>
+            @elseif($diagnosis->confidence_score < 65)
             <div style="padding: 0 22px 12px">
                 <div class="low-conf-box">
                     <svg width="16" height="16" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
@@ -509,7 +516,7 @@ a { color: inherit; text-decoration: none; }
             Powered by Claude AI Vision
         </div>
         <div>
-            Report #MSAS-{{ str_pad($diagnosis->id, 6, '0', STR_PAD_LEFT) }} ·
+            Report {{ $diagnosis->scan_ref ?? '#MSAS-'.str_pad($diagnosis->id, 6, '0', STR_PAD_LEFT) }} ·
             Generated {{ now()->format('M j, Y g:i A') }}
         </div>
     </div>

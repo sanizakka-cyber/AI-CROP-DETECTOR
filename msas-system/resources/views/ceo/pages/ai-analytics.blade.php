@@ -111,6 +111,10 @@
                 <label class="aa-label">User</label>
                 <input type="text" name="user" value="{{ request('user') }}" placeholder="Name or email" class="aa-input">
             </div>
+            <div>
+                <label class="aa-label">Scan ID</label>
+                <input type="text" name="scan_ref" value="{{ request('scan_ref') }}" placeholder="MSAS-SCN-..." class="aa-input">
+            </div>
             <div class="flex items-end gap-2 col-span-2 sm:col-span-1">
                 <button type="submit" class="text-xs font-semibold text-white bg-[#0F6B3E] hover:bg-[#0B2447] px-4 py-2 rounded-lg transition-colors w-full">Apply Filters</button>
             </div>
@@ -244,7 +248,7 @@
         <table class="aa-table">
             <thead>
                 <tr>
-                    <th>ID</th><th>Date/Time</th><th>User</th><th>State</th><th>LGA</th>
+                    <th>Scan ID</th><th>Date/Time</th><th>User</th><th>State</th><th>LGA</th>
                     <th>Crop/Subject</th><th>Diagnosis</th><th>Confidence</th><th>Severity</th><th>Status</th><th></th>
                 </tr>
             </thead>
@@ -252,27 +256,20 @@
             @forelse($scans as $scan)
             @php
             $conf = $scan->confidence_score;
-            $confClr = $conf === null ? '#94a3b8' : ($conf>=80?'#16a34a':($conf>=60?'#d97706':'#dc2626'));
-            $rawStatus = $scan->status;
-            $displayStatus = match(true) {
-                $rawStatus === 'needs_review' => 'Failed',
-                $rawStatus === 'pending' => 'Processing',
-                in_array($rawStatus, ['reviewed','confirmed']) && $conf !== null && $conf < 50 => 'Low Confidence',
-                in_array($rawStatus, ['reviewed','confirmed']) => 'Completed',
-                default => 'Unknown',
-            };
-            $statusColors2 = ['Completed'=>['#f0fdf4','#16a34a'],'Low Confidence'=>['#fffbeb','#d97706'],'Processing'=>['#eff6ff','#2563eb'],'Failed'=>['#fef2f2','#dc2626'],'Unknown'=>['#f8fafc','#94a3b8']];
+            $confClr = $conf === null ? '#94a3b8' : ($conf>=65?'#16a34a':'#dc2626');
+            $displayStatus = $scan->statusLabel;
+            $statusColors2 = ['Completed'=>['#f0fdf4','#16a34a'],'Low Confidence'=>['#fffbeb','#d97706'],'Pending Review'=>['#eff6ff','#2563eb'],'Failed'=>['#fef2f2','#dc2626'],'Unknown'=>['#f8fafc','#94a3b8']];
             [$sBg, $sClr] = $statusColors2[$displayStatus] ?? ['#f8fafc','#94a3b8'];
             @endphp
             <tr>
-                <td style="color:#94a3b8;">#{{ $scan->id }}</td>
+                <td style="color:#94a3b8;font-family:monospace;">{{ $scan->scan_ref ?? '#'.$scan->id }}</td>
                 <td style="color:#64748b;">{{ optional($scan->created_at)->timezone('Africa/Lagos')->format('d M Y, H:i') }}</td>
                 <td style="font-weight:700;color:#0f172a;">{{ trim(($scan->user_first_name ?? '').' '.($scan->user_last_name ?? '')) ?: '—' }}</td>
                 <td style="color:#64748b;">{{ $scan->user_state ?? '—' }}</td>
                 <td style="color:#64748b;">{{ $scan->user_lga ?? '—' }}</td>
                 <td style="color:#374151;">{{ Str::limit($scan->subject_name ?? '—', 22) }}</td>
                 <td style="color:#374151;">{{ Str::limit($scan->disease_name ?? '—', 26) }}</td>
-                <td>@if($conf!==null)<span class="aa-badge" style="background:{{ $confClr }}1A;color:{{ $confClr }};">{{ round($conf) }}%</span>@else <span style="color:#cbd5e1;">—</span>@endif</td>
+                <td>@if($conf!==null)<span class="aa-badge" style="background:{{ $confClr }}1A;color:{{ $confClr }};">{{ number_format($conf, 0) }}%</span>@else <span style="color:#cbd5e1;">N/A</span>@endif</td>
                 <td style="color:#64748b;text-transform:capitalize;">{{ $scan->severity_level ?? '—' }}</td>
                 <td><span class="aa-badge" style="background:{{ $sBg }};color:{{ $sClr }};">{{ $displayStatus }}</span></td>
                 <td><a href="{{ route('diagnostics.report', $scan->id) }}" target="_blank" style="font-size:11px;font-weight:700;color:#0F6B3E;text-decoration:none;">View →</a></td>

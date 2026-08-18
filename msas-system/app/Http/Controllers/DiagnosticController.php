@@ -8,6 +8,7 @@ use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class DiagnosticController extends Controller
 {
@@ -37,9 +38,12 @@ class DiagnosticController extends Controller
         }
 
         // ── 1. Store image ────────────────────────────────────────────────────
+        // Private 'local' disk (storage/app), not the publicly-symlinked 'public'
+        // disk — the image is only ever served back through the authenticated
+        // /diagnostics/{diagnosis}/image route, which enforces ownership.
         $uploadedFile = $request->file('image');
-        $path         = $uploadedFile->store('diagnostics', 'public');
-        $fullPath     = storage_path('app/public/' . $path);
+        $path         = $uploadedFile->store('diagnostics', 'local');
+        $fullPath     = Storage::disk('local')->path($path);
         $mimeType     = $uploadedFile->getMimeType() ?? 'image/jpeg';
 
         // ── 2. Resolve AI engine connection ───────────────────────────────────
@@ -223,7 +227,10 @@ class DiagnosticController extends Controller
                 'health_status'             => null,
                 'severity_level'            => null,
                 'disease_name'              => 'Pending Expert Review',
-                'confidence_score'          => 0,
+                // AI never ran — this is "no score", not a genuine 0%. Never
+                // fabricate a number here; downstream views must render
+                // "AI Analysis Unavailable" whenever confidence_score is null.
+                'confidence_score'          => null,
                 'urgency_level'             => 'Medium',
                 'symptoms_identified'       => null,
                 // these three were NOT NULL in original schema — safe empty string until migration runs
@@ -245,6 +252,7 @@ class DiagnosticController extends Controller
 
         Diagnosis::create(array_merge($diagnosisData, [
             'user_id'         => auth()->id(),
+            'scan_ref'        => Diagnosis::generateScanRef(),
             'type'            => $request->scan_type,
             'image_path'      => $path,
             'image_thumbnail' => $thumbnail,
@@ -344,11 +352,11 @@ class DiagnosticController extends Controller
         $user = $diagnosis->user;
 
         // Prefer the stored thumbnail (survives container restarts); fall back to
-        // reading the file from disk (works if storage symlink exists and file not deleted).
+        // reading the file from disk.
         $imageB64 = $diagnosis->image_thumbnail;
         if (!$imageB64 && $diagnosis->image_path) {
-            $fullPath = storage_path('app/public/' . $diagnosis->image_path);
-            if (file_exists($fullPath) && is_readable($fullPath)) {
+            $fullPath = $this->resolveImagePath($diagnosis->image_path);
+            if ($fullPath) {
                 $mime     = mime_content_type($fullPath) ?: 'image/jpeg';
                 $imageB64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($fullPath));
             }
@@ -357,6 +365,47 @@ class DiagnosticController extends Controller
         $translated = $this->translatedDiagnosisText($diagnosis);
 
         return view('diagnostics.report', compact('diagnosis', 'user', 'imageB64', 'translated'));
+    }
+
+    /**
+     * Serves the original scanned image. Ownership-gated the same way as
+     * downloadReport() — images live on the private 'local' disk (or, for
+     * scans created before this route existed, the legacy public disk path)
+     * and are never exposed via a directly guessable public storage URL.
+     */
+    public function image(Diagnosis $diagnosis)
+    {
+        $viewer = auth()->user();
+        $isOwner = $diagnosis->user_id === $viewer->id;
+        $isCeoOrAdmin = in_array($viewer->role, ['ceo', 'admin'], true);
+        abort_if(!$isOwner && !$isCeoOrAdmin, 403);
+
+        if ($diagnosis->image_path) {
+            $fullPath = $this->resolveImagePath($diagnosis->image_path);
+            if ($fullPath) {
+                return response()->file($fullPath);
+            }
+        }
+
+        if ($diagnosis->image_thumbnail && preg_match('/^data:(.+);base64,(.+)$/', $diagnosis->image_thumbnail, $m)) {
+            return response(base64_decode($m[2]))->header('Content-Type', $m[1]);
+        }
+
+        abort(404);
+    }
+
+    /** Resolves a stored image_path against the private 'local' disk, then the legacy public disk. */
+    private function resolveImagePath(string $path): ?string
+    {
+        if (Storage::disk('local')->exists($path)) {
+            return Storage::disk('local')->path($path);
+        }
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->path($path);
+        }
+
+        return null;
     }
 
     /**

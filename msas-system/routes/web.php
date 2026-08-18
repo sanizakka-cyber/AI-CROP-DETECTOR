@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
         Route::post('/diagnostics/translate', [DiagnosticController::class, 'translate'])->name('diagnostics.translate');
         Route::get('/diagnostics/{diagnosis}/report', [DiagnosticController::class, 'downloadReport'])->name('diagnostics.report');
+        Route::get('/diagnostics/{diagnosis}/image', [DiagnosticController::class, 'image'])->name('diagnostics.image');
         Route::get('/diagnostics/{diagnosis}/narration', [NarrationController::class, 'show'])
             ->middleware('throttle:20,1')
             ->name('diagnostics.narration');

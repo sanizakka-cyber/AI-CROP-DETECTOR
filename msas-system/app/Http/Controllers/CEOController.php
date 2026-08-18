@@ -412,7 +412,7 @@ class CEOController extends Controller
                 'today'       => Diagnosis::whereDate('created_at', today())->count(),
                 'this_month'  => Diagnosis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
                 'total'       => Diagnosis::count(),
-                'avg_conf'    => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score'), 1),
+                'avg_conf'    => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score')),
                 'crop_total'  => Diagnosis::where('type', 'crop')->count(),
                 'live_total'  => Diagnosis::where('type', 'livestock')->count(),
                 'soil_total'  => Diagnosis::where('type', 'soil')->count(),
@@ -629,7 +629,7 @@ class CEOController extends Controller
             'today'          => Diagnosis::whereDate('created_at', today())->count(),
             'week'           => Diagnosis::where('created_at', '>=', now()->subDays(6)->startOfDay())->count(),
             'month'          => Diagnosis::where('created_at', '>=', now()->subDays(29)->startOfDay())->count(),
-            'avg_confidence' => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score'), 1),
+            'avg_confidence' => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score')),
             'pending_review' => Diagnosis::where('status', 'pending')->count(),
             'failed'         => Diagnosis::where('status', 'needs_review')->count(),
         ], ['total'=>0,'today'=>0,'week'=>0,'month'=>0,'avg_confidence'=>0,'pending_review'=>0,'failed'=>0]);

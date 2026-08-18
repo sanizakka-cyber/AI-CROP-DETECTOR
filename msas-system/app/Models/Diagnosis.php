@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Diagnosis extends Model
 {
@@ -11,6 +12,7 @@ class Diagnosis extends Model
 
     protected $fillable = [
         'user_id',
+        'scan_ref',
         'type',
         'image_path',
         'image_thumbnail',
@@ -47,6 +49,69 @@ class Diagnosis extends Model
     protected $casts = [
         'confidence_score' => 'float',
     ];
+
+    /**
+     * Standardized, concurrency-safe public Scan ID: MSAS-SCN-YYYYMMDD-000001.
+     * Backed by a native Postgres sequence (diagnoses_scan_seq) so two
+     * simultaneous scans can never collide — never derive this from count()+1.
+     */
+    public static function generateScanRef(): string
+    {
+        $seq = DB::select("SELECT nextval('diagnoses_scan_seq') AS n")[0]->n;
+
+        return sprintf('MSAS-SCN-%s-%06d', now()->format('Ymd'), $seq);
+    }
+
+    /**
+     * Canonical confidence display: real model score + honesty band, or an
+     * explicit "unavailable" state — never a fabricated percentage.
+     * Bands mirror the spec's own worked examples (92→High, 76→Good,
+     * 67→Acceptable, 54→Low) with 65% as the automated-acceptance line.
+     */
+    public function getConfidenceLabelAttribute(): string
+    {
+        if ($this->confidence_score === null) {
+            return 'N/A — AI Analysis Unavailable';
+        }
+
+        $pct = (int) round($this->confidence_score);
+        $tier = match (true) {
+            $pct >= 85 => 'High Confidence',
+            $pct >= 70 => 'Good Confidence',
+            $pct >= 65 => 'Acceptable / Review if necessary',
+            default    => 'Low Confidence / Expert Review Required',
+        };
+
+        return "{$pct}% — {$tier}";
+    }
+
+    /** Plain "87%" (or null) — for spots that only need the number, one format everywhere. */
+    public function getConfidencePercentAttribute(): ?string
+    {
+        return $this->confidence_score === null ? null : number_format($this->confidence_score, 0) . '%';
+    }
+
+    /**
+     * One canonical status vocabulary for display, mapping the underlying
+     * DB/API status values (which stay untouched to avoid breaking existing
+     * filter logic) to the spec's four scan statuses.
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        if ($this->status === 'needs_review') {
+            return 'Failed';
+        }
+        if ($this->status === 'pending') {
+            return 'Pending Review';
+        }
+        if (in_array($this->status, ['reviewed', 'confirmed'], true)) {
+            return ($this->confidence_score !== null && $this->confidence_score < 65)
+                ? 'Low Confidence'
+                : 'Completed';
+        }
+
+        return ucfirst(str_replace('_', ' ', $this->status));
+    }
 
     public function user()
     {
@@ -86,7 +151,9 @@ class Diagnosis extends Model
         if ($this->detected_part)                                                  $lines[] = "Detected part: {$this->detected_part}.";
         if ($this->health_status)                                                  $lines[] = "Health status: {$this->health_status}.";
         $lines[] = "Condition: {$this->disease_name}.";
-        $lines[] = "Confidence: {$this->confidence_score} percent.";
+        $lines[] = $this->confidence_score !== null
+            ? "Confidence: " . (int) round($this->confidence_score) . " percent."
+            : "AI analysis was unavailable for this scan. Pending expert review.";
         if ($severity)                                                             $lines[] = "Severity: {$severity}.";
         $lines[] = "Urgency: {$urgency}.";
         if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: {$this->symptoms_identified}.";

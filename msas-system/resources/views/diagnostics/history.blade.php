@@ -59,11 +59,14 @@
                         @if($diagnosis->scientific_name && $diagnosis->scientific_name !== 'Unknown')
                         <div class="opacity-80 italic text-xs leading-tight">{{ $diagnosis->scientific_name }}</div>
                         @endif
+                        @if($diagnosis->scan_ref)
+                        <div class="opacity-70 text-[10px] font-mono leading-tight mt-0.5">{{ $diagnosis->scan_ref }}</div>
+                        @endif
                     </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs opacity-90">
                     <span>{{ $diagnosis->created_at->format('M j, Y  g:i A') }}</span>
-                    <span class="bg-white/20 px-2 py-0.5 rounded-full font-bold capitalize text-[10px]">{{ $diagnosis->status }}</span>
+                    <span class="bg-white/20 px-2 py-0.5 rounded-full font-bold text-[10px]">{{ $diagnosis->statusLabel }}</span>
                 </div>
             </div>
 
@@ -205,8 +208,8 @@
                 <div class="md:col-span-1 space-y-3">
                     {{-- Image --}}
                     <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square">
-                        {{-- Prefer DB thumbnail (survives restarts); fall back to storage URL --}}
-                        <img src="{{ $diagnosis->image_thumbnail ?? Storage::disk('public')->url($diagnosis->image_path) }}"
+                        {{-- Prefer DB thumbnail (survives restarts); fall back to the authenticated image route --}}
+                        <img src="{{ $diagnosis->image_thumbnail ?? route('diagnostics.image', $diagnosis) }}"
                              alt="Scanned Image"
                              class="w-full h-full object-cover" loading="lazy"
                              onerror="imgError(this)">
@@ -214,17 +217,22 @@
                         {{-- Confidence overlay --}}
                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                             <div class="text-white text-[10px] font-bold uppercase opacity-70" data-i18n="AI Confidence">{{ __('AI Confidence') }}</div>
+                            @if($diagnosis->confidence_score !== null)
                             <div class="flex items-baseline gap-1">
                                 <span class="text-white font-extrabold text-2xl leading-none">{{ number_format($diagnosis->confidence_score, 0) }}</span>
                                 <span class="text-white/70 text-xs font-bold">%</span>
                             </div>
                             <div class="w-full bg-white/20 rounded-full h-1.5 mt-1.5">
-                                <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= 80 ? 'bg-emerald-400' : ($diagnosis->confidence_score >= 60 ? 'bg-amber-400' : 'bg-red-400') }}"
+                                <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= 65 ? 'bg-emerald-400' : 'bg-red-400' }}"
                                      style="width:{{ min((float)$diagnosis->confidence_score,100) }}%"></div>
                             </div>
+                            @else
+                            <div class="text-white font-extrabold text-sm leading-none">N/A</div>
+                            <div class="text-white/70 text-[10px] mt-0.5">AI Analysis Unavailable</div>
+                            @endif
                         </div>
 
-                        @if($diagnosis->confidence_score < 60)
+                        @if($diagnosis->confidence_score !== null && $diagnosis->confidence_score < 65)
                         <div class="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW CONF.</div>
                         @endif
                     </div>

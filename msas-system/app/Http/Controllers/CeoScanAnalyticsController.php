@@ -122,7 +122,7 @@ class CeoScanAnalyticsController extends Controller
         return view('ceo.pages.ai-analytics', [
             'summary'            => $summary,
             'filteredCount'      => $filteredCount,
-            'filteredAvgConf'    => round((float) ($filteredAvgConf ?? 0), 1),
+            'filteredAvgConf'    => round((float) ($filteredAvgConf ?? 0)),
             'filteredAvgMinutes' => round((float) ($filteredAvgMinutes ?? 0), 1),
             'statusBreakdown'    => $statusBreakdown,
             'topCrops'           => $topCrops,
@@ -147,7 +147,7 @@ class CeoScanAnalyticsController extends Controller
             ->when($request->filled('state'), fn (Builder $q) => $q->where('users.state', $request->state))
             ->when($request->filled('lga'), fn (Builder $q) => $q->where('users.lga', $request->lga))
             ->select(
-                'diagnoses.id', 'diagnoses.created_at', 'diagnoses.type', 'diagnoses.subject_name',
+                'diagnoses.id', 'diagnoses.scan_ref', 'diagnoses.created_at', 'diagnoses.type', 'diagnoses.subject_name',
                 'diagnoses.disease_name', 'diagnoses.confidence_score', 'diagnoses.severity_level',
                 'diagnoses.status', DB::raw($this->displayStatusCaseSql().' as display_status'),
                 'users.first_name as user_first_name', 'users.last_name as user_last_name',
@@ -173,7 +173,7 @@ class CeoScanAnalyticsController extends Controller
             ]);
             foreach ($query->cursor() as $row) {
                 fputcsv($handle, [
-                    $row->id,
+                    $row->scan_ref ?? $row->id,
                     optional($row->created_at)->timezone('Africa/Lagos')->format('Y-m-d H:i:s'),
                     $row->type,
                     $row->subject_name,
@@ -233,6 +233,7 @@ class CeoScanAnalyticsController extends Controller
 
         $query->when($request->filled('crop'), fn (Builder $q) => $q->where('diagnoses.subject_name', 'ilike', '%'.$request->crop.'%'));
         $query->when($request->filled('diagnosis'), fn (Builder $q) => $q->where('diagnoses.disease_name', 'ilike', '%'.$request->diagnosis.'%'));
+        $query->when($request->filled('scan_ref'), fn (Builder $q) => $q->where('diagnoses.scan_ref', 'ilike', '%'.$request->scan_ref.'%'));
         $query->when($request->filled('user'), function (Builder $q) use ($request) {
             $s = $request->user;
             $q->where(fn (Builder $qq) => $qq->where('users.first_name', 'ilike', "%{$s}%")
@@ -253,11 +254,13 @@ class CeoScanAnalyticsController extends Controller
             match ($request->status) {
                 'processing'     => $q->where('diagnoses.status', 'pending'),
                 'failed'         => $q->where('diagnoses.status', 'needs_review'),
+                // 65% is the spec's automated-acceptance line — below it a scan is
+                // "Low Confidence" even though the AI did run and produce a diagnosis.
                 'low_confidence' => $q->whereIn('diagnoses.status', ['reviewed', 'confirmed'])
-                                       ->where('diagnoses.confidence_score', '<', 50),
+                                       ->where('diagnoses.confidence_score', '<', 65),
                 'completed'      => $q->whereIn('diagnoses.status', ['reviewed', 'confirmed'])
                                        ->where(fn (Builder $qq) => $qq->whereNull('diagnoses.confidence_score')
-                                           ->orWhere('diagnoses.confidence_score', '>=', 50)),
+                                           ->orWhere('diagnoses.confidence_score', '>=', 65)),
                 default => null,
             };
         });
@@ -274,7 +277,7 @@ class CeoScanAnalyticsController extends Controller
             CASE
                 WHEN diagnoses.status = 'needs_review' THEN 'Failed'
                 WHEN diagnoses.status = 'pending' THEN 'Processing'
-                WHEN diagnoses.status IN ('reviewed','confirmed') AND diagnoses.confidence_score IS NOT NULL AND diagnoses.confidence_score < 50 THEN 'Low Confidence'
+                WHEN diagnoses.status IN ('reviewed','confirmed') AND diagnoses.confidence_score IS NOT NULL AND diagnoses.confidence_score < 65 THEN 'Low Confidence'
                 WHEN diagnoses.status IN ('reviewed','confirmed') THEN 'Completed'
                 ELSE 'Unknown'
             END

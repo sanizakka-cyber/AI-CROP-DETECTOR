@@ -20,8 +20,9 @@ class DiagnosisResource extends JsonResource
             'recommended_medication' => $this->recommended_medication,
             'vet_referral_advice'    => $this->vet_referral_advice,
             'status'                 => $this->status,
+            'scan_ref'               => $this->scan_ref,
             'image_url'              => $this->image_path
-                ? url('storage/' . $this->image_path)
+                ? route('diagnostics.image', $this->id)
                 : null,
             'created_at'             => $this->created_at?->toIso8601String(),
             'updated_at'             => $this->updated_at?->toIso8601String(),

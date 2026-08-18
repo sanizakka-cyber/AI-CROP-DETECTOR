@@ -75,7 +75,7 @@
             <h3 class="font-bold text-indigo-700 text-sm uppercase tracking-wide mb-2">AI Pre-Diagnosis</h3>
             <p class="text-indigo-800 text-sm leading-relaxed">{{ $consultation->ai_diagnosis }}</p>
             @if($consultation->ai_confidence)
-            <div class="text-xs text-indigo-500 mt-2">Confidence: {{ $consultation->ai_confidence }}%</div>
+            <div class="text-xs text-indigo-500 mt-2">Confidence: {{ number_format($consultation->ai_confidence, 0) }}%</div>
             @endif
         </div>
         @endif

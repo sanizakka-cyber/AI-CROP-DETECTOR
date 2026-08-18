@@ -8,8 +8,6 @@
     <style>
     html { scroll-behavior: smooth; }
     .phase-section { scroll-margin-top: 64px; }
-    .jump-pill { font-size:11px; font-weight:700; color:#374151; background:#f8fafc; border:1px solid #e2e8f0; padding:6px 12px; border-radius:99px; text-decoration:none; transition:background .15s, color .15s, border-color .15s; white-space:nowrap; }
-    .jump-pill:hover { background:#0F6B3E; color:#fff; border-color:#0F6B3E; }
     .view-module-link { font-size:11px; font-weight:700; color:#0F6B3E; text-decoration:none; white-space:nowrap; }
     .view-module-link:hover { text-decoration:underline; }
     .phase-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
@@ -37,23 +35,6 @@
                 {{ auth()->user()->displayFirstName }}
             </h1>
             <p class="text-emerald-200/80 text-xs mt-2 mb-1">Executive Overview — Complete MSAS System Summary</p>
-        </div>
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════════════
-         QUICK NAVIGATION / JUMP TO
-    ═══════════════════════════════════════════════════════════ --}}
-    <div class="bi-card" style="padding:14px 18px;">
-        <div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Jump to</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <a href="#risk-center" class="jump-pill">Risk Center</a>
-            <a href="#financial" class="jump-pill">Financial</a>
-            <a href="#ai-analytics" class="jump-pill">AI Analytics</a>
-            <a href="#marketplace" class="jump-pill">Marketplace</a>
-            <a href="#operations" class="jump-pill">Operations</a>
-            <a href="#geographic" class="jump-pill">Geographic</a>
-            <a href="#users-subscriptions" class="jump-pill">Users &amp; Subs</a>
-            <a href="#system" class="jump-pill">System</a>
         </div>
     </div>
 
