@@ -66,8 +66,11 @@ class AuthenticatedSessionController extends Controller
 
         // Unverified accounts — send OTP and redirect to verify screen
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
+            // Phone-only accounts: SMS OTP isn't wired up in production yet
+            // (no funded provider configured), so don't block login on it —
+            // but don't fabricate verification either. The phone stays
+            // honestly unverified until real SMS verification exists.
             if (! $user->email && $user->phone) {
-                $user->update(['phone_verified_at' => now()]);
                 return redirect()->intended(route('dashboard', absolute: false));
             }
 

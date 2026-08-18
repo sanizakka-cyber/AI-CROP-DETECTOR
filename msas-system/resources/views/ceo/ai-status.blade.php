@@ -18,7 +18,8 @@
         $isUp    = $httpStatus && $httpStatus >= 200 && $httpStatus < 300;
         $aiReady = $isUp && !empty($health['ai_ready']);
         $noUrl   = empty($baseUrl);
-        $keyOk   = $aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY';
+        // $keyOk / $aiKeyLen are computed server-side in the controller — the
+        // raw AI_ENGINE_KEY value itself is never passed into this view.
 
         // Auth test result classification
         $authOk      = $authStatus && $authStatus >= 200 && $authStatus < 300;
@@ -161,7 +162,7 @@
                 <div class="flex justify-between">
                     <dt class="text-slate-500">AI_ENGINE_KEY</dt>
                     <dd class="{{ $keyOk ? 'text-emerald-600' : 'text-amber-600' }} font-semibold text-xs">
-                        {{ $keyOk ? 'Set (' . strlen($aiKey) . ' chars)' : 'Placeholder / not set' }}
+                        {{ $keyOk ? "Set ({$aiKeyLen} chars)" : 'Placeholder / not set' }}
                     </dd>
                 </div>
                 <div class="flex justify-between">
@@ -242,7 +243,7 @@
             <div class="flex items-center justify-between">
                 <dt class="text-slate-500">AI_ENGINE_KEY <span class="text-xs text-slate-400">(Laravel app env)</span></dt>
                 <dd class="{{ $keyOk ? 'text-emerald-600' : 'text-amber-600' }} font-semibold text-xs">
-                    {{ $keyOk ? 'Set (' . strlen($aiKey) . ' chars)' : ($aiKey ? 'Placeholder value — update this' : 'Not set') }}
+                    {{ $keyOk ? "Set ({$aiKeyLen} chars)" : ($aiKeyStatus === 'placeholder' ? 'Placeholder value — update this' : 'Not set') }}
                 </dd>
             </div>
             <div class="flex items-center justify-between">

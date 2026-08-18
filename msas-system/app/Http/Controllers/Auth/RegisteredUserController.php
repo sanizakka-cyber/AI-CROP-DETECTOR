@@ -111,8 +111,12 @@ class RegisteredUserController extends Controller
         if ($isEmail) {
             $userData['email'] = $identifier;
         } else {
-            $userData['phone']             = $normalizedPhone;
-            $userData['phone_verified_at'] = $needsApproval ? null : now();
+            $userData['phone'] = $normalizedPhone;
+            // Never mark a phone number verified here — no SMS OTP has been
+            // sent or confirmed at this point. The phone is still recorded
+            // and registration still proceeds; it's just honestly
+            // unverified until real SMS verification exists.
+            $userData['phone_verified_at'] = null;
         }
 
         $user = User::create($userData);

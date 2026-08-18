@@ -1192,8 +1192,14 @@ class CEOController extends Controller
             ->take(5)
             ->get();
 
+        // Never pass the raw key into the view — only a presence check, its
+        // length, and a status label, which is all the diagnostic page needs.
+        $keyOk       = (bool) ($aiKey && $aiKey !== 'REPLACE_WITH_AI_ENGINE_KEY');
+        $aiKeyLen    = strlen($aiKey);
+        $aiKeyStatus = $keyOk ? 'ok' : ($aiKey ? 'placeholder' : 'unset');
+
         return view('ceo.ai-status', compact(
-            'baseUrl', 'aiKey', 'health', 'latency', 'error',
+            'baseUrl', 'keyOk', 'aiKeyLen', 'aiKeyStatus', 'health', 'latency', 'error',
             'rawBody', 'httpStatus',
             'authStatus', 'authBody', 'authError', 'authLatency',
             'recentFailed'
