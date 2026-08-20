@@ -44,9 +44,11 @@ class AuthApiController extends Controller
 
             // 429, not the default-422 ValidationException — "too many
             // attempts" isn't a validation problem, and the mobile app
-            // distinguishes status codes to show the right message.
+            // distinguishes status codes to show the right message. Uses
+            // 'error' (not 'message') to match this app's global API error
+            // shape from bootstrap/app.php's exception renderers.
             return response()->json([
-                'message' => 'Too many login attempts. Please try again in ' . ceil($seconds / 60) . ' minute(s).',
+                'error' => 'Too many login attempts. Please try again in ' . ceil($seconds / 60) . ' minute(s).',
             ], 429);
         }
 
@@ -60,7 +62,7 @@ class AuthApiController extends Controller
             // 401, not the default-422 ValidationException — bad credentials
             // are an authentication failure, not a request-validation one.
             return response()->json([
-                'message' => 'Email/phone or password is incorrect.',
+                'error' => 'Email/phone or password is incorrect.',
             ], 401);
         }
 
@@ -68,7 +70,7 @@ class AuthApiController extends Controller
         RateLimiter::clear($userKey);
 
         if (! $user->is_active) {
-            return response()->json(['message' => 'Account is suspended. Please contact support.'], 403);
+            return response()->json(['error' => 'Account is suspended. Please contact support.'], 403);
         }
 
         $user->update(['last_seen' => now()]);

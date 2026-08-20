@@ -24,16 +24,24 @@ export class ApiError extends Error {
   }
 }
 
-/** First message out of Laravel's { field: [msg, ...] } validation error bag. */
-function firstFieldError(errors) {
+/**
+ * First message out of a { field: [msg, ...] } validation error bag.
+ * This backend's global exception renderer (bootstrap/app.php) returns
+ * { error, details } for every API error, not Laravel's textbook-default
+ * { message, errors } — 'details' is checked first since that's what this
+ * app actually sends; 'errors' stays as a fallback in case some endpoint
+ * doesn't go through that renderer.
+ */
+function firstFieldError(data) {
+  const errors = data?.details || data?.errors;
   if (!errors || typeof errors !== 'object') return null;
   const first = Object.values(errors)[0];
   return Array.isArray(first) ? first[0] : null;
 }
 
 // Status-code-specific fallback messages, used when the backend didn't send
-// its own message/errors body for that response. Real backend messages
-// (data.message / data.errors) always take priority over these — see below.
+// its own error body for that response. Real backend messages (data.error /
+// data.details) always take priority over these — see below.
 const STATUS_FALLBACKS = {
   400: 'MSAS could not process that request. Please try again.',
   401: 'Email/phone or password is incorrect.',
@@ -116,14 +124,14 @@ const request = async (path, options = {}) => {
   }
 
   if (!res.ok) {
-    // Laravel validation failures carry { message, errors: { field: [...] } }
-    // — the top-level message is usually the generic "The given data was
-    // invalid.", so prefer the first field-specific message, then the
-    // backend's own message, then a status-specific fallback — never a
-    // one-size-fits-all string.
-    const fieldMessage = firstFieldError(data.errors);
-    const message = fieldMessage || data.message || data.error || STATUS_FALLBACKS[res.status] || `Request failed (${res.status}).`;
-    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.errors || null });
+    // This backend's validation failures carry { error: 'Validation
+    // failed.', details: { field: [...] } } — the top-level 'error' is
+    // always the generic string, so prefer the first field-specific
+    // message, then the backend's own top-level message, then a
+    // status-specific fallback — never a one-size-fits-all string.
+    const fieldMessage = firstFieldError(data);
+    const message = fieldMessage || data.error || data.message || STATUS_FALLBACKS[res.status] || `Request failed (${res.status}).`;
+    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.details || data.errors || null });
   }
 
   return data;
@@ -185,7 +193,7 @@ export const diagnoseAPI = {
       body: form,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
     return data;
   },
 
@@ -207,7 +215,7 @@ export const diagnoseAPI = {
       body: form,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
     return data;
   },
 
