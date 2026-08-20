@@ -77,26 +77,30 @@ class SubscriptionApiController extends Controller
     }
 
     /**
-     * Paystack redirects here after the in-app browser completes payment.
+     * Paystack redirects the user's in-app browser here after payment —
+     * this is loaded as a page, not called as an API, so it renders a
+     * small confirmation page rather than JSON (a bare JSON response
+     * previously showed up as raw text in the mobile app's browser).
      * Public/unauthenticated (mirrors /api/payment/mobile-callback) — the
      * paying user is identified from Paystack's own verified metadata, not
      * from a session, since a webview redirect carries no bearer token.
      */
-    public function paystackCallback(Request $request): JsonResponse
+    public function paystackCallback(Request $request)
     {
         $reference = $request->query('reference') ?? $request->query('trxref');
 
         if (! $reference) {
-            return response()->json(['success' => false, 'message' => 'No reference provided.'], 400);
+            return response()->view('subscription.mobile-callback', [
+                'success' => false,
+                'message' => 'No payment reference was provided.',
+            ], 400);
         }
 
         $result = $this->subs->verifyAndActivate($reference);
 
-        return response()->json([
-            'success'   => $result['success'],
-            'duplicate' => $result['duplicate'] ?? false,
-            'message'   => $result['message'],
-            'plan'      => $result['plan'] ?? null,
+        return response()->view('subscription.mobile-callback', [
+            'success' => $result['success'],
+            'message' => $result['message'],
         ], $result['success'] ? 200 : 422);
     }
 

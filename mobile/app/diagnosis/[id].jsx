@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { diagnoseAPI, marketplaceAPI, cartAPI } from '../../lib/api';
 import { Colors, Radius, Spacing, Typography, Shadows } from '../../constants/Theme';
 import { Button, Card, SeverityBadge } from '../../components/UI';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
 import { VoiceService } from '../../services/VoiceService';
 
 const DEFAULT_EXPERT_PHONE = '08129582957';
@@ -87,6 +88,13 @@ export default function DiagnosisDetailScreen() {
       rate: speed,
       onDone: () => setVoicePlaying(false),
       onError: () => setVoicePlaying(false),
+      onUnavailableVoice: (langCode) => {
+        const langName = LANGUAGES.find(l => l.code === langCode)?.name || langCode;
+        Alert.alert(
+          'Voice Not Available',
+          `This device doesn't have a ${langName} voice installed, so narration will play in a different language instead.`
+        );
+      },
     });
   };
 
@@ -99,9 +107,9 @@ export default function DiagnosisDetailScreen() {
     setAddingId(product.id);
     try {
       await cartAPI.add(product.id, 1);
-      alert(`${product.name} added to cart!`);
+      Alert.alert('Added to Cart', `${product.name} added to cart!`);
     } catch (e) {
-      alert(e.message || 'Could not add to cart');
+      Alert.alert('Error', e.message || 'Could not add to cart');
     } finally {
       setAddingId(null);
     }

@@ -8,8 +8,35 @@ function ttsCode(langCode) {
 }
 
 export const VoiceService = {
-  speak(text, langCode = 'en', options = {}) {
+  // True if the device has an installed TTS voice matching this app
+  // language (e.g. "ha" matches a voice tagged "ha-NG" or "ha_NG"). Some
+  // Android devices ship with no Hausa/Yoruba/Igbo voice at all, and
+  // Fulfulde has no TTS language code anywhere — in both cases Speech.speak
+  // silently substitutes a different-language voice instead of failing.
+  async isVoiceAvailable(langCode = 'en') {
+    if (langCode === 'ff') return false; // no TTS code exists for Fulfulde at all
+    const code = ttsCode(langCode);
+    try {
+      const voices = await Speech.getAvailableVoicesAsync();
+      return voices.some(v => v.language && (v.language === code || v.language.split(/[-_]/)[0] === code.split('-')[0]));
+    } catch {
+      // Can't enumerate voices on this platform/device — assume available
+      // rather than blocking narration outright.
+      return true;
+    }
+  },
+
+  /**
+   * options.onUnavailableVoice, if given, fires (before speaking) when the
+   * device has no voice for langCode — narration still plays in whatever
+   * voice the OS substitutes, but the caller can now surface that instead
+   * of the user silently hearing the wrong language.
+   */
+  async speak(text, langCode = 'en', options = {}) {
     Speech.stop();
+    if (options.onUnavailableVoice && !(await this.isVoiceAvailable(langCode))) {
+      options.onUnavailableVoice(langCode);
+    }
     Speech.speak(text, {
       language: ttsCode(langCode),
       rate:    options.rate    ?? 0.88,

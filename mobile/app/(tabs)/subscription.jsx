@@ -3,8 +3,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, Modal,
   StyleSheet, Alert, ActivityIndicator, StatusBar,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useAuth } from '../../context/AuthContext';
+import { subscriptionAPI } from '../../lib/api';
 import PlanBadge from '../../components/PlanBadge';
 
 const C = {
@@ -68,13 +70,33 @@ export default function SubscriptionScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(sub.currentPlan !== 'none' ? sub.currentPlan : 'basic');
 
+  const startCheckout = async (plan) => {
+    const cycle = yearly ? 'yearly' : 'monthly';
+    setLoading(true);
+    try {
+      const res = await subscriptionAPI.subscribe(plan.key, cycle);
+      await WebBrowser.openBrowserAsync(res.authorization_url);
+      // Paystack redirects the in-app browser to a backend confirmation
+      // page when the user finishes (or cancels); openBrowserAsync only
+      // resolves once that browser is closed, so this is the right place
+      // to re-pull the real subscription state from the server rather than
+      // assuming the payment succeeded.
+      await sub.refresh();
+    } catch (e) {
+      Alert.alert('Subscription Failed', e.message || 'Could not start checkout. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubscribe = (plan) => {
+    const cycle = yearly ? 'yearly' : 'monthly';
     Alert.alert(
       `Subscribe to ${plan.name}`,
-      `You'll be redirected to complete payment via the MSAS portal.\n\nPlan: ${plan.name}\nPrice: ${fmt(yearly ? plan.price.yearly : plan.price.monthly)}/${yearly ? 'year' : 'month'}`,
+      `You'll be taken to Paystack to complete payment.\n\nPlan: ${plan.name}\nPrice: ${fmt(plan.price[cycle])}/${yearly ? 'year' : 'month'}`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Portal', onPress: () => Alert.alert('Info', 'Please log in at your MSAS web portal to complete your subscription payment.') },
+        { text: 'Continue to Payment', onPress: () => startCheckout(plan) },
       ]
     );
   };
@@ -124,7 +146,7 @@ export default function SubscriptionScreen() {
           ) : (
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 }}>No active subscription</Text>
-              <Text style={{ color: C.white, fontSize: 15, fontWeight: '700' }}>Start your 14-day free trial below</Text>
+              <Text style={{ color: C.white, fontSize: 15, fontWeight: '700' }}>Choose a plan below to subscribe</Text>
             </View>
           )}
         </View>
@@ -204,10 +226,13 @@ export default function SubscriptionScreen() {
           style={styles.dropdownSubscribeBtn}
           onPress={() => handleSubscribe(PLANS.find(p => p.key === selectedPlan))}
           activeOpacity={0.85}
+          disabled={loading}
         >
-          <Text style={styles.dropdownSubscribeTxt}>
-            Subscribe to {PLANS.find(p => p.key === selectedPlan)?.name}
-          </Text>
+          {loading ? <ActivityIndicator color={C.white} /> : (
+            <Text style={styles.dropdownSubscribeTxt}>
+              Subscribe to {PLANS.find(p => p.key === selectedPlan)?.name}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -324,16 +349,18 @@ export default function SubscriptionScreen() {
                   isCurrent && { borderWidth: 1.5, borderColor: plan.color },
                 ]}
                 onPress={isCurrent ? undefined : () => handleSubscribe(plan)}
-                disabled={isCurrent}
+                disabled={isCurrent || loading}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.ctaText, isCurrent && { color: plan.color }]}>
-                  {isCurrent ? '✓ Current Plan' : (
-                    sub.isActive
-                      ? (sub.planMeta?.level < PLANS.find(p => p.key === plan.key)?.key ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`)
-                      : 'Start 14-Day Free Trial'
-                  )}
-                </Text>
+                {loading ? <ActivityIndicator color={isCurrent ? plan.color : C.white} /> : (
+                  <Text style={[styles.ctaText, isCurrent && { color: plan.color }]}>
+                    {isCurrent ? '✓ Current Plan' : (
+                      sub.isActive
+                        ? `Switch to ${plan.name}`
+                        : `Subscribe to ${plan.name}`
+                    )}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           );

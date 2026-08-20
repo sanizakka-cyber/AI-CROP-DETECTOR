@@ -110,7 +110,7 @@ class User extends Authenticatable
             'extension-officer'    => 'Extension Worker',
             'field-officer'        => 'Field Officer',
             'data-analyst'         => 'Data Analyst',
-            'm-e-officer', 'me-officer', 'me_officer' => 'Monitoring & Evaluation Officer',
+            'm-e-officer', 'me-officer', 'me_officer', 'monitoring-evaluation' => 'Monitoring & Evaluation Officer',
             'customer-support'     => 'Customer Support',
             'hr'                   => 'Human Resources',
             'finance'              => 'Finance Officer',

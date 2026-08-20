@@ -101,9 +101,20 @@ Route::get('/health', function () {
 
 // ── Public Auth (rate-limited: 5 attempts per minute per IP) ─────────────────
 Route::prefix('auth')->middleware('throttle:5,1')->group(function () {
-    Route::post('/login',    [AuthApiController::class, 'login']);
-    Route::post('/register', [AuthApiController::class, 'register']);
+    Route::post('/login',       [AuthApiController::class, 'login']);
+    Route::post('/register',    [AuthApiController::class, 'register']);
+    Route::post('/verify-otp',  [AuthApiController::class, 'verifyOtp']);
+    Route::post('/resend-otp',  [AuthApiController::class, 'resendOtp']);
 });
+
+// Reference data for the registration form (states/LGAs/countries) — public,
+// same App\Data\NigeriaLocations source the web registration page uses.
+Route::get('/locations', function () {
+    return response()->json([
+        'countries' => \App\Data\NigeriaLocations::countries(),
+        'states'    => \App\Data\NigeriaLocations::states(),
+    ]);
+})->middleware('throttle:30,1');
 
 // ── Sanctum-protected routes ──────────────────────────────────────────────────
 Route::middleware('auth.api')->group(function () {

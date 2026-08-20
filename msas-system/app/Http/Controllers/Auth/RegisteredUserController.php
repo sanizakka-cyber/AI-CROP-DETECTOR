@@ -4,19 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ApplicationReceivedMail;
-use App\Mail\WelcomeMail;
 use App\Models\AuditLog;
-use App\Models\InviteCode;
-use App\Models\Referral;
-use App\Models\User;
 use App\Models\UserDocument;
 use App\Services\OtpService;
-use App\Traits\NormalizesPhone;
+use App\Services\RegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
@@ -25,9 +19,7 @@ use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    use NormalizesPhone;
-
-    public function __construct(private OtpService $otp) {}
+    public function __construct(private OtpService $otp, private RegistrationService $registration) {}
 
     public function create(): View
     {
@@ -43,12 +35,7 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $publicRoles = [
-            'farmer', 'vet', 'agronomist', 'agro-dealer',
-            'equipment-dealer', 'agribusiness-owner', 'cooperative',
-            'government-agency', 'ngo', 'research-institution',
-            'input-supplier', 'logistics-provider', 'investor', 'general-user',
-        ];
+        $publicRoles = RegistrationService::PUBLIC_ROLES;
 
         $request->validate([
             'first_name'  => 'required|string|max:255',
@@ -67,133 +54,57 @@ class RegisteredUserController extends Controller
             'documents.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
         ]);
 
-        $identifier = trim($request->identifier);
-        $isEmail    = (bool) filter_var($identifier, FILTER_VALIDATE_EMAIL);
-        $isPhone    = ! $isEmail && $this->looksLikePhone($identifier);
-
-        if (! $isEmail && ! $isPhone) {
-            return back()->withInput()->withErrors([
-                'identifier' => 'Enter a valid email address or phone number (e.g. 08012345678 or +2348012345678).',
-            ]);
+        try {
+            ['type' => $identifierType, 'value' => $identifier] = $this->registration->resolveIdentifier($request->identifier);
+        } catch (\InvalidArgumentException|\RuntimeException $e) {
+            return back()->withInput()->withErrors(['identifier' => $e->getMessage()]);
         }
+        $isEmail = $identifierType === 'email';
+        $isPhone = $identifierType === 'phone';
 
-        if ($isEmail && User::where('email', $identifier)->exists()) {
-            // Generic message to avoid confirming account existence to an attacker
-            return back()->withInput()->withErrors([
-                'identifier' => 'There is already an account associated with this identifier. Try signing in.',
-            ]);
-        }
+        [$user, $pendingPlan, $needsApproval] = $this->registration->createAccount(
+            [
+                'first_name'  => $request->first_name,
+                'middle_name' => $request->middle_name,
+                'last_name'   => $request->last_name,
+                'role'        => $request->role,
+                'country'     => $request->country,
+                'state'       => $request->state,
+                'lga'         => $request->lga,
+                'ward'        => $request->ward,
+                'password'    => $request->password,
+                'invite_code' => $request->invite_code,
+                'ref'         => $request->ref,
+                'plan'        => $request->input('plan', ''),
+            ],
+            $identifierType,
+            $identifier,
+            function ($user, $role) use ($request) {
+                // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
+                if ($request->hasFile('documents')) {
+                    $docLabels = $this->getDocumentLabels($role);
 
-        $normalizedPhone = $isPhone ? $this->normalizePhone($identifier) : null;
+                    foreach ($request->file('documents') as $key => $file) {
+                        if (! $file || ! $file->isValid()) {
+                            continue;
+                        }
 
-        if ($isPhone && User::where('phone', $normalizedPhone)->exists()) {
-            return back()->withInput()->withErrors([
-                'identifier' => 'There is already an account associated with this identifier. Try signing in.',
-            ]);
-        }
+                        $docType = is_string($key) ? $key : 'document_' . ($key + 1);
+                        $label   = $docLabels[$docType] ?? ucwords(str_replace('_', ' ', $docType));
 
-        $role              = in_array($request->role, $publicRoles) ? $request->role : 'farmer';
-        $needsApproval     = ! in_array($role, ['farmer', 'general-user']);
-
-        $userData = [
-            'first_name'         => $request->first_name,
-            'middle_name'        => $request->middle_name,
-            'last_name'          => $request->last_name,
-            'role'               => $role,
-            'country'            => $request->country ?: 'Nigeria',
-            'state'              => $request->state,
-            'lga'                => $request->lga,
-            'ward'               => $request->ward,
-            'password'           => Hash::make($request->password),
-            'application_status' => $needsApproval ? 'pending' : 'approved',
-            'is_active'          => ! $needsApproval,
-        ];
-
-        if ($isEmail) {
-            $userData['email'] = $identifier;
-        } else {
-            $userData['phone'] = $normalizedPhone;
-            // Never mark a phone number verified here — no SMS OTP has been
-            // sent or confirmed at this point. The phone is still recorded
-            // and registration still proceeds; it's just honestly
-            // unverified until real SMS verification exists.
-            $userData['phone_verified_at'] = null;
-        }
-
-        // User creation, invite/referral redemption, trial start, and document
-        // storage are all-or-nothing: a failure partway through (e.g. a bad
-        // upload) used to leave a half-created account with no trial and no
-        // documents. Wrapped in one transaction so it can't happen anymore.
-        $user = null;
-        $pendingPlan = DB::transaction(function () use ($request, $userData, $role, &$user) {
-            $user = User::create($userData);
-
-            // Redeem invite code if provided (farmers only)
-            if ($role === 'farmer' && $request->filled('invite_code')) {
-                $inviteCode = InviteCode::where('code', strtoupper(trim($request->invite_code)))->first();
-                if ($inviteCode && $inviteCode->isValid()) {
-                    $inviteCode->increment('used_count');
-                    $user->update(['is_pilot' => true]);
-                    // Override pendingPlan with the invite code's plan
-                    $request->merge(['plan' => $inviteCode->plan]);
-                }
-            }
-
-            // Referral code redemption
-            if ($role === 'farmer' && $request->filled('ref')) {
-                $referrer = User::where('referral_code', strtoupper(trim($request->ref)))->first();
-                if ($referrer && $referrer->id !== $user->id) {
-                    Referral::firstOrCreate(['referrer_id' => $referrer->id, 'referred_id' => $user->id]);
-                }
-            }
-
-            // Preserve plan selection through the verification flow
-            $pendingPlan = $request->input('plan', '');
-            $validPlans  = array_keys(config('subscription.plans', []));
-            if (!in_array($pendingPlan, $validPlans)) {
-                $pendingPlan = '';
-            }
-
-            // Every role that actually uses the subscription system gets its 14-day
-            // trial automatically at registration — it's available from day one, not
-            // something unlocked by clicking Subscribe. ('general-user' is exempt
-            // from subscriptions entirely, same as RequireSubscription's bypass
-            // list.) Defaults to the role's entry-level plan unless the
-            // registration form (or a redeemed invite code, above) specified one.
-            // Subscribing to a paid plan during this trial is handled entirely by
-            // SubscriptionController::subscribe(), which never blocks on an active
-            // trial.
-            if ($role !== 'general-user') {
-                $defaultPlan = $role === 'farmer' ? 'basic' : 'professional_starter';
-                $user->startTrial($pendingPlan ?: $defaultPlan);
-            }
-
-            // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
-            if ($request->hasFile('documents')) {
-                $docLabels = $this->getDocumentLabels($role);
-
-                foreach ($request->file('documents') as $key => $file) {
-                    if (! $file || ! $file->isValid()) {
-                        continue;
+                        UserDocument::create([
+                            'user_id'        => $user->id,
+                            'document_type'  => $docType,
+                            'document_label' => $label,
+                            'original_name'  => $file->getClientOriginalName(),
+                            'mime_type'      => $file->getMimeType(),
+                            'file_size'      => $file->getSize(),
+                            'content_base64' => base64_encode(file_get_contents($file->getRealPath())),
+                        ]);
                     }
-
-                    $docType  = is_string($key) ? $key : 'document_' . ($key + 1);
-                    $label    = $docLabels[$docType] ?? ucwords(str_replace('_', ' ', $docType));
-
-                    UserDocument::create([
-                        'user_id'         => $user->id,
-                        'document_type'   => $docType,
-                        'document_label'  => $label,
-                        'original_name'   => $file->getClientOriginalName(),
-                        'mime_type'       => $file->getMimeType(),
-                        'file_size'       => $file->getSize(),
-                        'content_base64'  => base64_encode(file_get_contents($file->getRealPath())),
-                    ]);
                 }
             }
-
-            return $pendingPlan;
-        });
+        );
 
         // Non-farmer roles: pending approval path
         if ($needsApproval) {
@@ -216,7 +127,7 @@ class RegisteredUserController extends Controller
             Log::info('Phone-only registration completed', ['user_id' => $user->id]);
             // No email available for phone-only users at this point
 
-            if ($pendingPlan && $role === 'farmer') {
+            if ($pendingPlan && $user->role === 'farmer') {
                 return redirect()->route('subscription.plans')
                     ->with('success', 'Welcome to MSAS FarmAI! Start your free 14-day trial below.');
             }

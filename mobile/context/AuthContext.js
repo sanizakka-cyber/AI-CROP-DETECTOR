@@ -36,19 +36,44 @@ export function AuthProvider({ children }) {
     return () => { globalThis.__onAuthExpired = null; };
   }, []);
 
-  const login = async (phone, password, remember = false) => {
-    const { token: t, user: u } = await authAPI.login({ phone, password });
+  // identifier: email or phone — the API's 'phone' field name is kept for
+  // wire compatibility, but LoginRequest on the backend accepts either.
+  const login = async (identifier, password, remember = false) => {
+    const { token: t, user: u } = await authAPI.login({ phone: identifier, password });
     if (remember) await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
   };
 
+  /**
+   * Mirrors the web registration state machine: a new account isn't always
+   * immediately usable. Returns one of:
+   *  - { status: 'authenticated' }              — phone signup, logged in now
+   *  - { status: 'needs_verification', identifier, message } — email signup, OTP sent
+   *  - { status: 'needs_approval', message }     — non-farmer role, pending review
+   */
   const register = async (data) => {
-    const { token: t, user: u } = await authAPI.register(data);
+    const res = await authAPI.register(data);
+    if (res.token) {
+      await AsyncStorage.setItem('token', res.token);
+      setToken(res.token);
+      setUser(res.user);
+      return { status: 'authenticated' };
+    }
+    if (res.needs_verification) {
+      return { status: 'needs_verification', identifier: res.identifier, message: res.message };
+    }
+    return { status: 'needs_approval', message: res.message };
+  };
+
+  const verifyOtp = async (identifier, code) => {
+    const { token: t, user: u } = await authAPI.verifyOtp(identifier, code);
     await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
   };
+
+  const resendOtp = (identifier) => authAPI.resendOtp(identifier);
 
   const logout = async () => {
     await AsyncStorage.removeItem('token');
@@ -82,7 +107,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshProfile, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, verifyOtp, resendOtp, logout, refreshProfile, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

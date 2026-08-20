@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ordersAPI } from '../../lib/api';
@@ -38,7 +38,7 @@ export default function OrdersScreen() {
       await ordersAPI.cancel(order.id);
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
     } catch (e) {
-      alert(e.message || 'Could not cancel order');
+      Alert.alert('Error', e.message || 'Could not cancel order');
     }
   };
 

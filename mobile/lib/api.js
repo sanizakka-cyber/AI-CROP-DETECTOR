@@ -8,6 +8,63 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getToken = async () => AsyncStorage.getItem('token');
 
+/**
+ * ApiError carries enough structure for screens to show either a generic
+ * toast (err.message, already a good human-readable string) or highlight a
+ * specific field (err.fieldErrors.state, etc — Laravel's 422 `errors` shape).
+ * err.kind lets callers tell "you typed something wrong" apart from
+ * "the network/server failed", which a bare Error can't distinguish.
+ */
+export class ApiError extends Error {
+  constructor(message, { kind = 'server', status = null, fieldErrors = null } = {}) {
+    super(message);
+    this.kind = kind;               // 'network' | 'timeout' | 'validation' | 'auth' | 'server'
+    this.status = status;
+    this.fieldErrors = fieldErrors; // Laravel's { field: [messages] } from a 422, or null
+  }
+}
+
+/** First message out of Laravel's { field: [msg, ...] } validation error bag. */
+function firstFieldError(errors) {
+  if (!errors || typeof errors !== 'object') return null;
+  const first = Object.values(errors)[0];
+  return Array.isArray(first) ? first[0] : null;
+}
+
+// Status-code-specific fallback messages, used when the backend didn't send
+// its own message/errors body for that response. Real backend messages
+// (data.message / data.errors) always take priority over these — see below.
+const STATUS_FALLBACKS = {
+  400: 'MSAS could not process that request. Please try again.',
+  401: 'Email/phone or password is incorrect.',
+  403: "You don't have permission to do that.",
+  404: 'That MSAS resource could not be found.',
+  409: 'This conflicts with existing data. Please check and try again.',
+  422: 'Some of your information is invalid. Please check the highlighted fields.',
+  429: 'Too many attempts. Please wait a moment and try again.',
+  500: 'MSAS server error. Please try again later.',
+  502: 'MSAS is temporarily unavailable (bad gateway). Please try again shortly.',
+  503: 'MSAS is temporarily unavailable. Please try again shortly.',
+};
+
+function kindForStatus(status) {
+  if (status === 401 || status === 403) return 'auth';
+  if (status === 422 || status === 400 || status === 409) return 'validation';
+  if (status === 429) return 'rate_limit';
+  if (status >= 500) return 'server';
+  return 'validation';
+}
+
+/** Feature-detect AbortSignal.timeout — don't let an unsupported API masquerade as "no internet." */
+function timeoutSignal(ms) {
+  try {
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      return AbortSignal.timeout(ms);
+    }
+  } catch {}
+  return undefined;
+}
+
 /** Central request helper with automatic 401 interception */
 const request = async (path, options = {}) => {
   const token = await getToken();
@@ -17,27 +74,74 @@ const request = async (path, options = {}) => {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
-  // Auto-logout on expired / invalid token
-  if (res.status === 401) {
-    await AsyncStorage.removeItem('token');
-    // Dispatch a custom event that AuthContext listens to
-    if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
-    throw new Error('Session expired. Please log in again.');
+  const url = `${BASE_URL}${path}`;
+  let res;
+  try {
+    res = await fetch(url, { ...options, headers, signal: options.signal ?? timeoutSignal(20000) });
+  } catch (e) {
+    // React Native's fetch throws a specific "TypeError: Network request
+    // failed" for real connectivity/DNS/TLS failures — that's the only case
+    // that should say "check your internet connection." Anything else (a
+    // bug in this function, an unsupported API, a thrown non-Error value)
+    // gets its real message surfaced instead of being relabeled as a
+    // network problem, which was hiding the actual cause.
+    if (e?.name === 'TimeoutError' || e?.name === 'AbortError') {
+      throw new ApiError('The MSAS server took too long to respond. Please try again.', { kind: 'timeout' });
+    }
+    if (e?.message === 'Network request failed' || e?.name === 'TypeError') {
+      throw new ApiError('MSAS could not be reached. Please check your internet connection and try again.', { kind: 'network' });
+    }
+    throw new ApiError(`Unexpected error before reaching MSAS: ${e?.message || String(e)}`, { kind: 'client' });
   }
 
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Request failed');
+  // Auto-logout on expired / invalid token
+  if (res.status === 401 && token) {
+    await AsyncStorage.removeItem('token');
+    if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
+    throw new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });
+  }
+
+  let data = {};
+  try {
+    const text = await res.text();
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new ApiError(
+      res.ok
+        ? 'The server returned an unexpected response. Please try again.'
+        : (STATUS_FALLBACKS[res.status] || `MSAS returned an unexpected error (${res.status}).`),
+      { kind: kindForStatus(res.status), status: res.status }
+    );
+  }
+
+  if (!res.ok) {
+    // Laravel validation failures carry { message, errors: { field: [...] } }
+    // — the top-level message is usually the generic "The given data was
+    // invalid.", so prefer the first field-specific message, then the
+    // backend's own message, then a status-specific fallback — never a
+    // one-size-fits-all string.
+    const fieldMessage = firstFieldError(data.errors);
+    const message = fieldMessage || data.message || data.error || STATUS_FALLBACKS[res.status] || `Request failed (${res.status}).`;
+    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.errors || null });
+  }
+
   return data;
 };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
-  register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login:    (body) => request('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
+  register:   (body) => request('/auth/register',    { method: 'POST', body: JSON.stringify(body) }),
+  login:      (body) => request('/auth/login',        { method: 'POST', body: JSON.stringify(body) }),
+  verifyOtp:  (identifier, code) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ identifier, code }) }),
+  resendOtp:  (identifier)       => request('/auth/resend-otp', { method: 'POST', body: JSON.stringify({ identifier }) }),
   me:       ()     => request('/auth/me'),
   updateProfile: (body) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(body) }),
+};
+
+// ── Locations (states/LGAs/countries for registration & profile forms) ─────────
+export const locationsAPI = {
+  list: () => request('/locations'),
 };
 
 // ── Farms ─────────────────────────────────────────────────────────────────────
@@ -164,6 +268,13 @@ export const ordersAPI = {
 export const profileAPI = {
   update:       (body)  => request('/auth/profile',    { method: 'PATCH', body: JSON.stringify(body) }),
   updateFcmToken:(body) => request('/auth/fcm-token',  { method: 'POST',  body: JSON.stringify(body) }),
+};
+
+// ── Subscription ──────────────────────────────────────────────────────────────
+export const subscriptionAPI = {
+  status:    () => request('/subscription/status'),
+  subscribe: (plan, cycle) => request('/subscription/subscribe', { method: 'POST', body: JSON.stringify({ plan, cycle }) }),
+  cancel:    (reason) => request('/subscription/cancel', { method: 'POST', body: JSON.stringify({ reason }) }),
 };
 
 // ── Weather ───────────────────────────────────────────────────────────────────
