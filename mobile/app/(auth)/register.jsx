@@ -62,8 +62,10 @@ export default function RegisterScreen() {
   const [locLoading, setLocLoading] = useState(true);
   const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [lgaPickerOpen, setLgaPickerOpen] = useState(false);
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   const [stateSearch, setStateSearch] = useState('');
   const [lgaSearch, setLgaSearch] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
 
   useEffect(() => {
     locationsAPI.list()
@@ -86,12 +88,30 @@ export default function RegisterScreen() {
     return q ? lgasForState.filter(l => l.toLowerCase().includes(q)) : lgasForState;
   }, [lgasForState, lgaSearch]);
 
+  const filteredCountries = useMemo(() => {
+    const q = countrySearch.trim().toLowerCase();
+    return q ? locations.countries.filter(c => c.toLowerCase().includes(q)) : locations.countries;
+  }, [locations.countries, countrySearch]);
+
+  const isNigeria = form.country === 'Nigeria';
+
   const selectState = (name) => {
     // Changing state invalidates any previously selected LGA — never let an
     // LGA from a different state remain selected.
     setForm(f => ({ ...f, state: name, lga: '' }));
     setStateSearch('');
     setStatePickerOpen(false);
+  };
+
+  const selectCountry = (name) => {
+    // The state/LGA dropdown data (App\Data\NigeriaLocations) only covers
+    // Nigeria — switching away from it clears state/LGA rather than leaving
+    // a Nigerian state selected under a different country. Switching back
+    // to Nigeria also clears them so a free-typed value from another
+    // country isn't submitted as if it were a real Nigerian state/LGA.
+    setForm(f => ({ ...f, country: name, state: '', lga: '' }));
+    setCountrySearch('');
+    setCountryPickerOpen(false);
   };
 
   const passwordChecks = PASSWORD_RULES.map(r => ({ ...r, passed: r.test(form.password) }));
@@ -106,10 +126,15 @@ export default function RegisterScreen() {
       return Alert.alert('', isHausa ? 'Shigar da sunan ƙarshe' : 'Please enter your last name.');
     if (!identifier.trim())
       return Alert.alert('', isHausa ? 'Shigar da imel ko lambar waya' : 'Please enter your email address or phone number.');
-    if (!state)
+    // State/LGA are only required as real selections for Nigeria, where the
+    // backend's location dataset can actually validate/populate them —
+    // other countries take a free-text state and an optional local area.
+    if (isNigeria && !state)
       return Alert.alert('', isHausa ? 'Zaɓi jiha' : 'Please select your state.');
-    if (!lga)
+    if (isNigeria && !lga)
       return Alert.alert('', isHausa ? 'Zaɓi ƙananan hukuma' : 'Please select your LGA.');
+    if (!isNigeria && !state.trim())
+      return Alert.alert('', isHausa ? 'Shigar da jiha' : 'Please enter your state or region.');
     if (!passwordValid)
       return Alert.alert('', isHausa ? 'Kalmar sirri ba ta cika ka’idoji ba' : 'Password does not meet the requirements below.');
     if (password !== confirmPassword)
@@ -200,25 +225,43 @@ export default function RegisterScreen() {
               keyboardType="email-address" autoComplete="email" autoCapitalize="none" autoCorrect={false} />
           </Field>
 
-          {/* Country */}
+          {/* Country — searchable dropdown */}
           <Field label={isHausa ? 'ƘASA' : 'COUNTRY'} icon="🌍">
-            <Text style={[styles.input, { paddingVertical: 11 }]}>{form.country}</Text>
-          </Field>
-
-          {/* State — searchable dropdown */}
-          <Field label={isHausa ? 'JIHA' : 'STATE'} icon="📍">
-            <TouchableOpacity onPress={() => setStatePickerOpen(true)} disabled={locLoading}>
+            <TouchableOpacity onPress={() => setCountryPickerOpen(true)} disabled={locLoading}>
               <View style={styles.pickerRow}>
-                <Text style={form.state ? styles.pickerValue : styles.pickerPlaceholder}>
-                  {locLoading ? 'Loading states…' : (form.state || 'Select State')}
+                <Text style={styles.pickerValue}>
+                  {locLoading ? 'Loading…' : form.country}
                 </Text>
                 <Text style={styles.pickerChevron}>▼</Text>
               </View>
             </TouchableOpacity>
           </Field>
 
-          {/* LGA — dependent dropdown */}
+          {/* State — searchable dropdown for Nigeria (real data source);
+              free-text for every other country, since the backend's
+              location dataset only covers Nigerian states/LGAs. */}
+          <Field label={isHausa ? 'JIHA' : 'STATE'} icon="📍">
+            {isNigeria ? (
+              <TouchableOpacity onPress={() => setStatePickerOpen(true)} disabled={locLoading}>
+                <View style={styles.pickerRow}>
+                  <Text style={form.state ? styles.pickerValue : styles.pickerPlaceholder}>
+                    {locLoading ? 'Loading states…' : (form.state || 'Select State')}
+                  </Text>
+                  <Text style={styles.pickerChevron}>▼</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <TextInput style={styles.input} value={form.state} onChangeText={set('state')}
+                placeholder="State / Region" placeholderTextColor={C.textLight} autoCapitalize="words" />
+            )}
+          </Field>
+
+          {/* LGA — dependent dropdown for Nigeria; free-text otherwise */}
           <Field label={isHausa ? 'ƘARAMAR HUKUMA' : 'LOCAL GOVERNMENT AREA'} icon="📍">
+            {!isNigeria ? (
+              <TextInput style={styles.input} value={form.lga} onChangeText={set('lga')}
+                placeholder="Local area (optional)" placeholderTextColor={C.textLight} autoCapitalize="words" />
+            ) : (
             <TouchableOpacity onPress={() => form.state && setLgaPickerOpen(true)} disabled={!form.state}>
               <View style={[styles.pickerRow, !form.state && { opacity: 0.5 }]}>
                 <Text style={form.lga ? styles.pickerValue : styles.pickerPlaceholder}>
@@ -227,6 +270,7 @@ export default function RegisterScreen() {
                 <Text style={styles.pickerChevron}>▼</Text>
               </View>
             </TouchableOpacity>
+            )}
           </Field>
 
           {/* Password */}
@@ -308,6 +352,17 @@ export default function RegisterScreen() {
         </View>
 
       </ScrollView>
+
+      {/* ── Country picker modal ──────────────────────── */}
+      <PickerModal
+        visible={countryPickerOpen}
+        title={isHausa ? 'Zaɓi Ƙasa' : 'Select Country'}
+        search={countrySearch}
+        onSearch={setCountrySearch}
+        items={filteredCountries}
+        onSelect={selectCountry}
+        onClose={() => { setCountryPickerOpen(false); setCountrySearch(''); }}
+      />
 
       {/* ── State picker modal ─────────────────────────── */}
       <PickerModal
