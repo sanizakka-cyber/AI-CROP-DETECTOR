@@ -38,9 +38,19 @@ export function AuthProvider({ children }) {
 
   // identifier: email or phone — the API's 'phone' field name is kept for
   // wire compatibility, but LoginRequest on the backend accepts either.
-  const login = async (identifier, password, remember = false) => {
+  //
+  // The token is ALWAYS persisted to AsyncStorage, not just when `remember`
+  // is checked. lib/api.js's shared request() helper reads the token from
+  // AsyncStorage (not from this React state) to attach the Authorization
+  // header to every other API call — if "remember me" were left unchecked,
+  // the token existed only in memory, so the very next authenticated
+  // request (profile refresh, push-token registration, etc.) went out with
+  // no token, got a 401, and the app behaved as if login had silently
+  // failed. "Remember me" only ever made sense as "stay signed in after
+  // the app is closed", not "does this session work at all".
+  const login = async (identifier, password) => {
     const { token: t, user: u } = await authAPI.login({ phone: identifier, password });
-    if (remember) await AsyncStorage.setItem('token', t);
+    await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
   };

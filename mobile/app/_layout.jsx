@@ -23,8 +23,11 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Must match the key AuthContext.js actually reads/writes ('token') —
+// this used to read 'auth_token', a key nothing else in the app ever
+// wrote, so the offline queue could never attach an auth header.
 async function getStoredToken() {
-  try { return await AsyncStorage.getItem('auth_token'); } catch { return null; }
+  try { return await AsyncStorage.getItem('token'); } catch { return null; }
 }
 
 async function registerForPushNotifications() {

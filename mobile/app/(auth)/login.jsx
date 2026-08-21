@@ -73,7 +73,10 @@ export default function LoginScreen() {
       return Alert.alert('', isHausa ? 'Shigar da bayanai duka' : 'Please enter your email/phone and password.');
     setLoading(true);
     try {
-      await login(identifier, password, remember);
+      // The session itself is always persisted regardless of this checkbox —
+      // it only controls whether this identifier is offered as a quick-fill
+      // suggestion next time (see persistAccount below).
+      await login(identifier, password);
       if (remember) await persistAccount(identifier.trim());
     } catch (e) {
       // e.kind (from lib/api.js's ApiError) tells a bad network apart from
@@ -189,7 +192,7 @@ export default function LoginScreen() {
               <View style={[styles.checkbox, remember && styles.checkboxOn]}>
                 {remember && <Text style={styles.checkmark}>✓</Text>}
               </View>
-              <Text style={styles.rememberText}>{isHausa ? 'Kiyaye ni a shiga' : 'Keep me signed in'}</Text>
+              <Text style={styles.rememberText}>{isHausa ? 'Tuna imel/lambar wayata' : 'Remember my email/phone'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleForgotPassword}>
               <Text style={styles.forgotText}>{isHausa ? 'Manta kalmar sirri?' : 'Forgot Password?'}</Text>
