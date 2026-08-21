@@ -6,9 +6,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
 
-/** Dev-only auth tracing — never logs the token value itself, only whether one exists. */
+/**
+ * Auth lifecycle tracing — intentionally NOT gated behind __DEV__. Release
+ * APK builds set __DEV__ to false, which would silently strip these from
+ * exactly the build meant to be debugged via `adb logcat`. Safe to leave
+ * in: never logs the token value itself, only whether one exists and
+ * plain status codes/booleans.
+ */
 function authDebug(label, details) {
-  if (__DEV__) console.log(`[AUTH DEBUG] ${label}`, details);
+  console.log(`[AUTH DEBUG] ${label}`, details ?? '');
 }
 
 export function AuthProvider({ children }) {

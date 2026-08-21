@@ -109,6 +109,10 @@ const request = async (path, options = {}) => {
   // be able to tear down an otherwise perfectly valid session just because
   // that one particular endpoint rejected the request for its own reasons.
   if (res.status === 401 && token && !options.background) {
+    // Which endpoint actually triggered the session wipe — the single most
+    // useful line in `adb logcat` for tracing "login succeeded, then
+    // immediately logged out" back to its actual cause.
+    console.log(`[AUTH DEBUG] 401 on ${options.method || 'GET'} ${path} with a token present -> clearing session`);
     await AsyncStorage.removeItem('token');
     if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
     throw new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });

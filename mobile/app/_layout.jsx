@@ -88,8 +88,15 @@ function RootGuard({ children }) {
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === '(auth)';
-    if (!user && !inAuth) router.replace('/(auth)/login');
-    if (user && inAuth) router.replace('/(tabs)/home');
+    console.log(`[AUTH DEBUG] Navigation guard: user=${!!user} inAuthGroup=${inAuth} segment=${segments[0] || '/'}`);
+    if (!user && !inAuth) {
+      console.log('[AUTH DEBUG] NAVIGATING_TO: /(auth)/login (no user)');
+      router.replace('/(auth)/login');
+    }
+    if (user && inAuth) {
+      console.log('[AUTH DEBUG] NAVIGATING_TO: /(tabs)/home (user present, was in auth group)');
+      router.replace('/(tabs)/home');
+    }
   }, [user, loading, router, segments]);
 
   return children;
