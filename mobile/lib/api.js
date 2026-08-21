@@ -103,8 +103,12 @@ const request = async (path, options = {}) => {
     throw new ApiError(`Unexpected error before reaching MSAS: ${e?.message || String(e)}`, { kind: 'client' });
   }
 
-  // Auto-logout on expired / invalid token
-  if (res.status === 401 && token) {
+  // Auto-logout on expired / invalid token — but not for `background` calls
+  // (push-token registration, best-effort fetches the caller already wraps
+  // in .catch(() => {})). Those are written to fail silently and shouldn't
+  // be able to tear down an otherwise perfectly valid session just because
+  // that one particular endpoint rejected the request for its own reasons.
+  if (res.status === 401 && token && !options.background) {
     await AsyncStorage.removeItem('token');
     if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
     throw new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });
@@ -275,7 +279,7 @@ export const ordersAPI = {
 // ── Profile ───────────────────────────────────────────────────────────────────
 export const profileAPI = {
   update:       (body)  => request('/auth/profile',    { method: 'PATCH', body: JSON.stringify(body) }),
-  updateFcmToken:(body) => request('/auth/fcm-token',  { method: 'POST',  body: JSON.stringify(body) }),
+  updateFcmToken:(body) => request('/auth/fcm-token',  { method: 'POST',  body: JSON.stringify(body), background: true }),
 };
 
 // ── Subscription ──────────────────────────────────────────────────────────────
