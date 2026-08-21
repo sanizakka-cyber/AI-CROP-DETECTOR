@@ -106,7 +106,7 @@ class RegistrationService
         }
 
         $user = null;
-        $pendingPlan = DB::transaction(function () use ($data, $userData, $role, &$user) {
+        $pendingPlan = DB::transaction(function () use ($data, $userData, $role, $withinTransaction, &$user) {
             $user = User::create($userData);
 
             if ($role === 'farmer' && ! empty($data['invite_code'])) {
