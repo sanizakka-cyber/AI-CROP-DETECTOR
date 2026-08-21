@@ -37,7 +37,7 @@ const SAVED_ACCOUNTS_KEY = 'msas_saved_accounts';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
-  const { login } = useAuth();
+  const { login, sessionExpired } = useAuth();
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -125,6 +125,14 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{isHausa ? 'Barka da Dawowa' : 'Welcome Back'}</Text>
           <Text style={styles.cardSubtitle}>{isHausa ? 'Shigar da bayananka don shiga' : 'Sign in to your MSAS account'}</Text>
+
+          {sessionExpired && (
+            <View style={styles.expiredBanner}>
+              <Text style={styles.expiredBannerText}>
+                {isHausa ? 'An fita daga asusun ka. Da fatan za a sake shiga.' : 'Your session ended. Please sign in again.'}
+              </Text>
+            </View>
+          )}
 
           {/* Email or Phone */}
           <View style={styles.fieldWrap}>
@@ -267,6 +275,11 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 22, fontWeight: '800', color: C.textDark, marginBottom: 4, letterSpacing: -0.3 },
   cardSubtitle: { fontSize: 13, color: C.textMid, marginBottom: 24 },
+  expiredBanner: {
+    backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A',
+    borderRadius: 10, padding: 12, marginTop: -12, marginBottom: 20,
+  },
+  expiredBannerText: { fontSize: 12, color: '#92400E', fontWeight: '600' },
 
   // ── Fields ───────────────────────────────────────
   fieldWrap: { marginBottom: 16 },
