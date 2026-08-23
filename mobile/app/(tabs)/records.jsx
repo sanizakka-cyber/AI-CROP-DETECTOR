@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { diagnoseAPI, animalsAPI } from '../../lib/api';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Card, SeverityBadge, EmptyState, Button } from '../../components/UI';
+import { subjectIcon } from '../../lib/subjectIcon';
+import { statusMeta } from '../../lib/diagnosisStatus';
 
 export default function RecordsScreen() {
   const { t, i18n } = useTranslation();
@@ -61,25 +63,28 @@ export default function RecordsScreen() {
         <View style={styles.section}>
           {diagnoses.length === 0
             ? <EmptyState icon="🔬" title={t('noDiagnoses')} />
-            : diagnoses.map(d => (
+            : diagnoses.map(d => {
+                const sm = statusMeta(d.status, d.status_label);
+                return (
                 <TouchableOpacity key={d.id} onPress={() => router.push(`/diagnosis/${d.id}`)}>
                   <Card style={styles.dxCard}>
                     <View style={styles.dxRow}>
-                      <Text style={styles.dxIcon}>{d.type === 'crop' ? '🌽' : '🐄'}</Text>
+                      <Text style={styles.dxIcon}>{subjectIcon(d)}</Text>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.dxTitle}>{d.disease_name || d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
+                        <Text style={styles.dxTitle}>{d.subject_name || d.disease_name || d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
                         <Text style={styles.dxMeta}>
                           {d.type === 'crop' ? 'Crop' : 'Livestock'} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}
                         </Text>
-                        <Text style={[styles.dxStatus, { color: d.status === 'processed' ? Colors.success : Colors.warning }]}>
-                          {d.status === 'processed' ? '✅ Processed' : d.status === 'pending' ? '⏳ Processing' : '❌ Failed'}
+                        <Text style={[styles.dxStatus, { color: Colors[sm.colorKey] }]}>
+                          {sm.icon} {sm.label}
                         </Text>
                       </View>
                       {d.urgency_level && <SeverityBadge severity={d.urgency_level?.toLowerCase()} />}
                     </View>
                   </Card>
                 </TouchableOpacity>
-              ))
+                );
+              })
           }
         </View>
       )}

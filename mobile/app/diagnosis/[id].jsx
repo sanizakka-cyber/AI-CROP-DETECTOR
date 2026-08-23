@@ -20,6 +20,18 @@ import { VoiceService } from '../../services/VoiceService';
 const DEFAULT_EXPERT_PHONE = '08129582957';
 const DEFAULT_WHATSAPP = 'https://wa.me/2348129582957';
 
+/** Renders a labeled field, or an explicit "Not applicable" note instead of
+ * leaving the section blank — per the platform-parity requirement that
+ * every diagnosis-result category always show something. */
+function InfoField({ label, value }) {
+  return (
+    <View style={{ marginBottom: Spacing.sm }}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || 'Not applicable for this diagnosis.'}</Text>
+    </View>
+  );
+}
+
 export default function DiagnosisDetailScreen() {
   const { id } = useLocalSearchParams();
   const { t, i18n } = useTranslation();
@@ -43,9 +55,15 @@ export default function DiagnosisDetailScreen() {
     try {
       const { diagnosis } = await diagnoseAPI.get(id);
       setDiag(diagnosis);
-      if (diagnosis.status === 'processed' || diagnosis.status === 'failed') {
+      if (diagnosis.myFeedback) setFeedbackSent(true);
+      // Real terminal states are 'processed', 'reviewed' (the status a
+      // fresh successful scan actually gets — see
+      // DiagnosisResultMapper::fromAiResult()) and 'needs_review' (AI
+      // genuinely produced no result). Only 'pending' means "still
+      // working" — there is no 'failed' status anywhere in the schema.
+      if (diagnosis.status !== 'pending') {
         setPolling(false);
-        if (diagnosis.status === 'processed') {
+        if (diagnosis.status === 'processed' || diagnosis.status === 'reviewed') {
           fetchRecommendations(diagnosis);
           if (voiceEnabled && !voiceNarration.current) {
             setTimeout(() => playVoice(diagnosis), 600);
@@ -128,7 +146,7 @@ export default function DiagnosisDetailScreen() {
 
   const sendFeedback = async (wasHelpful) => {
     try {
-      await diagnoseAPI.feedback(id, { wasHelpful, outcome: 'pending' });
+      await diagnoseAPI.feedback(id, { rating: wasHelpful ? 'thumbs_up' : 'thumbs_down' });
       setFeedbackSent(true);
     } catch {}
   };
@@ -145,11 +163,14 @@ export default function DiagnosisDetailScreen() {
     );
   }
 
-  if (diag.status === 'failed') {
+  if (diag.status === 'needs_review') {
     return (
       <View style={styles.loadingScreen}>
         <Text style={styles.failedIcon}>!</Text>
-        <Text style={styles.loadingText}>Analysis failed. Please try again with a clear plant or livestock image.</Text>
+        <Text style={styles.loadingText}>AI Analysis Unavailable</Text>
+        <Text style={styles.loadingTip}>
+          {diag.treatmentPlan?.vetReferralAdvice || 'Our AI engine was temporarily unavailable. An expert will review your scan and respond shortly.'}
+        </Text>
         <Button title="Try Again" onPress={() => router.back()} />
       </View>
     );
@@ -269,6 +290,21 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
+      <Card style={styles.card}>
+        <Text style={styles.cardTitle}>Diagnostic Details</Text>
+        <InfoField label="Detected Subject" value={diag.subjectName} />
+        <InfoField label="Scientific Name" value={diag.scientificName} />
+        <InfoField label="Plant/Body Part" value={diag.detectedPart} />
+        <InfoField label="Health Status" value={result.healthStatus} />
+        <InfoField label="Severity" value={result.severityLevel} />
+        <InfoField label="Confidence" value={result.confidenceLabel} />
+        <InfoField label="Symptoms Identified" value={result.symptomsIdentified} />
+        <InfoField label="Environmental Factors" value={result.environmentalFactors} />
+        <InfoField label="Nutrient Deficiency" value={result.nutrientDeficiencies} />
+        <InfoField label="Pest Detection" value={result.pestDetection} />
+        <InfoField label="Explanation" value={result.explanation} />
+      </Card>
+
       <Text style={styles.sectionTitle}>{t('treatment')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
         {[
@@ -320,11 +356,25 @@ export default function DiagnosisDetailScreen() {
         </Card>
       ))}
 
-      {activeTab === 'prevention' && plan.prevention?.map((item, index) => (
-        <Card key={index} style={styles.treatCard}>
-          <Text style={styles.treatBody}>- {item.measure}</Text>
-        </Card>
-      ))}
+      {activeTab === 'prevention' && (
+        plan.prevention?.length > 0
+          ? plan.prevention.map((item, index) => (
+              <Card key={index} style={styles.treatCard}>
+                <Text style={styles.treatBody}>- {item.measure}</Text>
+              </Card>
+            ))
+          : <Card style={styles.treatCard}>
+              <Text style={styles.treatBody}>{plan.preventiveMeasures || 'Not applicable for this diagnosis.'}</Text>
+            </Card>
+      )}
+
+      <Card style={styles.card}>
+        <Text style={styles.cardTitle}>Additional Recommendations</Text>
+        <InfoField label="Fertilizer Recommendation" value={plan.fertilizerRecommendation} />
+        <InfoField label="Recovery Period" value={plan.recoveryPeriod} />
+        <InfoField label="Best Practices" value={plan.bestPractices} />
+        <InfoField label="Expert Recommendation" value={plan.vetReferralAdvice} />
+      </Card>
 
       {!feedbackSent && (
         <Card style={styles.card}>
@@ -416,6 +466,8 @@ const styles = StyleSheet.create({
   emergencyBtnText: { color: Colors.white, fontWeight: '800', ...Typography.body },
   cardTitle: { ...Typography.label, color: Colors.textPrimary, marginBottom: Spacing.xs },
   listItem: { ...Typography.body, color: Colors.textSecondary, marginBottom: 4 },
+  infoLabel: { ...Typography.tiny, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
+  infoValue: { ...Typography.body, color: Colors.textPrimary, marginTop: 2 },
   sectionTitle: { ...Typography.h3, color: Colors.textPrimary, paddingHorizontal: Spacing.md, marginTop: Spacing.md },
   tabRow: { paddingHorizontal: Spacing.md, marginVertical: Spacing.sm },
   tab: {

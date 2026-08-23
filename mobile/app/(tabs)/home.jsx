@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { analyticsAPI, weatherAPI, notificationsAPI } from '../../lib/api';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
+import { subjectIcon } from '../../lib/subjectIcon';
 
 const QUICK_ACTIONS = [
   { id: 'crop',      icon: '🌽', en: 'Scan Plant',    ha: 'Bincika Shuka',  color: '#D1FAE5', border: '#6EE7B7', to: '/scan/crop' },
@@ -122,9 +123,9 @@ function FarmerDashboard({ summary, outbreaks, credit, router, isHausa }) {
       ) : (
         recent.map((d, i) => (
           <TouchableOpacity key={d.id || i} style={styles.dxCard} onPress={() => router.push(`/diagnosis/${d.id}`)}>
-            <Text style={styles.dxTypeIcon}>{d.type === 'crop' ? '🌽' : '🐄'}</Text>
+            <Text style={styles.dxTypeIcon}>{subjectIcon(d)}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.dxTitle}>{d.disease_name || d.aiResult?.primaryDiagnosis || (isHausa ? 'Ana sarrafa...' : 'Processing...')}</Text>
+              <Text style={styles.dxTitle}>{d.subject_name || d.disease_name || d.aiResult?.primaryDiagnosis || (isHausa ? 'Ana sarrafa...' : 'Processing...')}</Text>
               <Text style={styles.dxMeta}>{d.type === 'crop' ? 'Crop' : 'Livestock'} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}</Text>
             </View>
             {d.urgency_level && (

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Diagnosis;
 use App\Models\DiagnosisFeedback;
+use App\Services\DiagnosisResultMapper;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -189,65 +190,10 @@ class DiagnosticController extends Controller
 
         // ── 6. Build diagnosis record ─────────────────────────────────────────
         if ($aiResult) {
-            $diagnosisData = [
-                // Subject identification (auto-detected)
-                'subject_name'             => $aiResult['subject_name']     ?? $aiResult['species']     ?? $aiResult['crop']  ?? $aiResult['animal']  ?? null,
-                'scientific_name'          => $aiResult['scientific_name']   ?? $aiResult['latin_name']  ?? null,
-                'detected_part'            => $aiResult['detected_part']     ?? $aiResult['body_part']   ?? null,
-                'health_status'            => $aiResult['health_status']     ?? $aiResult['status']      ?? null,
-                'severity_level'           => $aiResult['severity']          ?? $aiResult['severity_level'] ?? null,
-                // Core
-                'disease_name'             => $aiResult['disease']           ?? $aiResult['condition']   ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? 'Requires expert review',
-                'confidence_score'         => (float) ($aiResult['confidence']    ?? 0),
-                'urgency_level'            => $aiResult['urgency']                ?? 'Medium',
-                // Findings
-                'symptoms_identified'      => $aiResult['symptoms_identified']    ?? null,
-                'cause'                    => $aiResult['cause']                  ?? null,
-                'environmental_factors'    => $aiResult['environmental_factors']  ?? null,
-                'nutrient_deficiencies'    => $aiResult['nutrient_deficiencies']  ?? null,
-                'pest_detection'           => $aiResult['pest_detection']         ?? null,
-                // Treatment
-                'first_aid_steps'          => $aiResult['first_aid']              ?? null,
-                'recommended_medication'   => $aiResult['medication']             ?? $aiResult['fertilizer_recommendation'] ?? $aiResult['amendment_recommendation'] ?? null,
-                'preventive_measures'      => $aiResult['preventive_measures']    ?? null,
-                'fertilizer_recommendation'=> $aiResult['fertilizer_recommendation'] ?? null,
-                'recovery_period'          => $aiResult['recovery_period']        ?? null,
-                'best_practices'           => $aiResult['best_practices']         ?? null,
-                'vet_referral_advice'      => $aiResult['referral']               ?? $aiResult['vet_recommendation'] ?? null,
-                // Explainability
-                'explanation'              => $aiResult['explanation']            ?? null,
-                'status'                   => 'reviewed',
-            ];
+            $diagnosisData = DiagnosisResultMapper::fromAiResult($aiResult);
         } else {
             Log::warning('AI scan failed, falling back to expert review', ['reason' => $failureReason]);
-            $diagnosisData = [
-                'subject_name'              => null,
-                'scientific_name'           => null,
-                'detected_part'             => null,
-                'health_status'             => null,
-                'severity_level'            => null,
-                'disease_name'              => 'Pending Expert Review',
-                // AI never ran — this is "no score", not a genuine 0%. Never
-                // fabricate a number here; downstream views must render
-                // "AI Analysis Unavailable" whenever confidence_score is null.
-                'confidence_score'          => null,
-                'urgency_level'             => 'Medium',
-                'symptoms_identified'       => null,
-                // these three were NOT NULL in original schema — safe empty string until migration runs
-                'cause'                     => '',
-                'first_aid_steps'           => '',
-                'recommended_medication'    => '',
-                'environmental_factors'     => null,
-                'nutrient_deficiencies'     => null,
-                'pest_detection'            => null,
-                'preventive_measures'       => null,
-                'fertilizer_recommendation' => null,
-                'recovery_period'           => null,
-                'best_practices'            => null,
-                'vet_referral_advice'       => 'Our AI engine is temporarily unavailable. An expert will review your scan and respond shortly.',
-                'explanation'               => null,
-                'status'                    => 'needs_review',
-            ];
+            $diagnosisData = DiagnosisResultMapper::aiUnavailableFallback();
         }
 
         Diagnosis::create(array_merge($diagnosisData, [
