@@ -6,7 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Sign in to MSAS FarmAI — Nigeria's AI-powered agricultural management platform for farmers, vets, agronomists and agribusinesses.">
     <meta name="robots" content="noindex,nofollow">
-    <title>MSAS — Livestock & Agro Services</title>
+    <title>MSAS FarmAI</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/branding/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/branding/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/branding/msas-farmai-mark.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800,900|poppins:600,700,800,900&display=swap" rel="stylesheet"/>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -131,7 +134,7 @@
         <!-- ── MSAS Logo (real image) ── -->
         <div class="fade-up-1" style="position:relative; z-index:10; margin-bottom:32px;">
             <div class="logo-img-hero">
-                <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Logo"
+                <img src="{{ asset('images/branding/msas-farmai-mark.png') }}" alt="MSAS Logo"
                      style="width:100%; height:100%; object-fit:cover; display:block;">
             </div>
         </div>
@@ -262,7 +265,7 @@
             <div class="fade-up-1" style="text-align:center; margin-bottom:32px;">
                 <div style="display:inline-block; margin-bottom:14px;">
                     <div class="logo-img-form">
-                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Logo"
+                        <img src="{{ asset('images/branding/msas-farmai-mark.png') }}" alt="MSAS Logo"
                              style="width:100%; height:100%; object-fit:cover; display:block;">
                     </div>
                 </div>

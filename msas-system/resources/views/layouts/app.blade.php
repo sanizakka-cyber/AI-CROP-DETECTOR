@@ -6,7 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="MSAS FarmAI — AI-powered farm management, veterinary consultations, agronomy advisory and agribusiness tools for Nigeria's agricultural sector.">
     <meta name="robots" content="noindex,nofollow">
-    <title>MSAS — {{ config('app.name', 'Livestock & Agro Services') }}</title>
+    <title>MSAS FarmAI</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/branding/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/branding/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/branding/msas-farmai-mark.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800|poppins:600,700,800&display=swap" rel="stylesheet"/>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -102,11 +105,8 @@
 
         <!-- Logo -->
         <div class="sidebar-logo-area h-16 flex items-center px-4 gap-3 flex-shrink-0">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#0F6B3E,#1FA84A); box-shadow:0 4px 12px rgba(31,168,74,0.4);">
-                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-                    <path d="M16 3C9.373 3 4 8.373 4 15c0 4.418 2.239 8.309 5.636 10.6L9 29h14l-.636-3.4C25.761 23.309 28 19.418 28 15c0-6.627-5.373-12-12-12z" fill="white" fill-opacity="0.9"/>
-                    <path d="M13 15l2 2 5-5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+            <div class="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0" style="box-shadow:0 4px 12px rgba(31,168,74,0.4);">
+                <img src="{{ asset('images/branding/msas-farmai-mark.png') }}" alt="MSAS FarmAI" style="width:100%;height:100%;object-fit:cover;display:block;">
             </div>
             <div x-show="sidebarOpen" class="overflow-hidden">
                 <div class="font-bold text-white text-sm leading-tight whitespace-nowrap">MSAS FarmAI</div>

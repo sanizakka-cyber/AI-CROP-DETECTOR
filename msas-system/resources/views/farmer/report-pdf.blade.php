@@ -90,7 +90,7 @@
     <!-- Header -->
     <div class="header">
         <div class="header-left">
-            <div class="org">MSAS — Livestock & Agro Services</div>
+            <div class="org">MSAS FarmAI</div>
             <div class="title">
                 @if($type === 'livestock')     Livestock Report
                 @elseif($type === 'finance')   Financial Report
@@ -247,7 +247,7 @@
 
     <!-- Footer -->
     <div class="footer">
-        <strong>MSAS — Livestock & Agro Services Management System</strong> &nbsp;|&nbsp;
+        <strong>MSAS FarmAI</strong> &nbsp;|&nbsp;
         Confidential — for {{ $user->name }} only &nbsp;|&nbsp;
         Generated {{ now()->format('F d, Y \a\t g:i A') }} &nbsp;|&nbsp;
         Page 1

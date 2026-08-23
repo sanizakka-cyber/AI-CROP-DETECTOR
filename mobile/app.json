@@ -1,23 +1,24 @@
 {
   "expo": {
-    "name": "MSAS Livestock & Agro",
+    "name": "MSAS FarmAI",
     "slug": "msas-livestock-agro",
-    "version": "1.2.0",
+    "version": "1.2.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/branding/android/ic_launcher_standalone.png",
     "scheme": "farmai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.farmai.diagnostic"
+      "bundleIdentifier": "com.farmai.diagnostic",
+      "icon": "./assets/branding/ios/AppIcon-1024.png"
     },
     "android": {
-      "versionCode": 11,
+      "versionCode": 13,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "backgroundColor": "#10b981"
+        "foregroundImage": "./assets/branding/android/ic_launcher_foreground.png",
+        "monochromeImage": "./assets/branding/android/ic_launcher_monochrome.png",
+        "backgroundColor": "#0A3720"
       },
       "package": "com.msas.livestock",
       "permissions": [
@@ -29,7 +30,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/branding/web/favicon-512.png"
     },
     "plugins": [
       "expo-router",
@@ -53,10 +54,19 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/branding/android/ic_launcher_monochrome.png",
           "color": "#1C6B38",
           "sounds": [],
           "mode": "production"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/branding/android/ic_launcher_foreground.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A3720"
         }
       ],
       [

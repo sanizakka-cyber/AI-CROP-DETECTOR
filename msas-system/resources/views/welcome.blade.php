@@ -3,15 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MSAS Agro | Smart Agriculture Platform — Nigeria</title>
-    <meta name="description" content="MSAS Agro is Nigeria's leading AI-powered agribusiness platform for farmers, livestock owners, cooperatives, governments and development partners.">
+    <title>MSAS FarmAI | Smart Agriculture. Healthy Future.</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/branding/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/branding/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/branding/msas-farmai-mark.png') }}">
+    <meta name="description" content="MSAS FarmAI is Nigeria's leading AI-powered agribusiness platform for farmers, livestock owners, cooperatives, governments and development partners.">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="MSAS Agro | Smart Agriculture Platform — Nigeria">
+    <meta property="og:title" content="MSAS FarmAI | Smart Agriculture. Healthy Future.">
     <meta property="og:description" content="AI-powered diagnostics, veterinary services, agronomy support and enterprise management for Nigeria's agricultural ecosystem.">
     <meta property="og:url" content="{{ config('app.url') }}">
-    <meta property="og:image" content="{{ asset('images/msas-logo.png') }}">
+    <meta property="og:image" content="{{ asset('images/branding/msas-farmai-full.png') }}">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="MSAS Agro | Smart Agriculture Platform">
+    <meta name="twitter:title" content="MSAS FarmAI | Smart Agriculture. Healthy Future.">
     <meta name="twitter:description" content="AI-powered agribusiness platform for Nigerian farmers and agri-enterprises.">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700,800|inter:300,400,500,600,700&display=swap" rel="stylesheet"/>
@@ -172,12 +175,12 @@
         <a href="/" class="flex items-center gap-2 shrink-0">
             {{-- Real MSAS logo image in a dark-navy container — works on both transparent and white nav --}}
             <div style="width:42px;height:42px;border-radius:10px;overflow:hidden;background:#0B2447;border:1.5px solid rgba(255,255,255,0.22);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.28);">
-                <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro"
+                <img src="{{ asset('images/branding/msas-farmai-mark.png') }}" alt="MSAS FarmAI"
                      style="width:100%;height:100%;object-fit:cover;display:block;">
             </div>
             <div class="leading-none">
-                <div class="font-heading font-extrabold text-sm md:text-base" :class="scrolled?'text-gray-900':'text-white'" style="line-height:1.1">MSAS Agro</div>
-                <div class="font-medium tracking-wider hidden sm:block" :class="scrolled?'text-green-700':'text-green-200'" style="font-size:9px">Smart Agriculture, Better Tomorrow</div>
+                <div class="font-heading font-extrabold text-sm md:text-base" :class="scrolled?'text-gray-900':'text-white'" style="line-height:1.1">MSAS FarmAI</div>
+                <div class="font-medium tracking-wider hidden sm:block" :class="scrolled?'text-green-700':'text-green-200'" style="font-size:9px">Smart Agriculture. Healthy Future.</div>
             </div>
         </a>
 
@@ -438,9 +441,9 @@
         <div class="grid lg:grid-cols-3 gap-6 lg:gap-10 items-start">
             {{-- Text — renders first on mobile, second on desktop --}}
             <div class="about-col-text">
-                <div class="section-tag"><i class="fa-solid fa-circle-info"></i> About MSAS Agro</div>
-                <h2 class="font-heading font-extrabold text-2xl md:text-3xl text-gray-900 mb-3">About <span style="color:var(--green)">MSAS Agro</span></h2>
-                <p class="text-gray-500 text-sm leading-relaxed mb-4">MSAS Agro is an AI-powered digital platform providing innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
+                <div class="section-tag"><i class="fa-solid fa-circle-info"></i> About MSAS FarmAI</div>
+                <h2 class="font-heading font-extrabold text-2xl md:text-3xl text-gray-900 mb-3">About <span style="color:var(--green)">MSAS FarmAI</span></h2>
+                <p class="text-gray-500 text-sm leading-relaxed mb-4">MSAS FarmAI is an AI-powered digital platform providing innovative solutions for crop farming, livestock management, poultry, fish farming, marketplace, finance, insurance, and data analytics. Since 2019, we have been driving agriculture transformation.</p>
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     @foreach([['Our Mission','To empower agriculture stakeholders with smart digital solutions.','bullseye'],['Our Vision','To become Africa\'s leading digital agriculture platform.','eye'],['Core Values','Innovation, Integrity, Impact, Collaboration, Sustainability.','heart'],['Our Journey','Since 2019, we have been driving agriculture transformation.','route']] as [$title,$text,$ico])
                     <div class="flex gap-2">
@@ -470,7 +473,7 @@
                 </div>
                 <div class="p-4 bg-white">
                     <div class="font-bold text-gray-800 text-sm mb-1">Transforming Agriculture with Technology</div>
-                    <div class="text-gray-400 text-xs leading-relaxed">Watch how MSAS Agro is changing lives across Africa.</div>
+                    <div class="text-gray-400 text-xs leading-relaxed">Watch how MSAS FarmAI is changing lives across Africa.</div>
                 </div>
             </div>
         </div>
@@ -633,7 +636,7 @@
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12 items-center">
             {{-- Text + QR --}}
             <div>
-                <h2 class="font-heading font-extrabold text-2xl md:text-3xl mb-3">Take MSAS Agro<br/><span class="text-yellow-300">Anywhere You Go</span></h2>
+                <h2 class="font-heading font-extrabold text-2xl md:text-3xl mb-3">Take MSAS FarmAI<br/><span class="text-yellow-300">Anywhere You Go</span></h2>
                 <p class="text-green-100 text-sm leading-relaxed mb-4">Our mobile app is fast, offline-ready and designed for farmers. Record data in the field, get AI diagnoses, check market prices — even without internet.</p>
                 <div class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-5">
                     <a href="{{ route('register') }}" class="flex items-center gap-2 bg-black text-white rounded-xl px-4 py-2.5 hover:bg-gray-900 transition"><i class="fa-brands fa-google-play text-green-400"></i><div><div class="text-[9px] text-gray-300 uppercase">Get it on</div><div class="text-xs font-bold">Google Play</div></div></a>
@@ -824,15 +827,15 @@
         <div class="relative px-0 md:px-8">
             <div class="grid md:grid-cols-3 gap-4 md:gap-6">
                 @foreach([
-                    ['Amina Yusuf','Maize Farmer, Kano State','MSAS Agro has improved my yield by 40% through smart recommendations. The AI disease detection saved my entire farm from a devastating fungal outbreak last season.','photo-1494790108377-be9c29b29330'],
-                    ['Bello Salisu','Livestock Farmer, Kaduna','The livestock monitoring system helps me track my animals health in real-time. I can now detect illness early and call the vet before it spreads to the whole herd.','photo-1570295999919-56ceb5ecca61'],
-                    ['Grace Okafor','Poultry Farmer, Enugu','I get market prices, alerts and training all in one platform. The marketplace helps me sell my eggs directly to buyers without middlemen.','photo-1508214751196-bcfd4ca60f91'],
+                    ['Asmau Faruk','Fish Farmer, Kano State','MSAS FarmAI has improved my yield by 40% through smart recommendations. The AI disease detection saved my entire farm from a devastating fungal outbreak last season.','asmau-faruk.jpg'],
+                    ['Muawiyya M. Wada','Livestock Farmer, Kano','The livestock monitoring system helps me track my animals health in real-time. I can now detect illness early and call the vet before it spreads to the whole herd.','muawiyya-wada.jpg'],
+                    ['Mubarak Jibril','Poultry Farmer, Katsina','I get market prices, alerts and training all in one platform. The marketplace helps me sell my eggs directly to buyers without middlemen.','mubarak-jibril.jpg'],
                 ] as [$name,$role,$text,$img])
                 <div class="testi-card fade-up">
                     <div class="flex gap-0.5 text-yellow-400 mb-3">@for($i=0;$i<5;$i++)<i class="fa-solid fa-star text-sm"></i>@endfor</div>
                     <p class="text-gray-600 text-sm leading-relaxed mb-4 italic">&ldquo;{{ $text }}&rdquo;</p>
                     <div class="flex items-center gap-3">
-                        <img loading="lazy" src="https://images.unsplash.com/{{ $img }}?w=80&h=80&q=80&auto=format&fit=crop&crop=face" alt="{{ $name }}" class="w-10 h-10 rounded-full object-cover shrink-0" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($name) }}&background=2E7D32&color=fff&size=80&bold=true&rounded=true'">
+                        <img loading="lazy" src="{{ asset('images/testimonials/' . $img) }}" alt="{{ $name }}, {{ explode(',', $role)[0] }}" class="w-10 h-10 rounded-full object-cover shrink-0" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($name) }}&background=2E7D32&color=fff&size=80&bold=true&rounded=true'">
                         <div><div class="font-bold text-gray-800 text-sm">{{ $name }}</div><div class="text-gray-400 text-xs">{{ $role }}</div></div>
                     </div>
                 </div>
@@ -1040,7 +1043,7 @@
                         {{-- Wrapper constrains photo; inline style avoids uncompiled Tailwind arbitrary values --}}
                         <div class="relative" style="width:72px;height:72px;flex-shrink:0;min-width:72px;">
                             <img src="{{ asset('images/ceo-sani-yawale-zakka.jpg') }}"
-                                 alt="Sani Yawale Zakka — Founder &amp; CEO, MSAS Agro"
+                                 alt="Sani Yawale Zakka — Founder &amp; CEO, MSAS FarmAI"
                                  class="rounded-xl border-2 shadow-md"
                                  loading="lazy"
                                  style="width:72px;height:72px;min-width:72px;object-fit:cover;object-position:top;display:block;border-color:var(--green);"
@@ -1052,7 +1055,7 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <h3 class="font-heading font-extrabold text-sm text-gray-900 leading-snug">Sani Yawale Zakka</h3>
-                            <p class="text-xs font-semibold mt-0.5" style="color:var(--green)">Founder &amp; CEO, MSAS Agro</p>
+                            <p class="text-xs font-semibold mt-0.5" style="color:var(--green)">Founder &amp; CEO, MSAS FarmAI</p>
                             <div class="flex flex-wrap gap-1 mt-1.5">
                                 @foreach(['Agribusiness','Digital Innovation','Entrepreneur'] as $ftag)
                                 <span class="font-medium text-gray-500 bg-gray-200 rounded" style="font-size:10px;padding:2px 6px">{{ $ftag }}</span>
@@ -1063,7 +1066,7 @@
 
                     {{-- Quote --}}
                     <blockquote class="text-gray-500 italic leading-relaxed mb-3 pl-3 border-l-2" style="border-color:var(--green);font-size:11px">
-                        "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS Agro."
+                        "Technology should serve every farmer — from the smallholder in Katsina to the cooperative in Lagos. That is the vision behind MSAS FarmAI."
                     </blockquote>
 
                     {{-- Bio --}}
@@ -1126,12 +1129,12 @@
                 <h2 class="font-heading font-extrabold text-gray-900 mb-4" style="font-size:clamp(1.2rem,2.5vw,1.5rem)">Frequently Asked <span style="color:var(--green)">Questions</span></h2>
                 <div id="faq-list">
                     @foreach([
-                        ['What is MSAS Agro?','MSAS Agro is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
+                        ['What is MSAS FarmAI?','MSAS FarmAI is an AI-powered digital agriculture platform built for Nigerian farmers, livestock owners, cooperatives, governments, and development partners. It provides tools for farm management, AI diagnostics, marketplace, vet consultations, and data analytics.'],
                         ['Is the platform free to use?','MSAS FarmAI offers a 14-day free trial on any plan. Our Basic plan starts at ₦2,500/month and includes 15 AI scans per month, farm management, and marketplace access. Premium and Professional plans unlock more scans, consultations, and advanced tools.'],
                         ['Does it work without internet?','Yes. Our mobile app supports offline data collection. Once you reconnect, all data syncs automatically to the cloud.'],
                         ['How does the AI diagnostic work?','Simply upload a photo of your sick animal, diseased crop, or soil sample. Our AI engine identifies the condition and provides a treatment plan within seconds.'],
                         ['Can I consult a vet on the platform?','Yes. Farmers can request vet consultations via in-app chat (₦1,500), WhatsApp (₦2,500), or phone call (₦3,500). Vets respond within 2–4 hours.'],
-                        ['Is my farm data secure?','Absolutely. All data is encrypted in transit (TLS) and at rest (AES-256). MSAS Agro is NDPR compliant and your data is never sold to third parties.'],
+                        ['Is my farm data secure?','Absolutely. All data is encrypted in transit (TLS) and at rest (AES-256). MSAS FarmAI is NDPR compliant and your data is never sold to third parties.'],
                         ['How do I register?','Click "Sign Up" on any page, enter your name, phone, email, state, and farm type, and your account is ready in under 2 minutes.'],
                     ] as [$q,$a])
                     <div class="faq-item">
@@ -1318,14 +1321,14 @@
                 <div class="flex items-center gap-2 mb-1">
                     {{-- Logo on dark footer background — no extra wrapper needed --}}
                     <div style="width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;">
-                        <img src="{{ asset('images/msas-logo.png') }}" alt="MSAS Agro" loading="lazy"
+                        <img src="{{ asset('images/branding/msas-farmai-mark.png') }}" alt="MSAS FarmAI" loading="lazy"
                              style="width:100%;height:100%;object-fit:cover;display:block;">
                     </div>
-                    <div class="font-heading font-extrabold text-base text-white">MSAS Agro</div>
+                    <div class="font-heading font-extrabold text-base text-white">MSAS FarmAI</div>
                 </div>
-                <div class="text-xs font-semibold mb-3 md:mb-4" style="color:var(--green)">Smart Agriculture, Better Tomorrow</div>
+                <div class="text-xs font-semibold mb-3 md:mb-4" style="color:var(--green)">Smart Agriculture. Healthy Future.</div>
                 <p class="text-sm leading-relaxed mb-4 md:mb-5 max-w-xs">Nigeria's leading AI-powered agribusiness platform connecting farmers, experts, governments, and development partners.</p>
-                {{-- Social links removed until real MSAS Agro social accounts are set up — a
+                {{-- Social links removed until real MSAS FarmAI social accounts are set up — a
                      row of icons pointing nowhere is exactly the kind of decorative-but-fake
                      link this footer previously had for its legal pages too. --}}
             </div>
@@ -1383,7 +1386,7 @@
             </div>
         </div>
         <div class="border-t border-white/10 pt-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
-            <p>&copy; {{ date('Y') }} MSAS Agro. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} MSAS FarmAI. All rights reserved.</p>
             <div class="flex gap-4 md:gap-5">
                 <a href="{{ route('legal.privacy') }}" class="hover:text-gray-200 transition">Privacy Policy</a>
                 <a href="{{ route('legal.terms') }}" class="hover:text-gray-200 transition">Terms of Service</a>
@@ -1406,7 +1409,7 @@ function toggleFaq(el){
 }
 function sendWhatsApp(form){
     var name=form.name.value,phone=form.phone.value,subject=form.subject?form.subject.value:'',message=form.message.value;
-    var text='MSAS Agro Enquiry\n\nName: '+name+'\nPhone: '+phone+(subject?'\nSubject: '+subject:'')+'\n\nMessage:\n'+message;
+    var text='MSAS FarmAI Enquiry\n\nName: '+name+'\nPhone: '+phone+(subject?'\nSubject: '+subject:'')+'\n\nMessage:\n'+message;
     window.open('https://wa.me/2348129582957?text='+encodeURIComponent(text),'_blank');
     return false;
 }
