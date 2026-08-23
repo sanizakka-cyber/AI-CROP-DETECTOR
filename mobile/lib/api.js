@@ -200,7 +200,12 @@ export const diagnoseAPI = {
     form.append('cropPart', cropPart || '');
     if (farmId) form.append('farmId', farmId);
     images.forEach((img, i) => {
-      form.append('images', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      // 'images[]' — PHP/Laravel only collects a multipart field into a
+      // real array when the field name carries the [] suffix; multiple
+      // parts all named plain 'images' collapse to a single value instead
+      // of an array, which is exactly what produced "The images field
+      // must be an array." on every scan attempt.
+      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
     const res = await fetch(`${BASE_URL}/diagnose/crop`, {
       method: 'POST',
@@ -222,7 +227,12 @@ export const diagnoseAPI = {
     if (symptoms) form.append('symptoms', JSON.stringify(symptoms));
     if (behavioral) form.append('behavioral', JSON.stringify(behavioral));
     images.forEach((img, i) => {
-      form.append('images', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      // 'images[]' — PHP/Laravel only collects a multipart field into a
+      // real array when the field name carries the [] suffix; multiple
+      // parts all named plain 'images' collapse to a single value instead
+      // of an array, which is exactly what produced "The images field
+      // must be an array." on every scan attempt.
+      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
     const res = await fetch(`${BASE_URL}/diagnose/livestock`, {
       method: 'POST',
