@@ -16,7 +16,7 @@ import ServerStatus from '../../components/ServerStatus';
 // reset is a full HTML flow (request link -> email -> set new password),
 // not a JSON endpoint, so it's reused as-is in an in-app browser instead
 // of being reimplemented as separate mobile-native business logic.
-const WEB_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api').replace(/\/api\/?$/, '');
+const WEB_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'https://www.msasagro.com/api').replace(/\/api\/?$/, '');
 
 // ── Brand palette ─────────────────────────────────
 const C = {

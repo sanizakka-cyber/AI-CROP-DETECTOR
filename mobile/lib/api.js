@@ -2,7 +2,14 @@
 // EXPO_PUBLIC_API_URL is set per build profile in eas.json
 // For local dev: set in mobile/.env
 // For production: set EXPO_PUBLIC_API_URL=https://yourdomain.com/api in eas.json build.production.env
-const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api').replace(/\/$/, '');
+//
+// MUST be the "www" host: msasagro.com (bare) 301-redirects to
+// www.msasagro.com, and that redirect strips the Authorization header
+// (standard cross-host-redirect behavior in every HTTP client) — every
+// authenticated request was silently losing its token on the redirect,
+// which is what caused "login succeeds, then immediately logged out".
+// Confirmed by testing both hosts directly against production.
+const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || 'https://www.msasagro.com/api').replace(/\/$/, '');
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

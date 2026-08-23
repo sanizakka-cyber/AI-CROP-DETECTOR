@@ -21,7 +21,7 @@
         "disabled": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
+        "EXPO_PUBLIC_API_URL": "https://www.msasagro.com/api",
         "EXPO_PUBLIC_ENV": "preview"
       }
     },
@@ -30,7 +30,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
+        "EXPO_PUBLIC_API_URL": "https://www.msasagro.com/api",
         "EXPO_PUBLIC_ENV": "production"
       }
     },
@@ -39,7 +39,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://msasagro.com/api",
+        "EXPO_PUBLIC_API_URL": "https://www.msasagro.com/api",
         "EXPO_PUBLIC_ENV": "production"
       }
     }

@@ -2,8 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
 
-// Shares the same root URL as api.js — strip the trailing /api if present
-const API_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api').replace(/\/api$/, '');
+// Shares the same root URL as api.js — strip the trailing /api if present.
+// Must be the "www" host — see the matching comment in lib/api.js for why:
+// the bare domain 301-redirects here, which strips this fetch's
+// Authorization header on the redirect and always turned this into an
+// unauthenticated request.
+const API_ROOT = (process.env.EXPO_PUBLIC_API_URL || 'https://www.msasagro.com/api').replace(/\/api$/, '');
 
 const PLAN_LEVELS = { none: 0, basic: 1, pro: 2, premium: 3 };
 
