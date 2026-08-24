@@ -1,11 +1,15 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import {
+  useAudioRecorder, useAudioRecorderState, RecordingPresets,
+  requestRecordingPermissionsAsync, setAudioModeAsync,
+} from 'expo-audio';
 import { aiAPI } from '../lib/api';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../constants/Theme';
 
@@ -54,6 +58,75 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const historyRef = useRef('[]');
+
+  // ── Voice input ──────────────────────────────────────────────────────
+  // Records real audio and uploads it to the same server-side Whisper
+  // transcription endpoint the web chat widget uses (AiWidgetController::
+  // transcribe()) — deliberately not on-device speech recognition, since
+  // that engine isn't reliably present on every Android environment
+  // (BlueStacks in particular often lacks Google's speech services), and
+  // this way both clients share one transcription implementation instead
+  // of two different engines potentially disagreeing.
+  const [voiceState, setVoiceState] = useState('idle'); // idle | recording | processing
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder, 200);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    if (voiceState !== 'recording') { pulseAnim.setValue(1); return; }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.25, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 500, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [voiceState]);
+
+  const startRecording = async () => {
+    const perm = await requestRecordingPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        isHausa ? 'Ana Bukatar Izinin Makirofo' : 'Microphone Permission Required',
+        isHausa
+          ? "Ana bukatar izinin makirofo don amfani da shigar da murya. Da fatan ku bada izini a saitunan na'ku."
+          : 'Microphone access is required to use voice input. Please allow microphone access in your device settings.',
+        [
+          { text: isHausa ? 'A\'a' : 'Cancel', style: 'cancel' },
+          { text: isHausa ? 'Buɗe Saitunan' : 'Open Settings', onPress: () => Linking.openSettings() },
+        ]
+      );
+      return;
+    }
+    try {
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setVoiceState('recording');
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'bot', text: "We couldn't start recording. Please try again." }]);
+    }
+  };
+
+  const stopRecording = async () => {
+    setVoiceState('processing');
+    try {
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (!uri) throw new Error('no-recording');
+      const data = await aiAPI.transcribe(uri, i18n.language);
+      if (data.text) {
+        setInput(prev => (prev ? prev.trim() + ' ' : '') + data.text);
+      } else {
+        setMessages(prev => [...prev, { role: 'bot', text: "We couldn't understand the recording. Please try again in a quieter environment." }]);
+      }
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'bot', text: e?.message || "We couldn't understand the recording. Please try again in a quieter environment." }]);
+    } finally {
+      setVoiceState('idle');
+    }
+  };
 
   const send = async () => {
     const msg = input.trim();
@@ -111,21 +184,39 @@ export default function AssistantScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder={isHausa ? 'Tambaya game da gonarka…' : 'Ask about your farm…'}
-          placeholderTextColor={Colors.textMuted}
-          onSubmitEditing={send}
-          returnKeyType="send"
-          multiline
-        />
-        <TouchableOpacity style={styles.sendBtn} onPress={send} disabled={sending || !input.trim()}>
-          <MaterialCommunityIcons name="send" size={20} color={Colors.white} />
-        </TouchableOpacity>
-      </View>
+      {voiceState === 'recording' ? (
+        <View style={styles.recordingBar}>
+          <Animated.View style={[styles.recDot, { transform: [{ scale: pulseAnim }] }]} />
+          <Text style={styles.recordingText}>{isHausa ? 'Ana saurara...' : 'Listening...'}</Text>
+          <TouchableOpacity style={styles.stopBtn} onPress={stopRecording}>
+            <Text style={styles.stopBtnText}>{isHausa ? 'Tsaya' : 'Stop'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : voiceState === 'processing' ? (
+        <View style={styles.recordingBar}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={styles.recordingText}>{isHausa ? 'Ana sarrafa murya...' : 'Processing voice...'}</Text>
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder={isHausa ? 'Tambaya game da gonarka…' : 'Ask about your farm…'}
+            placeholderTextColor={Colors.textMuted}
+            onSubmitEditing={send}
+            returnKeyType="send"
+            multiline
+          />
+          <TouchableOpacity style={styles.micBtn} onPress={startRecording}>
+            <MaterialCommunityIcons name="microphone" size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sendBtn} onPress={send} disabled={sending || !input.trim()}>
+            <MaterialCommunityIcons name="send" size={20} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -165,4 +256,19 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
+  micBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.background,
+    borderWidth: 1.5, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  recordingBar: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.md, backgroundColor: '#FEF2F2',
+    borderTopWidth: 1, borderTopColor: '#FECACA',
+  },
+  recDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.danger },
+  recordingText: { ...Typography.small, color: '#991B1B', fontWeight: '700', flex: 1 },
+  stopBtn: { backgroundColor: Colors.danger, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 8 },
+  stopBtnText: { color: Colors.white, fontWeight: '700', fontSize: 12 },
 });

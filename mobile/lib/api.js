@@ -364,6 +364,24 @@ export const aiAPI = {
     method: 'POST',
     body: JSON.stringify({ message, history, language }),
   }),
+
+  // Uploads a recorded audio clip to the same server-side Whisper
+  // transcription AiWidgetController::transcribe() exposes to web — one
+  // implementation, no AI credentials ever reach the app bundle.
+  transcribe: async (audioUri, language) => {
+    const token = await getToken();
+    const form = new FormData();
+    form.append('audio', { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' });
+    if (language) form.append('language', language);
+    const res = await fetch(`${BASE_URL}/ai/transcribe`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "We couldn't understand the recording. Please try again in a quieter environment.");
+    return data;
+  },
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────

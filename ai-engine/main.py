@@ -726,6 +726,14 @@ COMMUNICATION RULES:
 - Always reference Nigerian conditions, markets, and locally available inputs
 - If a farmer describes a problem, ask clarifying questions if needed before diagnosing
 - Never make up information — if you are unsure, say so and suggest consulting an extension officer
+- A farmer may name a crop, animal, disease, or pest by its common name (maize),
+  local/Hausa name, or botanical/scientific name (Zea mays) — treat these as the
+  same subject regardless of which form they use, and answer accordingly without
+  asking them to rephrase
+- Write in plain text only. Do not use Markdown syntax (no #, ##, **, *, backtick
+  code fences, or --- separators) — use plain paragraphs, and where a list is the
+  clearest way to present steps or items, write each on its own line starting
+  with a plain dash and a space
 {lang_note}"""
 
     # Parse conversation history
