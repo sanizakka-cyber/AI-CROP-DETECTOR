@@ -26,7 +26,8 @@ class AnalyticsApiController extends Controller
         $recentRaw  = Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(['id','disease_name','type','status','created_at']);
         $recent = $recentRaw->map(fn($d) => [
             'id'          => $d->id,
-            'type'        => $d->type === 'plant' ? 'crop' : 'livestock',
+            'type'        => match ($d->type) { 'plant' => 'crop', 'animal' => 'livestock', default => $d->type },
+            'subject_name'=> $d->subject_name,
             'disease_name'=> $d->disease_name,
             'status'      => $d->status === 'confirmed' ? 'processed' : $d->status,
             'created_at'  => $d->created_at->toISOString(),

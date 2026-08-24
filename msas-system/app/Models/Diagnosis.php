@@ -141,7 +141,7 @@ class Diagnosis extends Model
      */
     public function narrationText(): string
     {
-        $typeLbl  = match($this->type) { 'plant' => 'Crop / Plant', 'soil' => 'Soil Assessment', default => 'Livestock' };
+        $typeLbl  = match($this->type) { 'plant' => 'Crop / Plant', 'soil' => 'Soil Assessment', 'pest' => 'Pest Identification', default => 'Livestock' };
         $severity = $this->severity_level ?? '';
         $urgency  = $this->urgency_level ?? 'Medium';
 
