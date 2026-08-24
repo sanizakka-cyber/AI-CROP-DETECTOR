@@ -587,7 +587,7 @@
                         <div class="hidden sm:block text-left">
                             <div class="text-xs font-bold text-slate-800 leading-tight">{{ auth()->user()->displayFirstName }}</div>
                             @php
-                            $roleClass = match(auth()->user()->role) {
+                            $roleClass = match(\App\Support\Roles::canonical(auth()->user()->role)) {
                                 'ceo','admin'                                                        => 'role-ceo',
                                 'farmer'                                                             => 'role-farmer',
                                 'vet','agronomist','extension-officer','field-officer','data-analyst' => 'role-vet',

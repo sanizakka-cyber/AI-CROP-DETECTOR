@@ -116,6 +116,8 @@ class ProfileController extends Controller
         $request->validate($rules);
 
         $user = $request->user();
+        $wasFirstLogin = (bool) $user->force_password_reset;
+
         $user->password             = Hash::make($request->password);
         $user->force_password_reset = false;
         $user->save();
@@ -125,9 +127,28 @@ class ProfileController extends Controller
 
         AuditLog::record('password.changed', 'User', $user->id);
 
-        return redirect()->route('dashboard')
+        // A forced first-login change gets one stop at a welcome/profile-
+        // review screen before the dashboard — an ordinary voluntary
+        // password change (from account settings) goes straight back to
+        // the dashboard as before. Neither path logs the user out or
+        // returns them to login; the session set up by the login that got
+        // them here stays valid throughout.
+        $destination = $wasFirstLogin ? 'profile.welcome' : 'dashboard';
+
+        return redirect()->route($destination)
             ->with('status', 'password-changed')
             ->withCookie(\Cookie::forget(\App\Services\TrustedDeviceService::COOKIE_NAME));
+    }
+
+    /**
+     * One-time landing screen after a forced first-login password change —
+     * lets a new staff member review/complete their profile before
+     * continuing, without hard-gating dashboard access on it (unlike the
+     * password change itself, this step can always be skipped).
+     */
+    public function welcome(Request $request): View
+    {
+        return view('profile.welcome', ['user' => $request->user()]);
     }
 
     /**

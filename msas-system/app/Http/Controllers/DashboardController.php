@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HasSafeDashboardQueries;
 use App\Models\Diagnosis;
+use App\Support\Roles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -16,7 +17,13 @@ class DashboardController extends Controller
     public function dispatch()
     {
         $user = auth()->user();
-        $route = match($user->role ?? '') {
+        // Canonicalize once, here, rather than enumerating every known
+        // spelling of a role in this match arm (the pattern that let one
+        // role accumulate four inconsistent spellings across the codebase
+        // in the first place — see App\Support\Roles's doc comment). Any
+        // future synonym only needs adding to Roles::SYNONYMS, not to
+        // every place a role is matched against.
+        $route = match(Roles::canonical($user->role ?? '')) {
             'ceo'                   => 'ceo.dashboard',
             'admin'                 => 'admin.dashboard',
             'farmer'                => 'farmer.dashboard',
@@ -39,9 +46,7 @@ class DashboardController extends Controller
             'hr'                    => 'hr.dashboard',
             'operations'            => 'operations.dashboard',
             'data-analyst'          => 'data-analyst.dashboard',
-            'monitoring-evaluation',
-            'm-e-officer',
-            'me-officer'            => 'monitoring-evaluation.dashboard',
+            'm-e-officer'           => 'monitoring-evaluation.dashboard',
             'field-officer'         => 'field-officer.dashboard',
             'customer-support'      => 'customer-support.dashboard',
             'rider'                 => 'rider.dashboard',

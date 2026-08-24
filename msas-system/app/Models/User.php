@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Roles;
 use Carbon\Carbon;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -90,7 +91,7 @@ class User extends Authenticatable
 
     public function getRoleLabelAttribute(): string
     {
-        return match($this->role) {
+        return match(Roles::canonical($this->role)) {
             'ceo'                  => 'Chief Executive Officer',
             'admin'                => 'Administrator',
             'farmer'               => 'Farmer',
@@ -110,7 +111,7 @@ class User extends Authenticatable
             'extension-officer'    => 'Extension Worker',
             'field-officer'        => 'Field Officer',
             'data-analyst'         => 'Data Analyst',
-            'm-e-officer', 'me-officer', 'me_officer', 'monitoring-evaluation' => 'Monitoring & Evaluation Officer',
+            'm-e-officer' => 'Monitoring & Evaluation Officer',
             'customer-support'     => 'Customer Support',
             'hr'                   => 'Human Resources',
             'finance'              => 'Finance Officer',
@@ -142,14 +143,12 @@ class User extends Authenticatable
             'field-officer'        => 'FLD',
             'data-analyst'         => 'DAT',
             'm-e-officer'          => 'MEO',
-            'me-officer'           => 'MEO',
-            'me_officer'           => 'MEO',
             'customer-support'     => 'CSP',
             'hr'                   => 'HRS',
             'finance'              => 'FIN',
             'operations'           => 'OPS',
         ];
-        $code = $codes[$this->role] ?? strtoupper(substr($this->role ?? 'STF', 0, 3));
+        $code = $codes[Roles::canonical($this->role)] ?? strtoupper(substr($this->role ?? 'STF', 0, 3));
         $year = $this->created_at ? $this->created_at->format('Y') : now()->format('Y');
         $seq  = str_pad($this->id, 4, '0', STR_PAD_LEFT);
         return "{$code}-{$year}-{$seq}";
