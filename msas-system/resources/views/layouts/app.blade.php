@@ -833,10 +833,23 @@
 .chat-bubble{max-width:85%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;}
 .chat-bubble.bot{background:#f1f5f9;color:#0f172a;align-self:flex-start;border-bottom-left-radius:4px;}
 .chat-bubble.user{background:#0F6B3E;color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+.chat-bubble-rich{display:flex;flex-direction:column;gap:6px;}
+.chat-section-title{font-weight:800;font-size:13px;color:#0F6B3E;margin-top:4px;}
+.chat-section-title:first-child{margin-top:0;}
+.chat-section-text{white-space:pre-line;}
+.chat-section-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px;}
 #chat-footer{padding:10px 12px;border-top:1px solid #f1f5f9;display:flex;gap:8px;flex-shrink:0;}
 #chat-input{flex:1;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;}
 #chat-input:focus{border-color:#0F6B3E;}
 #chat-send{padding:8px 14px;background:#0F6B3E;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+#chat-mic{width:34px;height:34px;flex-shrink:0;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+#chat-mic:hover{border-color:#0F6B3E;color:#0F6B3E;}
+#chat-mic.recording{background:#DC2626;border-color:#DC2626;color:#fff;animation:micPulse 1.4s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4);}50%{box-shadow:0 0 0 8px rgba(220,38,38,0);}}
+#chat-recording-bar{display:none;align-items:center;gap:8px;padding:8px 14px;background:#FEF2F2;border-top:1px solid #FECACA;font-size:12px;font-weight:600;color:#991B1B;flex-shrink:0;}
+#chat-recording-bar.active{display:flex;}
+#chat-recording-bar .rec-dot{width:8px;height:8px;border-radius:50%;background:#DC2626;animation:micPulse 1.4s ease-in-out infinite;}
+#chat-recording-bar button{margin-left:auto;background:#DC2626;color:#fff;border:none;border-radius:8px;padding:4px 12px;font-weight:700;font-size:11px;cursor:pointer;}
 </style>
 
 <button id="msas-chat-btn" title="AI Farm Assistant" onclick="toggleChat()">
@@ -856,7 +869,14 @@
     </div>
     <div id="chat-footer">
         <input type="text" id="chat-input" placeholder="Ask about your farm…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button id="chat-mic" onclick="toggleRecording()" title="Voice input">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
         <button id="chat-send" onclick="sendChat()">Send</button>
+    </div>
+    <div id="chat-recording-bar">
+        <span class="rec-dot"></span> Listening…
+        <button onclick="stopRecording()">Stop</button>
     </div>
 </div>
 
@@ -864,6 +884,74 @@
 (function() {
     var chatHistory = '[]';
     var csrfToken = document.querySelector('meta[name=csrf-token]') ? document.querySelector('meta[name=csrf-token]').content : '';
+    var mediaRecorder = null;
+    var recordedChunks = [];
+
+    // ── Voice input ──────────────────────────────────────────────────
+    // Records with the browser's own MediaRecorder, uploads the clip to
+    // /ai/transcribe (server-side Whisper call — no AI key ever reaches
+    // this page), and drops the transcript into the text input for the
+    // user to review/edit before sending, same as if they had typed it.
+    window.toggleRecording = function() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            stopRecording();
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            appendBubble('Voice input is not supported in this browser. Please type your question instead.', 'bot');
+            return;
+        }
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                recordedChunks = [];
+                var mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+                mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType: mimeType }) : new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = function() {
+                    stream.getTracks().forEach(function(t) { t.stop(); });
+                    document.getElementById('chat-recording-bar').classList.remove('active');
+                    document.getElementById('chat-mic').classList.remove('recording');
+                    if (recordedChunks.length === 0) return;
+                    transcribeAndFill(new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' }));
+                };
+                mediaRecorder.start();
+                document.getElementById('chat-recording-bar').classList.add('active');
+                document.getElementById('chat-mic').classList.add('recording');
+            })
+            .catch(function() {
+                appendBubble('Microphone permission is required to use voice input.', 'bot');
+            });
+    };
+
+    window.stopRecording = function() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    };
+
+    function transcribeAndFill(blob) {
+        var input = document.getElementById('chat-input');
+        var mic = document.getElementById('chat-mic');
+        mic.disabled = true;
+        var fd = new FormData();
+        fd.append('audio', blob, 'recording.webm');
+        fd.append('language', '{{ app()->getLocale() }}');
+        fd.append('_token', csrfToken);
+
+        fetch('{{ route("ai.transcribe") }}', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                mic.disabled = false;
+                if (d.text) {
+                    input.value = (input.value ? input.value + ' ' : '') + d.text;
+                    input.focus();
+                } else {
+                    appendBubble(d.error || "We couldn't understand the recording. Please try again in a quieter environment.", 'bot');
+                }
+            })
+            .catch(function() {
+                mic.disabled = false;
+                appendBubble('Connection unavailable. Please check your internet connection and try again.', 'bot');
+            });
+    }
 
     window.toggleChat = function() {
         var modal = document.getElementById('msas-chat-modal');
@@ -886,18 +974,23 @@
         var fd = new FormData();
         fd.append('message', msg);
         fd.append('history', chatHistory);
+        fd.append('language', '{{ app()->getLocale() }}');
         fd.append('_token', csrfToken);
 
         fetch('/ai/chat', { method: 'POST', body: fd })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 if (d.history) chatHistory = typeof d.history === 'string' ? d.history : JSON.stringify(d.history);
-                var reply = d.reply || d.response || d.message || 'Sorry, I could not get a response.';
-                thinking.textContent = reply;
+                if (d.sections && d.sections.length > 0) {
+                    renderSections(thinking, d.sections);
+                } else {
+                    var reply = d.reply || d.response || d.message || "We couldn't process your request right now. Please try again.";
+                    thinking.textContent = reply;
+                }
                 scrollChat();
             })
             .catch(function() {
-                thinking.textContent = 'Sorry, the AI assistant is temporarily unavailable. Please try again.';
+                thinking.textContent = 'Connection unavailable. Please check your internet connection and try again.';
             });
     };
 
@@ -909,6 +1002,40 @@
         msgs.appendChild(div);
         scrollChat();
         return div;
+    }
+
+    // Renders the AI's structured, already-Markdown-free reply as real
+    // headings/paragraphs/lists instead of one flat text blob — content
+    // comes from AiResponseNormalizer (server-side), so this only ever
+    // builds DOM from plain strings (textContent throughout), never
+    // innerHTML, so there's no injection risk from the model's own output.
+    function renderSections(container, sections) {
+        container.textContent = '';
+        container.classList.add('chat-bubble-rich');
+        sections.forEach(function(s) {
+            if (s.title) {
+                var h = document.createElement('div');
+                h.className = 'chat-section-title';
+                h.textContent = s.title;
+                container.appendChild(h);
+            }
+            if (s.content) {
+                var p = document.createElement('div');
+                p.className = 'chat-section-text';
+                p.textContent = s.content;
+                container.appendChild(p);
+            }
+            if (s.items && s.items.length > 0) {
+                var ul = document.createElement('ul');
+                ul.className = 'chat-section-list';
+                s.items.forEach(function(item) {
+                    var li = document.createElement('li');
+                    li.textContent = item;
+                    ul.appendChild(li);
+                });
+                container.appendChild(ul);
+            }
+        });
     }
 
     function scrollChat() {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AiResponseNormalizer;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -143,12 +144,81 @@ class AiWidgetController extends Controller
 
             $data = json_decode((string) $resp->getBody(), true);
             if ($resp->getStatusCode() >= 200 && $resp->getStatusCode() < 300 && $data) {
+                // Claude's default formatting (headers, **bold**, bullet
+                // lists) reaches this point as raw Markdown — nothing in
+                // the /chat prompt tells it not to use it, and neither web
+                // nor mobile render Markdown. Normalizing here, once,
+                // means every client (web widget, mobile screen) gets a
+                // clean 'reply' plus structured 'sections' from the same
+                // parse instead of each reimplementing this.
+                if (!empty($data['reply']) && is_string($data['reply'])) {
+                    $normalized = AiResponseNormalizer::normalize($data['reply']);
+                    $data['reply']    = $normalized['reply'];
+                    $data['sections'] = $normalized['sections'];
+                }
                 return response()->json($data);
             }
             return response()->json(['error' => 'Chat service unavailable'], 502);
         } catch (\Throwable $e) {
             Log::error('AI chat widget error', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Chat service error'], 503);
+        }
+    }
+
+    /**
+     * Voice input for the AI Assistant. Audio in, transcript out — the
+     * client puts the returned text into its own message box for the user
+     * to review/edit before sending, exactly like typing. No AI/transcription
+     * credentials are ever sent to or stored on the client; the OpenAI key
+     * lives only here server-side (config('services.tts_openai.key'), the
+     * same key already used for diagnosis-report TTS output).
+     */
+    public function transcribe(Request $request): JsonResponse
+    {
+        $request->validate([
+            'audio'    => ['required', 'file', 'max:15360'], // 15MB
+            'language' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        $apiKey = config('services.tts_openai.key');
+        if (!$apiKey) {
+            return response()->json(['error' => 'Voice input is not configured on this server.'], 503);
+        }
+
+        try {
+            $file = $request->file('audio');
+            $multipart = [
+                [
+                    'name'     => 'file',
+                    'contents' => fopen($file->getRealPath(), 'r'),
+                    'filename' => $file->getClientOriginalName() ?: 'recording.m4a',
+                ],
+                ['name' => 'model', 'contents' => 'whisper-1'],
+            ];
+            // Whisper's `language` param is a hint, not an enforced output
+            // language — it improves accuracy for the given spoken language
+            // rather than translating; unsupported codes are simply ignored
+            // by the API rather than erroring, so no per-language allow-list
+            // is needed here.
+            if ($lang = $request->input('language')) {
+                $multipart[] = ['name' => 'language', 'contents' => $lang];
+            }
+
+            $resp = $this->client()->post('https://api.openai.com/v1/audio/transcriptions', [
+                'multipart' => $multipart,
+                'headers'   => ['Authorization' => "Bearer {$apiKey}"],
+            ]);
+
+            $data = json_decode((string) $resp->getBody(), true);
+            if ($resp->getStatusCode() >= 200 && $resp->getStatusCode() < 300 && isset($data['text'])) {
+                return response()->json(['text' => $data['text']]);
+            }
+
+            Log::warning('AI transcription non-200', ['status' => $resp->getStatusCode(), 'body' => substr((string) $resp->getBody(), 0, 300)]);
+            return response()->json(['error' => "We couldn't understand the recording. Please try again in a quieter environment."], 502);
+        } catch (\Throwable $e) {
+            Log::error('AI transcription error', ['error' => $e->getMessage()]);
+            return response()->json(['error' => "We couldn't understand the recording. Please try again in a quieter environment."], 503);
         }
     }
 }

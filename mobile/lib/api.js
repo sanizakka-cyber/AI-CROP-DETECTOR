@@ -355,6 +355,17 @@ export const weatherAPI = {
   },
 };
 
+// ── AI Farm Assistant ────────────────────────────────────────────────────────
+// Same backend controller the web chat widget calls (AiWidgetController::
+// chat(), reached here over Bearer auth instead of session/CSRF) — one AI
+// implementation behind both clients, not a separate mobile chat system.
+export const aiAPI = {
+  chat: (message, history, language) => request('/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history, language }),
+  }),
+};
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const notificationsAPI = {
   list:       (params = {}) => {

@@ -566,6 +566,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ai/weather', [\App\Http\Controllers\AiWidgetController::class, 'weather'])->name('ai.weather');
     Route::post('/ai/market',  [\App\Http\Controllers\AiWidgetController::class, 'market'])->name('ai.market');
     Route::post('/ai/chat',    [\App\Http\Controllers\AiWidgetController::class, 'chat'])->name('ai.chat');
+    Route::post('/ai/transcribe', [\App\Http\Controllers\AiWidgetController::class, 'transcribe'])->name('ai.transcribe');
 });
 
 // ── Two-Factor Authentication ──────────────────────────────────────────────

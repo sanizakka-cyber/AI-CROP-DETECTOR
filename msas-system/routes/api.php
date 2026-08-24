@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiWidgetController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\DiagnoseApiController;
 use App\Http\Controllers\Api\ProductApiController;
@@ -144,6 +145,13 @@ Route::middleware('auth.api')->group(function () {
     Route::get('/diagnose',            [DiagnoseApiController::class, 'history']);
     Route::get('/diagnose/{id}',       [DiagnoseApiController::class, 'show']);
     Route::patch('/diagnose/{id}/feedback', [DiagnoseApiController::class, 'feedback']);
+
+    // AI Farm Assistant chat — same controller method the web widget calls
+    // (routes/web.php '/ai/chat'), just reached over Bearer-token auth
+    // instead of the session/CSRF the web route uses. One implementation,
+    // two entry points — not a second AI system for mobile.
+    Route::post('/ai/chat', [AiWidgetController::class, 'chat']);
+    Route::post('/ai/transcribe', [AiWidgetController::class, 'transcribe']);
 
     // Farms CRUD
     Route::get('/farms',              [FarmApiController::class, 'index']);
