@@ -196,8 +196,10 @@ export const diagnoseAPI = {
   crop: async ({ cropType, cropPart, farmId, images }) => {
     const token = await getToken();
     const form = new FormData();
-    form.append('cropType', cropType || '');
-    form.append('cropPart', cropPart || '');
+    // Both are optional hints — omit entirely when unset so the AI engine
+    // identifies the crop/plant part on its own, matching the web scan form.
+    if (cropType) form.append('cropType', cropType);
+    if (cropPart) form.append('cropPart', cropPart);
     if (farmId) form.append('farmId', farmId);
     images.forEach((img, i) => {
       // 'images[]' — PHP/Laravel only collects a multipart field into a
@@ -235,6 +237,41 @@ export const diagnoseAPI = {
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
     const res = await fetch(`${BASE_URL}/diagnose/livestock`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
+    return data;
+  },
+
+  soil: async ({ soilContext, images }) => {
+    const token = await getToken();
+    const form = new FormData();
+    if (soilContext) form.append('soilContext', soilContext);
+    images.forEach((img, i) => {
+      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+    });
+    const res = await fetch(`${BASE_URL}/diagnose/soil`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
+    return data;
+  },
+
+  pest: async ({ cropType, location, images }) => {
+    const token = await getToken();
+    const form = new FormData();
+    if (cropType) form.append('cropType', cropType);
+    if (location) form.append('location', location);
+    images.forEach((img, i) => {
+      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+    });
+    const res = await fetch(`${BASE_URL}/diagnose/pest`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: form,

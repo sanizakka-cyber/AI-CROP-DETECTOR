@@ -3,19 +3,20 @@ import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   RefreshControl, FlatList,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { diagnoseAPI, animalsAPI } from '../../lib/api';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Card, SeverityBadge, EmptyState, Button } from '../../components/UI';
-import { subjectIcon } from '../../lib/subjectIcon';
+import { subjectIcon, typeLabel } from '../../lib/subjectIcon';
 import { statusMeta } from '../../lib/diagnosisStatus';
 
 export default function RecordsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const isHausa = i18n.language === 'ha';
-  const [tab, setTab] = useState('diagnoses'); // diagnoses | animals
+  const [tab, setTab] = useState(params.tab === 'animals' ? 'animals' : 'diagnoses'); // diagnoses | animals
   const [diagnoses, setDiagnoses] = useState([]);
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +74,7 @@ export default function RecordsScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.dxTitle}>{d.subject_name || d.disease_name || d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
                         <Text style={styles.dxMeta}>
-                          {d.type === 'crop' ? 'Crop' : 'Livestock'} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}
+                          {typeLabel(d.type)} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}
                         </Text>
                         <Text style={[styles.dxStatus, { color: Colors[sm.colorKey] }]}>
                           {sm.icon} {sm.label}

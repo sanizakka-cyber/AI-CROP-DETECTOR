@@ -89,9 +89,15 @@ class DiagnoseApiController extends Controller
             ], 403);
         }
 
+        // cropType/cropPart are optional hints, not requirements — matches
+        // the web scan form exactly (DiagnosticController::analyze() only
+        // sends them when non-empty via array_filter). The AI engine is
+        // fully capable of identifying the crop and plant part on its own;
+        // forcing a selection here was a mobile-only restriction the web
+        // flow never had.
         $request->validate([
-            'cropType' => ['required', 'string'],
-            'cropPart' => ['sometimes', 'string'],
+            'cropType' => ['sometimes', 'nullable', 'string'],
+            'cropPart' => ['sometimes', 'nullable', 'string'],
             'images'   => ['required', 'array', 'min:1'],
             'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
         ]);
@@ -99,9 +105,9 @@ class DiagnoseApiController extends Controller
         $this->warmAiEngine();
 
         try {
-            $pending = $this->aiHttp()
-                ->attach('cropType', $request->cropType)
-                ->attach('cropPart', $request->cropPart ?? 'crop');
+            $pending = $this->aiHttp();
+            if ($request->filled('cropType')) $pending = $pending->attach('cropType', $request->cropType);
+            if ($request->filled('cropPart')) $pending = $pending->attach('cropPart', $request->cropPart);
 
             foreach ($request->file('images', []) as $i => $file) {
                 $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
@@ -190,8 +196,110 @@ class DiagnoseApiController extends Controller
         return $this->finishScan($request, 'animal', $aiResult, $imagePath, $fullPath, '🐄 Livestock Scan Result Ready');
     }
 
+    public function soil(Request $request): JsonResponse
+    {
+        $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
+        if (! $scanCheck['allowed']) {
+            return response()->json([
+                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
+                'scan_limit' => $scanCheck,
+            ], 403);
+        }
+
+        $request->validate([
+            'soilContext' => ['sometimes', 'nullable', 'string', 'max:300'],
+            'images'      => ['required', 'array', 'min:1'],
+            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+        ]);
+
+        $this->warmAiEngine();
+
+        try {
+            $pending = $this->aiHttp();
+            if ($request->filled('soilContext')) $pending = $pending->attach('soilContext', $request->soilContext);
+
+            foreach ($request->file('images', []) as $i => $file) {
+                $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
+            }
+
+            $response = $pending->post($this->aiBase() . '/predict/soil');
+        } catch (\Exception $e) {
+            Log::error('Mobile soil scan: AI engine exception', ['error' => $e->getMessage()]);
+            return $this->storeUnavailable($request, 'soil', null, '🧪 Soil Scan — Expert Review Needed');
+        }
+
+        if (! $response->successful()) {
+            Log::warning('Mobile soil scan: AI engine non-2xx', ['status' => $response->status()]);
+            return $this->storeUnavailable($request, 'soil', null, '🧪 Soil Scan — Expert Review Needed');
+        }
+
+        $aiResult = $response->json();
+
+        $imagePath = null;
+        $fullPath  = null;
+        if ($request->hasFile('images')) {
+            $file      = $request->file('images')[0];
+            $imagePath = $file->store('diagnoses', 'public');
+            $fullPath  = Storage::disk('public')->path($imagePath);
+        }
+
+        return $this->finishScan($request, 'soil', $aiResult, $imagePath, $fullPath, '🧪 Soil Scan Result Ready');
+    }
+
+    public function pest(Request $request): JsonResponse
+    {
+        $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
+        if (! $scanCheck['allowed']) {
+            return response()->json([
+                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
+                'scan_limit' => $scanCheck,
+            ], 403);
+        }
+
+        $request->validate([
+            'cropType'    => ['sometimes', 'nullable', 'string'],
+            'location'    => ['sometimes', 'nullable', 'string', 'max:100'],
+            'images'      => ['required', 'array', 'min:1'],
+            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+        ]);
+
+        $this->warmAiEngine();
+
+        try {
+            $pending = $this->aiHttp();
+            if ($request->filled('cropType')) $pending = $pending->attach('cropType', $request->cropType);
+            if ($request->filled('location')) $pending = $pending->attach('location', $request->location);
+
+            foreach ($request->file('images', []) as $i => $file) {
+                $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
+            }
+
+            $response = $pending->post($this->aiBase() . '/predict/pest');
+        } catch (\Exception $e) {
+            Log::error('Mobile pest scan: AI engine exception', ['error' => $e->getMessage()]);
+            return $this->storeUnavailable($request, 'pest', null, '🔍 Pest ID — Expert Review Needed');
+        }
+
+        if (! $response->successful()) {
+            Log::warning('Mobile pest scan: AI engine non-2xx', ['status' => $response->status()]);
+            return $this->storeUnavailable($request, 'pest', null, '🔍 Pest ID — Expert Review Needed');
+        }
+
+        $aiResult = $response->json();
+
+        $imagePath = null;
+        $fullPath  = null;
+        if ($request->hasFile('images')) {
+            $file      = $request->file('images')[0];
+            $imagePath = $file->store('diagnoses', 'public');
+            $fullPath  = Storage::disk('public')->path($imagePath);
+        }
+
+        return $this->finishScan($request, 'pest', $aiResult, $imagePath, $fullPath, '🔍 Pest ID Result Ready');
+    }
+
     /**
-     * Shared by crop()/livestock(): builds the full-field Diagnosis row via
+     * Shared by crop()/livestock()/soil()/pest(): builds the full-field Diagnosis row via
      * DiagnosisResultMapper (same mapper the web scan flow uses), caches an
      * immediately-renderable payload, and notifies the user. Replaces the
      * narrow 6-field version each endpoint previously built independently.
@@ -269,7 +377,11 @@ class DiagnoseApiController extends Controller
             'diagnosisId'      => $d->id,
             'userId'           => $d->user_id,
             'scanRef'          => $d->scan_ref,
-            'type'             => $d->type === 'plant' ? 'crop' : 'livestock',
+            'type'             => match ($d->type) {
+                'plant'  => 'crop',
+                'animal' => 'livestock',
+                default  => $d->type, // 'soil' | 'pest' — passed through as-is, no legacy rename needed
+            },
             'status'           => $d->status === 'confirmed' ? 'processed' : $d->status,
             'statusLabel'      => $d->statusLabel,
             'createdAt'        => $d->created_at->toISOString(),
@@ -334,7 +446,11 @@ class DiagnoseApiController extends Controller
         $shaped = $diagnoses->map(fn ($d) => [
             'id'                    => $d->id,
             'scan_ref'              => $d->scan_ref,
-            'type'                  => $d->type === 'plant' ? 'crop' : 'livestock',
+            'type'                  => match ($d->type) {
+                'plant'  => 'crop',
+                'animal' => 'livestock',
+                default  => $d->type,
+            },
             'subject_name'          => $d->subject_name,
             'disease_name'          => $d->disease_name,
             'confidence_score'      => $d->confidence_score,

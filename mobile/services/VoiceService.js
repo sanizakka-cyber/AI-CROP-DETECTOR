@@ -89,4 +89,29 @@ export const VoiceService = {
 
     return texts[langCode] || texts.en;
   },
+
+  // Build the narration sentence for a soil sample assessment.
+  // English-only for now (crop/livestock narration above has full 5-language
+  // coverage from earlier work; soil/pest are new scan types this pass adds
+  // — translating narration text accurately requires native-speaker review
+  // rather than a machine guess, so this falls back to English everywhere
+  // until that translation work happens, same as the existing texts.en fallback).
+  buildSoilNarration(result, plan, langCode) {
+    const soilType = result.primaryDiagnosis || result.subjectName || 'your soil sample';
+    const health    = result.healthStatus    || 'assessed';
+    const action    = plan.preventiveMeasures || plan.fertilizerRecommendation || 'consult an extension officer for a lab soil test';
+
+    const text = `Soil assessment complete. Soil type identified as ${soilType}. Condition: ${health}. ${action}. This is a visual AI estimate, not a laboratory-confirmed result — a lab test gives the most accurate reading.`;
+    return text;
+  },
+
+  // Build the narration sentence for a pest identification result.
+  buildPestNarration(result, plan, langCode) {
+    const pestName = result.primaryDiagnosis || 'the pest';
+    const sev       = result.severity || 'moderate';
+    const action    = plan.immediateActions?.map(a => a.action).slice(0, 1).join('. ') || 'consult an agronomist';
+
+    const text = `Pest identification complete. Identified as ${pestName}. Severity is ${sev}. ${action}. Contact an extension officer if the infestation spreads.`;
+    return text;
+  },
 };

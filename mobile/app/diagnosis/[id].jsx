@@ -80,7 +80,7 @@ export default function DiagnosisDetailScreen() {
       const result = diagnosis.aiResult || {};
       const plan   = diagnosis.treatmentPlan || {};
       const tags   = [
-        diagnosis.type === 'crop' ? 'crop' : 'livestock',
+        diagnosis.type,
         result.primaryDiagnosis,
         ...(plan.chemicalTreatments || []).map(t => t.product).filter(Boolean),
         ...(result.likelyCauses    || []),
@@ -93,9 +93,12 @@ export default function DiagnosisDetailScreen() {
   const buildNarration = (diagnosis) => {
     const result = diagnosis.aiResult    || {};
     const plan   = diagnosis.treatmentPlan || {};
-    return diagnosis.type === 'livestock'
-      ? VoiceService.buildLivestockNarration(result, plan, language)
-      : VoiceService.buildCropNarration(result, plan, language);
+    switch (diagnosis.type) {
+      case 'livestock': return VoiceService.buildLivestockNarration(result, plan, language);
+      case 'soil':       return VoiceService.buildSoilNarration(result, plan, language);
+      case 'pest':       return VoiceService.buildPestNarration(result, plan, language);
+      default:           return VoiceService.buildCropNarration(result, plan, language);
+    }
   };
 
   const playVoice = (diagnosis, speed = voiceSpeed) => {
@@ -182,7 +185,7 @@ export default function DiagnosisDetailScreen() {
   const confidence = Number(result.confidence || 0);
   const isEmergency = result.severity === 'emergency';
   const consultation = plan.consultation || {};
-  const expertType = consultation.expertType || result.expertType || (diag.type === 'crop' ? 'agronomist' : 'vet');
+  const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
   const callNumber = consultation.callNumber || DEFAULT_EXPERT_PHONE;
   const whatsappUrl = consultation.whatsapp || DEFAULT_WHATSAPP;

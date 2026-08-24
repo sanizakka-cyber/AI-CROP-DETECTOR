@@ -10,6 +10,7 @@ export const LANGUAGES = [
   { code: 'yo', name: 'Yoruba',           nativeName: 'Yorùbá',       flag: '🟡',  ttsCode: 'yo'    },
   { code: 'ig', name: 'Igbo',             nativeName: 'Igbo',         flag: '🔵',  ttsCode: 'ig'    },
   { code: 'ff', name: 'Fulfulde (Fulani)',nativeName: 'Fulfulde',     flag: '🔴',  ttsCode: 'en-NG' }, // No TTS engine for ff; fall back to English voice
+  { code: 'fr', name: 'French',           nativeName: 'Français',     flag: '🔵',  ttsCode: 'fr'    }, // Translation strings already loaded in lib/i18n.js and matches web's lang/fr.json — was just missing from this picker
 ];
 
 const LanguageContext = createContext(null);

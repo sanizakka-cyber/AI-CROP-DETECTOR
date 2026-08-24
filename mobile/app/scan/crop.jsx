@@ -27,7 +27,8 @@ const CROPS = [
   { id: 'soybeans', icon: '🌱', name: 'Soybeans / Waken Soya' },
 ];
 
-const PARTS = ['Leaf Top', 'Leaf Bottom', 'Stem', 'Whole Plant', 'Root', 'Fruit'];
+const LET_AI_DETECT = 'Let AI Detect';
+const PARTS = [LET_AI_DETECT, 'Leaf', 'Stem', 'Root', 'Fruit / Pod', 'Whole Plant', 'Flower', 'Seed'];
 
 function QualityIndicator({ score, warnings }) {
   const { label, color } = qualityLabel(score);
@@ -47,7 +48,7 @@ export default function CropScanScreen() {
   const isHausa = i18n.language === 'ha';
 
   const [crop, setCrop]           = useState(null);
-  const [part, setPart]           = useState('Leaf Top');
+  const [part, setPart]           = useState(LET_AI_DETECT);
   const [images, setImages]       = useState([]);
   const [loading, setLoading]     = useState(false);
   const [validating, setValidating] = useState(false);
@@ -92,7 +93,9 @@ export default function CropScanScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!crop) return Alert.alert('', isHausa ? 'Da fatan zaɓi amfanin gona' : 'Please select a crop first.');
+    // Crop type and plant part are optional hints, not requirements — the
+    // AI identifies the crop and plant part on its own when left unset,
+    // matching the web scan form exactly.
     if (images.length === 0) return Alert.alert('', isHausa ? 'Da fatan ɗauki hoto' : 'Please capture at least one photo.');
 
     // Final quality gate — reject if any image score < 40
@@ -103,7 +106,11 @@ export default function CropScanScreen() {
 
     setLoading(true);
     try {
-      const { diagnosisId } = await diagnoseAPI.crop({ cropType: crop.id, cropPart: part, images });
+      const { diagnosisId } = await diagnoseAPI.crop({
+        cropType: crop?.id,
+        cropPart: part === LET_AI_DETECT ? undefined : part,
+        images,
+      });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
       Alert.alert('Scan Failed', e.message);
@@ -136,10 +143,11 @@ export default function CropScanScreen() {
         </View>
 
         {/* Step 1: Crop */}
-        <Text style={styles.stepTitle}>{isHausa ? 'Mataki 1: Zaɓi Amfanin Gona' : 'Step 1: Select Crop Type'}</Text>
+        <Text style={styles.stepTitle}>{isHausa ? 'Mataki 1: Amfanin Gona (na zaɓi)' : 'Step 1: Crop Type (optional)'}</Text>
+        <Text style={styles.stepHint}>{isHausa ? 'Ku bar shi babu kome don AI ta gano amfanin gona' : 'Leave unselected to let AI identify the crop'}</Text>
         <View style={styles.cropGrid}>
           {CROPS.map(c => (
-            <TouchableOpacity key={c.id} style={[styles.cropItem, crop?.id === c.id && styles.cropSelected]} onPress={() => setCrop(c)}>
+            <TouchableOpacity key={c.id} style={[styles.cropItem, crop?.id === c.id && styles.cropSelected]} onPress={() => setCrop(crop?.id === c.id ? null : c)}>
               <Text style={styles.cropIcon}>{c.icon}</Text>
               <Text style={[styles.cropName, crop?.id === c.id && styles.cropNameSel]}>{c.name}</Text>
             </TouchableOpacity>
@@ -147,7 +155,7 @@ export default function CropScanScreen() {
         </View>
 
         {/* Step 2: Part */}
-        <Text style={styles.stepTitle}>{isHausa ? 'Mataki 2: Wane ɓangare?' : 'Step 2: Affected Plant Part'}</Text>
+        <Text style={styles.stepTitle}>{isHausa ? 'Mataki 2: Wane ɓangare? (na zaɓi)' : 'Step 2: Plant Part (optional)'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.partsRow}>
           {PARTS.map(p => (
             <TouchableOpacity key={p} style={[styles.partChip, part === p && styles.partChipSel]} onPress={() => setPart(p)}>
@@ -253,6 +261,7 @@ const styles = StyleSheet.create({
   authNoticeText: { ...Typography.small, color: Colors.success, lineHeight: 20 },
 
   stepTitle: { ...Typography.h3, color: Colors.textPrimary, marginTop: Spacing.md, marginBottom: Spacing.sm },
+  stepHint:  { ...Typography.tiny, color: Colors.textMuted, marginTop: -Spacing.xs, marginBottom: Spacing.sm },
 
   cropGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   cropItem: {

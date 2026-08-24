@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -10,6 +11,7 @@ import { VoiceService } from '../../services/VoiceService';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const {
     currentLang, language,
@@ -27,19 +29,19 @@ export default function ProfileScreen() {
       icon: '🐄',
       labelEn: 'My Animals',
       labelHa: 'Dabbobin na',
-      action: () => {},
+      action: () => router.push('/(tabs)/records?tab=animals'),
     },
     {
       icon: '🌽',
       labelEn: 'My Crops',
       labelHa: 'Amfanin Gona',
-      action: () => {},
+      action: () => router.push('/(tabs)/records'),
     },
     {
       icon: '📊',
       labelEn: 'Health Reports',
       labelHa: 'Rahotannin Lafiya',
-      action: () => {},
+      action: () => router.push('/(tabs)/records'),
     },
     {
       icon: '📞',
@@ -90,6 +92,9 @@ export default function ProfileScreen() {
             <Text style={styles.tagText}>{user?.is_verified ? '✓ Verified' : 'Unverified'}</Text>
           </View>
         </View>
+        <TouchableOpacity style={styles.editProfileBtn} onPress={() => router.push('/profile/edit')}>
+          <Text style={[styles.editProfileBtnText, { fontSize: fs(13) }]}>{isHa ? 'Gyara Bayanai' : 'Edit Profile'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Language Selector */}
@@ -296,6 +301,12 @@ const styles = StyleSheet.create({
   tagRow:      { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
   tag: { paddingHorizontal: Spacing.sm, paddingVertical: 2, borderRadius: Radius.full },
   tagText:     { fontSize: 11, color: Colors.white, fontWeight: '700' },
+  editProfileBtn: {
+    marginTop: Spacing.md, backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: 6,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)',
+  },
+  editProfileBtnText: { color: Colors.white, fontWeight: '700' },
 
   section: { margin: Spacing.md },
   sectionTitle: {

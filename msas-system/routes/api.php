@@ -138,6 +138,8 @@ Route::middleware('auth.api')->group(function () {
     Route::middleware('throttle:20,1')->group(function () {
         Route::post('/diagnose/crop',      [DiagnoseApiController::class, 'crop']);
         Route::post('/diagnose/livestock', [DiagnoseApiController::class, 'livestock']);
+        Route::post('/diagnose/soil',      [DiagnoseApiController::class, 'soil']);
+        Route::post('/diagnose/pest',      [DiagnoseApiController::class, 'pest']);
     });
     Route::get('/diagnose',            [DiagnoseApiController::class, 'history']);
     Route::get('/diagnose/{id}',       [DiagnoseApiController::class, 'show']);

@@ -35,18 +35,6 @@ const STOCK_COLORS = {
   out_of_stock:{ bg: '#FEE2E2', text: '#991B1B', label: 'Out of Stock' },
 };
 
-// ── Demo fallback products (used when API returns empty) ─────────────────────
-const DEMO_PRODUCTS = [
-  { id:'d1', name:'Ivermectin 1% Injectable', category:'Veterinary Medicines', brand:'Agverm', unit:'50ml bottle', selling_price:2500, stock_status:'in_stock', rating:4.5, rating_count:12, tags:['worms','parasites'] },
-  { id:'d2', name:'Newcastle Vaccine La Sota', category:'Vaccines', brand:'MSD Animal Health', unit:'1000 dose', selling_price:1500, stock_status:'in_stock', rating:4.8, rating_count:34, tags:['Newcastle disease','poultry'] },
-  { id:'d3', name:'Urea 46% Fertilizer', category:'Fertilizers', brand:'NOTORE', unit:'50kg bag', selling_price:22000, stock_status:'in_stock', rating:4.2, rating_count:8, tags:['nitrogen','maize'] },
-  { id:'d4', name:'Mancozeb 80% Fungicide', category:'Crop Protection', brand:'Dithane', unit:'200g pack', selling_price:1500, stock_status:'in_stock', rating:4.3, rating_count:19, tags:['fungicide','blight'] },
-  { id:'d5', name:'Broiler Starter Feed', category:'Livestock Feed', brand:'Animal Care', unit:'25kg bag', selling_price:13500, stock_status:'low_stock', rating:4.6, rating_count:22, tags:['broiler','poultry'] },
-  { id:'d6', name:'NPK 15-15-15 Fertilizer', category:'Fertilizers', brand:'NOTORE', unit:'50kg bag', selling_price:25000, stock_status:'in_stock', rating:4.4, rating_count:15, tags:['NPK','fertilizer'] },
-  { id:'d7', name:'Oxytetracycline 20% LA', category:'Veterinary Medicines', brand:'Terramycin', unit:'100ml bottle', selling_price:4500, stock_status:'in_stock', rating:4.7, rating_count:28, tags:['antibiotic','respiratory'] },
-  { id:'d8', name:'Cypermethrin 10% EC', category:'Crop Protection', brand:'Cyperforce', unit:'1 litre', selling_price:3500, stock_status:'in_stock', rating:4.1, rating_count:11, tags:['insecticide','armyworm'] },
-];
-
 // ── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, onPress, onAddToCart, cartLoading }) {
   const stock = STOCK_COLORS[product.stock_status] || STOCK_COLORS.in_stock;
@@ -114,6 +102,7 @@ export default function MarketScreen() {
   const [toast, setToast]           = useState(null);
   const [page, setPage]             = useState(1);
   const [hasMore, setHasMore]       = useState(true);
+  const [loadError, setLoadError]   = useState(null);
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -123,18 +112,25 @@ export default function MarketScreen() {
   const loadProducts = useCallback(async (reset = true) => {
     try {
       if (reset) setLoading(true);
+      setLoadError(null);
       const pg = reset ? 1 : page + 1;
       const res = await marketplaceAPI.products({ category, search, sort, page: pg, per_page: 20 });
       const list = res.data || res.products || [];
+      // Real catalog data only — no fake/demo products substituted when the
+      // list is empty. An empty catalog is shown honestly (see
+      // ListEmptyComponent below), not disguised with placeholder products.
       if (reset) {
-        setProducts(list.length > 0 ? list : DEMO_PRODUCTS);
+        setProducts(list);
       } else {
         setProducts(prev => [...prev, ...list]);
       }
       setHasMore(list.length === 20);
       if (!reset) setPage(pg);
-    } catch {
-      if (reset) setProducts(DEMO_PRODUCTS);
+    } catch (e) {
+      if (reset) {
+        setProducts([]);
+        setLoadError(e?.message || 'Could not load products. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -263,11 +259,28 @@ export default function MarketScreen() {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>🔍</Text>
-              <Text style={styles.emptyText}>No products found</Text>
-              <Text style={styles.emptySub}>Try a different category or search term</Text>
-            </View>
+            loadError ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>⚠️</Text>
+                <Text style={styles.emptyText}>Unable to load products</Text>
+                <Text style={styles.emptySub}>{loadError}</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={() => loadProducts(true)}>
+                  <Text style={styles.retryBtnText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (search || category) ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>🔍</Text>
+                <Text style={styles.emptyText}>No products found</Text>
+                <Text style={styles.emptySub}>Try a different category or search term</Text>
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>🏪</Text>
+                <Text style={styles.emptyText}>No products available yet</Text>
+                <Text style={styles.emptySub}>Sellers haven't listed products in this marketplace yet — check back soon</Text>
+              </View>
+            )
           }
           onEndReached={() => hasMore && loadProducts(false)}
           onEndReachedThreshold={0.3}
@@ -343,7 +356,9 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 16, fontWeight: '700', color: '#334155' },
-  emptySub: { fontSize: 13, color: '#94A3B8', marginTop: 4 },
+  emptySub: { fontSize: 13, color: '#94A3B8', marginTop: 4, textAlign: 'center', paddingHorizontal: 32 },
+  retryBtn: { marginTop: 16, backgroundColor: Colors.primary, borderRadius: Radius.md, paddingHorizontal: 20, paddingVertical: 10 },
+  retryBtnText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
 
   toast: { position: 'absolute', bottom: 90, left: Spacing.md, right: Spacing.md, borderRadius: 10, padding: 12, alignItems: 'center' },
   toastText: { color: Colors.white, fontWeight: '600', fontSize: 13 },

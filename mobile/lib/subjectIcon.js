@@ -36,11 +36,19 @@ const LIVESTOCK_KEYWORDS = [
   { match: /rabbit/i,                      icon: '🐇' },
 ];
 
+const PEST_KEYWORDS = [
+  { match: /weed|striga/i,                       icon: '🌿' },
+  { match: /fungal|fungus|pathogen|bacteria/i,    icon: '🦠' },
+  { match: /nematode/i,                           icon: '🪱' },
+  { match: /rodent|rat|mouse/i,                   icon: '🐀' },
+  { match: /bird/i,                               icon: '🐦' },
+];
+
 /**
  * @param {{ type?: string, subject_name?: string, subjectName?: string, disease_name?: string, aiResult?: { primaryDiagnosis?: string } }} record
  */
 export function subjectIcon(record) {
-  const isCrop = record?.type === 'crop';
+  const type = record?.type;
   const text = [
     record?.subject_name,
     record?.subjectName,
@@ -48,6 +56,13 @@ export function subjectIcon(record) {
     record?.aiResult?.primaryDiagnosis,
   ].filter(Boolean).join(' ');
 
+  if (type === 'soil') return '🟤';
+  if (type === 'pest') {
+    const found = PEST_KEYWORDS.find(({ match }) => match.test(text));
+    return found ? found.icon : '🐛';
+  }
+
+  const isCrop = type === 'crop';
   const table = isCrop ? CROP_KEYWORDS : LIVESTOCK_KEYWORDS;
   const found = table.find(({ match }) => match.test(text));
   if (found) return found.icon;
@@ -55,4 +70,17 @@ export function subjectIcon(record) {
   // Genuinely unknown subject — a neutral category icon, never a specific
   // crop/animal guessed at random.
   return isCrop ? '🌱' : '🐾';
+}
+
+/** Human-readable label for a diagnosis record's scan type — covers all
+ * four scan types, not just crop/livestock (a soil or pest scan was
+ * previously mislabeled "Livestock" by a two-way ternary). */
+export function typeLabel(type) {
+  switch (type) {
+    case 'crop':      return 'Crop';
+    case 'livestock': return 'Livestock';
+    case 'soil':      return 'Soil';
+    case 'pest':      return 'Pest';
+    default:          return type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Scan';
+  }
 }
