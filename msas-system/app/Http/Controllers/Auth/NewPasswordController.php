@@ -23,6 +23,35 @@ class NewPasswordController extends Controller
         return view('auth.reset-password');
     }
 
+    /**
+     * Entry point for the signed link in StaffWelcomeMail. This page (and
+     * password.store below it) has always been session-driven — it reads
+     * session('reset_token')/session('reset_user_id'), normally populated
+     * only after OTP verification (OtpVerificationController::verify()).
+     * A one-time staff invite has no OTP step to go through, so this
+     * bootstraps the same two session keys directly once the link's
+     * signature is verified, then hands off to the existing form.
+     */
+    public function beginStaffFirstLogin(Request $request, User $user): RedirectResponse
+    {
+        if (! $request->hasValidSignature()) {
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'This link is invalid or has expired. Please contact your administrator for a new one.',
+            ]);
+        }
+
+        // Idempotent — if they already finished first-login setup, a
+        // stale/reused link just sends them to sign in normally instead of erroring.
+        if (! $user->force_password_reset) {
+            return redirect()->route('login')->with('status', 'Your password has already been set. Please sign in.');
+        }
+
+        $request->session()->put('reset_token', \Illuminate\Support\Str::random(64));
+        $request->session()->put('reset_user_id', $user->id);
+
+        return redirect()->route('password.reset.form');
+    }
+
     /** Update the password. */
     public function store(Request $request): RedirectResponse
     {

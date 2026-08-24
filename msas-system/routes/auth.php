@@ -53,6 +53,13 @@ Route::middleware('guest')->group(function () {
     Route::get('verify-account/{user}', [OtpVerificationController::class, 'verifyByLink'])
         ->middleware(['signed', 'throttle:10,1'])
         ->name('verification.link');
+
+    // One-click entry point for the link in StaffWelcomeMail — bootstraps
+    // the same session state OTP verification would produce, then hands
+    // off to the existing reset-password form.
+    Route::get('staff/first-login/{user}', [NewPasswordController::class, 'beginStaffFirstLogin'])
+        ->middleware(['signed', 'throttle:10,1'])
+        ->name('staff.first-login');
 });
 
 Route::middleware('auth')->group(function () {

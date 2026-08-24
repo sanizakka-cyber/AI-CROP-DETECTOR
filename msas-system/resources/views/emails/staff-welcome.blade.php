@@ -38,13 +38,13 @@
     @if($isReset)
     <p class="text">
       Your MSAS FarmAI staff account password has been reset by an administrator.
-      Click the button below to set a new password. This link is valid for 60 minutes.
+      Click the button below to set a new password. This link is valid for 7 days.
     </p>
     @else
     <p class="text">
       Welcome to the MSAS FarmAI platform! A staff account has been created for you.
       Click the button below to set your password and access the system.
-      This link is valid for 60 minutes.
+      This link is valid for 7 days.
     </p>
     @endif
 
@@ -62,7 +62,7 @@
     </div>
 
     <div class="notice">
-      This link expires in 60 minutes. If it expires, ask your administrator to reset your password again.
+      This link expires in 7 days. If it expires, ask your administrator to reset your password again.
       Do not forward this email to anyone.
     </div>
 

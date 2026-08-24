@@ -1,3 +1,7 @@
+@php
+    use App\Data\NigeriaLocations;
+    $nigeriaStates = NigeriaLocations::states();
+@endphp
 <x-app-layout>
 <x-slot name="header">
     <div class="flex items-center gap-3">
@@ -54,11 +58,31 @@
                            class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400" placeholder="080XXXXXXXX">
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" x-data="{
+                    states: @json($nigeriaStates),
+                    state: '{{ old('state', '') }}',
+                    lga: '{{ old('lga', '') }}',
+                    get lgas() { return this.states.find(s => s.name === this.state)?.lgas ?? []; },
+                }">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">State</label>
-                    <input type="text" name="state" value="{{ old('state') }}"
-                           class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400">
+                    <select name="state" x-model="state" @change="lga = ''"
+                            class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400">
+                        <option value="">Select state...</option>
+                        <template x-for="s in states" :key="s.name">
+                            <option :value="s.name" x-text="s.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">LGA</label>
+                    <select name="lga" x-model="lga" :disabled="!state"
+                            class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400 disabled:bg-slate-50 disabled:text-slate-400">
+                        <option value="" x-text="state ? 'Select LGA...' : 'Select a state first'"></option>
+                        <template x-for="l in lgas" :key="l">
+                            <option :value="l" x-text="l"></option>
+                        </template>
+                    </select>
                 </div>
             </div>
         </div>
@@ -79,9 +103,12 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Department</label>
-                    <input type="text" name="department" value="{{ old('department') }}"
-                           class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400"
-                           placeholder="e.g. Finance, HR, Operations">
+                    <select name="department" class="w-full border-slate-200 rounded-xl text-sm focus:ring-emerald-400">
+                        <option value="">Select department...</option>
+                        @foreach($departmentOptions as $dept)
+                        <option value="{{ $dept }}" @selected(old('department') === $dept)>{{ $dept }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
         </div>
@@ -113,8 +140,9 @@
 
         {{-- Password Notice --}}
         <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-            <strong>Temporary Password:</strong> Welcome@123 — The staff member will be required to change this on first login.
-            Distribute credentials via your password manager only.
+            <strong>Account Setup:</strong> No password is set here. A secure, one-time "set your password" link will be emailed
+            to the staff member — it expires in 7 days and can only be used once. They'll choose their own password and be
+            required to keep it confidential.
         </div>
 
         <div class="flex items-center gap-3">
