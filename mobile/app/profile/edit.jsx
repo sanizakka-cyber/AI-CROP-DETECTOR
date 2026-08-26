@@ -15,9 +15,11 @@ export default function EditProfileScreen() {
   const isHausa = i18n.language === 'ha';
   const { user, updateProfile } = useAuth();
 
-  const [firstName, setFirstName] = useState(user?.first_name || user?.display_first_name || '');
-  const [lastName, setLastName]   = useState(user?.last_name || '');
-  const [email, setEmail]         = useState(user?.email || '');
+  const [firstName, setFirstName]   = useState(user?.first_name || user?.display_first_name || '');
+  const [middleName, setMiddleName] = useState(user?.middle_name || '');
+  const [lastName, setLastName]     = useState(user?.last_name || '');
+  const [email, setEmail]           = useState(user?.email || '');
+  const [phone, setPhone]           = useState(user?.phone || '');
   const [country, setCountry]     = useState(user?.country || 'Nigeria');
   const [state, setState]         = useState(user?.state || '');
   const [lga, setLga]             = useState(user?.lga || '');
@@ -56,8 +58,10 @@ export default function EditProfileScreen() {
     try {
       await updateProfile({
         first_name: firstName.trim(),
+        middle_name: middleName.trim() || null,
         last_name: lastName.trim(),
         email: email.trim() || null,
+        phone: phone.trim() || null,
         country,
         state: state.trim(),
         lga: lga.trim(),
@@ -86,8 +90,31 @@ export default function EditProfileScreen() {
           <Text style={styles.headerTitle}>{isHausa ? 'Gyara Bayanai' : 'Edit Profile'}</Text>
         </View>
 
+        {(user?.role_label || user?.department) && (
+          <View style={styles.readOnlyCard}>
+            {user?.role_label && (
+              <View style={styles.readOnlyRow}>
+                <Text style={styles.readOnlyLabel}>{isHausa ? 'Matsayi' : 'Role'}</Text>
+                <Text style={styles.readOnlyValue}>{user.role_label}</Text>
+              </View>
+            )}
+            {user?.department && (
+              <View style={styles.readOnlyRow}>
+                <Text style={styles.readOnlyLabel}>{isHausa ? 'Sashe' : 'Department'}</Text>
+                <Text style={styles.readOnlyValue}>{user.department}</Text>
+              </View>
+            )}
+            <Text style={styles.readOnlyHint}>
+              {isHausa ? 'Tuntuɓi mai kula da ku don canza wannan.' : "Contact your administrator to change this."}
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.label}>{isHausa ? 'Sunan Farko' : 'First Name'}</Text>
         <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="First name" placeholderTextColor={Colors.textMuted} />
+
+        <Text style={styles.label}>{isHausa ? 'Sunan Tsakiya (na zaɓi)' : 'Middle Name (optional)'}</Text>
+        <TextInput style={styles.input} value={middleName} onChangeText={setMiddleName} placeholder="Middle name" placeholderTextColor={Colors.textMuted} />
 
         <Text style={styles.label}>{isHausa ? 'Sunan Ƙarshe' : 'Last Name'}</Text>
         <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Last name" placeholderTextColor={Colors.textMuted} />
@@ -97,6 +124,9 @@ export default function EditProfileScreen() {
         {email !== (user?.email || '') && email.trim() !== '' && (
           <Text style={styles.hint}>{isHausa ? 'Za a sake tabbatar da sabon imel din' : 'Changing your email will require re-verification.'}</Text>
         )}
+
+        <Text style={styles.label}>{isHausa ? 'Lambar Waya' : 'Phone'}</Text>
+        <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+234..." placeholderTextColor={Colors.textMuted} keyboardType="phone-pad" />
 
         <Text style={styles.label}>{isHausa ? 'Ƙasa' : 'Country'}</Text>
         {locationsError ? (
@@ -173,6 +203,15 @@ const styles = StyleSheet.create({
   },
   hint: { ...Typography.tiny, color: Colors.textMuted, marginTop: 4 },
   errorText: { ...Typography.small, color: Colors.danger },
+
+  readOnlyCard: {
+    backgroundColor: Colors.white, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.border,
+    padding: Spacing.sm, marginBottom: Spacing.sm,
+  },
+  readOnlyRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  readOnlyLabel: { ...Typography.small, color: Colors.textMuted },
+  readOnlyValue: { ...Typography.small, color: Colors.textPrimary, fontWeight: '600' },
+  readOnlyHint: { ...Typography.tiny, color: Colors.textMuted, marginTop: Spacing.xs },
 
   chipRow: { flexDirection: 'row' },
   chip: {

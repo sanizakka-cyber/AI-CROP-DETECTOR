@@ -203,7 +203,7 @@ function StaffDashboard({ user, isHausa }) {
     'finance':            { label: 'Finance Department Portal',  icon: '💰', color: '#0891B2' },
     'operations':         { label: 'Operations Portal',          icon: '⚙️', color: '#374151' },
     'data-analyst':       { label: 'Data Analytics Portal',      icon: '📊', color: '#6D28D9' },
-    'monitoring-evaluation': { label: 'M&E Officer Portal',      icon: '📈', color: '#1D4ED8' },
+    'm-e-officer':        { label: 'M&E Officer Portal',        icon: '📈', color: '#1D4ED8' },
     'field-officer':      { label: 'Field Officer Portal',       icon: '📍', color: '#B45309' },
     'customer-support':   { label: 'Customer Support Portal',    icon: '🎧', color: '#0E7490' },
   };

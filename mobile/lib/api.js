@@ -172,7 +172,7 @@ export const farmsAPI = {
   list:   ()     => request('/farms'),
   get:    (id)   => request(`/farms/${id}`),
   create: (body) => request('/farms', { method: 'POST', body: JSON.stringify(body) }),
-  update: (id, body) => request(`/farms/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  update: (id, body) => request(`/farms/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
 };
 
 // ── Animals ───────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ export const animalsAPI = {
   },
   get:    (id)   => request(`/animals/${id}`),
   create: (body) => request('/animals', { method: 'POST', body: JSON.stringify(body) }),
-  update: (id, body) => request(`/animals/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  update: (id, body) => request(`/animals/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id)   => request(`/animals/${id}`, { method: 'DELETE' }),
 };
 

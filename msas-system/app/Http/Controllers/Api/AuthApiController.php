@@ -271,18 +271,22 @@ class AuthApiController extends Controller
     {
         $request->validate([
             'first_name'  => 'sometimes|string|max:100',
+            'middle_name' => 'sometimes|nullable|string|max:100',
             'last_name'   => 'sometimes|string|max:100',
             'email'       => 'sometimes|nullable|email|unique:users,email,' . $request->user()->id,
+            'phone'       => 'sometimes|nullable|string|max:20',
             'country'     => 'sometimes|nullable|string|max:100',
             'state'       => 'sometimes|nullable|string|max:100',
             'lga'         => 'sometimes|nullable|string|max:100',
+            'ward'        => 'sometimes|nullable|string|max:150',
             'village'     => 'sometimes|nullable|string|max:100',
             'language'    => 'sometimes|nullable|string|max:10',
         ]);
 
         $user = $request->user();
         $updates = $request->only([
-            'first_name', 'last_name', 'email', 'country', 'state', 'lga', 'village', 'language',
+            'first_name', 'middle_name', 'last_name', 'email', 'phone',
+            'country', 'state', 'lga', 'ward', 'village', 'language',
         ]);
 
         // Changing the email address invalidates the old verification —
@@ -321,6 +325,7 @@ class AuthApiController extends Controller
             'name'               => $user->name,
             'display_first_name' => $user->displayFirstName,
             'first_name'         => $user->first_name,
+            'middle_name'        => $user->middle_name,
             'last_name'          => $user->last_name,
             'phone'              => $user->phone,
             'email'              => $user->email,
@@ -328,8 +333,10 @@ class AuthApiController extends Controller
             'role_label'         => $user->roleLabel,
             'role_display'       => $user->roleLabel,
             'language'           => $user->language,
+            'country'            => $user->country,
             'state'              => $user->state,
             'lga'                => $user->lga,
+            'ward'               => $user->ward,
             'village'            => $user->village,
             'avatar_url'         => $user->avatarUrl,
             'profile_photo'      => $user->profile_photo,

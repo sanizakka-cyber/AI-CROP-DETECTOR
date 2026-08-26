@@ -159,7 +159,7 @@ export default function MarketScreen() {
       setCartCount(c => c + 1);
       showToast(`${product.name} added to cart`);
     } catch (e) {
-      showToast(e?.response?.data?.error || 'Could not add to cart', false);
+      showToast(e?.message || 'Could not add to cart', false);
     } finally {
       setCartLoading(null);
     }
