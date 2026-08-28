@@ -373,13 +373,43 @@ export const aiAPI = {
     const form = new FormData();
     form.append('audio', { uri: audioUri, name: 'recording.m4a', type: 'audio/m4a' });
     if (language) form.append('language', language);
-    const res = await fetch(`${BASE_URL}/ai/transcribe`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "We couldn't understand the recording. Please try again in a quieter environment.");
+
+    let res;
+    try {
+      res = await fetch(`${BASE_URL}/ai/transcribe`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+        signal: timeoutSignal(30000), // Whisper round-trip is slower than a normal API call
+      });
+    } catch (e) {
+      // Same classification as request(): only a genuine connectivity failure
+      // says "check your internet" — never surface a raw TypeError to the farmer.
+      if (e?.name === 'TimeoutError' || e?.name === 'AbortError') {
+        throw new ApiError('Voice input timed out. Please try again.', { kind: 'timeout' });
+      }
+      throw new ApiError(
+        'Connection unavailable. Please check your internet connection and try again.',
+        { kind: 'network' }
+      );
+    }
+
+    let data = {};
+    try {
+      const text = await res.text();
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new ApiError(
+        "We couldn't understand the recording. Please try again in a quieter environment.",
+        { kind: kindForStatus(res.status), status: res.status }
+      );
+    }
+    if (!res.ok) {
+      throw new ApiError(
+        data.error || "We couldn't understand the recording. Please try again in a quieter environment.",
+        { kind: kindForStatus(res.status), status: res.status }
+      );
+    }
     return data;
   },
 };

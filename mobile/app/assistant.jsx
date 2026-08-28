@@ -138,7 +138,13 @@ export default function AssistantScreen() {
     try {
       const data = await aiAPI.chat(msg, historyRef.current, i18n.language);
       if (data.history) historyRef.current = typeof data.history === 'string' ? data.history : JSON.stringify(data.history);
-      setMessages(prev => [...prev, { role: 'bot', text: data.reply, sections: data.sections }]);
+      const hasSections = Array.isArray(data.sections) && data.sections.length > 0;
+      // Mirror the web widget's guard: never render an empty/`undefined`
+      // bubble if the backend returns an unexpected shape (spec §15).
+      const reply = (typeof data.reply === 'string' && data.reply.trim())
+        || data.response || data.message
+        || (hasSections ? '' : "We couldn't process your request right now. Please try again.");
+      setMessages(prev => [...prev, { role: 'bot', text: reply, sections: data.sections }]);
     } catch (e) {
       // Never surface a raw technical error to the farmer.
       const friendly = e?.kind === 'network'

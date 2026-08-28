@@ -734,6 +734,8 @@ COMMUNICATION RULES:
   code fences, or --- separators) — use plain paragraphs, and where a list is the
   clearest way to present steps or items, write each on its own line starting
   with a plain dash and a space
+- Do not decorate the answer with emojis. Use plain section labels
+  ("Diagnosis", "Treatment", "Warning"), not emoji-prefixed ones
 {lang_note}"""
 
     # Parse conversation history
@@ -805,7 +807,9 @@ Your job:
 
 You have deep expertise in Nigerian crop farming, livestock, soil, market prices, and seasonal farming calendars.
 
-If the transcription is too unclear to understand, politely ask the farmer to repeat their question.{lang_note}"""
+If the transcription is too unclear to understand, politely ask the farmer to repeat their question.
+
+Write in plain text only — no Markdown symbols (#, **, *, backticks) and no emojis.{lang_note}"""
 
     context_note = f"\n\nAdditional context: {context}" if context else ""
 
