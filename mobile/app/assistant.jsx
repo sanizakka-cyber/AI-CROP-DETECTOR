@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, Easing, Alert, Linking,
+  ScrollView, KeyboardAvoidingView, ActivityIndicator, Animated, Easing, Alert, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -157,8 +157,16 @@ export default function AssistantScreen() {
     }
   };
 
+  // This screen has a fixed composer as a flex sibling of the chat
+  // ScrollView (not inside it). Under Expo SDK 54's always-on edge-to-edge
+  // the Android window no longer resizes for the keyboard despite
+  // adjustResize, so with behavior undefined (the previous value) the IME
+  // covered the input, Send and mic buttons entirely. 'padding' is now the
+  // sole adjustment on both platforms — it pads the bottom by the keyboard
+  // height and the ScrollView shrinks to match, keeping the composer above
+  // the keyboard with no double-adjust.
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
           <MaterialCommunityIcons name="close" size={22} color={Colors.white} />
