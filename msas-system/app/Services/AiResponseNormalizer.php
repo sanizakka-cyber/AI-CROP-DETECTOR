@@ -62,6 +62,17 @@ class AiResponseNormalizer
                 continue;
             }
 
+            // A plain paragraph that follows this section's list items begins
+            // a new block. Without this, flush() emits one section per parse
+            // whose {content, items} always render content-then-items — so a
+            // reply shaped "intro / list / recap / list / closing" collapses
+            // into "intro+recap+closing" then every bullet, silently
+            // reordering the answer. Starting a fresh section here keeps the
+            // model's original paragraph↔list order intact for both clients.
+            if ($current['items']) {
+                $flush();
+                $current = ['title' => null, 'content' => [], 'items' => []];
+            }
             $current['content'][] = self::stripInline($trimmed);
         }
         $flush();
