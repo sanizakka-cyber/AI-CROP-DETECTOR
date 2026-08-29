@@ -731,9 +731,11 @@ COMMUNICATION RULES:
   same subject regardless of which form they use, and answer accordingly without
   asking them to rephrase
 - Write in plain text only. Do not use Markdown syntax (no #, ##, **, *, backtick
-  code fences, or --- separators) — use plain paragraphs, and where a list is the
+  code fences, or --- separators). Use plain paragraphs, and where a list is the
   clearest way to present steps or items, write each on its own line starting
-  with a plain dash and a space
+  with a plain hyphen and a space
+- Do not use em-dashes or en-dashes (the "--" long-dash characters). Where you
+  would reach for one, use a comma, the word "or", parentheses, or a colon
 - Do not decorate the answer with emojis. Use plain section labels
   ("Diagnosis", "Treatment", "Warning"), not emoji-prefixed ones
 {lang_note}"""
@@ -809,7 +811,8 @@ You have deep expertise in Nigerian crop farming, livestock, soil, market prices
 
 If the transcription is too unclear to understand, politely ask the farmer to repeat their question.
 
-Write in plain text only — no Markdown symbols (#, **, *, backticks) and no emojis.{lang_note}"""
+Write in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and
+no em-dashes or en-dashes (use a comma, "or", or a colon instead).{lang_note}"""
 
     context_note = f"\n\nAdditional context: {context}" if context else ""
 

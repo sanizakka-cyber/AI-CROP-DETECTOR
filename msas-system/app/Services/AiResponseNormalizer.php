@@ -51,8 +51,8 @@ class AiResponseNormalizer
                 $current = ['title' => self::stripInline($m[1]), 'content' => [], 'items' => []];
                 continue;
             }
-            // Bullet: -, *, or • followed by a space.
-            if (preg_match('/^[-*•]\s+(.+)$/', $trimmed, $m)) {
+            // Bullet: -, *, •, or an em/en dash followed by a space.
+            if (preg_match('/^[-*•\x{2013}\x{2014}]\s+(.+)$/u', $trimmed, $m)) {
                 $current['items'][] = self::stripInline($m[1]);
                 continue;
             }
@@ -100,6 +100,14 @@ class AiResponseNormalizer
         $text = preg_replace('/__(.+?)__/', '$1', $text);        // __bold__
         $text = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/', '$1', $text); // *emphasis*
         $text = preg_replace('/`([^`]+)`/', '$1', $text);        // `code`
+        // Em/en dashes are typography the model still emits despite the
+        // plain-text prompt; both clients must never show one. Between two
+        // numbers it is a range ("1-2 bags"), so keep a hyphen; otherwise
+        // it is a parenthetical break that reads fine as a comma
+        // ("yellow, the older leaves"). Drop a dangling trailing comma.
+        $text = preg_replace('/(\d)\s*[\x{2013}\x{2014}]\s*(\d)/u', '$1-$2', $text);
+        $text = preg_replace('/\s*[\x{2013}\x{2014}]\s*/u', ', ', $text);
+        $text = preg_replace('/,\s*$/', '', $text);
         return trim($text);
     }
 }

@@ -17,6 +17,27 @@ class AiResponseNormalizerTest extends TestCase
         $this->assertStringContainsString('nitrogen deficiency', $out['reply']);
     }
 
+    public function test_replaces_em_and_en_dashes(): void
+    {
+        $out = AiResponseNormalizer::normalize(
+            "Which leaves are yellow \u{2014} the older ones \u{2013} or all over?\n"
+            . "- Nitrogen deficiency \u{2014} apply urea\n"
+            . "\u{2014} a dash-led line becomes a real bullet"
+        );
+
+        $this->assertStringNotContainsString("\u{2014}", $out['reply']);
+        $this->assertStringNotContainsString("\u{2013}", $out['reply']);
+        foreach ($out['sections'] as $s) {
+            $this->assertStringNotContainsString("\u{2014}", $s['content']);
+            foreach ($s['items'] as $item) {
+                $this->assertStringNotContainsString("\u{2014}", $item);
+            }
+        }
+        $this->assertStringContainsString('yellow, the older ones, or all over?', $out['reply']);
+        // A line that started with an em-dash is treated as a list item.
+        $this->assertContains('a dash-led line becomes a real bullet', $out['sections'][0]['items']);
+    }
+
     /**
      * A reply shaped "intro / list / recap / list / closing" must render in
      * that order. The normalizer used to fold a heading-less reply into ONE
