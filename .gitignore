@@ -48,3 +48,6 @@ __pycache__/
 .expo/
 .android/
 .ios/
+
+# Android APKs — distributed via GitHub Releases, not committed
+*.apk
