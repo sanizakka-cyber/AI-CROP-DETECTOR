@@ -54,9 +54,17 @@ class NotificationApiController extends Controller
     /** DELETE /notifications/{id} */
     public function destroy(Request $request, int $id): JsonResponse
     {
-        MobileNotification::where('id', $id)
+        // Cross-account testing found this returning 200 "deleted" for a
+        // notification ID belonging to a different user — the where()
+        // scope meant the delete() itself matched zero rows (no data was
+        // ever exposed or removed), but the response lied about it having
+        // worked. firstOrFail() makes the not-found case honest, matching
+        // markRead() above.
+        $notif = MobileNotification::where('id', $id)
             ->where('user_id', $request->user()->id)
-            ->delete();
+            ->firstOrFail();
+
+        $notif->delete();
 
         return response()->json(['message' => 'Notification deleted.']);
     }
