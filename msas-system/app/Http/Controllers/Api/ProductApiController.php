@@ -14,7 +14,9 @@ class ProductApiController extends Controller
 
     public function index(Request $request)
     {
-        $query = Product::active()->with('dealer:id,name');
+        // 'name' on User is a computed accessor (first/middle/last), not a DB column —
+        // selecting it in a constrained eager-load throws "column users.name does not exist".
+        $query = Product::active()->with('dealer:id,first_name,middle_name,last_name');
 
         if ($request->filled('category')) {
             $query->byCategory($request->category);
@@ -44,6 +46,7 @@ class ProductApiController extends Controller
         }
 
         $products = $query->paginate($request->input('per_page', 20));
+        $products->getCollection()->each(fn ($p) => $p->dealer?->append('name'));
 
         return response()->json([
             'data'       => $products->items(),
@@ -62,7 +65,9 @@ class ProductApiController extends Controller
         if ($product->status !== 'active' || !$product->is_approved) {
             return response()->json(['error' => 'Product not found'], 404);
         }
-        $product->load(['dealer:id,name', 'reviews.user:id,name']);
+        $product->load(['dealer:id,first_name,middle_name,last_name', 'reviews.user:id,first_name,middle_name,last_name']);
+        $product->dealer?->append('name');
+        $product->reviews->each(fn ($r) => $r->user?->append('name'));
         return response()->json(['data' => $product]);
     }
 

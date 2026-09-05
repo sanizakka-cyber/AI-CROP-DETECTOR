@@ -38,7 +38,11 @@ class OrderApiController extends Controller
         if ($order->buyer_id !== $user->id && $order->dealer_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['error' => 'Forbidden'], 403);
         }
-        $order->load(['items', 'buyer:id,name,email', 'dealer:id,name']);
+        // 'name' on User is a computed accessor (first/middle/last), not a DB column —
+        // selecting it in a constrained eager-load throws "column users.name does not exist".
+        $order->load(['items', 'buyer:id,first_name,middle_name,last_name,email', 'dealer:id,first_name,middle_name,last_name']);
+        $order->buyer?->append('name');
+        $order->dealer?->append('name');
         return response()->json(['data' => $order]);
     }
 
@@ -195,7 +199,7 @@ class OrderApiController extends Controller
             return response()->json(['error' => 'Dealers only'], 403);
         }
 
-        $query = Order::with(['items', 'buyer:id,name,email,phone'])
+        $query = Order::with(['items', 'buyer:id,first_name,middle_name,last_name,email,phone'])
             ->where('dealer_id', $user->id);
 
         if ($request->filled('status')) {
@@ -203,6 +207,7 @@ class OrderApiController extends Controller
         }
 
         $orders = $query->orderByDesc('created_at')->paginate(20);
+        $orders->getCollection()->each(fn ($o) => $o->buyer?->append('name'));
 
         return response()->json([
             'data' => $orders->items(),
