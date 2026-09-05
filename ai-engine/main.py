@@ -760,7 +760,7 @@ COMMUNICATION RULES:
     try:
         response = await client.messages.create(
             model=model,
-            max_tokens=1024,
+            max_tokens=2048,
             system=system_prompt,
             messages=messages_list,
         )
