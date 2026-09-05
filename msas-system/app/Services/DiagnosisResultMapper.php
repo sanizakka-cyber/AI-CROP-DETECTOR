@@ -53,6 +53,16 @@ class DiagnosisResultMapper
             $nutrientInfo = $aiResult['nutrient_deficiencies'] ?? $aiResult['nutrients'] ?? null;
         }
 
+        // /predict/crop and /predict/livestock return a dedicated
+        // 'organic_treatment' field (pest scans already cover this via
+        // 'biological_control' below); there's no separate column for it,
+        // so fold it into best_practices rather than silently dropping it —
+        // same "no matching column" pattern as $extraContext above.
+        $bestPractices = $aiResult['best_practices'] ?? $aiResult['biological_control'] ?? null;
+        if (!empty($aiResult['organic_treatment']) && !str_starts_with(strtolower($aiResult['organic_treatment']), 'no')) {
+            $bestPractices = trim("Organic/natural option: {$aiResult['organic_treatment']} " . ($bestPractices ?? ''));
+        }
+
         return [
             // Subject identification (auto-detected)
             'subject_name'              => $aiResult['subject_name']    ?? $aiResult['pest_name'] ?? $aiResult['species'] ?? $aiResult['crop'] ?? $aiResult['animal'] ?? null,
@@ -76,7 +86,7 @@ class DiagnosisResultMapper
             'preventive_measures'       => $aiResult['preventive_measures']    ?? $aiResult['cultural_control'] ?? null,
             'fertilizer_recommendation' => $aiResult['fertilizer_recommendation'] ?? null,
             'recovery_period'           => $aiResult['recovery_period']       ?? null,
-            'best_practices'            => $aiResult['best_practices']        ?? $aiResult['biological_control'] ?? null,
+            'best_practices'            => $bestPractices,
             'vet_referral_advice'       => $aiResult['referral'] ?? $aiResult['vet_recommendation'] ?? null,
             // Explainability
             'explanation'               => $explanation,

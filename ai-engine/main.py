@@ -181,6 +181,7 @@ pest_detection | <pest name and evidence, or "No pest detected">
 urgency | <Low, Medium, High, Emergency>
 first_aid | <3 immediate actionable steps numbered: 1) ... 2) ... 3) ...>
 medication | <specific product, active ingredient, concentration, dosage, application method>
+organic_treatment | <a non-synthetic alternative, e.g. neem oil, copper or sulfur spray, baking-soda solution, companion planting; or "No effective organic alternative — chemical treatment recommended" if none applies>
 preventive_measures | <2–3 specific prevention strategies>
 fertilizer_recommendation | <specific fertilizer, NPK ratio, kg per hectare, timing>
 recovery_period | <realistic time to recovery, e.g. "2–4 weeks">
@@ -229,6 +230,7 @@ severity | None{lang_note}"""
         "urgency":                   fields.get("urgency",                  "Medium"),
         "first_aid":                 fields.get("first_aid",                ""),
         "medication":                fields.get("medication",               "Consult an agronomist."),
+        "organic_treatment":         fields.get("organic_treatment",        ""),
         "preventive_measures":       fields.get("preventive_measures",      ""),
         "fertilizer_recommendation": fields.get("fertilizer_recommendation",""),
         "recovery_period":           fields.get("recovery_period",          ""),
@@ -291,6 +293,7 @@ environmental_factors | <housing, feed, management, or climate factors>
 urgency | <Low, Medium, High, Emergency>
 first_aid | <3 immediate steps numbered: 1) ... 2) ... 3) ...>
 medication | <specific veterinary product, dosage, route, duration>
+organic_treatment | <a natural or non-drug remedy/husbandry option where safe and appropriate, e.g. herbal dewormer, dietary adjustment; or "None — veterinary medication required" if the condition needs it>
 preventive_measures | <2–3 specific prevention strategies>
 vet_recommendation | <vaccinations due, tests needed, referral urgency>
 recovery_period | <realistic recovery time with treatment>
@@ -335,6 +338,7 @@ If no image was provided, set confidence no higher than 30.{lang_note}"""
         "urgency":              fields.get("urgency",               "High"),
         "first_aid":            fields.get("first_aid",             "Isolate the animal immediately."),
         "medication":           fields.get("medication",            "Requires veterinary prescription."),
+        "organic_treatment":    fields.get("organic_treatment",     ""),
         "preventive_measures":  fields.get("preventive_measures",   ""),
         "vet_recommendation":   fields.get("vet_recommendation",    ""),
         "recovery_period":      fields.get("recovery_period",       ""),
