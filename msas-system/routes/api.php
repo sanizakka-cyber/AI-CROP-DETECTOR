@@ -208,7 +208,10 @@ Route::middleware('auth.api')->group(function () {
     // ── Orders ────────────────────────────────────────────────────────────────
     Route::get('/orders',                       [OrderApiController::class, 'myOrders']);
     Route::get('/orders/{order}',               [OrderApiController::class, 'show']);
-    Route::post('/orders/checkout',             [OrderApiController::class, 'checkout']);
+    // Unthrottled until now, unlike the sibling subscribe (throttle:10,1) and
+    // payment (throttle:30,1) routes below — checkout decrements real stock
+    // and creates real orders per call, so it gets the same treatment.
+    Route::post('/orders/checkout',             [OrderApiController::class, 'checkout'])->middleware('throttle:10,1');
     Route::post('/orders/{order}/cancel',       [OrderApiController::class, 'cancel']);
 
     // Subscription status for mobile
