@@ -62,7 +62,12 @@ class SubscriptionApiController extends Controller
         );
 
         if (! $result['success']) {
-            return response()->json(['error' => $result['message']], 502);
+            // 'missing_email' is a fixable client-side profile gap, not an
+            // upstream Paystack failure — a live test surfaced this coming
+            // back as 502 (implies "our server/Paystack is broken, retry
+            // later") when it's really "complete your profile first".
+            $status = ($result['code'] ?? null) === 'missing_email' ? 422 : 502;
+            return response()->json(['error' => $result['message']], $status);
         }
 
         return response()->json([

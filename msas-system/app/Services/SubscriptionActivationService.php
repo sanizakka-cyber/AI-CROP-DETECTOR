@@ -45,7 +45,7 @@ class SubscriptionActivationService
         if (!$contactEmail) {
             Log::warning('Subscription payment blocked: no email on file', ['user_id' => $user->id]);
 
-            return ['success' => false, 'message' => 'Please add an email address to your profile before subscribing — Paystack requires one to send your payment receipt.'];
+            return ['success' => false, 'code' => 'missing_email', 'message' => 'Please add an email address to your profile before subscribing — Paystack requires one to send your payment receipt.'];
         }
 
         $planName = config("subscription.plans.{$plan}.name");
