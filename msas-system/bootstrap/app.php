@@ -121,6 +121,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                // Laravel's own prepareException() converts a
+                // ModelNotFoundException into this exact exception type
+                // (wrapping the original as getPrevious()) before any
+                // registered renderer ever sees it — so the dedicated
+                // ModelNotFoundException handler above never actually
+                // fires. Recover the distinction here instead: a
+                // findOrFail() miss should read "record not found", not
+                // "route not found".
+                if ($e->getPrevious() instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                    return response()->json(['error' => 'Resource not found.'], 404);
+                }
                 return response()->json(['error' => 'Endpoint not found.'], 404);
             }
         });

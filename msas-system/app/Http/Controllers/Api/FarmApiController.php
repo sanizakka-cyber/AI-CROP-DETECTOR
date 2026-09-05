@@ -20,13 +20,21 @@ class FarmApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // Field names match the farm_records migration exactly — a previous
+        // version of this validation (farm_name/farm_size/location/soil_type)
+        // referenced columns that were never created, so every create()
+        // failed with a live SQL "column does not exist" 500. No mobile
+        // screen calls farmsAPI.create() yet, so realigning to the real
+        // schema here breaks nothing currently in use.
         $validated = $request->validate([
-            'farm_name'  => ['required', 'string', 'max:255'],
-            'farm_size'  => ['sometimes', 'numeric', 'min:0'],
-            'location'   => ['sometimes', 'string', 'max:255'],
-            'crop_type'  => ['sometimes', 'string', 'max:100'],
-            'soil_type'  => ['sometimes', 'string', 'max:100'],
-            'notes'      => ['sometimes', 'string', 'max:1000'],
+            'crop_type'      => ['required', 'string', 'max:100'],
+            'plot_size'      => ['sometimes', 'numeric', 'min:0'],
+            'planting_date'  => ['sometimes', 'date'],
+            'harvest_date'   => ['sometimes', 'date'],
+            'yield_kg'       => ['sometimes', 'numeric', 'min:0'],
+            'growth_stage'   => ['sometimes', 'string', 'max:100'],
+            'inputs_used'    => ['sometimes', 'string', 'max:1000'],
+            'notes'          => ['sometimes', 'string', 'max:1000'],
         ]);
 
         $farm = FarmRecord::create(array_merge($validated, [
@@ -47,12 +55,14 @@ class FarmApiController extends Controller
         $farm = FarmRecord::where('user_id', $request->user()->id)->findOrFail($id);
 
         $validated = $request->validate([
-            'farm_name' => ['sometimes', 'string', 'max:255'],
-            'farm_size' => ['sometimes', 'numeric', 'min:0'],
-            'location'  => ['sometimes', 'string', 'max:255'],
-            'crop_type' => ['sometimes', 'string', 'max:100'],
-            'soil_type' => ['sometimes', 'string', 'max:100'],
-            'notes'     => ['sometimes', 'string', 'max:1000'],
+            'crop_type'      => ['sometimes', 'string', 'max:100'],
+            'plot_size'      => ['sometimes', 'numeric', 'min:0'],
+            'planting_date'  => ['sometimes', 'date'],
+            'harvest_date'   => ['sometimes', 'date'],
+            'yield_kg'       => ['sometimes', 'numeric', 'min:0'],
+            'growth_stage'   => ['sometimes', 'string', 'max:100'],
+            'inputs_used'    => ['sometimes', 'string', 'max:1000'],
+            'notes'          => ['sometimes', 'string', 'max:1000'],
         ]);
 
         $farm->update($validated);

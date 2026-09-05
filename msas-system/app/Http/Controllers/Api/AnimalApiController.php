@@ -113,12 +113,17 @@ class AnimalApiController extends Controller
     {
         $animal = Animal::where('user_id', $request->user()->id)->findOrFail($id);
 
+        // 'age_months' isn't a real column on animals (only date_of_birth
+        // is) — Animal::$guarded = [] means whatever's in $validated gets
+        // mass-assigned as-is, so including it here made update() 500 with
+        // a live "column animals.age_months does not exist" the moment a
+        // caller actually sent it.
         $validated = $request->validate([
             'tag_number'    => ['sometimes', 'string', 'max:100'],
             'species'       => ['sometimes', 'string', 'max:100'],
             'breed'         => ['sometimes', 'string', 'max:100'],
             'gender'        => ['sometimes', 'string', 'in:Male,Female,Unknown'],
-            'age_months'    => ['sometimes', 'integer', 'min:0'],
+            'date_of_birth' => ['sometimes', 'date'],
             'weight_kg'     => ['sometimes', 'numeric', 'min:0'],
             'health_status' => ['sometimes', 'string', 'in:healthy,sick,under_treatment,deceased'],
             'notes'         => ['sometimes', 'string', 'max:1000'],
