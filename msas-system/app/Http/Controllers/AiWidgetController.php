@@ -243,10 +243,16 @@ class AiWidgetController extends Controller
                 'openai_error'  => $openaiError,
             ]);
 
+            // openai_type/openai_error are generic gateway-level strings
+            // (e.g. "insufficient_quota", "rate_limit_exceeded") — never a
+            // key, token, or anything OpenAI itself treats as sensitive.
+            // Surfacing them (not to the farmer-facing message, only this
+            // extra field) is what let this exact defect get root-caused
+            // without any server log access.
             return match (true) {
-                $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.'], 400),
-                $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.'], 429),
-                default         => response()->json(['error' => 'Speech service unavailable. Please try again shortly.'], 502),
+                $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.', 'error_detail' => $openaiType], 400),
+                $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.', 'error_detail' => $openaiType], 429),
+                default         => response()->json(['error' => 'Speech service unavailable. Please try again shortly.', 'error_detail' => $openaiType], 502),
             };
         } catch (\Throwable $e) {
             Log::error('TRANSCRIBE_INTERNAL_ERROR', ['user_id' => $request->user()?->id, 'error' => $e->getMessage()]);
