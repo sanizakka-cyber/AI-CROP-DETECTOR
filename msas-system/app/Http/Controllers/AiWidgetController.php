@@ -185,8 +185,15 @@ class AiWidgetController extends Controller
             return response()->json(['error' => 'Voice input is not configured on this server.'], 503);
         }
 
+        $file = $request->file('audio');
+        Log::info('TRANSCRIBE_REQUEST', [
+            'user_id' => $request->user()?->id,
+            'mime'    => $file->getMimeType(),
+            'size'    => $file->getSize(),
+            'model'   => 'whisper-1',
+        ]);
+
         try {
-            $file = $request->file('audio');
             $multipart = [
                 [
                     'name'     => 'file',
@@ -204,21 +211,46 @@ class AiWidgetController extends Controller
                 $multipart[] = ['name' => 'language', 'contents' => $lang];
             }
 
-            $resp = $this->client()->post('https://api.openai.com/v1/audio/transcriptions', [
+            $resp   = $this->client()->post('https://api.openai.com/v1/audio/transcriptions', [
                 'multipart' => $multipart,
                 'headers'   => ['Authorization' => "Bearer {$apiKey}"],
             ]);
+            $status = $resp->getStatusCode();
+            $data   = json_decode((string) $resp->getBody(), true);
 
-            $data = json_decode((string) $resp->getBody(), true);
-            if ($resp->getStatusCode() >= 200 && $resp->getStatusCode() < 300 && isset($data['text'])) {
-                return response()->json(['text' => $data['text']]);
+            if ($status >= 200 && $status < 300) {
+                // Whisper can return 200 + "" (empty string) for audio with
+                // no detectable speech — a real, successful response, not a
+                // failure. Map that to its own 422 rather than silently
+                // returning {"text":""} for the client to puzzle over.
+                $text = $data['text'] ?? null;
+                Log::info('TRANSCRIBE_RESULT', ['user_id' => $request->user()?->id, 'openai_status' => $status, 'has_text' => (bool) $text]);
+                if ($text === null) {
+                    return response()->json(['error' => 'No understandable speech detected.'], 422);
+                }
+                if (trim($text) === '') {
+                    return response()->json(['error' => 'No understandable speech detected.'], 422);
+                }
+                return response()->json(['text' => $text]);
             }
 
-            Log::warning('AI transcription non-200', ['status' => $resp->getStatusCode(), 'body' => substr((string) $resp->getBody(), 0, 300)]);
-            return response()->json(['error' => "We couldn't understand the recording. Please try again in a quieter environment."], 502);
+            $openaiError = $data['error']['message'] ?? null;
+            $openaiType  = $data['error']['type']    ?? null;
+            Log::warning('TRANSCRIBE_OPENAI_ERROR', [
+                'user_id'       => $request->user()?->id,
+                'openai_status' => $status,
+                'openai_type'   => $openaiType,
+                'openai_error'  => $openaiError,
+            ]);
+
+            return match (true) {
+                $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.'], 400),
+                $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.'], 429),
+                default         => response()->json(['error' => 'Speech service unavailable. Please try again shortly.'], 502),
+            };
         } catch (\Throwable $e) {
-            Log::error('AI transcription error', ['error' => $e->getMessage()]);
-            return response()->json(['error' => "We couldn't understand the recording. Please try again in a quieter environment."], 503);
+            Log::error('TRANSCRIBE_INTERNAL_ERROR', ['user_id' => $request->user()?->id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'Speech service unavailable. Please try again shortly.'], 503);
         }
     }
 }
