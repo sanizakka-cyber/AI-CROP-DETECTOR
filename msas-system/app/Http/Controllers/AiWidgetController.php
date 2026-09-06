@@ -249,6 +249,17 @@ class AiWidgetController extends Controller
             // Surfacing them (not to the farmer-facing message, only this
             // extra field) is what let this exact defect get root-caused
             // without any server log access.
+            //
+            // 'insufficient_quota' is OpenAI's billing-exhaustion error, not
+            // a transient rate limit — it arrives as HTTP 429 same as an
+            // actual rate limit, but "try again shortly" is actively wrong
+            // advice here: retrying will never succeed until the OpenAI
+            // account's billing/quota is topped up. Distinct message so
+            // this doesn't read as a self-resolving blip.
+            if ($status === 429 && $openaiType === 'insufficient_quota') {
+                return response()->json(['error' => 'Voice input is temporarily unavailable. Please type your question instead.', 'error_detail' => $openaiType], 503);
+            }
+
             return match (true) {
                 $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.', 'error_detail' => $openaiType], 400),
                 $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.', 'error_detail' => $openaiType], 429),
