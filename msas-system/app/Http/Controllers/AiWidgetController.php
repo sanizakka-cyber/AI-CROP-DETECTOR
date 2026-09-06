@@ -187,10 +187,13 @@ class AiWidgetController extends Controller
 
         $file = $request->file('audio');
         Log::info('TRANSCRIBE_REQUEST', [
-            'user_id' => $request->user()?->id,
-            'mime'    => $file->getMimeType(),
-            'size'    => $file->getSize(),
-            'model'   => 'whisper-1',
+            'user_id'     => $request->user()?->id,
+            'mime'        => $file->getMimeType(),
+            'size'        => $file->getSize(),
+            'model'       => 'whisper-1',
+            // Prefix only (e.g. "sk-proj-abCD") — enough to tell two keys
+            // apart without exposing anything usable; never the full value.
+            'key_prefix'  => substr($apiKey, 0, 11) . '…',
         ]);
 
         try {
@@ -236,11 +239,22 @@ class AiWidgetController extends Controller
 
             $openaiError = $data['error']['message'] ?? null;
             $openaiType  = $data['error']['type']    ?? null;
+            $openaiCode  = $data['error']['code']    ?? null;
+            // Safe to surface: OpenAI's own response headers, not derived
+            // from the key itself. request-id is what OpenAI support asks
+            // for when diagnosing a billing/quota error from the outside;
+            // organization only appears when the key belongs to one.
+            $requestId    = $resp->getHeaderLine('x-request-id') ?: null;
+            $organization = $resp->getHeaderLine('openai-organization') ?: null;
             Log::warning('TRANSCRIBE_OPENAI_ERROR', [
                 'user_id'       => $request->user()?->id,
                 'openai_status' => $status,
                 'openai_type'   => $openaiType,
+                'openai_code'   => $openaiCode,
                 'openai_error'  => $openaiError,
+                'request_id'    => $requestId,
+                'organization'  => $organization,
+                'key_prefix'    => substr($apiKey, 0, 11) . '…',
             ]);
 
             // openai_type/openai_error are generic gateway-level strings
@@ -256,14 +270,26 @@ class AiWidgetController extends Controller
             // advice here: retrying will never succeed until the OpenAI
             // account's billing/quota is topped up. Distinct message so
             // this doesn't read as a self-resolving blip.
+            // TEMPORARY — billing/project diagnostic only, being removed in
+            // the immediate follow-up commit once the root cause is
+            // confirmed. Never the key itself, only a prefix + OpenAI's own
+            // response headers, but still more than a farmer-facing error
+            // needs permanently.
+            $diagnostic = [
+                'openai_code'  => $openaiCode,
+                'request_id'   => $requestId,
+                'organization' => $organization,
+                'key_prefix'   => substr($apiKey, 0, 11) . '…',
+            ];
+
             if ($status === 429 && $openaiType === 'insufficient_quota') {
-                return response()->json(['error' => 'Voice input is temporarily unavailable. Please type your question instead.', 'error_detail' => $openaiType], 503);
+                return response()->json(['error' => 'Voice input is temporarily unavailable. Please type your question instead.', 'error_detail' => $openaiType, 'diagnostic' => $diagnostic], 503);
             }
 
             return match (true) {
-                $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.', 'error_detail' => $openaiType], 400),
-                $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.', 'error_detail' => $openaiType], 429),
-                default         => response()->json(['error' => 'Speech service unavailable. Please try again shortly.', 'error_detail' => $openaiType], 502),
+                $status === 400 => response()->json(['error' => 'Invalid or unsupported audio file.', 'error_detail' => $openaiType, 'diagnostic' => $diagnostic], 400),
+                $status === 429 => response()->json(['error' => 'Speech service temporarily rate-limited. Please try again shortly.', 'error_detail' => $openaiType, 'diagnostic' => $diagnostic], 429),
+                default         => response()->json(['error' => 'Speech service unavailable. Please try again shortly.', 'error_detail' => $openaiType, 'diagnostic' => $diagnostic], 502),
             };
         } catch (\Throwable $e) {
             Log::error('TRANSCRIBE_INTERNAL_ERROR', ['user_id' => $request->user()?->id, 'error' => $e->getMessage()]);
