@@ -32,8 +32,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # ── Install PHP deps (layer-cached when composer.lock unchanged) ───────────────
+# Security audit found composer.lock had drifted a month out of sync with
+# composer.json (two required packages weren't in it at all) — invisible
+# in practice only because this ran `update` instead of `install`, which
+# silently re-resolves fresh every build instead of failing loudly on a
+# stale lock. That also meant no two deploys were guaranteed to run the
+# same dependency versions. `install` is the reproducible, intended
+# command; composer.lock is now regenerated to match composer.json.
 COPY composer.json composer.lock ./
-RUN composer update --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 COPY . .
 
