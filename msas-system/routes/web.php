@@ -563,7 +563,11 @@ Route::middleware(['auth', 'role:admin,ceo,finance'])->prefix('admin/wallets')->
 });
 
 // ── AI Widget Proxy (authenticated) ───────────────────────────────────────
-Route::middleware(['auth'])->group(function () {
+// All four hit a paid external API per call (Claude via the AI engine for
+// weather/market/chat, OpenAI Whisper for transcribe) — security audit
+// found this group entirely unthrottled. Matching the 20/min precedent
+// already used for /diagnose/*.
+Route::middleware(['auth', 'throttle:20,1'])->group(function () {
     Route::post('/ai/weather', [\App\Http\Controllers\AiWidgetController::class, 'weather'])->name('ai.weather');
     Route::post('/ai/market',  [\App\Http\Controllers\AiWidgetController::class, 'market'])->name('ai.market');
     Route::post('/ai/chat',    [\App\Http\Controllers\AiWidgetController::class, 'chat'])->name('ai.chat');

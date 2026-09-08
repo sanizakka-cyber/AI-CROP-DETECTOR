@@ -150,8 +150,13 @@ Route::middleware('auth.api')->group(function () {
     // (routes/web.php '/ai/chat'), just reached over Bearer-token auth
     // instead of the session/CSRF the web route uses. One implementation,
     // two entry points — not a second AI system for mobile.
-    Route::post('/ai/chat', [AiWidgetController::class, 'chat']);
-    Route::post('/ai/transcribe', [AiWidgetController::class, 'transcribe']);
+    // Both hit a paid external API per call (Claude / OpenAI Whisper) —
+    // security audit found this group had no throttle at all, unlike
+    // /diagnose/*'s 20/min. Matching that existing precedent here.
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/ai/chat', [AiWidgetController::class, 'chat']);
+        Route::post('/ai/transcribe', [AiWidgetController::class, 'transcribe']);
+    });
 
     // Farms CRUD
     Route::get('/farms',              [FarmApiController::class, 'index']);
