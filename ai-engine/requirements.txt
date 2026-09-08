@@ -1,7 +1,13 @@
-fastapi
-uvicorn[standard]
-python-multipart
-pillow
-anthropic
-a2wsgi
-python-dotenv
+# Security audit found this file had zero version pins at all — every
+# Render deploy ran `pip install -r requirements.txt` and could silently
+# resolve different dependency versions build to build (the same class of
+# reproducibility gap found and fixed in msas-system/composer.lock). Pinned
+# to the exact versions audited clean with pip-audit (0 known vulnerabilities
+# across all 27 resolved packages, direct + transitive).
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+python-multipart==0.0.32
+pillow==12.3.0
+anthropic==1.4.0
+a2wsgi==1.10.10
+python-dotenv==1.2.3
