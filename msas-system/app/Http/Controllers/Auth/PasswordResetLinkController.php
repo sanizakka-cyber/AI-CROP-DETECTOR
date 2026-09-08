@@ -38,10 +38,23 @@ class PasswordResetLinkController extends Controller
                 ->first();
 
         if (! $user) {
-            // Generic message — avoids confirming whether an account exists
-            return back()->withErrors([
-                'identifier' => 'If an account exists with that identifier, a reset code has been sent.',
+            // Security audit found this path distinguishable from the real
+            // one even with a generic message: a nonexistent identifier
+            // returned back() to this same page while a real one redirected
+            // to /verify-otp — a one-request account-enumeration signal via
+            // the redirect target alone, independent of any message text.
+            // Mirror the real session shape and redirect identically, with
+            // no OTP actually generated or sent (no cost, no real code).
+            $request->session()->put([
+                'otp_context'         => 'password_reset',
+                'otp_identifier'      => $identifier,
+                'otp_user_id'         => null,
+                'reset_user_id'       => null,
+                'otp_delivery_method' => $isEmail ? 'email' : 'sms',
+                'otp_expires_at'      => now()->addMinutes(OtpService::TTL_MINUTES)->toISOString(),
             ]);
+
+            return redirect()->route('otp.verify');
         }
 
         $resolvedIdentifier = $isEmail ? $user->email : $user->phone;
