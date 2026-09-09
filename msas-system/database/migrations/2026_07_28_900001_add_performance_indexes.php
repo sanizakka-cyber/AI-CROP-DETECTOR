@@ -120,16 +120,19 @@ return new class extends Migration
         }
     }
 
+    // Was a raw `pg_indexes` catalog query — Postgres-only, and its blanket
+    // catch(\Throwable) meant it silently returned false on any other
+    // driver, so every guard below was a no-op on SQLite. That only ever
+    // surfaced as a crash (not silent data drift) because this table also
+    // happens to duplicate two index names already defined by the earlier
+    // 2026_07_18_200001_add_performance_indexes migration
+    // (diagnoses_status_index, consultations_status_index) — harmless
+    // repeats on Postgres where the guard worked and correctly skipped
+    // them, but a hard failure on SQLite where it never did.
+    // Schema::getIndexListing() is Laravel's own DB-agnostic equivalent,
+    // already used successfully by that earlier migration.
     private function hasIndex(string $table, string $indexName): bool
     {
-        try {
-            $indexes = \Illuminate\Support\Facades\DB::select(
-                "SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?",
-                [$table, $indexName]
-            );
-            return !empty($indexes);
-        } catch (\Throwable) {
-            return false;
-        }
+        return in_array($indexName, Schema::getIndexListing($table), true);
     }
 };
