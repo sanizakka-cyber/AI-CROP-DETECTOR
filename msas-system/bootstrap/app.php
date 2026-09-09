@@ -122,10 +122,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // Never let a problem in the reporter itself swallow the
             // original exception without a trace.
             error_log(sprintf(
-                '[app.php reporter failed] %s: %s in %s:%d (while reporting %s: %s in %s:%d)',
+                "[app.php reporter failed] %s: %s in %s:%d\n[ORIGINAL EXCEPTION] %s: %s in %s:%d\n%s",
                 get_class($reporterFailure), $reporterFailure->getMessage(),
                 $reporterFailure->getFile(), $reporterFailure->getLine(),
                 get_class($e), $e->getMessage(), $e->getFile(), $e->getLine(),
+                $e->getTraceAsString(),
             ));
           }
         });
