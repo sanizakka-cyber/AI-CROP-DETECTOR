@@ -46,25 +46,41 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Structured logging for all unhandled exceptions
         $exceptions->report(function (\Throwable $e) {
-            // request() is only bound in the container for an actual (or
-            // test-simulated) HTTP request. A console command or scheduled
-            // job that throws has no request bound at all, so calling
-            // request()->... here unconditionally used to crash the
-            // reporter itself with a BindingResolutionException — masking
-            // whatever the original exception was and silently skipping
-            // ErrorLog::capture()/Sentry for every console-context error.
-            $hasRequest = app()->bound('request');
+            // request()/auth() are only safely resolvable when the
+            // container actually has those bindings — true for a real (or
+            // test-simulated) HTTP request, not guaranteed for a console
+            // command, a scheduled job, or an exception thrown very early
+            // in boot before all providers have registered. Calling them
+            // unconditionally used to crash the reporter itself with a
+            // BindingResolutionException, masking the original exception
+            // and silently skipping ErrorLog::capture()/Sentry for every
+            // such error. A reporter's one job is to never itself throw,
+            // so every piece of "nice to have" context is best-effort.
             $context = [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
                 'file'      => $e->getFile(),
                 'line'      => $e->getLine(),
-                'url'       => $hasRequest ? request()->fullUrl() : null,
-                'method'    => $hasRequest ? request()->method() : null,
-                'user_id'   => auth()->id(),
-                'user_role' => auth()->user()?->role,
-                'ip'        => $hasRequest ? request()->ip() : null,
+                'url'       => null,
+                'method'    => null,
+                'user_id'   => null,
+                'user_role' => null,
+                'ip'        => null,
             ];
+            try {
+                if (app()->bound('request')) {
+                    $context['url']    = request()->fullUrl();
+                    $context['method'] = request()->method();
+                    $context['ip']     = request()->ip();
+                }
+                if (app()->bound('auth')) {
+                    $context['user_id']   = auth()->id();
+                    $context['user_role'] = auth()->user()?->role;
+                }
+            } catch (\Throwable) {
+                // Context gathering must never prevent the exception below
+                // from being logged.
+            }
 
             // Categorise for easier log filtering
             $category = match(true) {
