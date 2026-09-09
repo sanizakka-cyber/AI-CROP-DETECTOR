@@ -46,16 +46,24 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Structured logging for all unhandled exceptions
         $exceptions->report(function (\Throwable $e) {
+            // request() is only bound in the container for an actual (or
+            // test-simulated) HTTP request. A console command or scheduled
+            // job that throws has no request bound at all, so calling
+            // request()->... here unconditionally used to crash the
+            // reporter itself with a BindingResolutionException — masking
+            // whatever the original exception was and silently skipping
+            // ErrorLog::capture()/Sentry for every console-context error.
+            $hasRequest = app()->bound('request');
             $context = [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
                 'file'      => $e->getFile(),
                 'line'      => $e->getLine(),
-                'url'       => request()->fullUrl(),
-                'method'    => request()->method(),
+                'url'       => $hasRequest ? request()->fullUrl() : null,
+                'method'    => $hasRequest ? request()->method() : null,
                 'user_id'   => auth()->id(),
                 'user_role' => auth()->user()?->role,
-                'ip'        => request()->ip(),
+                'ip'        => $hasRequest ? request()->ip() : null,
             ];
 
             // Categorise for easier log filtering
