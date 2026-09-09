@@ -104,7 +104,12 @@ class SecurityRegressionTest extends TestCase
 
         $response = $this->actingAs($farmer)->get('/ceo/monitoring');
 
-        $response->assertStatus(403);
+        // RoleMiddleware deliberately redirects an unauthorized web user to
+        // their own dashboard (see its $redirectMap) rather than a bare 403
+        // when one exists for their role -- the real guarantee to test is
+        // that they never reach the CEO page, not a specific status code.
+        $response->assertRedirect(route('farmer.dashboard'));
+        $response->assertSessionHas('error');
     }
 
     public function test_profile_update_cannot_be_used_to_self_promote_role(): void

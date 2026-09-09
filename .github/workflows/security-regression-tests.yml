@@ -45,7 +45,7 @@ jobs:
 
       - name: Run SecurityRegressionTest
         id: sec_test
-        run: php artisan test --filter=SecurityRegressionTest 2>&1 | tee /tmp/sec-test.log
+        run: php artisan test --filter=SecurityRegressionTest -v 2>&1 | tee /tmp/sec-test.log
 
       - name: Run full test suite
         id: full_test
@@ -74,8 +74,8 @@ jobs:
               '### Composer audit (last 40 lines)',
               '```', tail('/tmp/composer-audit.log', 40), '```',
               '',
-              '### SecurityRegressionTest filter (last 80 lines)',
-              '```', tail('/tmp/sec-test.log', 80), '```',
+              '### SecurityRegressionTest filter (last 220 lines)',
+              '```', tail('/tmp/sec-test.log', 220), '```',
               '',
               '### Full test suite (last 100 lines)',
               '```', tail('/tmp/full-test.log', 100), '```',
