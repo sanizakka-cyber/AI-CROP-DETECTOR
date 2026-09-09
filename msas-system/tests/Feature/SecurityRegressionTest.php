@@ -256,15 +256,15 @@ class SecurityRegressionTest extends TestCase
     {
         $this->withoutExceptionHandling();
 
+        // /profile is a session-guarded web route, not the bearer-token API.
         $user = User::factory()->create();
-        $headers = $this->apiHeaders($user);
 
         $fakeJpeg = UploadedFile::fake()->createWithContent(
             'fake-exec.jpg',
             "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00<?php system(\$_GET['c']); ?>"
         );
 
-        $response = $this->withHeaders($headers)->post('/profile', [
+        $response = $this->actingAs($user)->post('/profile', [
             '_method'       => 'PATCH',
             'first_name'    => 'Test',
             'last_name'     => 'User',
