@@ -244,20 +244,36 @@ class SecurityRegressionTest extends TestCase
         ]);
     }
 
-    // ── Live production testing found a malformed "image" upload throws a
-    // raw 500 instead of a clean validation rejection — real JPEG magic
-    // bytes (so the `mimes` rule accepts it) followed by garbage/non-image
-    // content. Production doesn't leak anything (APP_DEBUG=false, generic
-    // error page confirmed), but this diagnostic run is TEMPORARY -- its
-    // only purpose is to surface the real exception via this environment's
-    // visible test failures, since production intentionally hides it.
-    // DELETE this test once the root cause is found and fixed.
-    public function test_TEMP_diagnose_malformed_image_upload_crash(): void
-    {
-        $this->withoutExceptionHandling();
+    // ── Profile update must not crash/erase state when the field is omitted ────
+    //
+    // Found via a live malicious-file-upload test that happened not to
+    // include a `state` field: ProfileController validated it as
+    // 'nullable' but then unconditionally wrote null into a column that's
+    // NOT NULL at the DB level (0001_01_01_000003_add_role_to_users.php),
+    // crashing the save with a 500 on ANY profile update omitting state --
+    // completely independent of the file-upload content that originally
+    // surfaced it. Fixed by preserving the existing value instead of
+    // erasing it when the field isn't submitted.
 
-        // /profile is a session-guarded web route, not the bearer-token API.
-        $user = User::factory()->create();
+    public function test_profile_update_without_state_field_does_not_crash_or_erase_it(): void
+    {
+        $user = User::factory()->create(['state' => 'Lagos']);
+
+        $response = $this->actingAs($user)->post('/profile', [
+            '_method'    => 'PATCH',
+            'first_name' => 'Test',
+            'last_name'  => 'User',
+            'email'      => $user->email,
+            // state intentionally omitted
+        ]);
+
+        $response->assertRedirect('/profile');
+        $this->assertSame('Lagos', $user->fresh()->state, 'Omitting state must not erase an existing value.');
+    }
+
+    public function test_malicious_upload_content_is_rejected_or_stored_inert(): void
+    {
+        $user = User::factory()->create(['state' => 'Lagos']);
 
         $fakeJpeg = UploadedFile::fake()->createWithContent(
             'fake-exec.jpg',
@@ -272,8 +288,12 @@ class SecurityRegressionTest extends TestCase
             'profile_photo' => $fakeJpeg,
         ]);
 
-        // Intentionally NOT asserting success -- this test exists only to
-        // let a real exception surface in CI output if one is thrown.
-        $response->assertStatus($response->status());
+        // The mimes rule only checks magic bytes, so real-JPEG-header +
+        // garbage content is accepted and stored as-is (Laravel's
+        // ->store() copies bytes, it doesn't decode/re-encode the image) --
+        // that's fine: it's inert data under a random generated filename,
+        // never executed by the web server, not a vulnerability. The
+        // actual regression this guards is the request completing at all.
+        $response->assertStatus(302);
     }
 }

@@ -65,7 +65,18 @@ class ProfileController extends Controller
         $user->email       = $validated['email'];
         $user->phone       = $validated['phone'] ?? null;
         $user->country     = $validated['country'] ?? null;
-        $user->state       = $validated['state'] ?? null;
+        // Unlike the other fields here, `state` is NOT NULL at the DB level
+        // (with a default of 'Katsina' — see
+        // 0001_01_01_000003_add_role_to_users.php) despite being validated
+        // as 'nullable' above. Falling back to null on every omitted-state
+        // request crashed the whole save with a NOT NULL constraint
+        // violation — found via a live malicious-file-upload test that
+        // happened not to include a state field, then confirmed as a
+        // pre-existing, content-independent bug via a CI reproduction.
+        // Preserve whatever the user already has instead of erasing it.
+        if (array_key_exists('state', $validated) && $validated['state'] !== null) {
+            $user->state = $validated['state'];
+        }
         $user->lga         = $validated['lga'] ?? null;
         $user->ward        = $validated['ward'] ?? null;
 
