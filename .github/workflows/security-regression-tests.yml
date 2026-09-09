@@ -1,0 +1,41 @@
+name: Security Regression Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'msas-system/**'
+      - '.github/workflows/security-regression-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: msas-system
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, sqlite3, curl, fileinfo, gd, zip, intl, bcmath, exif, pcntl
+          coverage: none
+
+      - name: Composer install
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Generate app key
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Composer audit
+        run: composer audit --locked
+
+      - name: Run SecurityRegressionTest
+        run: php artisan test --filter=SecurityRegressionTest
+
+      - name: Run full test suite
+        run: php artisan test
