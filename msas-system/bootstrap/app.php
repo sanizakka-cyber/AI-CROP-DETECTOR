@@ -44,18 +44,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
-        // Structured logging for all unhandled exceptions
+        // Structured logging for all unhandled exceptions.
+        //
+        // This closure can run before Laravel's facade root or container
+        // bindings (request, auth, even Log itself) are guaranteed to be
+        // set — e.g. an exception thrown while service providers are still
+        // registering. A reporter's one job is to never itself throw and
+        // mask the exception it was asked to report, so everything
+        // Laravel-dependent below is wrapped, with a raw error_log() as
+        // the last-resort fallback that needs nothing from the framework.
         $exceptions->report(function (\Throwable $e) {
-            // request()/auth() are only safely resolvable when the
-            // container actually has those bindings — true for a real (or
-            // test-simulated) HTTP request, not guaranteed for a console
-            // command, a scheduled job, or an exception thrown very early
-            // in boot before all providers have registered. Calling them
-            // unconditionally used to crash the reporter itself with a
-            // BindingResolutionException, masking the original exception
-            // and silently skipping ErrorLog::capture()/Sentry for every
-            // such error. A reporter's one job is to never itself throw,
-            // so every piece of "nice to have" context is best-effort.
+          try {
             $context = [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
@@ -119,6 +118,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     \Sentry\captureException($e);
                 });
             }
+          } catch (\Throwable $reporterFailure) {
+            // Never let a problem in the reporter itself swallow the
+            // original exception without a trace.
+            error_log(sprintf(
+                '[app.php reporter failed] %s: %s in %s:%d (while reporting %s: %s in %s:%d)',
+                get_class($reporterFailure), $reporterFailure->getMessage(),
+                $reporterFailure->getFile(), $reporterFailure->getLine(),
+                get_class($e), $e->getMessage(), $e->getFile(), $e->getLine(),
+            ));
+          }
         });
 
         // Return standard JSON for all API errors (request path starts with /api)
