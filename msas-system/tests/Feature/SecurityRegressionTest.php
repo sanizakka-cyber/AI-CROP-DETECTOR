@@ -140,15 +140,17 @@ class SecurityRegressionTest extends TestCase
         $headers = $this->apiHeaders($user);
 
         $limit = null;
+        $seen = [];
         for ($i = 0; $i < 21; $i++) {
             $response = $this->withHeaders($headers)->postJson('/api/ai/chat', ['message' => 'test message ' . $i]);
+            $seen[] = $response->status();
             if ($response->status() === 429) {
                 $limit = $i;
                 break;
             }
         }
 
-        $this->assertNotNull($limit, 'Expected a 429 within 21 calls — /ai/chat must be rate limited (throttle:20,1).');
+        $this->assertNotNull($limit, 'Expected a 429 within 21 calls — /ai/chat must be rate limited (throttle:20,1). Statuses seen: ' . implode(',', $seen));
     }
 
     // ── SEC-002: checkout must be rate limited (real stock/order side effects) ──
@@ -159,15 +161,17 @@ class SecurityRegressionTest extends TestCase
         $headers = $this->apiHeaders($user);
 
         $limit = null;
+        $seen = [];
         for ($i = 0; $i < 11; $i++) {
             $response = $this->withHeaders($headers)->postJson('/api/orders/checkout', ['payment_method' => 'wallet']);
+            $seen[] = $response->status();
             if ($response->status() === 429) {
                 $limit = $i;
                 break;
             }
         }
 
-        $this->assertNotNull($limit, 'Expected a 429 within 11 calls — /orders/checkout must be rate limited (throttle:10,1).');
+        $this->assertNotNull($limit, 'Expected a 429 within 11 calls — /orders/checkout must be rate limited (throttle:10,1). Statuses seen: ' . implode(',', $seen));
     }
 
     // ── SEC-006: forged Paystack webhooks must be rejected ──────────────────────

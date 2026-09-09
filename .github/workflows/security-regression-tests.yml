@@ -45,7 +45,7 @@ jobs:
 
       - name: Run SecurityRegressionTest
         id: sec_test
-        run: php artisan test --filter=SecurityRegressionTest -v 2>&1 | tee /tmp/sec-test.log
+        run: php artisan test --filter=SecurityRegressionTest 2>&1 | tee /tmp/sec-test.log
 
       - name: Run full test suite
         id: full_test
