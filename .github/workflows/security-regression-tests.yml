@@ -8,6 +8,10 @@ on:
       - 'msas-system/**'
       - '.github/workflows/security-regression-tests.yml'
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -26,16 +30,57 @@ jobs:
           coverage: none
 
       - name: Composer install
-        run: composer install --prefer-dist --no-interaction --no-progress
+        id: composer_install
+        run: composer install --prefer-dist --no-interaction --no-progress 2>&1 | tee /tmp/composer-install.log
 
       - name: Generate app key
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
       - name: Composer audit
-        run: composer audit --locked
+        id: composer_audit
+        run: composer audit --locked 2>&1 | tee /tmp/composer-audit.log
 
       - name: Run SecurityRegressionTest
-        run: php artisan test --filter=SecurityRegressionTest
+        id: sec_test
+        run: php artisan test --filter=SecurityRegressionTest 2>&1 | tee /tmp/sec-test.log
 
       - name: Run full test suite
-        run: php artisan test
+        id: full_test
+        run: php artisan test 2>&1 | tee /tmp/full-test.log
+
+      - name: Publish results as a GitHub Issue (always runs)
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            function tail(path, n) {
+              if (!fs.existsSync(path)) return '(no output captured)';
+              const lines = fs.readFileSync(path, 'utf8').split('\n');
+              return lines.slice(-n).join('\n');
+            }
+            const body = [
+              '## Security Regression Test run — ' + new Date().toISOString(),
+              '',
+              '**Commit:** ' + context.sha,
+              '**Overall run conclusion source:** step outcomes below',
+              '',
+              '### Composer install (last 60 lines)',
+              '```', tail('/tmp/composer-install.log', 60), '```',
+              '',
+              '### Composer audit (last 40 lines)',
+              '```', tail('/tmp/composer-audit.log', 40), '```',
+              '',
+              '### SecurityRegressionTest filter (last 80 lines)',
+              '```', tail('/tmp/sec-test.log', 80), '```',
+              '',
+              '### Full test suite (last 100 lines)',
+              '```', tail('/tmp/full-test.log', 100), '```',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'CI Security Test Results — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
+              body: body,
+              labels: ['ci-test-results']
+            });
