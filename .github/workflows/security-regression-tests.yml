@@ -29,12 +29,12 @@ jobs:
           extensions: mbstring, pdo_sqlite, sqlite3, curl, fileinfo, gd, zip, intl, bcmath, exif, pcntl
           coverage: none
 
-      - name: Composer install
-        id: composer_install
-        run: composer install --prefer-dist --no-interaction --no-progress 2>&1 | tee /tmp/composer-install.log
-
       - name: Generate app key
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Composer install
+        id: composer_install
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts 2>&1 | tee /tmp/composer-install.log
 
       - name: Composer audit
         id: composer_audit
