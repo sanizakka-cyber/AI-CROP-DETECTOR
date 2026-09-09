@@ -28,6 +28,10 @@
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <!-- Dummy, non-secret test-only value — PaymentService's constructor
+             requires a non-null string, and the webhook-signature regression
+             tests specifically need a real (test) key to HMAC against. -->
+        <env name="PAYSTACK_SECRET_KEY" value="sk_test_dummy_key_for_regression_tests_only"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

@@ -6,7 +6,6 @@ use App\Models\FarmRecord;
 use App\Models\MobileNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
@@ -15,16 +14,26 @@ use Tests\TestCase;
  * report). Each test is named after the defect it guards against, not the
  * happy path — the goal is that any of these regressing turns this suite
  * red, not that the feature works in general.
- *
- * Written without a local PHP runtime available (audit environment had
- * none) — syntactically and logically checked against the actual route/
- * controller/model source read during the audit, but not yet executed.
- * Run `php artisan test --filter=SecurityRegressionTest` before relying
- * on it as a passing baseline.
  */
 class SecurityRegressionTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * This app does not use Laravel Sanctum for mobile/API auth despite the
+     * package being installed — App\Http\Middleware\ApiAuthenticate checks a
+     * bearer token against a SHA-256 hash stored directly on users.api_token
+     * (see User::createToken()), a fully custom mechanism. Sanctum::actingAs()
+     * simulates the wrong auth system entirely and fails outright (User
+     * doesn't have Sanctum's HasApiTokens trait). This mirrors the real
+     * production login flow instead.
+     */
+    private function apiHeaders(User $user): array
+    {
+        $token = $user->createToken('test')->plainTextToken;
+
+        return ['Authorization' => 'Bearer ' . $token];
+    }
 
     // ── SEC-003: notification delete must not fake success on a foreign ID ─────
 
@@ -39,9 +48,8 @@ class SecurityRegressionTest extends TestCase
             'body'    => 'Body text',
         ]);
 
-        Sanctum::actingAs($attacker);
-
-        $response = $this->deleteJson("/api/notifications/{$notification->id}");
+        $response = $this->withHeaders($this->apiHeaders($attacker))
+            ->deleteJson("/api/notifications/{$notification->id}");
 
         $response->assertStatus(404);
         $this->assertNotNull(
@@ -60,9 +68,8 @@ class SecurityRegressionTest extends TestCase
             'body'    => 'Body text',
         ]);
 
-        Sanctum::actingAs($owner);
-
-        $this->deleteJson("/api/notifications/{$notification->id}")->assertOk();
+        $this->withHeaders($this->apiHeaders($owner))
+            ->deleteJson("/api/notifications/{$notification->id}")->assertOk();
         $this->assertNull(MobileNotification::find($notification->id));
     }
 
@@ -78,11 +85,11 @@ class SecurityRegressionTest extends TestCase
             'crop_type' => 'Maize',
         ]);
 
-        Sanctum::actingAs($attacker);
+        $headers = $this->apiHeaders($attacker);
 
-        $this->getJson("/api/farms/{$farm->id}")->assertStatus(404);
-        $this->putJson("/api/farms/{$farm->id}", ['notes' => 'hacked'])->assertStatus(404);
-        $this->deleteJson("/api/farms/{$farm->id}")->assertStatus(404);
+        $this->withHeaders($headers)->getJson("/api/farms/{$farm->id}")->assertStatus(404);
+        $this->withHeaders($headers)->putJson("/api/farms/{$farm->id}", ['notes' => 'hacked'])->assertStatus(404);
+        $this->withHeaders($headers)->deleteJson("/api/farms/{$farm->id}")->assertStatus(404);
 
         $this->assertSame('Maize', $farm->fresh()->crop_type, 'Attacker must not be able to mutate another user\'s farm.');
     }
@@ -91,6 +98,8 @@ class SecurityRegressionTest extends TestCase
 
     public function test_farmer_is_blocked_from_ceo_only_route(): void
     {
+        // /ceo/monitoring is a session-guarded web route (not the custom
+        // bearer-token API), so Laravel's own actingAs() is correct here.
         $farmer = User::factory()->create(['role' => 'farmer']);
 
         $response = $this->actingAs($farmer)->get('/ceo/monitoring');
@@ -101,9 +110,9 @@ class SecurityRegressionTest extends TestCase
     public function test_profile_update_cannot_be_used_to_self_promote_role(): void
     {
         $farmer = User::factory()->create(['role' => 'farmer']);
-        Sanctum::actingAs($farmer);
 
-        $this->patchJson('/api/auth/profile', ['role' => 'ceo'])->assertOk();
+        $this->withHeaders($this->apiHeaders($farmer))
+            ->patchJson('/api/auth/profile', ['role' => 'ceo'])->assertOk();
 
         $this->assertSame('farmer', $farmer->fresh()->role, 'role must not be mass-assignable through the profile endpoint.');
     }
@@ -123,11 +132,11 @@ class SecurityRegressionTest extends TestCase
     public function test_ai_chat_endpoint_is_rate_limited(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $headers = $this->apiHeaders($user);
 
         $limit = null;
         for ($i = 0; $i < 21; $i++) {
-            $response = $this->postJson('/api/ai/chat', ['message' => 'test message ' . $i]);
+            $response = $this->withHeaders($headers)->postJson('/api/ai/chat', ['message' => 'test message ' . $i]);
             if ($response->status() === 429) {
                 $limit = $i;
                 break;
@@ -142,11 +151,11 @@ class SecurityRegressionTest extends TestCase
     public function test_checkout_endpoint_is_rate_limited(): void
     {
         $user = User::factory()->create(['role' => 'farmer']);
-        Sanctum::actingAs($user);
+        $headers = $this->apiHeaders($user);
 
         $limit = null;
         for ($i = 0; $i < 11; $i++) {
-            $response = $this->postJson('/api/orders/checkout', ['payment_method' => 'wallet']);
+            $response = $this->withHeaders($headers)->postJson('/api/orders/checkout', ['payment_method' => 'wallet']);
             if ($response->status() === 429) {
                 $limit = $i;
                 break;
@@ -185,9 +194,9 @@ class SecurityRegressionTest extends TestCase
     public function test_missing_record_returns_resource_not_found_not_endpoint_not_found(): void
     {
         $user = User::factory()->create(['role' => 'farmer']);
-        Sanctum::actingAs($user);
 
-        $response = $this->getJson('/api/farms/999999999');
+        $response = $this->withHeaders($this->apiHeaders($user))
+            ->getJson('/api/farms/999999999');
 
         $response->assertStatus(404);
         $response->assertJson(['error' => 'Resource not found.']);
@@ -216,5 +225,27 @@ class SecurityRegressionTest extends TestCase
 
         $existing->assertRedirect(route('otp.verify'));
         $missing->assertRedirect(route('otp.verify'));
+    }
+
+    // ── Audit logging: password reset completion (found + fixed this phase) ────
+
+    public function test_password_reset_completion_is_audited(): void
+    {
+        $user = User::factory()->create();
+
+        $this->withSession([
+            'reset_token'   => 'test-reset-token',
+            'reset_user_id' => $user->id,
+        ])->post('/reset-password', [
+            'reset_token'          => 'test-reset-token',
+            'password'             => 'NewPassw0rd!23',
+            'password_confirmation' => 'NewPassw0rd!23',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action'   => 'password.reset_completed',
+            'model'    => 'User',
+            'model_id' => $user->id,
+        ]);
     }
 }
