@@ -9,6 +9,12 @@ return new class extends Migration
     {
         // PostgreSQL: drop the old CHECK constraint and recreate with all plan keys.
         // Keeps 'pro' for backward-compat with any legacy subscriptions.
+        // Production runs pgsql exclusively; SQLite (used for tests) has no
+        // CHECK-constraint DDL of this shape and doesn't enforce this at the
+        // DB level anyway, so it's a no-op there rather than a crash.
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
         DB::statement('ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_check');
         DB::statement("
             ALTER TABLE subscriptions
@@ -28,6 +34,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
         DB::statement('ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_check');
         DB::statement("
             ALTER TABLE subscriptions

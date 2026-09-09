@@ -15,6 +15,14 @@ return new class extends Migration
             });
         }
 
+        // Postgres-only from here down (raw ALTER COLUMN, sequences) —
+        // production runs pgsql exclusively, but a SQLite test database
+        // (phpunit.xml) has neither ALTER COLUMN nor CREATE SEQUENCE, and
+        // doesn't need real atomic scan_ref generation to run feature tests.
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         // AI-unavailable scans must record "no score", not a fabricated 0.
         DB::statement('ALTER TABLE diagnoses ALTER COLUMN confidence_score DROP NOT NULL');
 
@@ -36,7 +44,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement('DROP SEQUENCE IF EXISTS diagnoses_scan_seq');
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('DROP SEQUENCE IF EXISTS diagnoses_scan_seq');
+        }
 
         if (Schema::hasColumn('diagnoses', 'scan_ref')) {
             Schema::table('diagnoses', function (Blueprint $table) {

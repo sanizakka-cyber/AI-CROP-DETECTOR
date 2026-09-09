@@ -60,10 +60,16 @@ return new class extends Migration
 
         // Drop NOT NULL constraints using raw SQL (avoids doctrine/dbal dependency).
         // Safe to run multiple times — DROP NOT NULL on a nullable column is a no-op.
-        $cols = ['cause', 'first_aid_steps', 'recommended_medication', 'vet_referral_advice'];
-        foreach ($cols as $col) {
-            if (Schema::hasColumn('diagnoses', $col)) {
-                DB::statement("ALTER TABLE diagnoses ALTER COLUMN \"{$col}\" DROP NOT NULL");
+        // Postgres-only syntax: SQLite has no ALTER COLUMN at all (this crashed
+        // every SQLite-backed test run — production runs pgsql exclusively, so
+        // guarding by driver changes nothing there, it just stops the test suite
+        // from being unrunnable).
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            $cols = ['cause', 'first_aid_steps', 'recommended_medication', 'vet_referral_advice'];
+            foreach ($cols as $col) {
+                if (Schema::hasColumn('diagnoses', $col)) {
+                    DB::statement("ALTER TABLE diagnoses ALTER COLUMN \"{$col}\" DROP NOT NULL");
+                }
             }
         }
     }
