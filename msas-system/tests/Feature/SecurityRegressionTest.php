@@ -6,6 +6,7 @@ use App\Models\FarmRecord;
 use App\Models\MobileNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 /**
@@ -241,5 +242,38 @@ class SecurityRegressionTest extends TestCase
             'model'    => 'User',
             'model_id' => $user->id,
         ]);
+    }
+
+    // ── Live production testing found a malformed "image" upload throws a
+    // raw 500 instead of a clean validation rejection — real JPEG magic
+    // bytes (so the `mimes` rule accepts it) followed by garbage/non-image
+    // content. Production doesn't leak anything (APP_DEBUG=false, generic
+    // error page confirmed), but this diagnostic run is TEMPORARY -- its
+    // only purpose is to surface the real exception via this environment's
+    // visible test failures, since production intentionally hides it.
+    // DELETE this test once the root cause is found and fixed.
+    public function test_TEMP_diagnose_malformed_image_upload_crash(): void
+    {
+        $this->withoutExceptionHandling();
+
+        $user = User::factory()->create();
+        $headers = $this->apiHeaders($user);
+
+        $fakeJpeg = UploadedFile::fake()->createWithContent(
+            'fake-exec.jpg',
+            "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00<?php system(\$_GET['c']); ?>"
+        );
+
+        $response = $this->withHeaders($headers)->post('/profile', [
+            '_method'       => 'PATCH',
+            'first_name'    => 'Test',
+            'last_name'     => 'User',
+            'email'         => $user->email,
+            'profile_photo' => $fakeJpeg,
+        ]);
+
+        // Intentionally NOT asserting success -- this test exists only to
+        // let a real exception surface in CI output if one is thrown.
+        $response->assertStatus($response->status());
     }
 }
