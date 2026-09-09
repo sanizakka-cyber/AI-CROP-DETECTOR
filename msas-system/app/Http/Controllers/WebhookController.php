@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\MobileNotification;
 use App\Models\Payment;
 use App\Services\PaymentService;
@@ -59,6 +60,12 @@ class WebhookController extends Controller
         $result = $this->paymentService->handleCallback($reference, $user);
 
         if ($result['success'] && $result['payment'] && !($result['duplicate'] ?? false)) {
+            AuditLog::record('payment.charge_success', 'Payment', $result['payment']->id, [
+                'reference' => $reference,
+                'amount'    => $result['payment']->amount,
+                'module'    => $result['payment']->module,
+                'user_id'   => $result['payment']->user_id,
+            ]);
             $this->activateService($result['payment']);
         }
     }
@@ -67,11 +74,20 @@ class WebhookController extends Controller
     {
         // Future: handle payout/transfer confirmations
         Log::info('Paystack transfer.success', ['data' => $data]);
+        AuditLog::record('payment.transfer_success', 'PaystackTransfer', null, [
+            'reference' => $data['reference'] ?? null,
+            'amount'    => $data['amount'] ?? null,
+        ]);
     }
 
     private function handleTransferFailed(array $data): void
     {
         Log::warning('Paystack transfer.failed', ['data' => $data]);
+        AuditLog::record('payment.transfer_failed', 'PaystackTransfer', null, [
+            'reference' => $data['reference'] ?? null,
+            'amount'    => $data['amount'] ?? null,
+            'reason'    => $data['reason'] ?? null,
+        ]);
     }
 
     private function handleRefund(array $data): void
@@ -79,10 +95,16 @@ class WebhookController extends Controller
         $reference = $data['reference'] ?? null;
         if (!$reference) return;
 
+        $payment = Payment::where('reference', $reference)->first();
+
         Payment::where('reference', $reference)
             ->update(['status' => 'refunded']);
 
         Log::info('Refund processed', ['reference' => $reference]);
+        AuditLog::record('payment.refund_processed', 'Payment', $payment?->id, [
+            'reference' => $reference,
+            'amount'    => $data['amount'] ?? $payment?->amount,
+        ]);
     }
 
     private function activateService(Payment $payment): void

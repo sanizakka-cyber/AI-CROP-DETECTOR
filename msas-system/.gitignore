@@ -23,6 +23,7 @@
 /storage/framework/views/*
 /storage/logs/*
 /bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
 /vendor
 Homestead.json
 Homestead.yaml

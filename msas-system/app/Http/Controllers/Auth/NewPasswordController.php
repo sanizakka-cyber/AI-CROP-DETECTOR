@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +75,12 @@ class NewPasswordController extends Controller
 
         $user = User::findOrFail($request->session()->get('reset_user_id'));
         $user->update(['password' => Hash::make($request->password)]);
+
+        // Only the OTP send/verify steps around this were audited before —
+        // the actual password change itself left no trail. The actor isn't
+        // authenticated at this point (that's the whole point of a reset),
+        // so user_id records the target, not an authenticated actor.
+        AuditLog::record('password.reset_completed', 'User', $user->id);
 
         $request->session()->forget(['reset_token', 'reset_user_id', 'otp_identifier']);
 

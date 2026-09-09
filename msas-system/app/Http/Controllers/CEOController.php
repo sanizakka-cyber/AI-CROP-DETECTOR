@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\HasCeoScanFilters;
 use App\Http\Controllers\Concerns\HasSafeDashboardQueries;
 use App\Data\NigeriaLocations;
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\Animal;
 use App\Models\Feedback;
@@ -1094,6 +1095,13 @@ class CEOController extends Controller
         };
 
         $filename = $data['filename'] . '-' . now()->format('Y-m-d') . '.csv';
+
+        // This streams financial/PII data (full names, emails, phone numbers,
+        // states) with no prior audit trail of who exported what and when.
+        AuditLog::record('admin.csv_export', 'CsvExport', null, [
+            'type'        => $type,
+            'record_count' => $data['records']->count(),
+        ]);
 
         $headers = [
             'Content-Type'        => 'text/csv',
