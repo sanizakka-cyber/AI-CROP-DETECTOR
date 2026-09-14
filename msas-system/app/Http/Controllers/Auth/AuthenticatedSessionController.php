@@ -34,17 +34,18 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // Block suspended / deactivated accounts
-        if (! $user->is_active) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            return redirect()->route('login')->withErrors([
-                'identifier' => 'Your account has been suspended. Please contact support.',
-            ]);
-        }
-
-        // Block pending/rejected applicants
+        // Block pending/rejected applicants.
+        //
+        // These are checked BEFORE the generic is_active check below,
+        // because RegistrationService creates every professional-role
+        // account with BOTH application_status='pending' AND
+        // is_active=false. With the generic check first, the friendly
+        // "under review" message was unreachable dead code for exactly the
+        // population it was written for -- every new agronomist/vet/NGO
+        // applicant was told "Your account has been suspended. Please
+        // contact support." instead (confirmed live during the full-system
+        // audit). The more specific status wins; is_active remains the
+        // fallback for genuinely suspended, already-approved accounts.
         $appStatus = $user->application_status ?? 'approved';
         if ($appStatus === 'pending') {
             Auth::logout();
@@ -61,6 +62,16 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerateToken();
             return redirect()->route('login')->withErrors([
                 'identifier' => 'Your application was not approved. Please contact support for more information.',
+            ]);
+        }
+
+        // Block suspended / deactivated accounts
+        if (! $user->is_active) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors([
+                'identifier' => 'Your account has been suspended. Please contact support.',
             ]);
         }
 

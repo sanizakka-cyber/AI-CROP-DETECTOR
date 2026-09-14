@@ -328,6 +328,62 @@ class SecurityRegressionTest extends TestCase
         $this->assertSame('Katsina', $user->state, 'An omitted state must fall back to the column default, not crash or store null.');
     }
 
+    // ── Pending applicants were told their account was "suspended" ────────────
+    //
+    // RegistrationService creates every professional-role account with BOTH
+    // application_status='pending' AND is_active=false. The login handler
+    // checked is_active first, so the friendly "under review" message was
+    // unreachable for exactly the population it was written for. Login was
+    // correctly blocked either way -- this guards the message, which drives
+    // real support load and applicant confusion.
+
+    public function test_pending_applicant_is_told_application_is_under_review_not_suspended(): void
+    {
+        $pending = User::factory()->create([
+            'role'               => 'agronomist',
+            'application_status' => 'pending',
+            'is_active'          => false,
+            'password'           => bcrypt('TestPass123!@#'),
+        ]);
+
+        $response = $this->post('/login', [
+            'login'    => $pending->email,
+            'password' => 'TestPass123!@#',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors('identifier');
+        $this->assertStringContainsString(
+            'under review',
+            (string) session('errors')->first('identifier'),
+            'A pending applicant must see the review message, not the suspension message.'
+        );
+        $this->assertGuest();
+    }
+
+    public function test_genuinely_suspended_approved_account_still_sees_suspension_message(): void
+    {
+        $suspended = User::factory()->create([
+            'role'               => 'farmer',
+            'application_status' => 'approved',
+            'is_active'          => false,
+            'password'           => bcrypt('TestPass123!@#'),
+        ]);
+
+        $response = $this->post('/login', [
+            'login'    => $suspended->email,
+            'password' => 'TestPass123!@#',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $this->assertStringContainsString(
+            'suspended',
+            (string) session('errors')->first('identifier'),
+            'An approved-but-deactivated account must still get the suspension message.'
+        );
+        $this->assertGuest();
+    }
+
     public function test_ceo_creating_staff_without_state_succeeds_and_defaults_state(): void
     {
         $ceo = User::factory()->create(['role' => 'ceo']);
