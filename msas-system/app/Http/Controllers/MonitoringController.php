@@ -58,7 +58,13 @@ class MonitoringController extends Controller
         // ── Payment / Revenue Health ─────────────────────────────────────────
         $paymentsToday   = Payment::whereDate('created_at', today())->count();
         $paySuccessToday = Payment::whereDate('created_at', today())->where('status', 'success')->count();
-        $paySuccessRate  = $paymentsToday > 0 ? round($paySuccessToday / $paymentsToday * 100, 1) : 100;
+        // null, not 100, when there's nothing to measure. The old fallback
+        // meant a day with zero payments rendered a green "100% success
+        // rate today" on the monitoring page -- so a total payment-gateway
+        // outage looked identical to a perfectly healthy day, actively
+        // hiding the incident this tile exists to surface. The blade
+        // renders null as "no payments yet today" instead.
+        $paySuccessRate  = $paymentsToday > 0 ? round($paySuccessToday / $paymentsToday * 100, 1) : null;
 
         $revenueToday = Payment::whereDate('created_at', today())
             ->where('status', 'success')->sum('amount');

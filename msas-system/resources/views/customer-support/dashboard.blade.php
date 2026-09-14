@@ -146,19 +146,24 @@
                             <svg viewBox="0 0 36 36" class="w-20 h-20 -rotate-90">
                                 <circle cx="18" cy="18" r="15" fill="none" stroke="#f1f5f9" stroke-width="3"/>
                                 <circle cx="18" cy="18" r="15" fill="none" stroke="#1FA84A" stroke-width="3"
-                                    stroke-dasharray="{{ $slaCompliance }}, 100"
+                                    stroke-dasharray="{{ $slaCompliance ?? 0 }}, 100"
                                     stroke-linecap="round"/>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="text-lg font-black text-green-600">{{ $slaCompliance }}%</span>
+                                <span class="text-lg font-black {{ $slaCompliance === null ? 'text-gray-400' : 'text-green-600' }}">{{ $slaCompliance === null ? '—' : $slaCompliance.'%' }}</span>
                             </div>
                         </div>
                         <div>
                             <p class="text-sm font-bold text-gray-800">SLA Met</p>
                             <p class="text-xs text-gray-500 mt-0.5">Target: 90% within 4h</p>
-                            <p class="text-xs {{ $slaCompliance >= 90 ? 'text-green-600' : 'text-amber-600' }} font-semibold mt-1">
-                                {{ $slaCompliance >= 90 ? 'On target' : 'Needs improvement' }}
-                            </p>
+                            {{-- No resolved tickets yet is an absence of data, not 100% compliance --}}
+                            @if($slaCompliance === null)
+                                <p class="text-xs text-gray-500 font-semibold mt-1">No resolved tickets yet</p>
+                            @else
+                                <p class="text-xs {{ $slaCompliance >= 90 ? 'text-green-600' : 'text-amber-600' }} font-semibold mt-1">
+                                    {{ $slaCompliance >= 90 ? 'On target' : 'Needs improvement' }}
+                                </p>
+                            @endif
                         </div>
                     </div>
                 </div>

@@ -420,7 +420,11 @@ class DashboardController extends Controller
             $resolvedTotal = DB::table('support_tickets')->where('status','resolved')->count();
             $withinSla     = DB::table('support_tickets')->where('status','resolved')
                 ->whereRaw('EXTRACT(EPOCH FROM (updated_at::timestamp - created_at::timestamp)) / 3600 <= 24')->count();
-            return $resolvedTotal > 0 ? round(($withinSla / $resolvedTotal) * 100) : 100;
+            // null, not 100, when nothing has been resolved yet -- a brand
+            // new support desk with zero tickets was rendering a full
+            // green 100% SLA ring, which is a fabricated measurement
+            // rather than an absence of one.
+            return $resolvedTotal > 0 ? round(($withinSla / $resolvedTotal) * 100) : null;
         });
 
         // Satisfaction from diagnoses feedback as a proxy (no dedicated feedback table yet)

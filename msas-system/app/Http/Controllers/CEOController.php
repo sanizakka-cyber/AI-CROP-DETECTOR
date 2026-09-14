@@ -290,7 +290,13 @@ class CEOController extends Controller
         $resolvedCases = $this->safe('resolved cases', fn() => Consultation::where('status','resolved')->count());
         $resolutionRate = $totalDiagnoses > 0 ? round(($resolvedCases / $totalDiagnoses) * 100) : 0;
         $activePct      = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100) : 0;
-        $platformHealth = (int) round(($resolutionRate * 0.4) + ($activePct * 0.4) + 20);
+        // Weights now sum to 1.0 rather than 0.8 + an unsourced +20
+        // constant. That constant put a floor under the score: a platform
+        // with zero resolved cases and zero active users still reported
+        // 20/100 "health", and the 0.8 weighting meant the two real
+        // components could never reach 100 on their own. This is an
+        // average of the two measured components and nothing else.
+        $platformHealth = (int) round(($resolutionRate * 0.5) + ($activePct * 0.5));
         $platformHealth = min(100, max(0, $platformHealth));
 
         return compact('resolutionRate','activePct','platformHealth');
