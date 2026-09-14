@@ -332,7 +332,7 @@ class SecurityRegressionTest extends TestCase
     {
         $ceo = User::factory()->create(['role' => 'ceo']);
 
-        $response = $this->actingAs($ceo)->post('/staff', [
+        $response = $this->actingAs($ceo)->post('/ceo/staff', [
             'first_name' => 'Audit',
             'last_name'  => 'StaffTest',
             'email'      => 'audit-staff-no-state@example.com',
