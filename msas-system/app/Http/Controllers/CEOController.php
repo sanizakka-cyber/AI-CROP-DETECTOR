@@ -225,8 +225,15 @@ class CEOController extends Controller
         [$totalRevenue, $totalExpenses, $thisMonthRevenue, $lastMonthRevenue] = $this->safe('revenue totals', fn() => [
             Finance::where('type','Income')->sum('amount'),
             Finance::where('type','Expense')->sum('amount'),
-            Finance::where('type','Income')->whereMonth('transaction_date', now()->month)->sum('amount'),
-            Finance::where('type','Income')->whereMonth('transaction_date', now()->subMonth()->month)->sum('amount'),
+            // whereMonth without whereYear sums that calendar month across
+            // every year of history -- "this month's revenue" doubled in
+            // year 2, tripled in year 3. Worse for last month: in January,
+            // now()->subMonth()->month is 12, so it summed December of
+            // every year (including years that haven't happened) and the
+            // growth comparison below compared January-of-all-time against
+            // December-of-all-time. subMonth() supplies both parts here.
+            Finance::where('type','Income')->whereMonth('transaction_date', now()->month)->whereYear('transaction_date', now()->year)->sum('amount'),
+            Finance::where('type','Income')->whereMonth('transaction_date', now()->subMonth()->month)->whereYear('transaction_date', now()->subMonth()->year)->sum('amount'),
         ], [0, 0, 0, 0]);
         $netProfit     = $totalRevenue - $totalExpenses;
         $revenueGrowth = $lastMonthRevenue > 0

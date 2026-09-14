@@ -127,7 +127,7 @@ class HRController extends Controller implements HasMiddleware
 
         $leaves       = $query->latest()->paginate(20)->withQueryString();
         $pendingCount = LeaveRequest::where('status', 'pending')->count();
-        $approvedThisMonth = LeaveRequest::where('status', 'approved')->whereMonth('created_at', now()->month)->count();
+        $approvedThisMonth = LeaveRequest::where('status', 'approved')->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
 
         return view('hr.leaves', compact('leaves', 'pendingCount', 'approvedThisMonth'));
     }

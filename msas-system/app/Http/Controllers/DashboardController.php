@@ -67,7 +67,7 @@ class DashboardController extends Controller
         $pendingApprovals = $this->safe('pending approvals', fn() => \App\Models\User::where('application_status', 'pending')->whereNotIn('role', ['farmer','general-user','ceo','admin'])->count());
         $recentUsers = $this->safe('recent users', fn() => \App\Models\User::latest()->take(10)->get(), collect());
         $usersByRole = $this->safe('users by role', fn() => \App\Models\User::select('role', DB::raw('count(*) as count'))->groupBy('role')->pluck('count','role'), collect());
-        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->count());
+        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count());
         $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
         $totalConsults = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
         $monthlyGrowth = $this->safe('monthly user growth', fn() => collect(range(5, 0))->map(fn($i) => [
@@ -215,7 +215,7 @@ class DashboardController extends Controller
         $farmersAssigned = $this->safe('farmers assigned', fn() => \App\Models\User::where('role','farmer')->where('state', auth()->user()->state)->count());
         $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
         $recentFarmers = $this->safe('recent farmers', fn() => \App\Models\User::where('role','farmer')->latest()->take(8)->get(), collect());
-        $visitsThisMonth = $this->safe('visits this month', fn() => DB::table('extension_visits')->where('officer_id', auth()->id())->whereMonth('visit_date', now()->month)->count());
+        $visitsThisMonth = $this->safe('visits this month', fn() => DB::table('extension_visits')->where('officer_id', auth()->id())->whereMonth('visit_date', now()->month)->whereYear('visit_date', now()->year)->count());
         $upcomingVisits = $this->safe('upcoming visits', fn() => DB::table('extension_visits')->where('officer_id', auth()->id())->where('visit_date', '>=', today())->orderBy('visit_date')->take(5)->get(), collect());
 
         $dashboardErrors = $this->dashboardErrors;
@@ -231,8 +231,8 @@ class DashboardController extends Controller
         $totalIncome = $this->safe('total income', fn() => \App\Models\Finance::where('type','Income')->sum('amount'));
         $totalExpenses = $this->safe('total expenses', fn() => \App\Models\Finance::where('type','Expense')->sum('amount'));
         $netProfit = $totalIncome - $totalExpenses;
-        $thisMonthIncome = $this->safe('this month income', fn() => \App\Models\Finance::where('type','Income')->whereMonth('transaction_date', now()->month)->sum('amount'));
-        $thisMonthExpenses = $this->safe('this month expenses', fn() => \App\Models\Finance::where('type','Expense')->whereMonth('transaction_date', now()->month)->sum('amount'));
+        $thisMonthIncome = $this->safe('this month income', fn() => \App\Models\Finance::where('type','Income')->whereMonth('transaction_date', now()->month)->whereYear('transaction_date', now()->year)->sum('amount'));
+        $thisMonthExpenses = $this->safe('this month expenses', fn() => \App\Models\Finance::where('type','Expense')->whereMonth('transaction_date', now()->month)->whereYear('transaction_date', now()->year)->sum('amount'));
         $recentTransactions = $this->safe('recent transactions', fn() => \App\Models\Finance::latest('transaction_date')->take(10)->get(), collect());
         $monthlyChart = $this->safe('monthly chart', fn() => collect(range(5, 0))->map(function ($i) {
             $month = now()->subMonths($i);
@@ -257,7 +257,7 @@ class DashboardController extends Controller
         $totalUsers = $this->safe('total users', fn() => \App\Models\User::count());
         $activeUsers = $this->safe('active users', fn() => \App\Models\User::where('is_active', true)->count());
         $newThisWeek = $this->safe('new users this week', fn() => \App\Models\User::where('created_at', '>=', now()->startOfWeek())->count());
-        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->count());
+        $newThisMonth = $this->safe('new users this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count());
         $totalConsultations = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
         $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
         $recentRegistrations = $this->safe('recent registrations', fn() => \App\Models\User::latest()->take(10)->get(), collect());
@@ -282,7 +282,7 @@ class DashboardController extends Controller
         $totalUsers = $this->safe('total users', fn() => \App\Models\User::count());
         $totalConsults = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
         $totalAnimals = $this->safe('total livestock', fn() => \App\Models\Animal::count());
-        $activeThisMonth = $this->safe('active this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->count());
+        $activeThisMonth = $this->safe('active this month', fn() => \App\Models\User::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count());
         $usersByRole = $this->safe('users by role', fn() => \App\Models\User::select('role', \Illuminate\Support\Facades\DB::raw('count(*) as count'))->groupBy('role')->pluck('count','role')->toArray(), []);
         $monthlyRegistrations = $this->safe('monthly registrations', fn() => collect(range(5, 0))->map(function ($i) {
             $month = now()->subMonths($i);
@@ -350,7 +350,7 @@ class DashboardController extends Controller
         [$extensionVisitsThisMonth, $extensionAdvisories] = $this->safe('extension activity', function () {
             return [
                 DB::table('extension_visits')->whereMonth('visit_date', now()->month)->whereYear('visit_date', now()->year)->count(),
-                DB::table('extension_advisory')->whereMonth('created_at', now()->month)->count(),
+                DB::table('extension_advisory')->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
             ];
         }, [0, 0]);
 
@@ -370,10 +370,10 @@ class DashboardController extends Controller
         $user = auth()->user();
         $assignedFarmers = $this->safe('assigned farmers', fn() => \App\Models\User::where('role','farmer')->where('state', $user->state)->count());
         $recentFarmers = $this->safe('recent farmers', fn() => \App\Models\User::where('role','farmer')->latest()->take(8)->get(), collect());
-        $visitsThisMonth = $this->safe('visits this month', fn() => DB::table('extension_visits')->where('officer_id', $user->id)->whereMonth('visit_date', now()->month)->count());
+        $visitsThisMonth = $this->safe('visits this month', fn() => DB::table('extension_visits')->where('officer_id', $user->id)->whereMonth('visit_date', now()->month)->whereYear('visit_date', now()->year)->count());
         $pendingFollowups = $this->safe('pending followups', fn() => DB::table('extension_visits')->where('officer_id', $user->id)->where('visit_date', '>=', today())->count());
         $reportsSubmitted = $this->safe('reports submitted', fn() => DB::table('extension_advisory')->where('officer_id', $user->id)->count());
-        $farmersRegistered = $this->safe('farmers registered', fn() => \App\Models\User::where('role','farmer')->whereMonth('created_at', now()->month)->count());
+        $farmersRegistered = $this->safe('farmers registered', fn() => \App\Models\User::where('role','farmer')->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count());
 
         $dashboardErrors = $this->dashboardErrors;
 

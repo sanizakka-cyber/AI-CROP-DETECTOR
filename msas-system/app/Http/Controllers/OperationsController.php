@@ -85,7 +85,7 @@ class OperationsController extends Controller implements HasMiddleware
     {
         $totalUsers   = User::count();
         $activeUsers  = User::where('is_active', true)->count();
-        $newThisMonth = User::whereMonth('created_at', now()->month)->count();
+        $newThisMonth = User::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
         $byRole       = User::select('role', DB::raw('count(*) as cnt'))->groupBy('role')->orderByDesc('cnt')->get();
         $recentUsers  = User::latest()->paginate(20);
 
