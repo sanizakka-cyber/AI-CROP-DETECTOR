@@ -97,7 +97,12 @@ class RegistrationService
             // in the account-creation INSERT itself, not an update, so
             // there's no existing value to preserve -- fall back to the
             // column's own intended default explicitly.
-            'state'              => $data['state'] ?: 'Katsina',
+            // ?? before ?: -- $data here always includes the 'state' key
+            // (the controller literal always sets it, even to null), but
+            // guarding defensively against a genuinely-absent key too keeps
+            // this consistent with the CEO\StaffController fix, where a
+            // request-validated array *can* omit the key entirely.
+            'state'              => ($data['state'] ?? null) ?: 'Katsina',
             'lga'                => $data['lga'] ?? null,
             'ward'               => $data['ward'] ?? null,
             'password'           => Hash::make($data['password']),

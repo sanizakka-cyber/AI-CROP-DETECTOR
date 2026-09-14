@@ -116,7 +116,11 @@ class StaffController extends Controller
             // (0001_01_01_000003_add_role_to_users.php) despite being
             // validated as nullable here -- see the identical fix in
             // RegistrationService::createAccount() for the same bug class.
-            'state'                => $data['state'] ?: 'Katsina',
+            // $request->validate() omits a nullable field's key entirely
+            // from the returned array when it wasn't in the request at all
+            // (confirmed via CI: plain ?: here threw "Undefined array key
+            // state") -- ?? on the key first is required, not just ?:.
+            'state'                => ($data['state'] ?? null) ?: 'Katsina',
             'lga'                  => $data['lga'] ?? null,
             'is_active'            => true,
             'is_verified'          => true,
