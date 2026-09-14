@@ -596,12 +596,30 @@ class CEOController extends Controller
             }
             $arr = $mrr * 12;
 
-            $expiredThisMonth    = Subscription::whereIn('status', ['expired','cancelled'])
-                ->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->count();
-            $activeStartOfMonth  = Subscription::where('status', 'active')
+            // Churn = (cohort active at the start of the month that has
+            // since churned) / (that whole starting cohort).
+            //
+            // The denominator used to be "subscriptions that are
+            // *currently* active and were created before this month",
+            // which silently excludes every subscription in the numerator
+            // -- a churned one is no longer status='active'. That
+            // systematically overstated churn, and in the worst case
+            // inverted it completely: if every subscriber churned, the
+            // denominator hit 0 and the guard reported 0% churn, the exact
+            // opposite of the truth. The starting cohort is the still-active
+            // ones plus the ones that churned out of it.
+            //
+            // Subscriptions created *and* churned within this month were
+            // never part of the starting cohort, so they're excluded from
+            // both sides.
+            $churnedThisMonth    = Subscription::whereIn('status', ['expired','cancelled'])
+                ->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)
                 ->where('created_at', '<', now()->startOfMonth())->count();
+            $stillActiveFromBefore = Subscription::where('status', 'active')
+                ->where('created_at', '<', now()->startOfMonth())->count();
+            $activeStartOfMonth  = $stillActiveFromBefore + $churnedThisMonth;
             $churnRate           = $activeStartOfMonth > 0
-                ? round(($expiredThisMonth / $activeStartOfMonth) * 100, 1) : 0;
+                ? round(($churnedThisMonth / $activeStartOfMonth) * 100, 1) : 0;
 
             $totalSubs           = Subscription::whereIn('status', ['active','trial','expired','cancelled'])->count();
             $activeSubs          = Subscription::where('status', 'active')->count();
