@@ -88,7 +88,16 @@ class RegistrationService
             'last_name'          => $data['last_name'],
             'role'               => $role,
             'country'            => $data['country'] ?: 'Nigeria',
-            'state'              => $data['state'] ?? null,
+            // state is NOT NULL at the DB level with a default of 'Katsina'
+            // (0001_01_01_000003_add_role_to_users.php) despite being
+            // validated as nullable here -- an omitted/empty state used to
+            // write an explicit NULL and crash User::create() with a
+            // constraint violation, blocking registration entirely. Same
+            // bug class as the ProfileController fix; this occurrence is
+            // in the account-creation INSERT itself, not an update, so
+            // there's no existing value to preserve -- fall back to the
+            // column's own intended default explicitly.
+            'state'              => $data['state'] ?: 'Katsina',
             'lga'                => $data['lga'] ?? null,
             'ward'               => $data['ward'] ?? null,
             'password'           => Hash::make($data['password']),

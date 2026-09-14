@@ -296,4 +296,53 @@ class SecurityRegressionTest extends TestCase
         // actual regression this guards is the request completing at all.
         $response->assertStatus(302);
     }
+
+    // ── Registration/staff-creation crashed when state was omitted ─────────────
+    //
+    // Found during a full-system re-audit: live-tested a raw POST to
+    // /register omitting the state field (server-side validation allows it
+    // -- 'state' => 'nullable') against production and got a 500. Same bug
+    // class as the ProfileController fix, but in User::create() itself
+    // (RegistrationService::createAccount()) -- the single most critical
+    // flow in the app. A second, independently-reachable occurrence exists
+    // in CEO\StaffController::store() (also validates state as nullable).
+    // AdminController::storeUser() and Admin\RiderManagementController
+    // were checked too and don't set 'state' at all -- already safe.
+
+    public function test_registration_without_state_succeeds_and_defaults_state(): void
+    {
+        $response = $this->post('/register', [
+            'first_name' => 'Audit',
+            'last_name'  => 'Test',
+            'identifier' => 'audit-test-no-state@example.com',
+            'role'       => 'farmer',
+            'country'    => 'Nigeria',
+            'password'              => 'TestPass123!@#',
+            'password_confirmation' => 'TestPass123!@#',
+            // state intentionally omitted
+        ]);
+
+        $response->assertStatus(302);
+        $user = User::where('email', 'audit-test-no-state@example.com')->first();
+        $this->assertNotNull($user, 'Registration must actually create the account, not silently fail.');
+        $this->assertSame('Katsina', $user->state, 'An omitted state must fall back to the column default, not crash or store null.');
+    }
+
+    public function test_ceo_creating_staff_without_state_succeeds_and_defaults_state(): void
+    {
+        $ceo = User::factory()->create(['role' => 'ceo']);
+
+        $response = $this->actingAs($ceo)->post('/staff', [
+            'first_name' => 'Audit',
+            'last_name'  => 'StaffTest',
+            'email'      => 'audit-staff-no-state@example.com',
+            'role'       => 'admin',
+            // state intentionally omitted
+        ]);
+
+        $response->assertStatus(302);
+        $staff = User::where('email', 'audit-staff-no-state@example.com')->first();
+        $this->assertNotNull($staff, 'Staff creation must actually create the account, not silently fail.');
+        $this->assertSame('Katsina', $staff->state, 'An omitted state must fall back to the column default, not crash or store null.');
+    }
 }

@@ -112,7 +112,11 @@ class StaffController extends Controller
             'password'             => Hash::make(Str::random(32)),
             'role'                 => Roles::canonical($data['role']),
             'department'           => $data['department'] ?? null,
-            'state'                => $data['state'] ?? null,
+            // state is NOT NULL at the DB level with a default of 'Katsina'
+            // (0001_01_01_000003_add_role_to_users.php) despite being
+            // validated as nullable here -- see the identical fix in
+            // RegistrationService::createAccount() for the same bug class.
+            'state'                => $data['state'] ?: 'Katsina',
             'lga'                  => $data['lga'] ?? null,
             'is_active'            => true,
             'is_verified'          => true,
