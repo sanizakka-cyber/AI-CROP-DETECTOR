@@ -181,7 +181,7 @@ class DealerProductController extends Controller implements HasMiddleware
             'pending'   => Order::where('dealer_id', auth()->id())->where('status', 'pending')->count(),
             'confirmed' => Order::where('dealer_id', auth()->id())->where('status', 'confirmed')->count(),
             'total'     => Order::where('dealer_id', auth()->id())->count(),
-            'revenue'   => Order::where('dealer_id', auth()->id())->where('payment_status', 'paid')->sum('total'),
+            'revenue'   => Order::where('dealer_id', auth()->id())->revenueCounted()->sum('total'),
         ];
 
         $view = auth()->user()->role === 'equipment-dealer' ? 'equipment-dealer.orders' : 'dealer.orders';

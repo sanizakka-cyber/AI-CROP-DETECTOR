@@ -328,6 +328,43 @@ class SecurityRegressionTest extends TestCase
         $this->assertSame('Katsina', $user->state, 'An omitted state must fall back to the column default, not crash or store null.');
     }
 
+    // ── Revenue/GMV counted cancelled and returned orders ─────────────────────
+    //
+    // payment_status is never reset when an order is cancelled or returned
+    // (Admin\OrderManagementController::updateStatus writes only `status`
+    // and `returned_at`), so every aggregate filtering on
+    // payment_status='paid' booked refunded money as revenue forever.
+    // Order::revenueCounted() is the shared scope that excludes them.
+
+    public function test_revenue_scope_excludes_cancelled_and_returned_orders(): void
+    {
+        $buyer = User::factory()->create();
+
+        $base = [
+            'buyer_id'       => $buyer->id,
+            'payment_status' => 'paid',
+            'subtotal'       => 1000,
+            'total'          => 1000,
+        ];
+
+        \App\Models\Order::create($base + ['order_number' => 'ORD-TEST-DELIVERED', 'status' => 'delivered']);
+        \App\Models\Order::create($base + ['order_number' => 'ORD-TEST-CANCELLED', 'status' => 'cancelled']);
+        \App\Models\Order::create($base + ['order_number' => 'ORD-TEST-RETURNED',  'status' => 'returned']);
+
+        $this->assertSame(
+            3,
+            \App\Models\Order::where('payment_status', 'paid')->count(),
+            'Sanity: all three orders are still payment_status=paid -- that is exactly why the naive filter overstated revenue.'
+        );
+
+        $this->assertEqualsWithDelta(
+            1000.0,
+            (float) \App\Models\Order::revenueCounted()->sum('total'),
+            0.01,
+            'Only the delivered order should count toward revenue.'
+        );
+    }
+
     // ── Pending applicants were told their account was "suspended" ────────────
     //
     // RegistrationService creates every professional-role account with BOTH

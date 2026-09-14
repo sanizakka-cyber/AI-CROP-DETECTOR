@@ -374,7 +374,7 @@ class MarketplaceController extends Controller
             'pending'   => Order::where('buyer_id', auth()->id())->where('status', 'pending')->count(),
             'delivered' => Order::where('buyer_id', auth()->id())->where('status', 'delivered')->count(),
             'total'     => Order::where('buyer_id', auth()->id())->count(),
-            'spent'     => Order::where('buyer_id', auth()->id())->where('payment_status', 'paid')->sum('total'),
+            'spent'     => Order::where('buyer_id', auth()->id())->revenueCounted()->sum('total'),
         ];
 
         return view('marketplace.my-orders', compact('orders', 'stats'));

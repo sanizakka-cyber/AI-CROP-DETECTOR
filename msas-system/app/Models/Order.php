@@ -103,4 +103,21 @@ class Order extends Model
     {
         return 'ORD-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(10));
     }
+
+    /**
+     * Orders whose value should count toward revenue / GMV.
+     *
+     * payment_status is never reset when an order is cancelled or
+     * returned -- Admin\OrderManagementController::updateStatus() writes
+     * only `status` and `returned_at`, leaving `payment_status` at
+     * 'paid'. So filtering on payment_status alone books refunded and
+     * cancelled orders as revenue forever. Every GMV, dealer-revenue and
+     * buyer-spend aggregate must exclude those lifecycle states, which is
+     * what this scope is for.
+     */
+    public function scopeRevenueCounted($query)
+    {
+        return $query->where('payment_status', 'paid')
+                     ->whereNotIn('status', ['cancelled', 'returned']);
+    }
 }

@@ -410,8 +410,8 @@ class CEOController extends Controller
                 'shipped'    => Order::where('status', 'shipped')->count(),
                 'delivered'  => Order::where('status', 'delivered')->count(),
                 'cancelled'  => Order::where('status', 'cancelled')->count(),
-                'gmv'        => Order::where('payment_status', 'paid')->sum('total'),
-                'gmv_month'  => Order::where('payment_status', 'paid')
+                'gmv'        => Order::revenueCounted()->sum('total'),
+                'gmv_month'  => Order::revenueCounted()
                                     ->whereMonth('created_at', now()->month)
                                     ->whereYear('created_at', now()->year)
                                     ->sum('total'),
@@ -1288,7 +1288,7 @@ class CEOController extends Controller
             'in_transit' => \App\Models\Order::where('rider_status', 'in_transit')->count(),
             'delivered'  => \App\Models\Order::where('status', 'delivered')->count(),
             'cancelled'  => \App\Models\Order::where('status', 'cancelled')->count(),
-            'revenue'    => \App\Models\Order::where('payment_status', 'paid')->sum('total'),
+            'revenue'    => \App\Models\Order::revenueCounted()->sum('total'),
         ];
 
         $riders = \App\Models\User::where('role', 'rider')->where('is_active', true)

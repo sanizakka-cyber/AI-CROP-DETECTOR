@@ -83,7 +83,7 @@ class DashboardController extends Controller
         $ordersDelivered   = $this->safe('delivered orders', fn() => \App\Models\Order::where('status', 'delivered')->count());
         $ridersAvailable   = $this->safe('available riders', fn() => \App\Models\User::where('role', 'rider')->where('rider_status', 'available')->count());
         $ridersBusy        = $this->safe('busy riders', fn() => \App\Models\User::where('role', 'rider')->where('rider_status', 'busy')->count());
-        $revenueToday      = $this->safe('revenue today', fn() => \App\Models\Order::whereDate('created_at', today())->where('payment_status','paid')->sum('total'));
+        $revenueToday      = $this->safe('revenue today', fn() => \App\Models\Order::whereDate('created_at', today())->revenueCounted()->sum('total'));
         $recentOrders = $this->safe('recent orders', fn() => \App\Models\Order::with(['buyer:id,first_name,last_name','dealer:id,first_name,last_name','rider:id,first_name,last_name'])
             ->latest()->take(6)->get(), collect());
 
@@ -200,7 +200,7 @@ class DashboardController extends Controller
         $pendingOrders  = $this->safe('pending orders', fn() => \App\Models\Order::where('dealer_id', $user->id)->where('status', 'pending')->count());
         $recentItems    = $this->safe('recent items', fn() => \App\Models\Product::where('dealer_id', $user->id)->latest()->take(8)->get(), collect());
         $totalMarketItems = $this->safe('total market items', fn() => \App\Models\Product::where('status', 'active')->count());
-        $revenue = $this->safe('revenue', fn() => \App\Models\Order::where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'));
+        $revenue = $this->safe('revenue', fn() => \App\Models\Order::where('dealer_id', $user->id)->revenueCounted()->sum('total'));
 
         $dashboardErrors = $this->dashboardErrors;
 
@@ -463,7 +463,12 @@ class DashboardController extends Controller
         $totalProducts  = $this->safe('total products', fn() => DB::table('products')->where('dealer_id', $user->id)->count());
         $totalOrders    = $this->safe('total orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->count());
         $pendingOrders  = $this->safe('pending orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count());
-        $totalRevenue   = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','confirmed')->sum('total'));
+        // Was filtering on the lifecycle status 'confirmed', so revenue
+        // *decreased* as the dealer fulfilled orders (confirmed ->
+        // processing -> shipped -> delivered) and hit ₦0 once everything
+        // was delivered. Revenue is a payment fact, not a fulfilment
+        // stage -- match the sibling dealer dashboards.
+        $totalRevenue   = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->whereNotIn('status', ['cancelled','returned'])->sum('total'));
         $recentOrders   = $this->safe('recent orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(5)->get(), collect());
 
         $dashboardErrors = $this->dashboardErrors;
@@ -524,7 +529,7 @@ class DashboardController extends Controller
         $resolvedConsults    = $this->safe('resolved consultations', fn() => \App\Models\Consultation::where('status','resolved')->count());
         $resolutionRate      = $this->safe('resolution rate', fn() => $totalConsults > 0 ? round(($resolvedConsults / $totalConsults) * 100) : 0);
         $verifiedFarmers     = $this->safe('verified farmers', fn() => \App\Models\User::where('role','farmer')->where('is_active',true)->count());
-        $marketGMV           = $this->safe('market GMV', fn() => \App\Models\Order::where('payment_status','paid')->sum('total'));
+        $marketGMV           = $this->safe('market GMV', fn() => \App\Models\Order::revenueCounted()->sum('total'));
         $diseaseAlerts       = $this->safe('disease alerts', fn() => \App\Models\Diagnosis::whereNotNull('disease_name')->latest()->take(8)->get(), collect());
         $stateBreakdown      = $this->safe('state breakdown', fn() => \App\Models\User::where('role','farmer')->whereNotNull('state')->select('state', DB::raw('count(*) as count'))->groupBy('state')->orderByDesc('count')->take(10)->get(), collect());
         $diseaseFrequency    = $this->safe('disease frequency', fn() => \App\Models\Diagnosis::whereNotNull('disease_name')->select('disease_name', DB::raw('count(*) as count'))->groupBy('disease_name')->orderByDesc('count')->take(8)->get(), collect());
@@ -574,7 +579,7 @@ class DashboardController extends Controller
         $totalRevenue     = $this->safe('total revenue', fn() => \App\Models\Payment::where('status','success')->sum('amount'));
         $totalTransacts   = $this->safe('total transactions', fn() => \App\Models\Payment::where('status','success')->count());
         $marketProducts   = $this->safe('market products', fn() => DB::table('products')->where('is_approved', true)->count());
-        $marketGMV        = $this->safe('market GMV', fn() => \App\Models\Order::where('payment_status','paid')->sum('total'));
+        $marketGMV        = $this->safe('market GMV', fn() => \App\Models\Order::revenueCounted()->sum('total'));
         $activeUsers30d   = $this->safe('active users (30d)', fn() => \App\Models\User::where('last_seen', '>=', now()->subDays(30))->count());
         $totalConsults    = $this->safe('total consultations', fn() => \App\Models\Consultation::count());
         $totalScans       = $this->safe('total scans', fn() => \App\Models\Diagnosis::count());
@@ -584,7 +589,7 @@ class DashboardController extends Controller
         ]), collect());
         $monthlyGMV       = $this->safe('monthly GMV', fn() => collect(range(5,0))->map(fn($i) => [
             'label'  => now()->subMonths($i)->format('M'),
-            'amount' => \App\Models\Order::where('payment_status','paid')->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->sum('total'),
+            'amount' => \App\Models\Order::revenueCounted()->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->sum('total'),
         ]), collect());
         $userGrowth       = $this->safe('user growth', fn() => collect(range(5,0))->map(fn($i) => [
             'label' => now()->subMonths($i)->format('M'),
@@ -611,7 +616,7 @@ class DashboardController extends Controller
         $farmersWithConsults = $this->safe('farmers with consultations', fn() => \App\Models\Consultation::distinct('farmer_id')->count('farmer_id'));
         $monthlyNewFarmers = $this->safe('monthly new farmers', fn() => collect(range(5,0))->map(fn($i) => ['label' => now()->subMonths($i)->format('M'), 'count' => \App\Models\User::where('role','farmer')->whereMonth('created_at', now()->subMonths($i)->month)->whereYear('created_at', now()->subMonths($i)->year)->count()]), collect());
         $totalLivestockValue = $totalAnimals * 150000; // Est. ₦150k avg per animal — pure arithmetic, can't throw
-        $marketplaceActivity = $this->safe('marketplace activity', fn() => \App\Models\Order::where('payment_status','paid')->sum('total'));
+        $marketplaceActivity = $this->safe('marketplace activity', fn() => \App\Models\Order::revenueCounted()->sum('total'));
 
         $dashboardErrors = $this->dashboardErrors;
 
@@ -645,7 +650,7 @@ class DashboardController extends Controller
         $activeListings  = $this->safe('active listings', fn() => DB::table('products')->where('dealer_id', $user->id)->where('status','active')->count());
         $totalOrders     = $this->safe('total orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->count());
         $pendingOrders   = $this->safe('pending orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count());
-        $totalRevenue    = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'));
+        $totalRevenue    = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->whereNotIn('status', ['cancelled','returned'])->sum('total'));
         $farmersInState  = $this->safe('farmers in state', fn() => \App\Models\User::where('role','farmer')->where('state', $user->state)->count());
         $recentOrders    = $this->safe('recent orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(8)->get(), collect());
 
@@ -662,7 +667,7 @@ class DashboardController extends Controller
         $activeListings = $this->safe('active listings', fn() => DB::table('products')->where('dealer_id', $user->id)->where('status','active')->count());
         $totalOrders    = $this->safe('total orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->count());
         $pendingOrders  = $this->safe('pending orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('status','pending')->count());
-        $totalRevenue   = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->sum('total'));
+        $totalRevenue   = $this->safe('total revenue', fn() => DB::table('orders')->where('dealer_id', $user->id)->where('payment_status','paid')->whereNotIn('status', ['cancelled','returned'])->sum('total'));
         $topCategories  = $this->safe('top categories', fn() => DB::table('products')->where('dealer_id', $user->id)->select('category', DB::raw('count(*) as count'))->groupBy('category')->orderByDesc('count')->take(5)->get(), collect());
         $recentOrders   = $this->safe('recent orders', fn() => DB::table('orders')->where('dealer_id', $user->id)->orderByDesc('created_at')->take(8)->get(), collect());
 

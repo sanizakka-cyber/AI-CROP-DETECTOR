@@ -39,8 +39,8 @@ class OrderManagementController extends Controller
             'in_transit'      => Order::where('rider_status', 'in_transit')->count(),
             'delivered'       => Order::where('status', 'delivered')->count(),
             'cancelled'       => Order::where('status', 'cancelled')->count(),
-            'today_revenue'   => Order::where('payment_status', 'paid')->whereDate('created_at', today())->sum('total'),
-            'total_revenue'   => Order::where('payment_status', 'paid')->sum('total'),
+            'today_revenue'   => Order::revenueCounted()->whereDate('created_at', today())->sum('total'),
+            'total_revenue'   => Order::revenueCounted()->sum('total'),
         ];
 
         $riders = User::where('role', 'rider')->where('is_active', true)->orderBy('first_name')->get(['id','first_name','last_name','phone','rider_status']);

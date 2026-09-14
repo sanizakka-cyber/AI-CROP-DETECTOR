@@ -164,7 +164,7 @@ class MarketplaceSellController extends Controller implements HasMiddleware
             'pending'   => Order::where('dealer_id', auth()->id())->where('status', 'pending')->count(),
             'confirmed' => Order::where('dealer_id', auth()->id())->where('status', 'confirmed')->count(),
             'total'     => Order::where('dealer_id', auth()->id())->count(),
-            'revenue'   => Order::where('dealer_id', auth()->id())->where('payment_status', 'paid')->sum('total'),
+            'revenue'   => Order::where('dealer_id', auth()->id())->revenueCounted()->sum('total'),
         ];
 
         return view('marketplace.sell-orders', compact('orders', 'stats'));
