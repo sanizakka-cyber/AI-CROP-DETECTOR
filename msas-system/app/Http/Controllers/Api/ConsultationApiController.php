@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Consultation;
+use App\Models\MobileNotification;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -149,6 +150,16 @@ class ConsultationApiController extends Controller
             'type'    => 'success',
             'link'    => '/farmer/vet-consult/' . $consultation->id,
         ]);
+        // This is the mobile API, yet it only wrote to the web-only
+        // `notifications` table -- a farmer who asked from the app was
+        // never told, in the app, that their expert answered.
+        MobileNotification::send(
+            $consultation->farmer_id,
+            'Expert Response Received',
+            'Your consultation has been answered by an expert.',
+            'consultation',
+            ['consultation_id' => $consultation->id]
+        );
         return response()->json(['message' => 'Consultation resolved.', 'consultation' => $consultation]);
     }
 

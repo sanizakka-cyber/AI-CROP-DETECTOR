@@ -434,7 +434,13 @@ class MarketplaceController extends Controller
             $order->update(['dealer_credited' => true]);
         }
 
-        // Notify rider + admin
+        // Notify rider + admin.
+        //
+        // Riders work from the mobile app, which reads a different table
+        // (mobile_notifications) than the web (notifications) -- so the
+        // rider-facing half has to be written to both. The admin/CEO
+        // notifications below stay web-only deliberately: those roles work
+        // from the dashboard.
         if ($order->rider_id) {
             \App\Models\Notification::create([
                 'user_id' => $order->rider_id,
@@ -443,6 +449,13 @@ class MarketplaceController extends Controller
                 'type'    => 'success',
                 'link'    => '/rider/orders/' . $order->id,
             ]);
+            \App\Models\MobileNotification::send(
+                $order->rider_id,
+                'Delivery Confirmed',
+                "Customer confirmed delivery for order {$order->order_number}. Well done!",
+                'order',
+                ['order_id' => $order->id]
+            );
         }
         foreach (\App\Models\User::whereIn('role', ['admin','ceo'])->pluck('id') as $id) {
             \App\Models\Notification::create([

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\MobileNotification;
 use App\Models\Notification;
 use App\Models\Order;
 use App\Models\User;
@@ -72,7 +73,15 @@ class OrderManagementController extends Controller
         // Mark rider as busy
         $rider->update(['rider_status' => 'busy']);
 
-        // Notify rider
+        // Notify rider.
+        //
+        // Web and mobile read two different tables -- NotificationController
+        // reads `notifications`, Api\NotificationApiController reads
+        // `mobile_notifications` -- so writing only one of them leaves the
+        // other client silently unaware. Riders and buyers are exactly the
+        // audiences most likely to be on mobile, so order lifecycle events
+        // must be written to both. MobileNotification::send() also fires
+        // the Expo push, which a Notification::create() alone never did.
         Notification::create([
             'user_id' => $rider->id,
             'title'   => 'New Delivery Assignment',
@@ -80,6 +89,13 @@ class OrderManagementController extends Controller
             'type'    => 'info',
             'link'    => '/rider/orders/' . $order->id,
         ]);
+        MobileNotification::send(
+            $rider->id,
+            'New Delivery Assignment',
+            "Order {$order->order_number} has been assigned to you. Please accept or decline.",
+            'order',
+            ['order_id' => $order->id]
+        );
 
         // Notify buyer
         Notification::create([
@@ -89,6 +105,13 @@ class OrderManagementController extends Controller
             'type'    => 'success',
             'link'    => '/marketplace/orders/' . $order->id,
         ]);
+        MobileNotification::send(
+            $order->buyer_id,
+            'Rider Assigned',
+            "A rider has been assigned to deliver your order {$order->order_number}.",
+            'order',
+            ['order_id' => $order->id]
+        );
 
         AuditLog::record('order.rider_assigned', 'Order', $order->id, [
             'rider_id'   => $rider->id,
@@ -171,6 +194,16 @@ class OrderManagementController extends Controller
                 'type'    => in_array($request->status, ['cancelled','returned']) ? 'warning' : 'success',
                 'link'    => '/marketplace/orders/' . $order->id,
             ]);
+            // Mobile reads a different table entirely -- without this, a
+            // buyer on the app never learns their order shipped, was
+            // delivered, cancelled or returned.
+            MobileNotification::send(
+                $order->buyer_id,
+                'Order Update',
+                $messages[$request->status],
+                'order',
+                ['order_id' => $order->id, 'status' => $request->status]
+            );
         }
 
         AuditLog::record('order.status_overridden', 'Order', $order->id, [
