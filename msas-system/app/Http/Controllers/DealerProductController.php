@@ -89,8 +89,17 @@ class DealerProductController extends Controller implements HasMiddleware
 
         $data['status']    = $data['status'] ?? 'active';
         $data['dealer_id'] = auth()->id();
-        $data['tags']      = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
-        $data['sku']       = $data['sku'] ?: 'SKU-' . strtoupper(Str::random(8));
+        // ?? before the truthiness test: these keys are validated nullable,
+        // so $request->validate() omits them entirely when the field isn't
+        // submitted -- reading them bare throws "Undefined array key",
+        // which Laravel promotes to a 500.
+        $data['tags']      = ($data['tags'] ?? null) ? array_map('trim', explode(',', $data['tags'])) : [];
+        $data['sku']       = ($data['sku'] ?? null) ?: 'SKU-' . strtoupper(Str::random(8));
+        // low_stock_threshold is NOT NULL (default 5) but validated
+        // nullable, and the form input has no required attribute -- a
+        // dealer clearing the box submits "" which ConvertEmptyStringsToNull
+        // turns into a real null, writing NULL into a NOT NULL column.
+        $data['low_stock_threshold'] = $data['low_stock_threshold'] ?? 5;
 
         Product::create($data);
 
@@ -129,7 +138,13 @@ class DealerProductController extends Controller implements HasMiddleware
             'status'             => 'nullable|in:active,inactive,draft',
         ]);
 
-        $data['tags'] = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
+        $data['tags'] = ($data['tags'] ?? null) ? array_map('trim', explode(',', $data['tags'])) : [];
+        // NOT NULL column, nullable rule, blankable input -- on update,
+        // drop a null rather than substituting, so clearing the field
+        // leaves the dealer's existing threshold alone instead of 500ing.
+        if (array_key_exists('low_stock_threshold', $data) && $data['low_stock_threshold'] === null) {
+            unset($data['low_stock_threshold']);
+        }
         $product->update($data);
 
         return redirect()->route($this->productsIndexRoute())

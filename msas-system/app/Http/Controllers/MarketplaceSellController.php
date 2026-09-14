@@ -82,8 +82,11 @@ class MarketplaceSellController extends Controller implements HasMiddleware
         $data['status']      = $data['status'] ?? 'active';
         $data['is_approved'] = true;
         $data['dealer_id']   = auth()->id();
-        $data['tags']        = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
+        $data['tags']        = ($data['tags'] ?? null) ? array_map('trim', explode(',', $data['tags'])) : [];
         $data['sku']         = !empty($data['sku'] ?? null) ? $data['sku'] : 'SKU-' . strtoupper(Str::random(8));
+        // NOT NULL (default 5), validated nullable, form input not required
+        // -- a blank box arrives as null via ConvertEmptyStringsToNull.
+        $data['low_stock_threshold'] = $data['low_stock_threshold'] ?? 5;
 
         Product::create($data);
 
@@ -120,7 +123,12 @@ class MarketplaceSellController extends Controller implements HasMiddleware
             'status'             => 'nullable|in:active,inactive,draft',
         ]);
 
-        $data['tags'] = $data['tags'] ? array_map('trim', explode(',', $data['tags'])) : [];
+        $data['tags'] = ($data['tags'] ?? null) ? array_map('trim', explode(',', $data['tags'])) : [];
+        // On update, drop a null rather than substituting -- clearing the
+        // field should leave the existing threshold alone, not 500.
+        if (array_key_exists('low_stock_threshold', $data) && $data['low_stock_threshold'] === null) {
+            unset($data['low_stock_threshold']);
+        }
         $product->update($data);
 
         return redirect()->route('marketplace.sell')->with('success', 'Product updated successfully.');

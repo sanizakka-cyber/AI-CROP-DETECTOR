@@ -20,7 +20,7 @@ class AnalyticsApiController extends Controller
         $user = $request->user();
 
         $total      = Diagnosis::where('user_id', $user->id)->count();
-        $processed  = Diagnosis::where('user_id', $user->id)->where('status', 'confirmed')->count();
+        $processed  = Diagnosis::where('user_id', $user->id)->where('status', 'reviewed')->count();
         $crop       = Diagnosis::where('user_id', $user->id)->where('type', 'plant')->count();
         $livestock  = Diagnosis::where('user_id', $user->id)->where('type', 'animal')->count();
         $recentRaw  = Diagnosis::where('user_id', $user->id)->latest()->take(5)->get(['id','disease_name','type','status','created_at']);
@@ -29,7 +29,13 @@ class AnalyticsApiController extends Controller
             'type'        => match ($d->type) { 'plant' => 'crop', 'animal' => 'livestock', default => $d->type },
             'subject_name'=> $d->subject_name,
             'disease_name'=> $d->disease_name,
-            'status'      => $d->status === 'confirmed' ? 'processed' : $d->status,
+            // diagnoses.status is only ever pending | reviewed |
+            // needs_review (DiagnosisResultMapper). 'confirmed' was never
+            // written by anything, so every count and rate keyed on it in
+            // this controller was structurally 0 -- the mobile app and the
+            // CEO/admin/M&E analytics endpoints reported a permanent
+            // "0.0% treatment success rate" as if it were measured.
+            'status'      => $d->status === 'reviewed' ? 'processed' : $d->status,
             'created_at'  => $d->created_at->toISOString(),
             // Fields mobile home screen expects
             'aiResult'    => ['primaryDiagnosis' => $d->disease_name, 'severity' => null],
@@ -65,7 +71,7 @@ class AnalyticsApiController extends Controller
         $activeMonthly = User::where('last_seen', '>=', now()->subDays(30))->count();
 
         $totalScans      = Diagnosis::count();
-        $processedScans  = Diagnosis::where('status', 'confirmed')->count();
+        $processedScans  = Diagnosis::where('status', 'reviewed')->count();
         $expertReviews   = Diagnosis::where('status', 'needs_review')->count();
         $processingRate  = $totalScans > 0 ? round(($processedScans / $totalScans) * 100, 1) : 0;
 
@@ -73,7 +79,7 @@ class AnalyticsApiController extends Controller
         $completedConsults= Consultation::where('status', 'resolved')->count();
         $completionRate   = $totalConsults > 0 ? round(($completedConsults / $totalConsults) * 100, 1) : 0;
 
-        $confirmedDx = Diagnosis::where('status', 'confirmed')->count();
+        $confirmedDx = Diagnosis::where('status', 'reviewed')->count();
         $successRate = $totalScans > 0 ? round(($confirmedDx / $totalScans) * 100, 1) : 0;
 
         return response()->json([
@@ -144,7 +150,7 @@ class AnalyticsApiController extends Controller
 
         try {
             $total     = Diagnosis::count();
-            $confirmed = Diagnosis::where('status', 'confirmed')->count();
+            $confirmed = Diagnosis::where('status', 'reviewed')->count();
             $review    = Diagnosis::where('status', 'needs_review')->count();
             $pending   = Diagnosis::where('status', 'pending')->count();
 

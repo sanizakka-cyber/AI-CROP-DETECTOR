@@ -208,9 +208,13 @@ class CEOController extends Controller
 
         $totalAnimals = $this->safe('total livestock', fn() => Animal::count());
 
+        // 'pending' is never written to consultations.status -- the real
+        // actionable-queue state is 'open' (paid, awaiting an expert; see
+        // VetController's queue query). This KPI read 0 while the queue
+        // was backing up.
         [$totalDiagnoses, $pendingConsults] = $this->safe('consultation counts', fn() => [
             Consultation::count(),
-            Consultation::where('status','pending')->count(),
+            Consultation::where('status','open')->count(),
         ], [0, 0]);
 
         return compact('totalUsers','activeUsers','pendingExperts','totalAnimals','totalDiagnoses','pendingConsults');
@@ -430,8 +434,13 @@ class CEOController extends Controller
                 'this_month'  => Diagnosis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
                 'total'       => Diagnosis::count(),
                 'avg_conf'    => round((float) Diagnosis::whereNotNull('confidence_score')->avg('confidence_score')),
-                'crop_total'  => Diagnosis::where('type', 'crop')->count(),
-                'live_total'  => Diagnosis::where('type', 'livestock')->count(),
+                // diagnoses.type is constrained to plant|animal|soil|pest
+                // (DiagnosticController::analyze validation). Querying
+                // 'crop'/'livestock' matched nothing, so these two tiles
+                // read 0 forever while soil_total worked -- making it look
+                // like the platform only ever ran soil scans.
+                'crop_total'  => Diagnosis::where('type', 'plant')->count(),
+                'live_total'  => Diagnosis::where('type', 'animal')->count(),
                 'soil_total'  => Diagnosis::where('type', 'soil')->count(),
                 'top_diseases'=> Diagnosis::select('disease_name', DB::raw('count(*) as cnt'))
                                     ->whereNotNull('disease_name')
@@ -450,9 +459,18 @@ class CEOController extends Controller
     private function consultStatsMetrics(int $pendingConsults): array
     {
         $consultStats = $this->safe('consultation stats', fn() => [
-            'pending'     => Consultation::where('status', 'pending')->count(),
-            'in_progress' => Consultation::where('status', 'in-progress')->count(),
-            'completed'   => Consultation::where('status', 'completed')->count(),
+            // consultations.status only ever holds awaiting_payment, open,
+            // resolved or cancelled (see Admin\ConsultationController's
+            // 'required|in:open,resolved,cancelled' rule and the writes in
+            // FarmerController/Api\ConsultationApiController). The previous
+            // 'pending'/'in-progress'/'completed' values were never written
+            // by anything, so this whole panel -- and the percentage bars
+            // the blade derives from it -- read 0/0/0 permanently while
+            // real cases were queued. Mapped onto the actual lifecycle:
+            // awaiting_payment -> open -> resolved.
+            'pending'     => Consultation::where('status', 'awaiting_payment')->count(),
+            'in_progress' => Consultation::where('status', 'open')->count(),
+            'completed'   => Consultation::where('status', 'resolved')->count(),
             'avg_hours'   => round((float) Consultation::whereNotNull('completed_at')
                                 ->selectRaw('AVG(EXTRACT(EPOCH FROM (completed_at - created_at)) / 3600) as avg_h')
                                 ->value('avg_h'), 1),
@@ -606,11 +624,11 @@ class CEOController extends Controller
         $walletStats = $this->safe('wallet stats', fn() => [
             'total_balance'       => \App\Models\Wallet::sum('balance'),
             'pending_withdrawals' => DB::table('wallet_transactions')
-                                        ->where('type', 'withdrawal')
+                                        ->where('type', 'hold')
                                         ->where('status', 'pending')
                                         ->count(),
             'withdrawals_value'   => DB::table('wallet_transactions')
-                                        ->where('type', 'withdrawal')
+                                        ->where('type', 'hold')
                                         ->where('status', 'pending')
                                         ->sum('amount'),
         ], ['total_balance' => 0, 'pending_withdrawals' => 0, 'withdrawals_value' => 0]);
@@ -861,10 +879,29 @@ class CEOController extends Controller
             }
         }
 
-        $user->update($request->only([
+        $payload = $request->only([
             'first_name','last_name','middle_name','email','phone',
             'role','state','lga','is_active','is_verified','application_status',
-        ]));
+        ]);
+
+        // state and application_status are both NOT NULL at the DB level
+        // (defaults 'Katsina' and 'approved'), but both are validated as
+        // nullable and both are blankable in the edit form -- state is a
+        // free-text input with no required attribute, and the
+        // application_status select literally offers "— None —" as its
+        // first option. Laravel's ConvertEmptyStringsToNull middleware
+        // turns either blank into a real null, so a CEO saving the form
+        // that way wrote NULL into a NOT NULL column and got a 500.
+        // Drop the keys rather than substituting a value: for an *update*
+        // of an existing user, leaving the current value alone is the
+        // correct behaviour -- there's nothing to default to.
+        foreach (['state', 'application_status'] as $notNullField) {
+            if (array_key_exists($notNullField, $payload) && $payload[$notNullField] === null) {
+                unset($payload[$notNullField]);
+            }
+        }
+
+        $user->update($payload);
 
         return redirect()->route('ceo.users.show', $user)
             ->with('success', "Profile for {$user->name} updated successfully.");

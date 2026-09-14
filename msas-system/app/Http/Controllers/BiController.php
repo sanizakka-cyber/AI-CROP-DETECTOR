@@ -83,7 +83,11 @@ class BiController extends Controller
             )
             ->join('consultations', 'consultations.expert_id', '=', 'users.id')
             ->whereIn('users.role', ['vet', 'agronomist'])
-            ->where('consultations.status', 'responded')
+            // 'responded' is never written to consultations.status -- the
+            // completed state is 'resolved'. This made "Top Performing
+            // Experts" render its empty state permanently, however many
+            // consultations had actually been resolved.
+            ->where('consultations.status', 'resolved')
             ->groupBy('users.id', 'users.first_name', 'users.last_name', 'users.role', 'users.state')
             ->orderByDesc('consult_count')
             ->take(10)->get();

@@ -157,11 +157,16 @@ class DashboardController extends Controller
     // ── Vet Dashboard ──────────────────────────────────────────────
     public function vet()
     {
-        $pendingConsultations = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','pending')->count());
+        // 'pending' and 'in_progress' are never written to
+        // consultations.status -- the real actionable state is 'open' (see
+        // VetController's own queue query). This dashboard showed vets
+        // "0 pending" and an empty queue table while their queue page
+        // listed real cases.
+        $pendingConsultations = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','open')->count());
         $completedToday = $this->safe('completed today', fn() => \App\Models\Consultation::where('status','resolved')->whereDate('updated_at', today())->count());
-        $pendingQueue = $this->safe('pending queue', fn() => \App\Models\Consultation::with('user')->where('status','pending')->latest()->take(8)->get(), collect());
+        $pendingQueue = $this->safe('pending queue', fn() => \App\Models\Consultation::with('user')->where('status','open')->latest()->take(8)->get(), collect());
         $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
-        $totalHandled = $this->safe('total handled', fn() => \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count());
+        $totalHandled = $this->safe('total handled', fn() => \App\Models\Consultation::where('status','resolved')->count());
 
         $dashboardErrors = $this->dashboardErrors;
 
@@ -173,8 +178,9 @@ class DashboardController extends Controller
     // ── Agronomist Dashboard ───────────────────────────────────────
     public function agronomist()
     {
-        $pendingConsults = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','pending')->count());
-        $reviewedDiagnoses = $this->safe('reviewed diagnoses', fn() => \App\Models\Consultation::whereIn('status',['resolved','in_progress'])->count());
+        // Same never-written status vocabulary as the vet dashboard above.
+        $pendingConsults = $this->safe('pending consultations', fn() => \App\Models\Consultation::where('status','open')->count());
+        $reviewedDiagnoses = $this->safe('reviewed diagnoses', fn() => \App\Models\Consultation::where('status','resolved')->count());
         $recentConsults = $this->safe('recent consultations', fn() => \App\Models\Consultation::with('user')->latest()->take(8)->get(), collect());
         $totalFarmers = $this->safe('total farmers', fn() => \App\Models\User::where('role','farmer')->count());
 

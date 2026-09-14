@@ -228,7 +228,13 @@ class StaffController extends Controller
             'phone'       => $data['phone'] ?? null,
             'role'        => $user->role === 'ceo' ? 'ceo' : Roles::canonical($data['role']),
             'department'  => $data['department'] ?? null,
-            'state'       => $data['state'] ?? null,
+            // Same NOT NULL guard as store() above -- this sibling was
+            // missed when store() was fixed. The edit form's state select
+            // renders a blank "Select state..." option, and Laravel's
+            // ConvertEmptyStringsToNull middleware turns that empty string
+            // into a real null, so saving a staff profile without picking
+            // a state wrote NULL into a NOT NULL column and 500'd.
+            'state'       => ($data['state'] ?? null) ?: 'Katsina',
             'lga'         => $data['lga'] ?? null,
         ]);
 
