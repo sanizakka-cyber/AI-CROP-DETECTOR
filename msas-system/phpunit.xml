@@ -28,13 +28,13 @@
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <!-- OtpService::sendViaEmail() refuses to send when the smtp
-             mailer's host is empty or 127.0.0.1 (a deliberate production
-             safety check against an unconfigured mail host) -- but it
-             checks config('mail.mailers.smtp.host') specifically,
-             regardless of MAIL_MAILER above, so leaving it unset also
-             silently blocked Mail::fake() from ever seeing an OtpMail in
-             tests. Any non-empty, non-127.0.0.1 value satisfies the
-             guard; Mail::fake() still intercepts the actual send. -->
+             mailer's host is empty or 127.0.0.1, a deliberate production
+             safety check against an unconfigured mail host. It checks
+             config('mail.mailers.smtp.host') specifically, regardless of
+             MAIL_MAILER above, so leaving it unset also silently blocked
+             Mail::fake() from ever seeing an OtpMail in tests. Any
+             non-empty, non-127.0.0.1 value satisfies the guard;
+             Mail::fake() still intercepts the actual send. -->
         <env name="MAIL_HOST" value="smtp.test"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <!-- Dummy, non-secret test-only value — PaymentService's constructor
