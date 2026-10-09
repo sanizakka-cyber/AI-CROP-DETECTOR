@@ -211,7 +211,11 @@ class DiagnoseApiController extends Controller
             'animalType'     => ['required', 'string'],
             'assessmentType' => ['required', 'string'],
             'images'         => ['sometimes', 'array', 'max:5'],
-            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            // Phase 7: was max:5120 (5MB) -- the only one of the four scan
+            // endpoints inconsistent with the other three's 10240 (10MB).
+            // No documented reason for livestock specifically to have a
+            // tighter per-image limit; standardized to match.
+            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
         ], $this->locationRules()));
 
         $this->warmAiEngine();

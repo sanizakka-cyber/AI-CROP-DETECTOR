@@ -1,9 +1,11 @@
 import os
 import json
 import base64
+import io
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image, ImageOps, UnidentifiedImageError
 import anthropic
 import uvicorn
 
@@ -61,17 +63,83 @@ def _lang_instruction(language: str) -> str:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+# Phase 7 fix. Root cause of a real production failure found during the
+# Phase 6 live-scan test: Laravel's own upload validation allows images up
+# to 10MB, but nothing between the farmer's camera and Claude ever
+# guaranteed the final base64 payload stayed under Anthropic's real
+# per-image limit (10MB base64-encoded on the direct API -- confirmed
+# against platform.claude.com/docs/en/build-with-claude/vision, 2026-10-09).
+# Base64 inflates raw bytes by ~4/3, so a image anywhere close to Laravel's
+# 10MB ceiling could still be rejected by Anthropic, confusingly, after
+# already passing every earlier validation layer. Every image is now
+# normalized here -- resized to a sane long-edge cap and recompressed as
+# JPEG -- regardless of what was uploaded, so the payload sent to Claude is
+# always small and predictable. This also improves latency/cost (smaller
+# base64 payloads) independent of the size-limit fix.
+_MAX_LONG_EDGE = 2000          # px -- Anthropic's own stated safe ceiling
+_TARGET_JPEG_QUALITY = 85
+_MAX_FORWARD_BYTES = 4 * 1024 * 1024   # 4MB raw -> ~5.3MB base64, safely under Anthropic's 10MB cap
+
+def _normalize_image_bytes(data: bytes) -> bytes:
+    """Resize/recompress raw image bytes to a Claude-safe JPEG. Raises
+    HTTPException(422) if the bytes can't be decoded as an image at all --
+    never silently forwards undecodable data and never fabricates a result
+    from it."""
+    try:
+        with Image.open(io.BytesIO(data)) as im:
+            im.load()  # force a full decode now, not lazily later, so a truncated/corrupt file fails here
+            # Phone cameras store rotation as an EXIF tag rather than
+            # rotating the pixel data itself. Pillow does not apply that
+            # tag on open/resize/save -- without this, a portrait photo's
+            # pixels stay landscape-oriented and the EXIF tag that would
+            # have told a viewer to rotate it is then dropped on re-save,
+            # so Claude would see a sideways image with no orientation hint.
+            im = ImageOps.exif_transpose(im)
+            if im.mode not in ("RGB", "L"):
+                im = im.convert("RGB")
+
+            long_edge = max(im.size)
+            if long_edge > _MAX_LONG_EDGE:
+                scale = _MAX_LONG_EDGE / long_edge
+                new_size = (max(1, round(im.width * scale)), max(1, round(im.height * scale)))
+                im = im.resize(new_size, Image.LANCZOS)
+
+            quality = _TARGET_JPEG_QUALITY
+            while True:
+                buf = io.BytesIO()
+                im.save(buf, format="JPEG", quality=quality, optimize=True)
+                encoded = buf.getvalue()
+                if len(encoded) <= _MAX_FORWARD_BYTES or quality <= 40:
+                    return encoded
+                quality -= 15  # still too large after resizing (dense/noisy photo) -- step quality down and retry
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "This file could not be read as an image. Please upload a clear JPEG, PNG, or WebP photo.",
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Any other Pillow failure (truncated file, unsupported mode, etc.)
+        # is still an honest "can't process this" -- never fall through to
+        # forwarding the raw, possibly-broken bytes to Claude.
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "This image could not be processed. Please try a different photo.",
+        }) from e
+
+
 async def _read_images_b64(images: List[UploadFile]) -> List[dict]:
     result = []
     for img in images:
         data = await img.read()
-        media_type = img.content_type or "image/jpeg"
+        normalized = _normalize_image_bytes(data)
         result.append({
             "type": "image",
             "source": {
                 "type": "base64",
-                "media_type": media_type,
-                "data": base64.standard_b64encode(data).decode("utf-8"),
+                "media_type": "image/jpeg",  # _normalize_image_bytes always re-encodes as JPEG
+                "data": base64.standard_b64encode(normalized).decode("utf-8"),
             },
         })
     return result

@@ -41,7 +41,14 @@ class DiagnosticController extends Controller
 
         $request->validate([
             'scan_type'       => 'required|in:plant,animal,soil,pest',
-            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            // 10MB (10240 KB) -- the one documented diagnostic-scan upload
+            // limit, matching all four mobile API endpoints
+            // (DiagnoseApiController) after Phase 7's consistency fix.
+            // Requires upload_max_filesize/post_max_size in the Dockerfile
+            // to actually allow a file this size through PHP itself (fixed
+            // alongside this) -- this rule alone was previously
+            // unreachable for any upload over 2MB.
+            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|max:10240',
             'crop_type'       => 'nullable|string|max:100',
             'crop_part'       => 'nullable|string|max:100',
             'animal_type'     => 'nullable|string|max:100',

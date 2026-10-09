@@ -1,0 +1,4 @@
+# Test-only dependencies, kept separate from requirements.txt (production
+# install) so the Render deploy never pulls test tooling into the running
+# service. Install with: pip install -r requirements.txt -r requirements-dev.txt
+pytest==8.3.4

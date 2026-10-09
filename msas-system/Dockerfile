@@ -26,6 +26,21 @@ RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
  && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini \
  && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini
 
+# Phase 7 fix: the official php:8.2-fpm-alpine image ships NO php.ini at all
+# unless one is copied in, so PHP fell back to its compiled-in defaults --
+# upload_max_filesize=2M, post_max_size=8M. Every diagnostic-scan validation
+# rule in the app (DiagnosticController, DiagnoseApiController) allows up to
+# 10MB, and nginx's client_max_body_size (docker/nginx.conf) allows 20M --
+# but any upload between 2MB and 10MB was silently rejected by PHP itself,
+# before Laravel's request object was even fully populated, producing the
+# generic "The image failed to upload" message. Confirmed live during the
+# Phase 6 audit's authenticated scan test (a real 2.95MB photo failed; an
+# 800px/284KB version of the same photo succeeded). Set to comfortably
+# exceed the app's own 10MB (10240 KB) validation ceiling, leaving headroom
+# for multipart boundary overhead and the request's other form fields.
+RUN echo "upload_max_filesize=12M" >> /usr/local/etc/php/conf.d/uploads.ini \
+ && echo "post_max_size=15M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # ── Composer ──────────────────────────────────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
