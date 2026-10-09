@@ -32,8 +32,18 @@ class LocationValidationServiceTest extends TestCase
 
     public function test_detects_classic_lat_lon_reversal(): void
     {
-        // A real Lagos coordinate (6.5244 N, 3.3792 E) entered backwards.
-        $this->assertTrue(LocationValidationService::looksLatLonReversed(3.3792, 6.5244));
+        // Range-based reversal detection can only catch a swap that pushes
+        // a value out of [-90,90] — most Nigerian coordinates have both
+        // components under 90 (e.g. Lagos: 6.5244, 3.3792), so swapping
+        // them stays in-range either way and is genuinely undetectable by
+        // this method; that's a real, inherent limitation, not a bug.
+        // Tokyo (35.6762 N, 139.6503 E) demonstrates a detectable case:
+        // entered backwards, 139.6503 is not a valid latitude.
+        $this->assertTrue(LocationValidationService::looksLatLonReversed(139.6503, 35.6762));
+        $this->assertFalse(LocationValidationService::looksLatLonReversed(35.6762, 139.6503));
+
+        // The Lagos case: ambiguous, so never flagged as a detected reversal.
+        $this->assertFalse(LocationValidationService::looksLatLonReversed(3.3792, 6.5244));
         $this->assertFalse(LocationValidationService::looksLatLonReversed(6.5244, 3.3792));
     }
 

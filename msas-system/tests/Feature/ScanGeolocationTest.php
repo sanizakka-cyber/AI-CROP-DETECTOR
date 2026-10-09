@@ -100,7 +100,10 @@ class ScanGeolocationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('loc_latitude');
-        $this->assertDatabaseCount('diagnoses', 0, 'An invalid coordinate must block the request, not silently drop the bad value and still scan.');
+        // assertDatabaseCount()'s 3rd parameter is a connection name, not a
+        // message — an invalid coordinate must block the request entirely,
+        // not silently drop the bad value and still scan.
+        $this->assertDatabaseCount('diagnoses', 0);
     }
 
     public function test_coordinates_outside_nigeria_are_flagged_but_not_blocked(): void
