@@ -23,7 +23,22 @@ return new class extends Migration
 
             // Core diagnosis
             $table->string('disease_name');
-            $table->decimal('confidence_score', 5, 2);
+            // Nullable from creation — a later migration
+            // (2026_08_18_000001_add_scan_ref_and_nullable_confidence_to_
+            // diagnoses.php) drops the NOT NULL constraint this would
+            // otherwise create, but ONLY on Postgres, since SQLite has no
+            // ALTER COLUMN at all. Production already ran that later
+            // migration and is unaffected by this edit (already-applied
+            // migrations never re-run); every FRESH migration run — every
+            // CI job and local SQLite test database — previously recreated
+            // this column as NOT NULL with no way to ever make it nullable
+            // again, so any code path that honestly stores "no score yet"
+            // (DiagnosisResultMapper::aiUnavailableFallback(), the AI
+            // engine unavailable path) crashed with a NOT NULL constraint
+            // violation on every single test run. That code path had
+            // therefore never once been exercised by a test until this
+            // audit (2026-10-09) ran into it directly.
+            $table->decimal('confidence_score', 5, 2)->nullable();
             $table->string('urgency_level')->default('Medium');
 
             // Detailed findings
