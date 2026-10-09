@@ -97,22 +97,33 @@ return new class extends Migration
         if (DB::connection()->getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE support_tickets ALTER COLUMN description DROP NOT NULL');
 
-            // priority/status were created as native ENUM types restricted
-            // to a value set that doesn't include every value the real
-            // controller validates and writes (e.g. priority=normal).
-            // Converting to VARCHAR moves validation to the application
-            // layer (already enforced by SupportTicketController's own
-            // 'required|in:...' rules) instead of leaving it silently
-            // split across two different, driftable value sets.
-            $enumColumns = DB::select(<<<'SQL'
-                SELECT column_name FROM information_schema.columns
-                WHERE table_name = 'support_tickets'
-                  AND column_name IN ('priority', 'status')
-                  AND data_type = 'USER-DEFINED'
+            // Correction while verifying this migration against a real
+            // Postgres CI run: Laravel's $table->enum() on Postgres does
+            // NOT create a native USER-DEFINED enum type (that's a MySQL
+            // behavior) -- it creates a plain VARCHAR with a CHECK
+            // constraint (named "{table}_{column}_check" by default),
+            // restricted to the original value set, which doesn't include
+            // every value the real controller validates and writes (e.g.
+            // priority=normal). Confirmed live: inserting priority=normal
+            // failed with "violates check constraint
+            // support_tickets_priority_check". Dropping the constraint
+            // moves validation to the application layer (already enforced
+            // by SupportTicketController's own 'required|in:...' rules)
+            // instead of leaving it silently split across two different,
+            // driftable value sets. Looked up by querying the catalog
+            // rather than assuming Postgres's default naming convention,
+            // in case either column's constraint was ever given an
+            // explicit name.
+            $checks = DB::select(<<<'SQL'
+                SELECT con.conname
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                WHERE rel.relname = 'support_tickets'
+                  AND con.contype = 'c'
+                  AND pg_get_constraintdef(con.oid) ~ '\((priority|status)\)'
             SQL);
-            foreach ($enumColumns as $col) {
-                $name = $col->column_name;
-                DB::statement("ALTER TABLE support_tickets ALTER COLUMN {$name} TYPE VARCHAR(20) USING {$name}::text");
+            foreach ($checks as $check) {
+                DB::statement('ALTER TABLE support_tickets DROP CONSTRAINT "' . $check->conname . '"');
             }
         }
 

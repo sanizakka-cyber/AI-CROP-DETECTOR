@@ -94,6 +94,7 @@ class PostgresSpecificQueriesTest extends TestCase
         // Exactly 6 hours between creation and completion.
         $consultation = Consultation::create([
             'farmer_id' => $farmer->id, 'expert_id' => $vet->id, 'case_type' => 'livestock',
+            'symptoms' => 'Lethargy and reduced feed intake for three days.',
             'status' => 'resolved',
         ]);
         $consultation->forceFill([
