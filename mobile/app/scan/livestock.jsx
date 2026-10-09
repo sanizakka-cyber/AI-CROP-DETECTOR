@@ -7,8 +7,10 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { diagnoseAPI } from '../../lib/api';
+import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
+import LocationCaptureSection from '../../components/LocationCaptureSection';
 
 const ANIMALS = [
   { id: 'cattle',  icon: '🐄', name: 'Cattle / Shanu' },
@@ -41,6 +43,7 @@ export default function LivestockScanScreen() {
   const [symptoms, setSymptoms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState('');
+  const loc = useLocationCapture();
 
   const pickImage = async (source) => {
     const perms = source === 'camera'
@@ -68,6 +71,7 @@ export default function LivestockScanScreen() {
         images,          // empty array is fine for behavioral-only assessments
         symptoms,
         behavioral: { notes },
+        location: loc.toApiFields(),
       });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
@@ -151,6 +155,8 @@ export default function LivestockScanScreen() {
             )}
           </>
         )}
+
+        <LocationCaptureSection loc={loc} />
 
         {/* Symptoms Checklist */}
         <Text style={styles.stepTitle}>{isHausa ? 'Alamomi da aka lura da su' : 'Observed Symptoms (select all)'}</Text>

@@ -9,8 +9,10 @@ import * as ImagePicker from 'expo-image-picker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning, qualityLabel } from '../../lib/imageValidator';
+import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
+import LocationCaptureSection from '../../components/LocationCaptureSection';
 
 function QualityIndicator({ score, warnings }) {
   const { label, color } = qualityLabel(score);
@@ -32,6 +34,7 @@ export default function SoilScanScreen() {
   const [loading, setLoading]     = useState(false);
   const [validating, setValidating] = useState(false);
   const [qualityResults, setQualityResults] = useState([]);
+  const loc = useLocationCapture();
 
   const pickImage = async (source) => {
     const perms = source === 'camera'
@@ -81,7 +84,11 @@ export default function SoilScanScreen() {
 
     setLoading(true);
     try {
-      const { diagnosisId } = await diagnoseAPI.soil({ soilContext: context.trim() || undefined, images });
+      const { diagnosisId } = await diagnoseAPI.soil({
+        soilContext: context.trim() || undefined,
+        images,
+        location: loc.toApiFields(),
+      });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
       Alert.alert('Scan Failed', e.message);
@@ -124,6 +131,8 @@ export default function SoilScanScreen() {
           onChangeText={setContext}
           multiline
         />
+
+        <LocationCaptureSection loc={loc} />
 
         <Text style={styles.stepTitle}>{isHausa ? 'Ɗauki Hoton Ƙasa' : 'Capture Soil Photo'}</Text>
         <View style={styles.photoButtons}>

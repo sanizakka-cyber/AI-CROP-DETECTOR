@@ -8,8 +8,10 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning, qualityLabel } from '../../lib/imageValidator';
+import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
+import LocationCaptureSection from '../../components/LocationCaptureSection';
 
 const CROPS = [
   { id: 'maize',    icon: '🌽', name: 'Maize / Masara' },
@@ -53,6 +55,7 @@ export default function CropScanScreen() {
   const [loading, setLoading]     = useState(false);
   const [validating, setValidating] = useState(false);
   const [qualityResults, setQualityResults] = useState([]);
+  const loc = useLocationCapture();
 
   const pickImage = async (source) => {
     const perms = source === 'camera'
@@ -110,6 +113,7 @@ export default function CropScanScreen() {
         cropType: crop?.id,
         cropPart: part === LET_AI_DETECT ? undefined : part,
         images,
+        location: loc.toApiFields(),
       });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
@@ -163,6 +167,8 @@ export default function CropScanScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        <LocationCaptureSection loc={loc} />
 
         {/* Step 3: Photos */}
         <Text style={styles.stepTitle}>{isHausa ? 'Mataki 3: Ɗauki Hoto (Daga Kamara)' : 'Step 3: Capture Photo (Camera Preferred)'}</Text>

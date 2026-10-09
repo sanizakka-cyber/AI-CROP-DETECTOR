@@ -9,8 +9,10 @@ import * as ImagePicker from 'expo-image-picker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning, qualityLabel } from '../../lib/imageValidator';
+import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
+import LocationCaptureSection from '../../components/LocationCaptureSection';
 
 function QualityIndicator({ score, warnings }) {
   const { label, color } = qualityLabel(score);
@@ -28,11 +30,15 @@ export default function PestScanScreen() {
   const isHausa = i18n.language === 'ha';
 
   const [cropType, setCropType]   = useState('');
-  const [location, setLocation]   = useState('');
+  // Free-text region hint the AI prompt already accepted pre-Phase-6 (e.g.
+  // "Kano, Northern Nigeria") — distinct from the structured sample
+  // collection location below (loc / useLocationCapture()).
+  const [regionHint, setRegionHint] = useState('');
   const [images, setImages]       = useState([]);
   const [loading, setLoading]     = useState(false);
   const [validating, setValidating] = useState(false);
   const [qualityResults, setQualityResults] = useState([]);
+  const loc = useLocationCapture();
 
   const pickImage = async (source) => {
     const perms = source === 'camera'
@@ -84,8 +90,9 @@ export default function PestScanScreen() {
     try {
       const { diagnosisId } = await diagnoseAPI.pest({
         cropType: cropType.trim() || undefined,
-        location: location.trim() || undefined,
+        locationHint: regionHint.trim() || undefined,
         images,
+        location: loc.toApiFields(),
       });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
@@ -121,14 +128,16 @@ export default function PestScanScreen() {
           onChangeText={setCropType}
         />
 
-        <Text style={styles.stepTitle}>{isHausa ? 'Wuri (na zaɓi)' : 'Location (optional)'}</Text>
+        <Text style={styles.stepTitle}>{isHausa ? 'Yankin da lamarin ya faru (na zaɓi)' : 'Affected region (optional)'}</Text>
         <TextInput
           style={styles.textInput}
           placeholder={isHausa ? 'misali: Jihar Katsina' : 'e.g. Katsina State'}
           placeholderTextColor={Colors.textMuted}
-          value={location}
-          onChangeText={setLocation}
+          value={regionHint}
+          onChangeText={setRegionHint}
         />
+
+        <LocationCaptureSection loc={loc} />
 
         <Text style={styles.stepTitle}>{isHausa ? 'Ɗauki Hoton Kwaro' : 'Capture Pest Photo'}</Text>
         <View style={styles.photoButtons}>

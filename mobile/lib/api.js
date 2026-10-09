@@ -188,12 +188,30 @@ export const animalsAPI = {
 };
 
 // ── Diagnose ──────────────────────────────────────────────────────────────────
+
+/**
+ * Appends a sample-collection-location field set (from
+ * lib/locationCapture.js's useLocationCapture().toApiFields()) to a scan's
+ * FormData — shared by all four diagnose methods below so none of them can
+ * drift into a different location contract. `location` is null when the
+ * user entered nothing at all; appends nothing in that case, exactly
+ * matching the web form and the backend's own "no fields means no row" rule.
+ */
+function appendLocationFields(form, location) {
+  if (!location) return;
+  Object.entries(location).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      form.append(key, value);
+    }
+  });
+}
+
 export const diagnoseAPI = {
   /**
    * Upload images and metadata for crop diagnosis.
    * Uses FormData (not JSON) for multipart upload.
    */
-  crop: async ({ cropType, cropPart, farmId, images }) => {
+  crop: async ({ cropType, cropPart, farmId, images, location }) => {
     const token = await getToken();
     const form = new FormData();
     // Both are optional hints — omit entirely when unset so the AI engine
@@ -201,6 +219,7 @@ export const diagnoseAPI = {
     if (cropType) form.append('cropType', cropType);
     if (cropPart) form.append('cropPart', cropPart);
     if (farmId) form.append('farmId', farmId);
+    appendLocationFields(form, location);
     images.forEach((img, i) => {
       // 'images[]' — PHP/Laravel only collects a multipart field into a
       // real array when the field name carries the [] suffix; multiple
@@ -219,7 +238,7 @@ export const diagnoseAPI = {
     return data;
   },
 
-  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images }) => {
+  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location }) => {
     const token = await getToken();
     const form = new FormData();
     form.append('animalType', animalType || '');
@@ -228,6 +247,7 @@ export const diagnoseAPI = {
     if (farmId) form.append('farmId', farmId);
     if (symptoms) form.append('symptoms', JSON.stringify(symptoms));
     if (behavioral) form.append('behavioral', JSON.stringify(behavioral));
+    appendLocationFields(form, location);
     images.forEach((img, i) => {
       // 'images[]' — PHP/Laravel only collects a multipart field into a
       // real array when the field name carries the [] suffix; multiple
@@ -246,10 +266,11 @@ export const diagnoseAPI = {
     return data;
   },
 
-  soil: async ({ soilContext, images }) => {
+  soil: async ({ soilContext, images, location }) => {
     const token = await getToken();
     const form = new FormData();
     if (soilContext) form.append('soilContext', soilContext);
+    appendLocationFields(form, location);
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
@@ -263,11 +284,17 @@ export const diagnoseAPI = {
     return data;
   },
 
-  pest: async ({ cropType, location, images }) => {
+  pest: async ({ cropType, locationHint, images, location }) => {
     const token = await getToken();
     const form = new FormData();
     if (cropType) form.append('cropType', cropType);
-    if (location) form.append('location', location);
+    // 'location' here is the free-text region hint field /predict/pest's
+    // prompt already accepted before Phase 6 (e.g. "Kano, Northern
+    // Nigeria") — renamed to locationHint in this function's own params so
+    // it's never confused with the loc_* sample-collection-location block
+    // below, which is a different, structured concept added in Phase 6.
+    if (locationHint) form.append('location', locationHint);
+    appendLocationFields(form, location);
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });

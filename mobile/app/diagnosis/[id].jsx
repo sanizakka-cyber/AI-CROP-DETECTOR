@@ -308,6 +308,69 @@ export default function DiagnosisDetailScreen() {
         <InfoField label="Explanation" value={result.explanation} />
       </Card>
 
+      {/* Sample Collection Location — spec Section 6C. Null when the
+          scan was submitted with no location fields at all; never
+          backfilled from the account's registered address, device IP, or
+          server region. */}
+      <Card style={styles.card}>
+        <Text style={styles.cardTitle}>📍 Sample Collection Location</Text>
+        {!diag.collectionLocation ? (
+          <Text style={styles.noLocationText}>No collection location was recorded for this scan.</Text>
+        ) : (
+          <>
+            <InfoField label="State" value={diag.collectionLocation.state} />
+            <InfoField label="LGA" value={diag.collectionLocation.lga} />
+            {diag.collectionLocation.community && <InfoField label="Community" value={diag.collectionLocation.community} />}
+            {diag.collectionLocation.postalCode && <InfoField label="Postal Code" value={diag.collectionLocation.postalCode} />}
+            {diag.collectionLocation.addressLandmark && <InfoField label="Address / Landmark" value={diag.collectionLocation.addressLandmark} />}
+            {diag.collectionLocation.latitude != null && (
+              <View style={styles.coordsRow}>
+                <Text style={styles.coordsRowText}>
+                  {Number(diag.collectionLocation.latitude).toFixed(6)}, {Number(diag.collectionLocation.longitude).toFixed(6)}
+                  {diag.collectionLocation.accuracyMeters != null ? `  (±${Math.round(diag.collectionLocation.accuracyMeters)}m)` : ''}
+                </Text>
+                <TouchableOpacity onPress={() => Linking.openURL(`https://www.google.com/maps?q=${diag.collectionLocation.latitude},${diag.collectionLocation.longitude}`)}>
+                  <Text style={styles.coordsRowLink}>Open in Maps ↗</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.provenanceRow}>
+              <View style={styles.provenanceBadge}>
+                <Text style={styles.provenanceBadgeText}>{diag.collectionLocation.provenanceLabel}</Text>
+              </View>
+              {diag.collectionLocation.verificationStatus === 'boundary_mismatch_flagged' && (
+                <View style={[styles.provenanceBadge, styles.provenanceBadgeWarn]}>
+                  <Text style={[styles.provenanceBadgeText, styles.provenanceBadgeTextWarn]}>Location outside expected range — unverified</Text>
+                </View>
+              )}
+              {diag.collectionLocation.differsFromScanLocation && (
+                <View style={[styles.provenanceBadge, styles.provenanceBadgeInfo]}>
+                  <Text style={[styles.provenanceBadgeText, styles.provenanceBadgeTextInfo]}>Scanned at a different location than collected</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </Card>
+
+      {/* What this confidence score means — spec Section 4.5. Always
+          shown: the number alone never explains itself. */}
+      <Card style={styles.card}>
+        <Text style={styles.cardTitle}>ℹ️ What this confidence score means</Text>
+        <Text style={styles.provenanceExplainer}>
+          {diag.confidenceProvenance?.confidenceInterpretation
+            || "This confidence value is the AI model's own self-reported certainty, not a statistically calibrated probability. Treat it as directional guidance, not clinical certainty."}
+        </Text>
+        <View style={styles.provenanceMetaRow}>
+          {diag.confidenceProvenance?.aiModelName && <Text style={styles.provenanceMeta}>Model: {diag.confidenceProvenance.aiModelName}</Text>}
+          <Text style={styles.provenanceMeta}>Validation status: {(diag.confidenceProvenance?.validationStatus || 'unvalidated')}</Text>
+          {diag.confidenceProvenance?.confidenceDecision && (
+            <Text style={styles.provenanceMeta}>Decision: {String(diag.confidenceProvenance.confidenceDecision).replace(/_/g, ' ')}</Text>
+          )}
+          {diag.dataQualityStatus && <Text style={styles.provenanceMeta}>Data quality: {String(diag.dataQualityStatus).replace(/_/g, ' ')}</Text>}
+        </View>
+      </Card>
+
       <Text style={styles.sectionTitle}>{t('treatment')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
         {[
@@ -471,6 +534,20 @@ const styles = StyleSheet.create({
   listItem: { ...Typography.body, color: Colors.textSecondary, marginBottom: 4 },
   infoLabel: { ...Typography.tiny, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
   infoValue: { ...Typography.body, color: Colors.textPrimary, marginTop: 2 },
+  noLocationText: { ...Typography.small, color: Colors.textMuted, fontStyle: 'italic' },
+  coordsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.background, borderRadius: Radius.sm, padding: Spacing.sm, marginTop: 4, marginBottom: Spacing.sm },
+  coordsRowText: { ...Typography.tiny, color: Colors.textSecondary, fontFamily: 'monospace' },
+  coordsRowLink: { ...Typography.tiny, color: Colors.primary, fontWeight: '700' },
+  provenanceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  provenanceBadge: { backgroundColor: Colors.background, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  provenanceBadgeWarn: { backgroundColor: '#FEF3C7' },
+  provenanceBadgeInfo: { backgroundColor: '#DBEAFE' },
+  provenanceBadgeText: { ...Typography.tiny, color: Colors.textSecondary, fontWeight: '700' },
+  provenanceBadgeTextWarn: { color: '#92400E' },
+  provenanceBadgeTextInfo: { color: '#1D4ED8' },
+  provenanceExplainer: { ...Typography.small, color: Colors.textSecondary, lineHeight: 19 },
+  provenanceMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: Spacing.sm },
+  provenanceMeta: { ...Typography.tiny, color: Colors.textMuted },
   sectionTitle: { ...Typography.h3, color: Colors.textPrimary, paddingHorizontal: Spacing.md, marginTop: Spacing.md },
   tabRow: { paddingHorizontal: Spacing.md, marginVertical: Spacing.sm },
   tab: {
