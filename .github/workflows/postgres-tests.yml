@@ -1,0 +1,139 @@
+name: PostgreSQL Tests
+
+# Phase 7, Section 3. Roughly 20 controllers use Postgres-only raw SQL
+# ('ilike' for case-insensitive search, 'EXTRACT(EPOCH FROM ...)' for
+# duration/response-time metrics) -- intentionally, since production
+# (render.yaml) is always Postgres. The existing security-regression-
+# tests.yml workflow runs against SQLite, which cannot exercise this code
+# at all. Rather than rewrite ~20 files of correct, parameterized,
+# injection-safe search filters into a portable form just to satisfy
+# SQLite (a real but disproportionate refactor for code that works
+# correctly against the database it was actually written for), this
+# workflow runs the full suite against a real PostgreSQL service
+# container -- the only way to genuinely verify Postgres-specific
+# behavior rather than assume it from the SQLite-passing suite alone.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'msas-system/**'
+      - '.github/workflows/postgres-tests.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: msas-system
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: msas_test
+          POSTGRES_PASSWORD: msas_test
+          POSTGRES_DB: msas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_pgsql, pgsql, curl, fileinfo, gd, zip, intl, bcmath, exif, pcntl
+          coverage: none
+
+      - name: Create .env
+        run: touch .env
+
+      - name: Generate app key
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Ensure bootstrap/cache exists
+        run: mkdir -p bootstrap/cache
+
+      - name: Composer install
+        id: composer_install
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts 2>&1 | tee /tmp/composer-install.log
+
+      - name: Run full test suite against real PostgreSQL
+        id: full_test
+        shell: bash
+        env:
+          # Real env vars here take precedence over phpunit.xml's
+          # <env name="DB_CONNECTION" value="sqlite"/> tags, because
+          # PHPUnit's <env> elements default to force="false" (set only if
+          # not already present) -- this is the standard way a Laravel
+          # project targets a different test database per CI job without
+          # touching phpunit.xml itself.
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: msas_test
+          DB_USERNAME: msas_test
+          DB_PASSWORD: msas_test
+          # Same OtpService test-mail guard fix as the SQLite workflow.
+          MAIL_HOST: smtp.test
+        run: |
+          php artisan test --display-warnings --display-deprecations 2>&1 | tee /tmp/full-test.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Publish results as a GitHub Issue (always runs)
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            function tail(path, n) {
+              if (!fs.existsSync(path)) return '(no output captured)';
+              const lines = fs.readFileSync(path, 'utf8').split('\n');
+              return lines.slice(-n).join('\n');
+            }
+            function capChars(s, max) {
+              return s.length > max ? '…(truncated, showing last ' + max + ' chars)…\n' + s.slice(-max) : s;
+            }
+            const sections = [
+              ['Composer install (last 40 lines)', capChars(tail('/tmp/composer-install.log', 40), 5000)],
+              ['Full test suite against real PostgreSQL (last 300 lines)', capChars(tail('/tmp/full-test.log', 300), 30000)],
+            ];
+            let body = [
+              '## PostgreSQL Test run — ' + new Date().toISOString(),
+              '',
+              '**Commit:** ' + context.sha,
+              '',
+              ...sections.flatMap(([title, content]) => ['### ' + title, '```', content, '```', '']),
+            ].join('\n');
+            if (body.length > 60000) {
+              body = body.slice(0, 60000) + '\n\n…(body truncated to stay under GitHub\'s issue size limit)…';
+            }
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'PostgreSQL Test Results — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
+                body: body,
+                labels: ['ci-test-results']
+              });
+            } catch (err) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'PostgreSQL Test Results (minimal — publish failed) — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
+                body: 'Full results could not be published: ' + String(err).slice(0, 2000)
+                  + '\n\nSee run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+                labels: ['ci-test-results']
+              });
+            }
