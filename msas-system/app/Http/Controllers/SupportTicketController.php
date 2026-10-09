@@ -37,6 +37,14 @@ class SupportTicketController extends Controller
 
         $data['user_id']       = auth()->id();
         $data['ticket_number'] = SupportTicket::generateNumber();
+        // 'description' is a legacy NOT NULL column from an earlier
+        // migration (2026_07_06) that collided with this table's real
+        // one (2026_07_28) -- SQLite can't relax a NOT NULL constraint
+        // without a full table rebuild, so every insert populates both
+        // columns rather than depending on a database-specific ALTER to
+        // make the column nullable. 'message' remains the one actually
+        // read/displayed elsewhere in the app.
+        $data['description']   = $data['message'];
         $ticket = SupportTicket::create($data);
 
         AuditLog::record('support.ticket.created', 'SupportTicket', $ticket->id, ['ticket_number' => $ticket->ticket_number]);
