@@ -21,6 +21,15 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
+    /**
+     * Fixed 2026-10-09 (Phase 6): posted 'name', which has never been a
+     * real column on users (App\Models\User::getNameAttribute() computes
+     * it from first_name/middle_name/last_name) — ProfileController::
+     * update() validates 'first_name' and 'last_name' as required, so the
+     * stock field name failed validation before the update logic ever
+     * ran. Not an application defect; the test predates this app's
+     * custom name fields and was never updated.
+     */
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
@@ -28,7 +37,8 @@ class ProfileTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
-                'name' => 'Test User',
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'email' => 'test@example.com',
             ]);
 
@@ -38,7 +48,8 @@ class ProfileTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Test User', $user->name);
+        $this->assertSame('Test', $user->first_name);
+        $this->assertSame('User', $user->last_name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }
@@ -50,7 +61,8 @@ class ProfileTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
-                'name' => 'Test User',
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'email' => $user->email,
             ]);
 
