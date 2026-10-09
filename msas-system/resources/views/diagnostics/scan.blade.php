@@ -193,6 +193,64 @@
                     @enderror
                 </div>
 
+                <!-- Sample Collection Location (optional) -->
+                <div class="mb-8 border border-slate-200 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-bold text-slate-700">{{ __('Sample Collection Location') }} <span class="font-normal text-slate-400">{{ __('(optional)') }}</span></label>
+                        <button type="button" id="useMyLocationBtn" onclick="useMyLocation()"
+                            class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.5-4.5-7-8.25-7-11.25a7 7 0 1114 0C19 12.75 16.5 16.5 12 21z"/><circle cx="12" cy="9.75" r="2.25"/></svg>
+                            {{ __('Use my location') }}
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-3">{{ __('Recording where this sample was actually collected helps track outbreaks and makes your scan useful for agricultural research. This never blocks your diagnosis — leave it blank if unsure.') }}</p>
+
+                    <div id="locGpsStatus" class="hidden mb-3 text-xs rounded-lg p-2"></div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('State') }}</label>
+                            <select id="locState" name="loc_state" class="w-full border-slate-200 rounded-lg text-sm" onchange="populateLgas(); markAdministrative();">
+                                <option value="">{{ __('Select State') }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('LGA') }}</label>
+                            <select id="locLga" name="loc_lga" class="w-full border-slate-200 rounded-lg text-sm" onchange="markAdministrative();">
+                                <option value="">{{ __('Select LGA') }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Community / Town / Village') }}</label>
+                            <input type="text" name="loc_community" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('e.g., Funtua town') }}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Postal Code') }}</label>
+                            <input type="text" name="loc_postal_code" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('If known') }}">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Address / Landmark') }}</label>
+                            <input type="text" name="loc_address" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('Optional — nearest landmark or address') }}">
+                        </div>
+                    </div>
+
+                    <div class="mt-3 flex items-start gap-2">
+                        <input type="checkbox" id="locDiffers" name="loc_differs_from_scan" value="1" class="mt-0.5 rounded border-slate-300">
+                        <label for="locDiffers" class="text-xs text-slate-600">{{ __('I am scanning this sample at a different location from where it was actually collected (e.g. a lab or office, away from the farm).') }}</label>
+                    </div>
+                    <div class="mt-2 flex items-start gap-2">
+                        <input type="checkbox" id="locConfirmed" name="loc_user_confirmed" value="1" class="mt-0.5 rounded border-slate-300">
+                        <label for="locConfirmed" class="text-xs text-slate-600">{{ __('I confirm the location entered above is correct.') }}</label>
+                    </div>
+
+                    {{-- Hidden coordinate + provenance fields, populated by JS only — never guessed server-side --}}
+                    <input type="hidden" name="loc_country" value="Nigeria">
+                    <input type="hidden" id="locLatitude" name="loc_latitude" value="">
+                    <input type="hidden" id="locLongitude" name="loc_longitude" value="">
+                    <input type="hidden" id="locAccuracy" name="loc_accuracy_meters" value="">
+                    <input type="hidden" id="locCaptureMethod" name="loc_capture_method" value="">
+                </div>
+
                 <!-- Tips -->
                 <div class="mb-6 bg-blue-50 border border-blue-100 rounded-xl p-4 text-xs text-blue-700">
                     <div class="font-bold mb-1 flex items-center gap-1"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707M12 21a9 9 0 01-6.364-15.364A9 9 0 0112 3a9 9 0 016.364 15.364A9 9 0 0112 21z"/></svg> {{ __('Tips for the best diagnosis:') }}</div>
@@ -225,6 +283,75 @@
     </div>
 
     <script>
+    // Nigeria states + LGAs — same server-side dataset the backend
+    // validates against (App\Data\NigeriaLocations), so client and server
+    // never disagree about what a valid state/LGA pair looks like.
+    const NIGERIA_STATES = @json($nigeriaStates ?? []);
+
+    (function populateStates() {
+        var sel = document.getElementById('locState');
+        NIGERIA_STATES.forEach(function (s) {
+            var opt = document.createElement('option');
+            opt.value = s.name; opt.textContent = s.name;
+            sel.appendChild(opt);
+        });
+    })();
+
+    function populateLgas() {
+        var stateName = document.getElementById('locState').value;
+        var lgaSel = document.getElementById('locLga');
+        lgaSel.innerHTML = '<option value="">{{ __("Select LGA") }}</option>';
+        var state = NIGERIA_STATES.find(function (s) { return s.name === stateName; });
+        if (state) {
+            state.lgas.forEach(function (lga) {
+                var opt = document.createElement('option');
+                opt.value = lga; opt.textContent = lga;
+                lgaSel.appendChild(opt);
+            });
+        }
+    }
+
+    // Selecting a state/LGA manually is its own valid provenance
+    // ('administrative_selection') — distinct from GPS capture — unless a
+    // GPS fix has already been captured, which takes precedence.
+    function markAdministrative() {
+        var methodField = document.getElementById('locCaptureMethod');
+        if (methodField.value !== 'gps_device') {
+            methodField.value = 'administrative_selection';
+        }
+    }
+
+    function useMyLocation() {
+        var statusEl = document.getElementById('locGpsStatus');
+        statusEl.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-emerald-50', 'text-emerald-700');
+        if (!('geolocation' in navigator)) {
+            statusEl.textContent = '{{ __("Your browser does not support location capture. Please select your state/LGA manually.") }}';
+            statusEl.classList.add('bg-red-50', 'text-red-700');
+            return;
+        }
+        statusEl.textContent = '{{ __("Requesting your location…") }}';
+        statusEl.classList.add('bg-emerald-50', 'text-emerald-700');
+
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            document.getElementById('locLatitude').value = pos.coords.latitude;
+            document.getElementById('locLongitude').value = pos.coords.longitude;
+            document.getElementById('locAccuracy').value = Math.round(pos.coords.accuracy || 0);
+            document.getElementById('locCaptureMethod').value = 'gps_device';
+            var acc = Math.round(pos.coords.accuracy || 0);
+            statusEl.textContent = '{{ __("Location captured") }} (±' + acc + 'm). '
+                + ( acc > 100 ? '{{ __("Accuracy is low — consider moving to open ground and trying again, or proceed with this estimate.") }}' : '{{ __("Please still confirm the state/LGA below.") }}' );
+        }, function (err) {
+            var msg = {
+                1: '{{ __("Location permission denied. You can still select your state/LGA manually below.") }}',
+                2: '{{ __("Location unavailable right now. You can still select your state/LGA manually below.") }}',
+                3: '{{ __("Location request timed out. You can still select your state/LGA manually below.") }}',
+            }[err.code] || '{{ __("Could not get your location. You can still select your state/LGA manually below.") }}';
+            statusEl.textContent = msg;
+            statusEl.classList.remove('bg-emerald-50', 'text-emerald-700');
+            statusEl.classList.add('bg-red-50', 'text-red-700');
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+    }
+
     function setScanType(type) {
         document.getElementById('ctx-plant').classList.toggle('hidden', type !== 'plant');
         document.getElementById('ctx-animal').classList.toggle('hidden', type !== 'animal');

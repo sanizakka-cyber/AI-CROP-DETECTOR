@@ -40,6 +40,27 @@
     @endforeach
     </div>
 
+    {{-- ═══════════════ Sample Location Completeness (spec Section 10) ═══════════════ --}}
+    {{-- Genuine counts from collection_locations rows for the CURRENT filtered
+         scans — never a guess, and 0% is shown honestly if no scan in view
+         has a captured sample location yet (location capture shipped
+         2026-10-09; scans before that date have none by definition). --}}
+    <div class="bi-card" style="padding:14px;">
+        <div class="bi-card-title"><span class="bi-dot" style="background:#059669;"></span>Sample Location Completeness (current filter)</div>
+        @php
+            $lcTotal = $locationCompleteness['total'] ?? 0;
+            $lcWithLoc = $locationCompleteness['withLocation'] ?? 0;
+            $lcWithCoords = $locationCompleteness['withCoords'] ?? 0;
+            $lcLocPct = $lcTotal > 0 ? round($lcWithLoc / $lcTotal * 100) : 0;
+            $lcCoordPct = $lcTotal > 0 ? round($lcWithCoords / $lcTotal * 100) : 0;
+        @endphp
+        <div class="grid grid-cols-3 gap-3 mt-2 text-center">
+            <div><div class="bi-num" style="font-size:20px;">{{ number_format($lcTotal) }}</div><div class="bi-eyebrow">Scans in view</div></div>
+            <div><div class="bi-num" style="font-size:20px;color:#059669;">{{ $lcLocPct }}%</div><div class="bi-eyebrow">Have any collection location</div></div>
+            <div><div class="bi-num" style="font-size:20px;color:#0ea5e9;">{{ $lcCoordPct }}%</div><div class="bi-eyebrow">Have GPS coordinates</div></div>
+        </div>
+    </div>
+
     {{-- ═══════════════ Filters ═══════════════ --}}
     <div class="bi-card">
         <div class="bi-card-title"><span class="bi-dot" style="background:#0F6B3E;"></span>Filters</div>
@@ -63,7 +84,7 @@
             </div>
             @endif
             <div>
-                <label class="aa-label">State</label>
+                <label class="aa-label" title="Filters by the scanning user's registered account address, not the sample's collection location">User's State</label>
                 <select name="state" class="aa-input" onchange="var l=this.form.querySelector('select[name=lga]'); if(l) l.value=''; this.form.submit()">
                     <option value="">All States</option>
                     @foreach($states as $st)
@@ -72,7 +93,7 @@
                 </select>
             </div>
             <div>
-                <label class="aa-label">LGA</label>
+                <label class="aa-label" title="Filters by the scanning user's registered account address, not the sample's collection location">User's LGA</label>
                 <select name="lga" class="aa-input" @if(!request('state')) disabled @endif>
                     <option value="">All LGAs</option>
                     @foreach($lgasForState as $lg)
@@ -202,14 +223,19 @@
     </div>
 
     {{-- ═══════════════ Geographic drill-down: State → LGA ═══════════════ --}}
+    {{-- NOTE: this breakdown is keyed by the scanning user's REGISTERED
+         account address (users.state/lga), not the sample's actual
+         collection location — those are two different things (spec
+         Section 5). Scans captured with a real collection location are
+         counted separately in "Sample Location Completeness" above. --}}
     <div class="bi-card">
         <div class="bi-card-title">
             <span class="bi-dot" style="background:#7c3aed;"></span>
             @if(request('state'))
-                LGA Breakdown — {{ request('state') }}
+                LGA Breakdown (by user's registered address) — {{ request('state') }}
                 <a href="{{ request()->fullUrlWithQuery(['state' => null, 'lga' => null]) }}" style="margin-left:auto;font-size:11px;font-weight:700;color:#7c3aed;text-decoration:none;">← Back to States</a>
             @else
-                State Breakdown — click a state to drill into LGAs
+                State Breakdown (by user's registered address) — click a state to drill into LGAs
             @endif
         </div>
         @php $rows = request('state') ? $lgaBreakdown : $stateBreakdown; $rowKey = request('state') ? 'lga' : 'state'; @endphp
@@ -248,7 +274,7 @@
         <table class="aa-table">
             <thead>
                 <tr>
-                    <th>Scan ID</th><th>Date/Time</th><th>User</th><th>State</th><th>LGA</th>
+                    <th>Scan ID</th><th>Date/Time</th><th>User</th><th title="User's registered account address">User State</th><th title="User's registered account address">User LGA</th><th title="Where the sample was actually collected, if captured">Sample Location</th>
                     <th>Crop/Subject</th><th>Diagnosis</th><th>Confidence</th><th>Severity</th><th>Status</th><th></th>
                 </tr>
             </thead>
@@ -267,6 +293,13 @@
                 <td style="font-weight:700;color:#0f172a;">{{ trim(($scan->user_first_name ?? '').' '.($scan->user_last_name ?? '')) ?: '—' }}</td>
                 <td style="color:#64748b;">{{ $scan->user_state ?? '—' }}</td>
                 <td style="color:#64748b;">{{ $scan->user_lga ?? '—' }}</td>
+                <td style="color:#64748b;">
+                    @if($scan->collection_state || $scan->collection_lga)
+                        {{ trim(($scan->collection_lga ?? '').($scan->collection_lga && $scan->collection_state ? ', ' : '').($scan->collection_state ?? ''), ', ') }}
+                    @else
+                        <span style="color:#cbd5e1;">Not captured</span>
+                    @endif
+                </td>
                 <td style="color:#374151;">{{ Str::limit($scan->subject_name ?? '—', 22) }}</td>
                 <td style="color:#374151;">{{ Str::limit($scan->disease_name ?? '—', 26) }}</td>
                 <td>@if($conf!==null)<span class="aa-badge" style="background:{{ $confClr }}1A;color:{{ $confClr }};">{{ number_format($conf, 0) }}%</span>@else <span style="color:#cbd5e1;">N/A</span>@endif</td>

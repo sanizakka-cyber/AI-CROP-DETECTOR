@@ -84,11 +84,54 @@ def _parse_pipe(text: str) -> dict:
             result[key.strip().lower()] = value.strip()
     return result
 
-def _safe_float(val: str, default: float = 0.0) -> float:
+def _parse_confidence(raw_val: Optional[str]) -> dict:
+    """
+    Parses the model's self-reported confidence number and says whether it
+    was actually parseable and in range — callers must NOT treat a missing
+    or malformed value as a genuine 0%. `_safe_float` alone can't make that
+    distinction (it silently returns 0.0 for both "the model wrote 0" and
+    "the model wrote nothing parseable"), which is exactly the kind of
+    fabricated-looking-real number this audit flags elsewhere.
+
+    IMPORTANT CONTEXT for callers: this number is the vision-language
+    model's own self-reported statement, written into a pipe-delimited text
+    reply because it was asked to. It is NOT a softmax/logit probability
+    from a trained classifier — there is no trained classifier in this
+    service. Treat it as a directional, uncalibrated self-assessment only.
+    """
+    if raw_val is None or str(raw_val).strip() == "":
+        return {"value": None, "valid": False, "raw": raw_val or ""}
+
     try:
-        return float(str(val).replace("%", "").strip())
+        parsed = float(str(raw_val).replace("%", "").strip())
     except (ValueError, TypeError):
-        return default
+        return {"value": None, "valid": False, "raw": str(raw_val)}
+
+    if parsed < 0 or parsed > 100:
+        # Out-of-range is a malformed response, not a real extreme score —
+        # clamp for display but mark invalid so storage can flag it instead
+        # of silently presenting e.g. "140% confidence".
+        return {"value": max(0.0, min(100.0, parsed)), "valid": False, "raw": str(raw_val)}
+
+    return {"value": parsed, "valid": True, "raw": str(raw_val)}
+
+
+def _model_meta(model: str, raw_text: str) -> dict:
+    """Confidence provenance fields attached to every /predict/* response (spec 4.5)."""
+    return {
+        "ai_model": model,
+        # The full Claude model identifier already encodes the version
+        # (e.g. "claude-sonnet-5") — there is no separate internal version
+        # number to report beyond the model id itself.
+        "ai_model_version": model,
+        "raw_model_output": raw_text[:4000],
+        "confidence_interpretation": (
+            "Self-reported certainty from a vision-language model's text "
+            "response, not a calibrated statistical probability from a "
+            "trained classifier. Treat as directional guidance only."
+        ),
+        "validation_status": "unvalidated",
+    }
 
 def _extract_text(message) -> str:
     """Return the first text block from a Claude response.
@@ -214,13 +257,17 @@ severity | None{lang_note}"""
             "message": "Image does not appear to show a plant or crop. Please upload a clear photo of the affected plant part.",
         })
 
+    conf = _parse_confidence(fields.get("confidence"))
+
     return {
+        **_model_meta(AI_MODEL, text),
         "subject_name":              fields.get("subject_name",             "Unknown"),
         "scientific_name":           fields.get("scientific_name",          "Unknown"),
         "detected_part":             fields.get("detected_part",            "Unknown"),
         "health_status":             fields.get("health_status",            "Uncertain"),
         "disease":                   fields.get("disease",                  "Unknown"),
-        "confidence":                _safe_float(fields.get("confidence",   "0")),
+        "confidence":                conf["value"],
+        "confidence_valid":          conf["valid"],
         "severity":                  fields.get("severity",                 "Moderate"),
         "symptoms_identified":       fields.get("symptoms_identified",      ""),
         "cause":                     fields.get("cause",                    ""),
@@ -323,14 +370,18 @@ If no image was provided, set confidence no higher than 30.{lang_note}"""
             "message": "Image does not appear to show livestock. Please upload a clear photo of the affected animal.",
         })
 
+    conf = _parse_confidence(fields.get("confidence"))
+
     return {
+        **_model_meta(AI_MODEL, text),
         "subject_name":         fields.get("subject_name",         "Unknown"),
         "scientific_name":      fields.get("scientific_name",       "N/A"),
         "breed":                fields.get("breed",                 "Unknown"),
         "detected_part":        fields.get("detected_part",         "Unknown"),
         "health_status":        fields.get("health_status",         "Uncertain"),
         "disease":              fields.get("disease",               "Unknown"),
-        "confidence":           _safe_float(fields.get("confidence","0")),
+        "confidence":           conf["value"],
+        "confidence_valid":     conf["valid"],
         "severity":             fields.get("severity",              "Moderate"),
         "symptoms_identified":  fields.get("symptoms_identified",   ""),
         "cause":                fields.get("cause",                 ""),
@@ -413,10 +464,14 @@ confidence | 0{lang_note}"""
             "message": "Image does not appear to show a soil sample. Please upload a clear photo of the soil.",
         })
 
+    conf = _parse_confidence(fields.get("confidence"))
+
     return {
+        **_model_meta(AI_MODEL, text),
         "subject_name":              fields.get("subject_name",              "Unknown soil type"),
         "health_status":             fields.get("health_status",             "Unknown"),
-        "confidence":                _safe_float(fields.get("confidence",    "0")),
+        "confidence":                conf["value"],
+        "confidence_valid":          conf["valid"],
         "ph_estimate":               fields.get("ph_estimate",               "Unknown"),
         "nutrients":                 fields.get("nutrients",                  "Assessment unavailable"),
         "nutrient_deficiencies":     fields.get("nutrient_deficiencies",     "None visually apparent"),
@@ -504,12 +559,16 @@ confidence | 0{lang_note}"""
             "message": "Could not identify a pest from this image. Please upload a clearer, closer photo.",
         })
 
+    conf = _parse_confidence(fields.get("confidence"))
+
     return {
+        **_model_meta(AI_MODEL, text),
         "pest_name":           fields.get("pest_name",           "Unknown"),
         "scientific_name":     fields.get("scientific_name",     "Unknown"),
         "pest_type":           fields.get("pest_type",           "Unknown"),
         "host_crops":          fields.get("host_crops",          ""),
-        "confidence":          _safe_float(fields.get("confidence", "0")),
+        "confidence":          conf["value"],
+        "confidence_valid":    conf["valid"],
         "severity":            fields.get("severity",            "Moderate"),
         "damage_type":         fields.get("damage_type",         ""),
         "spread_risk":         fields.get("spread_risk",         "Medium"),

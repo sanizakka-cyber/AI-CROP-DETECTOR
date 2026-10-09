@@ -111,19 +111,42 @@ class CeoScanAnalyticsController extends Controller
         $scans = $filteredBase()
             ->when($request->filled('state'), fn (Builder $q) => $q->where('users.state', $request->state))
             ->when($request->filled('lga'), fn (Builder $q) => $q->where('users.lga', $request->lga))
+            ->leftJoin('collection_locations', 'collection_locations.diagnosis_id', '=', 'diagnoses.id')
             ->select(
                 'diagnoses.*',
                 'users.first_name as user_first_name',
                 'users.last_name as user_last_name',
                 'users.state as user_state',
-                'users.lga as user_lga'
+                'users.lga as user_lga',
+                // Actual sample collection location — distinct from the
+                // user's registered address above (spec Section 5).
+                // Null when no location was ever captured for this scan.
+                'collection_locations.state as collection_state',
+                'collection_locations.lga as collection_lga'
             )
             ->orderByDesc('diagnoses.created_at')
             ->paginate(25)
             ->withQueryString();
 
+        // "Location completeness" (spec Section 10) — of the scans in the
+        // CURRENT filtered view, what share have any real sample-collection
+        // location recorded at all. Computed from the same filtered base so
+        // it can't silently diverge from what the table above is showing.
+        $locationCompleteness = $filteredBase()
+            ->when($request->filled('state'), fn (Builder $q) => $q->where('users.state', $request->state))
+            ->when($request->filled('lga'), fn (Builder $q) => $q->where('users.lga', $request->lga))
+            ->leftJoin('collection_locations', 'collection_locations.diagnosis_id', '=', 'diagnoses.id')
+            ->selectRaw('count(*) as total, count(collection_locations.id) as with_location, '
+                . 'count(case when collection_locations.latitude is not null then 1 end) as with_coords')
+            ->first();
+
         return view('ceo.pages.ai-analytics', [
             'summary'            => $summary,
+            'locationCompleteness' => [
+                'total'        => (int) ($locationCompleteness->total ?? 0),
+                'withLocation' => (int) ($locationCompleteness->with_location ?? 0),
+                'withCoords'   => (int) ($locationCompleteness->with_coords ?? 0),
+            ],
             'filteredCount'      => $filteredCount,
             'filteredAvgConf'    => round((float) ($filteredAvgConf ?? 0)),
             'filteredAvgMinutes' => round((float) ($filteredAvgMinutes ?? 0), 1),
@@ -141,6 +164,15 @@ class CeoScanAnalyticsController extends Controller
         ]);
     }
 
+    /**
+     * Research-quality CSV export (spec Sections 7/8). Every column is
+     * named for exactly what it is — "User's..." for the farmer's
+     * registered account address, "Sample Collection..." for the actual
+     * sample location captured on the scan — so the two are never
+     * confused downstream. A scan's `confidence_score`/`validation_status`
+     * columns are exported exactly as stored: missing values stay blank,
+     * never replaced with a fabricated number (spec 8).
+     */
     public function exportCsv(Request $request)
     {
         $query = $this->applyNonGeoFilters(
@@ -149,12 +181,22 @@ class CeoScanAnalyticsController extends Controller
         )
             ->when($request->filled('state'), fn (Builder $q) => $q->where('users.state', $request->state))
             ->when($request->filled('lga'), fn (Builder $q) => $q->where('users.lga', $request->lga))
+            ->leftJoin('collection_locations', 'collection_locations.diagnosis_id', '=', 'diagnoses.id')
             ->select(
                 'diagnoses.id', 'diagnoses.scan_ref', 'diagnoses.created_at', 'diagnoses.type', 'diagnoses.subject_name',
                 'diagnoses.disease_name', 'diagnoses.confidence_score', 'diagnoses.severity_level',
                 'diagnoses.status', DB::raw($this->displayStatusCaseSql().' as display_status'),
+                'diagnoses.validation_status', 'diagnoses.confidence_decision',
+                'diagnoses.ai_model_name', 'diagnoses.ai_model_version',
                 'users.first_name as user_first_name', 'users.last_name as user_last_name',
-                'users.state as user_state', 'users.lga as user_lga'
+                'users.state as user_state', 'users.lga as user_lga',
+                'collection_locations.state as collection_state', 'collection_locations.lga as collection_lga',
+                'collection_locations.community as collection_community',
+                'collection_locations.latitude as collection_latitude', 'collection_locations.longitude as collection_longitude',
+                'collection_locations.accuracy_meters as collection_accuracy_meters',
+                'collection_locations.capture_method as collection_capture_method',
+                'collection_locations.verification_status as collection_verification_status',
+                'collection_locations.collected_at as collection_collected_at'
             )
             ->orderByDesc('diagnoses.created_at')
             // Sane upper bound on a single export — this platform's scan volume is
@@ -172,7 +214,13 @@ class CeoScanAnalyticsController extends Controller
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
                 'Scan ID', 'Date/Time (Africa/Lagos)', 'Type', 'Crop/Subject', 'Diagnosis',
-                'Confidence %', 'Severity', 'Raw Status', 'Display Status', 'User', 'State', 'LGA',
+                'Confidence %', 'Confidence Decision', 'Validation Status', 'AI Model', 'AI Model Version',
+                'Severity', 'Raw Status', 'Display Status', 'User',
+                "User's Registered State", "User's Registered LGA",
+                'Sample Collection State', 'Sample Collection LGA', 'Sample Collection Community',
+                'Sample Latitude (WGS84)', 'Sample Longitude (WGS84)', 'Sample GPS Accuracy (m)',
+                'Sample Location Capture Method', 'Sample Location Verification Status',
+                'Sample Collected At (Africa/Lagos)',
             ]);
             foreach ($query->cursor() as $row) {
                 fputcsv($handle, [
@@ -181,13 +229,28 @@ class CeoScanAnalyticsController extends Controller
                     $row->type,
                     $row->subject_name,
                     $row->disease_name,
-                    $row->confidence_score,
+                    $row->confidence_score, // left blank by fputcsv when null — never backfilled
+                    $row->confidence_decision,
+                    $row->validation_status,
+                    $row->ai_model_name,
+                    $row->ai_model_version,
                     $row->severity_level,
                     $row->status,
                     $row->display_status,
                     trim(($row->user_first_name ?? '').' '.($row->user_last_name ?? '')),
                     $row->user_state,
                     $row->user_lga,
+                    $row->collection_state,
+                    $row->collection_lga,
+                    $row->collection_community,
+                    $row->collection_latitude,
+                    $row->collection_longitude,
+                    $row->collection_accuracy_meters,
+                    $row->collection_capture_method,
+                    $row->collection_verification_status,
+                    $row->collection_collected_at
+                        ? Carbon::parse($row->collection_collected_at)->timezone('Africa/Lagos')->format('Y-m-d H:i:s')
+                        : null,
                 ]);
             }
             fclose($handle);

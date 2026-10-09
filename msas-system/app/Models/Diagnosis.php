@@ -44,10 +44,25 @@ class Diagnosis extends Model
         'explanation',
         'status',
         'language',
+        // AI confidence provenance (spec 4.5)
+        'ai_model_name',
+        'ai_model_version',
+        'raw_model_output',
+        'confidence_interpretation',
+        'confidence_decision',
+        'decision_threshold',
+        'validation_status',
+        'generated_by',
+        // Optional research metadata (spec 6D / 7)
+        'research_metadata',
+        'consent_research_use',
     ];
 
     protected $casts = [
-        'confidence_score' => 'float',
+        'confidence_score'      => 'float',
+        'decision_threshold'    => 'float',
+        'research_metadata'     => 'array',
+        'consent_research_use'  => 'boolean',
     ];
 
     /**
@@ -116,6 +131,41 @@ class Diagnosis extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function collectionLocation()
+    {
+        return $this->hasOne(CollectionLocation::class);
+    }
+
+    /**
+     * Section 8's "data-quality status for each record" — computed from
+     * current column values, never stored, so it can't drift out of sync
+     * with the data it describes (the exact bug class this audit found
+     * elsewhere: status columns nothing keeps correct). Order matters:
+     * more specific/severe statuses are checked first.
+     */
+    public function getDataQualityStatusAttribute(): string
+    {
+        if ($this->status === 'needs_review' || $this->confidence_score === null) {
+            return 'diagnostic_unvalidated';
+        }
+
+        $loc = $this->relationLoaded('collectionLocation') ? $this->collectionLocation : $this->collectionLocation()->first();
+
+        if (!$loc) {
+            return 'location_unverified';
+        }
+
+        if ($loc->verification_status === 'boundary_mismatch_flagged') {
+            return 'requires_review';
+        }
+
+        if (!$loc->user_confirmed && $loc->verification_status === 'unverified') {
+            return 'partially_complete';
+        }
+
+        return 'validated';
     }
 
     public function feedbacks()

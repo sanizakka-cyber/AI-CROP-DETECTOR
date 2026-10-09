@@ -286,7 +286,7 @@
                             </p>
                             @endif
                         </div>
-                        @if($diagnosis->confidence_score < 60)
+                        @if($diagnosis->confidence_score !== null && $diagnosis->confidence_score < 60)
                         <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 rounded-lg max-w-xs">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                             <span data-i18n="Confidence is limited. Please capture a clearer image or consult an expert.">{{ __('Confidence is limited. Please capture a clearer image or consult an expert.') }}</span>
@@ -320,6 +320,71 @@
                             <p class="text-xs text-sky-800 leading-relaxed">{{ $diagnosis->environmental_factors }}</p>
                         </div>
                         @endif
+                    </div>
+
+                    {{-- ── Sample Collection Location (spec Section 6C) ──────────────── --}}
+                    @php $loc = $diagnosis->collectionLocation; @endphp
+                    <div class="bg-white border border-slate-200 rounded-xl p-4">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                            <i class="fa-solid fa-location-dot text-[9px]"></i> <span data-i18n="Sample Collection Location">{{ __('Sample Collection Location') }}</span>
+                        </div>
+                        @if(!$loc)
+                            <p class="text-xs text-slate-400 italic">{{ __('No collection location was recorded for this scan.') }}</p>
+                        @else
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mb-2">
+                                @if($loc->state)<div><span class="text-slate-400">{{ __('State') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->state }}</span></div>@endif
+                                @if($loc->lga)<div><span class="text-slate-400">{{ __('LGA') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->lga }}</span></div>@endif
+                                @if($loc->ward)<div><span class="text-slate-400">{{ __('Ward') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->ward }}</span></div>@endif
+                                @if($loc->community)<div><span class="text-slate-400">{{ __('Community') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->community }}</span></div>@endif
+                                @if($loc->postal_code)<div><span class="text-slate-400">{{ __('Postal Code') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->postal_code }}</span></div>@endif
+                                @if($loc->address_landmark)<div class="col-span-2 sm:col-span-3"><span class="text-slate-400">{{ __('Address/Landmark') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->address_landmark }}</span></div>@endif
+                            </div>
+
+                            @if($loc->hasCoordinates())
+                            <div class="flex items-center gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 mb-2">
+                                <i class="fa-solid fa-crosshairs text-slate-400"></i>
+                                <span class="font-mono text-slate-700">{{ number_format($loc->latitude, 6) }}, {{ number_format($loc->longitude, 6) }}</span>
+                                @if($loc->accuracy_meters)<span class="text-slate-400">(±{{ round($loc->accuracy_meters) }}m)</span>@endif
+                                <a href="https://www.google.com/maps?q={{ $loc->latitude }},{{ $loc->longitude }}" target="_blank" rel="noopener" class="ml-auto text-emerald-600 hover:underline font-semibold">{{ __('Open in Maps') }} ↗</a>
+                            </div>
+                            @endif
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full
+                                    {{ $loc->verification_status === 'boundary_mismatch_flagged' ? 'bg-amber-100 text-amber-800' : ($loc->user_confirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600') }}">
+                                    {{ $loc->provenanceLabel }}
+                                </span>
+                                @if($loc->verification_status === 'boundary_mismatch_flagged')
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-800">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> {{ __('Location outside expected range — unverified') }}
+                                </span>
+                                @endif
+                                @if($loc->differs_from_scan_location)
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-sky-100 text-sky-800">
+                                    {{ __('Scanned at a different location than collected') }}
+                                </span>
+                                @endif
+                                @if($loc->collected_at)
+                                <span class="text-[10px] text-slate-400 ml-auto">{{ __('Collected') }}: {{ $loc->collected_at->format('M j, Y H:i') }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- ── AI Confidence Provenance (spec Section 4.5 / 6B) ──────────── --}}
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-info text-[9px]"></i> <span data-i18n="What this confidence score means">{{ __('What this confidence score means') }}</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            {{ $diagnosis->confidence_interpretation ?: __('This confidence value is the AI model\'s own self-reported certainty, not a statistically calibrated probability. Treat it as directional guidance, not clinical certainty.') }}
+                        </p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-slate-400">
+                            @if($diagnosis->ai_model_name)<span>{{ __('Model') }}: {{ $diagnosis->ai_model_name }}</span>@endif
+                            <span>{{ __('Validation status') }}: {{ ucfirst($diagnosis->validation_status ?? 'unvalidated') }}</span>
+                            @if($diagnosis->confidence_decision)<span>{{ __('Decision') }}: {{ str_replace('_', ' ', $diagnosis->confidence_decision) }}</span>@endif
+                            <span>{{ __('Data quality') }}: {{ str_replace('_', ' ', $diagnosis->dataQualityStatus) }}</span>
+                        </div>
                     </div>
 
                     {{-- Nutrients + Pests --}}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CollectionLocation;
 use App\Models\Diagnosis;
 use App\Models\DiagnosisFeedback;
 use App\Services\DiagnosisResultMapper;
@@ -15,11 +16,29 @@ class DiagnosticController extends Controller
 {
     public function scan()
     {
-        return view('diagnostics.scan');
+        return view('diagnostics.scan', ['nigeriaStates' => \App\Data\NigeriaLocations::states()]);
     }
 
     public function analyze(Request $request)
     {
+        // Hidden form fields (e.g. loc_capture_method, loc_latitude) submit
+        // as an empty string when the user never touched them, not an
+        // absent key. 'nullable' only exempts a genuinely-missing/null
+        // value from the stricter rules below (e.g. 'in:...' on
+        // loc_capture_method), so normalize blanks to null before
+        // validating — never rely on ConvertEmptyStringsToNull middleware
+        // alone for this (see App\Http\Controllers\Api\DiagnoseApiController
+        // for why the same normalization is needed on the API side too).
+        foreach ([
+            'loc_country', 'loc_state', 'loc_lga', 'loc_ward', 'loc_community',
+            'loc_postal_code', 'loc_address', 'loc_latitude', 'loc_longitude',
+            'loc_accuracy_meters', 'loc_capture_method', 'loc_collected_at',
+        ] as $locKey) {
+            if ($request->has($locKey) && $request->input($locKey) === '') {
+                $request->merge([$locKey => null]);
+            }
+        }
+
         $request->validate([
             'scan_type'       => 'required|in:plant,animal,soil,pest',
             'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|max:5120',
@@ -29,6 +48,25 @@ class DiagnosticController extends Controller
             'assessment_type' => 'nullable|string|max:100',
             'soil_context'    => 'nullable|string|max:300',
             'pest_location'   => 'nullable|string|max:100',
+
+            // ── Sample collection location (spec Section 5) — every field is
+            // optional. A missing location must never block a diagnosis
+            // (spec Section 11); 'nullable' + explicit casts below keep a
+            // blank string from becoming a bad "0" coordinate.
+            'loc_country'           => 'nullable|string|max:100',
+            'loc_state'              => 'nullable|string|max:100',
+            'loc_lga'                => 'nullable|string|max:100',
+            'loc_ward'               => 'nullable|string|max:150',
+            'loc_community'          => 'nullable|string|max:150',
+            'loc_postal_code'        => 'nullable|string|max:20',
+            'loc_address'            => 'nullable|string|max:500',
+            'loc_latitude'           => 'nullable|numeric|between:-90,90',
+            'loc_longitude'          => 'nullable|numeric|between:-180,180',
+            'loc_accuracy_meters'    => 'nullable|numeric|min:0',
+            'loc_capture_method'     => 'nullable|in:gps_device,manual_coordinates,administrative_selection,address_entry',
+            'loc_user_confirmed'     => 'nullable|boolean',
+            'loc_differs_from_scan'  => 'nullable|boolean',
+            'loc_collected_at'       => 'nullable|date',
         ]);
 
         // ── Subscription scan limit check ─────────────────────────────────────
@@ -196,7 +234,7 @@ class DiagnosticController extends Controller
             $diagnosisData = DiagnosisResultMapper::aiUnavailableFallback();
         }
 
-        Diagnosis::create(array_merge($diagnosisData, [
+        $diagnosis = Diagnosis::create(array_merge($diagnosisData, [
             'user_id'         => auth()->id(),
             'scan_ref'        => Diagnosis::generateScanRef(),
             'type'            => $request->scan_type,
@@ -204,6 +242,8 @@ class DiagnosticController extends Controller
             'image_thumbnail' => $thumbnail,
             'language'        => app()->getLocale(),
         ]));
+
+        CollectionLocation::createFromRequest($request, $diagnosis);
 
         \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
 
@@ -219,7 +259,7 @@ class DiagnosticController extends Controller
         try {
             $feedbackReady = Schema::hasTable('diagnosis_feedbacks');
 
-            $query = Diagnosis::where('user_id', auth()->id())->latest();
+            $query = Diagnosis::where('user_id', auth()->id())->latest()->with('collectionLocation');
 
             if ($feedbackReady) {
                 $query->with('myFeedback');
@@ -234,7 +274,7 @@ class DiagnosticController extends Controller
             ]);
             // Fallback: show history without feedback so page doesn't 500
             $feedbackReady = false;
-            $diagnoses     = Diagnosis::where('user_id', auth()->id())->latest()->get();
+            $diagnoses     = Diagnosis::where('user_id', auth()->id())->latest()->with('collectionLocation')->get();
         }
 
         return view('diagnostics.history', compact('diagnoses', 'feedbackReady'));

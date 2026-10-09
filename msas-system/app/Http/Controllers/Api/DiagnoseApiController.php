@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CollectionLocation;
 use App\Models\Diagnosis;
 use App\Models\MobileNotification;
 use App\Services\DiagnosisResultMapper;
@@ -79,6 +80,63 @@ class DiagnoseApiController extends Controller
         }
     }
 
+    /**
+     * The web scan form's blank fields arrive as real NULLs (Laravel's
+     * ConvertEmptyStringsToNull middleware, applied to the 'web' group).
+     * The API group does not carry that same guarantee for every client,
+     * so a mobile client that always sends `loc_capture_method` /
+     * `loc_state` etc. as an empty string rather than omitting the key
+     * entirely would otherwise fail the 'nullable|in:...' / 'nullable|
+     * string' rules below on a value that should be treated as "not
+     * provided". Normalizing here keeps both clients' location contract
+     * identical regardless of what empty-value convention either sends.
+     */
+    private function normalizeEmptyLocationStrings(Request $request): void
+    {
+        $locKeys = [
+            'loc_country', 'loc_state', 'loc_lga', 'loc_ward', 'loc_community',
+            'loc_postal_code', 'loc_address', 'loc_latitude', 'loc_longitude',
+            'loc_accuracy_meters', 'loc_capture_method', 'loc_collected_at',
+        ];
+
+        $normalized = [];
+        foreach ($locKeys as $key) {
+            if ($request->has($key) && $request->input($key) === '') {
+                $normalized[$key] = null;
+            }
+        }
+
+        if ($normalized) {
+            $request->merge($normalized);
+        }
+    }
+
+    /**
+     * Sample-collection-location validation rules (spec Section 5), shared
+     * across crop/livestock/soil/pest — same field contract as the web
+     * scan form (DiagnosticController::analyze()) so a scan submitted from
+     * either client produces the same richness of location record.
+     */
+    private function locationRules(): array
+    {
+        return [
+            'loc_country'           => ['sometimes', 'nullable', 'string', 'max:100'],
+            'loc_state'              => ['sometimes', 'nullable', 'string', 'max:100'],
+            'loc_lga'                => ['sometimes', 'nullable', 'string', 'max:100'],
+            'loc_ward'               => ['sometimes', 'nullable', 'string', 'max:150'],
+            'loc_community'          => ['sometimes', 'nullable', 'string', 'max:150'],
+            'loc_postal_code'        => ['sometimes', 'nullable', 'string', 'max:20'],
+            'loc_address'            => ['sometimes', 'nullable', 'string', 'max:500'],
+            'loc_latitude'           => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'loc_longitude'          => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'loc_accuracy_meters'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'loc_capture_method'     => ['sometimes', 'nullable', 'in:gps_device,manual_coordinates,administrative_selection,address_entry'],
+            'loc_user_confirmed'     => ['sometimes', 'nullable', 'boolean'],
+            'loc_differs_from_scan'  => ['sometimes', 'nullable', 'boolean'],
+            'loc_collected_at'       => ['sometimes', 'nullable', 'date'],
+        ];
+    }
+
     public function crop(Request $request): JsonResponse
     {
         $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
@@ -95,12 +153,13 @@ class DiagnoseApiController extends Controller
         // fully capable of identifying the crop and plant part on its own;
         // forcing a selection here was a mobile-only restriction the web
         // flow never had.
-        $request->validate([
+        $this->normalizeEmptyLocationStrings($request);
+        $request->validate(array_merge([
             'cropType' => ['sometimes', 'nullable', 'string'],
             'cropPart' => ['sometimes', 'nullable', 'string'],
             'images'   => ['required', 'array', 'min:1'],
             'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
-        ]);
+        ], $this->locationRules()));
 
         $this->warmAiEngine();
 
@@ -147,12 +206,13 @@ class DiagnoseApiController extends Controller
             ], 403);
         }
 
-        $request->validate([
+        $this->normalizeEmptyLocationStrings($request);
+        $request->validate(array_merge([
             'animalType'     => ['required', 'string'],
             'assessmentType' => ['required', 'string'],
             'images'         => ['sometimes', 'array', 'max:5'],
             'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
-        ]);
+        ], $this->locationRules()));
 
         $this->warmAiEngine();
 
@@ -206,11 +266,12 @@ class DiagnoseApiController extends Controller
             ], 403);
         }
 
-        $request->validate([
+        $this->normalizeEmptyLocationStrings($request);
+        $request->validate(array_merge([
             'soilContext' => ['sometimes', 'nullable', 'string', 'max:300'],
             'images'      => ['required', 'array', 'min:1'],
             'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
-        ]);
+        ], $this->locationRules()));
 
         $this->warmAiEngine();
 
@@ -256,12 +317,13 @@ class DiagnoseApiController extends Controller
             ], 403);
         }
 
-        $request->validate([
+        $this->normalizeEmptyLocationStrings($request);
+        $request->validate(array_merge([
             'cropType'    => ['sometimes', 'nullable', 'string'],
             'location'    => ['sometimes', 'nullable', 'string', 'max:100'],
             'images'      => ['required', 'array', 'min:1'],
             'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
-        ]);
+        ], $this->locationRules()));
 
         $this->warmAiEngine();
 
@@ -318,6 +380,8 @@ class DiagnoseApiController extends Controller
             'language'        => app()->getLocale(),
         ]));
 
+        CollectionLocation::createFromRequest($request, $diagnosis);
+
         \App\Models\SubscriptionUsage::track($request->user()->id, 'ai_scans_per_month');
 
         $this->cacheScanPayload($diagnosis, $imagePath);
@@ -343,6 +407,8 @@ class DiagnoseApiController extends Controller
             'image_path' => $imagePath,
             'language'   => app()->getLocale(),
         ]));
+
+        CollectionLocation::createFromRequest($request, $diagnosis);
 
         $this->cacheScanPayload($diagnosis, $imagePath);
 
@@ -372,6 +438,8 @@ class DiagnoseApiController extends Controller
         $myFeedback = \App\Models\DiagnosisFeedback::where('diagnosis_id', $d->id)
             ->where('user_id', $d->user_id)
             ->first();
+
+        $loc = $d->collectionLocation;
 
         return [
             'diagnosisId'      => $d->id,
@@ -403,6 +471,37 @@ class DiagnoseApiController extends Controller
                 'pestDetection'       => $d->pest_detection,
                 'explanation'         => $d->explanation,
             ],
+            // Confidence provenance (spec 4.5) — always present so the
+            // client can render an honest "what does this number mean"
+            // explanation instead of showing a bare percentage.
+            'confidenceProvenance' => [
+                'aiModelName'             => $d->ai_model_name,
+                'aiModelVersion'          => $d->ai_model_version,
+                'confidenceInterpretation'=> $d->confidence_interpretation,
+                'confidenceDecision'      => $d->confidence_decision,
+                'decisionThreshold'       => $d->decision_threshold,
+                'validationStatus'        => $d->validation_status,
+                'generatedBy'             => $d->generated_by,
+            ],
+            // Sample collection location (spec 6C) — null when the client
+            // never submitted one; never backfilled from account/device/IP.
+            'collectionLocation' => $loc ? [
+                'country'                 => $loc->country,
+                'state'                   => $loc->state,
+                'lga'                     => $loc->lga,
+                'ward'                    => $loc->ward,
+                'community'               => $loc->community,
+                'postalCode'              => $loc->postal_code,
+                'addressLandmark'         => $loc->address_landmark,
+                'latitude'                => $loc->latitude,
+                'longitude'               => $loc->longitude,
+                'accuracyMeters'          => $loc->accuracy_meters,
+                'provenanceLabel'         => $loc->provenanceLabel,
+                'verificationStatus'      => $loc->verification_status,
+                'differsFromScanLocation' => $loc->differs_from_scan_location,
+                'collectedAt'             => $loc->collected_at?->toISOString(),
+            ] : null,
+            'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [
                 'immediateActions' => $d->first_aid_steps ? [['action' => $d->first_aid_steps]] : [],
                 'chemicalTreatments' => $d->recommended_medication ? [['product' => $d->recommended_medication]] : [],
