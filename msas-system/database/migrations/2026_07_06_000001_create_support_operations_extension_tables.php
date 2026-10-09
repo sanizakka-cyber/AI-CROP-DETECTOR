@@ -16,8 +16,19 @@ return new class extends Migration
                 $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
                 $table->string('subject');
                 $table->string('category')->default('General');
-                $table->enum('priority', ['low', 'medium', 'high', 'urgent'])->default('medium');
-                $table->enum('status', ['open', 'in_progress', 'resolved', 'closed'])->default('open');
+                // Plain strings, not enum() -- the real farmer-facing create
+                // form (resources/views/farmer/support/create.blade.php)
+                // defaults to and submits priority=normal, a value outside
+                // this original enum's set. An enum/CHECK constraint here
+                // enforces a vocabulary the application doesn't actually
+                // use, on both Postgres and SQLite (confirmed via a real
+                // CI failure: SQLSTATE[23000] CHECK constraint failed:
+                // priority). Validation already lives in
+                // SupportTicketController::store()'s own 'required|in:...'
+                // rule, which is the single source of truth for allowed
+                // values.
+                $table->string('priority', 20)->default('medium');
+                $table->string('status', 20)->default('open');
                 $table->text('description');
                 $table->string('reference')->nullable();
                 $table->timestamp('resolved_at')->nullable();
