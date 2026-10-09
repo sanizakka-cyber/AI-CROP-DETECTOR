@@ -49,6 +49,7 @@ class SupportTicketSchemaTest extends TestCase
 
     public function test_a_farmer_can_submit_a_support_ticket(): void
     {
+        $this->withoutExceptionHandling(); // TEMP: surface the real exception instead of a swallowed 500
         $farmer = User::factory()->create(['role' => 'farmer']);
 
         $response = $this->actingAs($farmer)->post(route('support.store'), [
