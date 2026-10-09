@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CollectionLocation;
 use App\Models\Diagnosis;
 use App\Models\DiagnosisFeedback;
+use App\Rules\NotEmptyFile;
 use App\Services\DiagnosisResultMapper;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
@@ -48,12 +49,16 @@ class DiagnosticController extends Controller
             // to actually allow a file this size through PHP itself (fixed
             // alongside this) -- this rule alone was previously
             // unreachable for any upload over 2MB.
-            // min:1 (KB) -- found via a regression test this phase: a
+            // NotEmptyFile -- found via a regression test this phase: a
             // zero-byte file with a spoofed image/jpeg content-type
             // otherwise sailed through 'required'+'mimes'+'max' (none of
             // which check for an empty file) and would only have failed
             // later, confusingly, when the AI engine tried to decode it.
-            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|min:1|max:10240',
+            // Laravel's built-in 'min:1' (KB) rule is too coarse -- it
+            // also rejects legitimately tiny files (under 1KB), which
+            // this app's own test fixtures use; NotEmptyFile checks the
+            // exact byte count instead.
+            'image'           => ['required', 'mimes:jpeg,jpg,png,gif,webp', new NotEmptyFile(), 'max:10240'],
             'crop_type'       => 'nullable|string|max:100',
             'crop_part'       => 'nullable|string|max:100',
             'animal_type'     => 'nullable|string|max:100',
