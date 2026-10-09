@@ -40,7 +40,7 @@ class CeoScanAnalyticsController extends Controller
         $filteredAvgMinutes = $filteredBase()
             ->when($request->filled('state'), fn (Builder $q) => $q->where('users.state', $request->state))
             ->when($request->filled('lga'), fn (Builder $q) => $q->where('users.lga', $request->lga))
-            ->selectRaw('AVG(EXTRACT(EPOCH FROM (diagnoses.updated_at - diagnoses.created_at)) / 60) as m')
+            ->selectRaw('AVG(' . $this->minutesBetweenSql('diagnoses.updated_at', 'diagnoses.created_at') . ') as m')
             ->value('m');
 
         $statusBreakdown = $filteredBase()

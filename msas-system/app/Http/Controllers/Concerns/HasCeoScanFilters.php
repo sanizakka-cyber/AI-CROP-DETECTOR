@@ -49,6 +49,21 @@ trait HasCeoScanFilters
         return DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
     }
 
+    /**
+     * Raw-SQL expression for the number of minutes between two timestamp
+     * columns, as a driver-aware fragment safe to drop into selectRaw().
+     * Postgres has no portable alternative to EXTRACT(EPOCH FROM ...) for
+     * this; SQLite has no EXTRACT at all (another "always worked because
+     * production is always pgsql, untestable on SQLite" gap this audit
+     * found alongside the 'ilike' one above).
+     */
+    private function minutesBetweenSql(string $endColumn, string $startColumn): string
+    {
+        return DB::connection()->getDriverName() === 'pgsql'
+            ? "EXTRACT(EPOCH FROM ({$endColumn} - {$startColumn})) / 60"
+            : "(julianday({$endColumn}) - julianday({$startColumn})) * 24 * 60";
+    }
+
     private function applyNonGeoFilters(Builder $query, Request $request): Builder
     {
         [$from, $to] = $this->dateRange($request);
