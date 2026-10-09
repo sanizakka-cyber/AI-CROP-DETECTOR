@@ -158,7 +158,7 @@ class DiagnoseApiController extends Controller
             'cropType' => ['sometimes', 'nullable', 'string'],
             'cropPart' => ['sometimes', 'nullable', 'string'],
             'images'   => ['required', 'array', 'min:1'],
-            'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+            'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'min:1', 'max:10240'],
         ], $this->locationRules()));
 
         $this->warmAiEngine();
@@ -215,7 +215,7 @@ class DiagnoseApiController extends Controller
             // endpoints inconsistent with the other three's 10240 (10MB).
             // No documented reason for livestock specifically to have a
             // tighter per-image limit; standardized to match.
-            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'min:1', 'max:10240'],
         ], $this->locationRules()));
 
         $this->warmAiEngine();
@@ -274,7 +274,7 @@ class DiagnoseApiController extends Controller
         $request->validate(array_merge([
             'soilContext' => ['sometimes', 'nullable', 'string', 'max:300'],
             'images'      => ['required', 'array', 'min:1'],
-            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'min:1', 'max:10240'],
         ], $this->locationRules()));
 
         $this->warmAiEngine();
@@ -326,7 +326,7 @@ class DiagnoseApiController extends Controller
             'cropType'    => ['sometimes', 'nullable', 'string'],
             'location'    => ['sometimes', 'nullable', 'string', 'max:100'],
             'images'      => ['required', 'array', 'min:1'],
-            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
+            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', 'min:1', 'max:10240'],
         ], $this->locationRules()));
 
         $this->warmAiEngine();

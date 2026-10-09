@@ -48,7 +48,12 @@ class DiagnosticController extends Controller
             // to actually allow a file this size through PHP itself (fixed
             // alongside this) -- this rule alone was previously
             // unreachable for any upload over 2MB.
-            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|max:10240',
+            // min:1 (KB) -- found via a regression test this phase: a
+            // zero-byte file with a spoofed image/jpeg content-type
+            // otherwise sailed through 'required'+'mimes'+'max' (none of
+            // which check for an empty file) and would only have failed
+            // later, confusingly, when the AI engine tried to decode it.
+            'image'           => 'required|mimes:jpeg,jpg,png,gif,webp|min:1|max:10240',
             'crop_type'       => 'nullable|string|max:100',
             'crop_part'       => 'nullable|string|max:100',
             'animal_type'     => 'nullable|string|max:100',
