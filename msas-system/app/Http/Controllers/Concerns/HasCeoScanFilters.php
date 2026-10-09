@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Concerns;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 // Shared scan-filtering logic for any CEO page that lets the CEO filter AI
 // scan records (currently CeoScanAnalyticsController's full page and
@@ -34,19 +35,35 @@ trait HasCeoScanFilters
         };
     }
 
+    /**
+     * 'ilike' is Postgres-only syntax — SQLite (the test database;
+     * production is always pgsql) has no such operator at all and throws
+     * a SQL syntax error the instant any of these filters below are
+     * actually used. Nothing had ever exercised these filters in a test
+     * before this audit, so this was never caught. SQLite's plain 'like'
+     * is already byte-wise case-insensitive for ASCII, which is good
+     * enough for the search-box use case here.
+     */
+    private function likeOperator(): string
+    {
+        return DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+    }
+
     private function applyNonGeoFilters(Builder $query, Request $request): Builder
     {
         [$from, $to] = $this->dateRange($request);
         $query->whereBetween('diagnoses.created_at', [$from, $to]);
 
-        $query->when($request->filled('crop'), fn (Builder $q) => $q->where('diagnoses.subject_name', 'ilike', '%'.$request->crop.'%'));
-        $query->when($request->filled('diagnosis'), fn (Builder $q) => $q->where('diagnoses.disease_name', 'ilike', '%'.$request->diagnosis.'%'));
-        $query->when($request->filled('scan_ref'), fn (Builder $q) => $q->where('diagnoses.scan_ref', 'ilike', '%'.$request->scan_ref.'%'));
-        $query->when($request->filled('user'), function (Builder $q) use ($request) {
+        $like = $this->likeOperator();
+
+        $query->when($request->filled('crop'), fn (Builder $q) => $q->where('diagnoses.subject_name', $like, '%'.$request->crop.'%'));
+        $query->when($request->filled('diagnosis'), fn (Builder $q) => $q->where('diagnoses.disease_name', $like, '%'.$request->diagnosis.'%'));
+        $query->when($request->filled('scan_ref'), fn (Builder $q) => $q->where('diagnoses.scan_ref', $like, '%'.$request->scan_ref.'%'));
+        $query->when($request->filled('user'), function (Builder $q) use ($request, $like) {
             $s = $request->user;
-            $q->where(fn (Builder $qq) => $qq->where('users.first_name', 'ilike', "%{$s}%")
-                ->orWhere('users.last_name', 'ilike', "%{$s}%")
-                ->orWhere('users.email', 'ilike', "%{$s}%"));
+            $q->where(fn (Builder $qq) => $qq->where('users.first_name', $like, "%{$s}%")
+                ->orWhere('users.last_name', $like, "%{$s}%")
+                ->orWhere('users.email', $like, "%{$s}%"));
         });
 
         $query->when($request->filled('confidence'), function (Builder $q) use ($request) {
