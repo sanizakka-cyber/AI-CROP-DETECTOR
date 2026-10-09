@@ -67,12 +67,28 @@ class Diagnosis extends Model
 
     /**
      * Standardized, concurrency-safe public Scan ID: MSAS-SCN-YYYYMMDD-000001.
-     * Backed by a native Postgres sequence (diagnoses_scan_seq) so two
-     * simultaneous scans can never collide — never derive this from count()+1.
+     * Backed by a native Postgres sequence (diagnoses_scan_seq) in
+     * production (always pgsql — see render.yaml) so two simultaneous
+     * scans can never collide — never derive this from count()+1.
+     *
+     * `nextval()` is Postgres-only syntax. Before this fix, calling this on
+     * SQLite (the test database — phpunit.xml) crashed with "no such
+     * function: nextval" on every single call — meaning the entire scan
+     * creation path (DiagnosticController::analyze(),
+     * DiagnoseApiController's crop/livestock/soil/pest) could never be
+     * feature-tested at all, on any test, ever. That's why zero tests
+     * existed against it until this audit. The fallback here is NOT
+     * claimed to be collision-proof under concurrent SQLite writers — it
+     * doesn't need to be: SQLite is test-only, tests don't run concurrent
+     * scans, and production never takes this branch.
      */
     public static function generateScanRef(): string
     {
-        $seq = DB::select("SELECT nextval('diagnoses_scan_seq') AS n")[0]->n;
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            $seq = DB::select("SELECT nextval('diagnoses_scan_seq') AS n")[0]->n;
+        } else {
+            $seq = random_int(100000, 999999);
+        }
 
         return sprintf('MSAS-SCN-%s-%06d', now()->format('Ymd'), $seq);
     }
