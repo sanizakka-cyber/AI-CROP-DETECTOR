@@ -29,6 +29,17 @@ jobs:
           extensions: mbstring, pdo_sqlite, sqlite3, curl, fileinfo, gd, zip, intl, bcmath, exif, pcntl
           coverage: none
 
+      - name: Create .env
+        # No .env file exists in a fresh checkout (correctly gitignored).
+        # All real test config comes from phpunit.xml's <env> tags and
+        # $GITHUB_ENV below, but vlucas/phpdotenv still tries to read an
+        # actual .env file during bootstrap and throws a PHP warning when
+        # it's missing — found 2026-10-09: 20+ tests were being flagged
+        # "risky/warning" purely from this, burying real failures under
+        # repeated noise in the posted results. An empty file silences it
+        # without changing any actual config value.
+        run: touch .env
+
       - name: Generate app key
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
