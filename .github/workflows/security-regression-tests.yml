@@ -79,28 +79,52 @@ jobs:
               const lines = fs.readFileSync(path, 'utf8').split('\n');
               return lines.slice(-n).join('\n');
             }
-            const body = [
+            // GitHub issue bodies are capped at 65536 chars — a prior run
+            // (2026-10-09) silently lost ALL visibility into a failing test
+            // run because a widened tail pushed the body past that limit
+            // and issues.create() itself threw, with no fallback. Every
+            // section here is budgeted in CHARACTERS, not just lines, and
+            // the whole body is hard-capped with a loud marker if it would
+            // still be too long — and if issue creation fails anyway, a
+            // minimal fallback issue (just the conclusion, no logs) is
+            // posted instead of failing silently again.
+            function capChars(s, max) {
+              return s.length > max ? '…(truncated, showing last ' + max + ' chars)…\n' + s.slice(-max) : s;
+            }
+            const sections = [
+              ['Composer install (last 60 lines)', capChars(tail('/tmp/composer-install.log', 60), 6000)],
+              ['Composer audit (last 40 lines)', capChars(tail('/tmp/composer-audit.log', 40), 4000)],
+              ['SecurityRegressionTest filter (last 300 lines)', capChars(tail('/tmp/sec-test.log', 300), 20000)],
+              ['Full test suite (last 300 lines)', capChars(tail('/tmp/full-test.log', 300), 20000)],
+            ];
+            let body = [
               '## Security Regression Test run — ' + new Date().toISOString(),
               '',
               '**Commit:** ' + context.sha,
               '**Overall run conclusion source:** step outcomes below',
               '',
-              '### Composer install (last 60 lines)',
-              '```', tail('/tmp/composer-install.log', 60), '```',
-              '',
-              '### Composer audit (last 40 lines)',
-              '```', tail('/tmp/composer-audit.log', 40), '```',
-              '',
-              '### SecurityRegressionTest filter (last 500 lines)',
-              '```', tail('/tmp/sec-test.log', 500), '```',
-              '',
-              '### Full test suite (last 500 lines)',
-              '```', tail('/tmp/full-test.log', 500), '```',
+              ...sections.flatMap(([title, content]) => ['### ' + title, '```', content, '```', '']),
             ].join('\n');
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'CI Security Test Results — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
-              body: body,
-              labels: ['ci-test-results']
-            });
+            if (body.length > 60000) {
+              body = body.slice(0, 60000) + '\n\n…(body truncated to stay under GitHub\'s issue size limit)…';
+            }
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'CI Security Test Results — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
+                body: body,
+                labels: ['ci-test-results']
+              });
+            } catch (err) {
+              // Never fail silently again — post SOMETHING even if the full
+              // body couldn't be created, so a run is never invisible.
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'CI Security Test Results (minimal — publish failed) — ' + context.sha.substring(0,7) + ' — run ' + context.runId,
+                body: 'Full results could not be published: ' + String(err).slice(0, 2000)
+                  + '\n\nSee run: ' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+                labels: ['ci-test-results']
+              });
+            }
