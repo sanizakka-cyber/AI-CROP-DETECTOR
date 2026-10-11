@@ -133,8 +133,17 @@ class ConsultationApiController extends Controller
         if ($consultation->expert_id && $consultation->expert_id !== $user->id) {
             return response()->json(['error' => 'Assigned to another expert.'], 403);
         }
-        if ($consultation->status === 'resolved') {
-            return response()->json(['error' => 'Already resolved.'], 422);
+        // Mirrors VetController::respond() (web) -- this mobile endpoint
+        // had the identical gap: no check that the responding expert's
+        // role matches the consultation's case_type, and only resolved
+        // was excluded rather than requiring status === 'open', letting
+        // an unpaid ('awaiting_payment') consultation be answered for free.
+        if (! (($user->role === 'vet' && $consultation->case_type === 'livestock')
+            || ($user->role === 'agronomist' && $consultation->case_type === 'crop'))) {
+            return response()->json(['error' => 'This consultation is outside your area of practice.'], 403);
+        }
+        if ($consultation->status !== 'open') {
+            return response()->json(['error' => 'This consultation is not yet open for a response.'], 422);
         }
         $data = $request->validate(['expert_response' => 'required|string|min:10']);
         $consultation->update([
@@ -171,6 +180,14 @@ class ConsultationApiController extends Controller
         }
         if ($consultation->expert_id && $consultation->expert_id !== $user->id) {
             return response()->json(['error' => 'Assigned to another expert.'], 403);
+        }
+        // Same role/case_type and payment-status gates as vetRespond() above.
+        if (! (($user->role === 'vet' && $consultation->case_type === 'livestock')
+            || ($user->role === 'agronomist' && $consultation->case_type === 'crop'))) {
+            return response()->json(['error' => 'This consultation is outside your area of practice.'], 403);
+        }
+        if ($consultation->status !== 'open') {
+            return response()->json(['error' => 'This consultation is not yet open.'], 422);
         }
         if (! $consultation->video_room_id) {
             $consultation->update([

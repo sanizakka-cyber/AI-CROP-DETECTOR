@@ -90,4 +90,28 @@ class AiChatHistoryValidationTest extends TestCase
         $response = $this->postChat(['message' => 'hello']);
         $response->assertSessionDoesntHaveErrors('history');
     }
+
+    /**
+     * Separate finding from the history-shape one above: chat()'s outbound
+     * multipart body used to be hand-built by string concatenation with no
+     * CRLF stripping, so a 'message' containing its own
+     * "\r\n--{boundary}\r\n..." sequence could inject an extra form field
+     * into the AI engine's /chat parser. Fixed by switching to Guzzle's
+     * native 'multipart' option (which encodes each part correctly),
+     * matching the pattern transcribe() already used correctly. This
+     * can't assert what Guzzle actually sends without mocking its HTTP
+     * client (not currently injectable into this controller), but it
+     * confirms the request-building path itself doesn't throw or behave
+     * unexpectedly when fed a value designed to break hand-rolled
+     * multipart construction.
+     */
+    public function test_a_message_containing_crlf_sequences_does_not_crash_request_building(): void
+    {
+        $response = $this->postChat([
+            'message' => "hello\r\n--fakeboundary\r\nContent-Disposition: form-data; name=\"quality\"\r\n\r\nhigh\r\n--fakeboundary--",
+        ]);
+
+        $response->assertSessionDoesntHaveErrors();
+        $response->assertStatus(503); // no AI engine reachable in CI -- confirms we got past request-building, not a PHP error
+    }
 }

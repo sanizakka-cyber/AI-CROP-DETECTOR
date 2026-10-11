@@ -55,15 +55,33 @@ class VetController extends Controller
 
     public function respond(Request $request, \App\Models\Consultation $consultation)
     {
-        abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
+        $user = auth()->user();
+        abort_unless($user->is_verified, 403, 'Account not yet verified.');
 
         // Prevent overwriting another expert's response
         abort_if(
-            $consultation->expert_id && $consultation->expert_id !== auth()->id(),
+            $consultation->expert_id && $consultation->expert_id !== $user->id,
             403,
             'This consultation is assigned to another expert.'
         );
-        abort_if($consultation->status === 'resolved', 422, 'This consultation has already been resolved.');
+        // show()/queue() already restrict a vet to livestock cases and an
+        // agronomist to crop cases -- respond() and startVideo() never
+        // re-checked this, so a vet who knew or guessed a crop
+        // consultation's ID could resolve it directly, bypassing the
+        // domain-matching enforced everywhere else this is reachable from.
+        abort_unless(
+            ($user->role === 'vet' && $consultation->case_type === 'livestock')
+            || ($user->role === 'agronomist' && $consultation->case_type === 'crop'),
+            403,
+            'This consultation is outside your area of practice.'
+        );
+        // A consultation starts as 'awaiting_payment' and only becomes
+        // 'open' once the farmer's payment actually clears (see
+        // WebhookController/PaymentController/FarmerController). Checking
+        // only status !== 'resolved' let an unpaid consultation be
+        // resolved for free by any verified vet/agronomist who reached
+        // this route with its ID.
+        abort_unless($consultation->status === 'open', 422, 'This consultation is not yet open for a response.');
 
         $request->validate([
             'expert_response' => 'required|string|min:10',
@@ -82,12 +100,22 @@ class VetController extends Controller
     // POST /vet/consultation/{consultation}/start-video — vet initiates a Jitsi video room
     public function startVideo(\App\Models\Consultation $consultation)
     {
-        abort_unless(auth()->user()->is_verified, 403, 'Account not yet verified.');
+        $user = auth()->user();
+        abort_unless($user->is_verified, 403, 'Account not yet verified.');
         abort_if(
-            $consultation->expert_id && $consultation->expert_id !== auth()->id(),
+            $consultation->expert_id && $consultation->expert_id !== $user->id,
             403,
             'This consultation is assigned to another expert.'
         );
+        // Same role/case_type and payment-status gates as respond() -- see
+        // that method's comments for why both were missing here.
+        abort_unless(
+            ($user->role === 'vet' && $consultation->case_type === 'livestock')
+            || ($user->role === 'agronomist' && $consultation->case_type === 'crop'),
+            403,
+            'This consultation is outside your area of practice.'
+        );
+        abort_unless($consultation->status === 'open', 422, 'This consultation is not yet open.');
 
         if (! $consultation->video_room_id) {
             $consultation->update([

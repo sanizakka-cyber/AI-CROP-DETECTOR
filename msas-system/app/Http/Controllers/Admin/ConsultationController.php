@@ -77,6 +77,14 @@ class ConsultationController extends Controller
 
         $expert = User::findOrFail($request->expert_id);
 
+        // The admin UI's dropdown already filters to matching-role experts,
+        // but that's a client-side convenience only -- a crafted POST
+        // (devtools, a replayed request) could otherwise assign any user,
+        // including a farmer, as the "expert" on a case. Re-validate here
+        // rather than trust what the form happened to send.
+        $requiredRole = $consultation->case_type === 'crop' ? 'agronomist' : 'vet';
+        abort_unless($expert->role === $requiredRole, 422, "The selected user is not a {$requiredRole} and cannot be assigned to this {$consultation->case_type} case.");
+
         $oldExpertId = $consultation->expert_id;
 
         $consultation->update([

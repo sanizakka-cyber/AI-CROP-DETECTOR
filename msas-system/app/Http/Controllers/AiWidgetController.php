@@ -44,20 +44,24 @@ class AiWidgetController extends Controller
         }
 
         try {
-            $boundary = '----MSASWeather' . bin2hex(random_bytes(8));
-            $body = '';
-            foreach (array_filter([
+            // Guzzle's 'multipart' option encodes each part correctly
+            // (including escaping/boundary safety) -- the previous
+            // hand-built body concatenated raw user input between
+            // "--{boundary}\r\n...\r\n\r\n" markers with no CRLF stripping,
+            // so a value containing its own "\r\n--{boundary}\r\n..."
+            // sequence could inject additional form fields or terminate
+            // the body early, reaching the AI engine's /predict/weather
+            // parser. Mirrors the already-correct pattern transcribe() uses.
+            $parts = array_filter([
                 'location' => $request->input('location', 'Nigeria'),
                 'crop'     => $request->input('crop', ''),
                 'language' => $request->input('language', 'en'),
-            ]) as $k => $v) {
-                $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$k}\"\r\n\r\n{$v}\r\n";
-            }
-            $body .= "--{$boundary}--\r\n";
+            ]);
+            $multipart = array_map(fn ($k, $v) => ['name' => $k, 'contents' => $v], array_keys($parts), $parts);
 
             $resp = $this->client()->post("{$base}/predict/weather", [
-                'body'    => $body,
-                'headers' => array_merge($this->headers(), ['Content-Type' => "multipart/form-data; boundary={$boundary}"]),
+                'multipart' => $multipart,
+                'headers'   => $this->headers(),
             ]);
 
             $data = json_decode((string) $resp->getBody(), true);
@@ -85,20 +89,17 @@ class AiWidgetController extends Controller
         }
 
         try {
-            $boundary = '----MSASMarket' . bin2hex(random_bytes(8));
-            $body = '';
-            foreach (array_filter([
+            // See weather()'s comment -- same fix, same reason.
+            $parts = array_filter([
                 'crop'     => $request->input('crop', ''),
                 'region'   => $request->input('region', 'Nigeria'),
                 'language' => $request->input('language', 'en'),
-            ]) as $k => $v) {
-                $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$k}\"\r\n\r\n{$v}\r\n";
-            }
-            $body .= "--{$boundary}--\r\n";
+            ]);
+            $multipart = array_map(fn ($k, $v) => ['name' => $k, 'contents' => $v], array_keys($parts), $parts);
 
             $resp = $this->client()->post("{$base}/predict/market", [
-                'body'    => $body,
-                'headers' => array_merge($this->headers(), ['Content-Type' => "multipart/form-data; boundary={$boundary}"]),
+                'multipart' => $multipart,
+                'headers'   => $this->headers(),
             ]);
 
             $data = json_decode((string) $resp->getBody(), true);
@@ -156,20 +157,21 @@ class AiWidgetController extends Controller
         }
 
         try {
-            $boundary = '----MSASChat' . bin2hex(random_bytes(8));
-            $body = "--{$boundary}\r\nContent-Disposition: form-data; name=\"message\"\r\n\r\n" . $request->input('message') . "\r\n";
-
+            // See weather()'s comment for why this moved off a hand-built
+            // multipart body -- 'message' and 'history' are exactly the
+            // two fields a CRLF-containing value could have used to inject
+            // an extra form field (e.g. a 'context' or 'quality' field the
+            // legitimate request never sent) into the AI engine's /chat
+            // parser.
+            $multipart = [['name' => 'message', 'contents' => $request->input('message')]];
             if ($history = $request->input('history')) {
-                $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"history\"\r\n\r\n{$history}\r\n";
+                $multipart[] = ['name' => 'history', 'contents' => $history];
             }
-
-            $lang = $request->input('language', 'en');
-            $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\n{$lang}\r\n";
-            $body .= "--{$boundary}--\r\n";
+            $multipart[] = ['name' => 'language', 'contents' => $request->input('language', 'en')];
 
             $resp = $this->client()->post("{$base}/chat", [
-                'body'    => $body,
-                'headers' => array_merge($this->headers(), ['Content-Type' => "multipart/form-data; boundary={$boundary}"]),
+                'multipart' => $multipart,
+                'headers'   => $this->headers(),
             ]);
 
             $data = json_decode((string) $resp->getBody(), true);
