@@ -8,7 +8,6 @@ use App\Models\WalletTransaction;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class WalletApiController extends Controller
 {
@@ -47,13 +46,20 @@ class WalletApiController extends Controller
             return response()->json(['error' => 'Insufficient balance.'], 422);
         }
         try {
-            $this->wallet->debit(
-                $user,
-                $data['amount'],
-                'Withdrawal to ' . $data['bank_name'] . ' #' . $data['account_number'],
-                ['account_name' => $data['account_name'], 'account_number' => $data['account_number']],
-                'WITHDRAW-' . strtoupper(Str::random(10))
-            );
+            // Previously called debit() directly -- an immediate, completed
+            // debit with no admin review and no linkage to an actual bank
+            // payout. The web WalletController correctly uses
+            // requestWithdrawal() instead, which moves the funds into
+            // locked_balance pending Admin\WalletManagementController::
+            // approveWithdrawal()/rejectWithdrawal() -- mobile users were
+            // getting their balance debited instantly with zero
+            // reconciliation trail, a real risk for "my balance dropped
+            // but I never got paid" disputes.
+            $this->wallet->requestWithdrawal($user, $data['amount'], [
+                'account_name'   => $data['account_name'],
+                'account_number' => $data['account_number'],
+                'bank_name'      => $data['bank_name'],
+            ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
