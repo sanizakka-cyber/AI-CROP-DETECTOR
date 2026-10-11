@@ -1,5 +1,15 @@
 # MSAS Production Deployment Guide
 
+> **⚠ NOT APPLICABLE TO CURRENT PRODUCTION.** This guide describes a
+> self-managed Ubuntu/MySQL/VPS deployment. Actual production (see
+> `render.yaml`) is a Render Docker web service backed by Render-managed
+> PostgreSQL — a different architecture entirely; `mysqldump`/MySQL-specific
+> steps here would not even work against it. For the real deployment's
+> backup and rollback procedures, see
+> `docs/RENDER_POSTGRES_BACKUP_RUNBOOK.md`. Kept here for reference only
+> (e.g. if a self-hosted environment is ever stood up); do not follow this
+> for the live site.
+
 ## Requirements
 
 | Requirement | Version |
