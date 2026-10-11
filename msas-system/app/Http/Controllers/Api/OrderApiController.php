@@ -253,9 +253,24 @@ class OrderApiController extends Controller
 
     public function markPaid(Request $request, Order $order)
     {
-        $user = auth()->user();
-        if ($order->dealer_id !== $user->id && $user->role !== 'admin') {
-            return response()->json(['error' => 'Forbidden'], 403);
+        // A genuine Paystack-verified payment is already marked paid
+        // automatically by the webhook (WebhookController::activateOrder())
+        // -- this manual endpoint exists only for offline channels (bank
+        // transfer, cash, POS) where gateway verification is impossible.
+        // It previously allowed the order's own dealer to self-certify
+        // payment with an arbitrary, unverified payment_reference, then
+        // self-set status=delivered (updateStatus() above), then request
+        // a real-money payout (MarketplaceSellController::requestPayout())
+        // on a payment_status/status pair they fully controlled end to
+        // end -- a dealer could fabricate a sale and get paid for an
+        // order that was never actually bought. Restricting to admin
+        // forces a neutral third party (who doesn't benefit from the
+        // payout) to confirm the offline payment genuinely happened
+        // before it's recorded as paid, closing that loop at its
+        // weakest link rather than attempting gateway verification that
+        // doesn't apply to these channels in the first place.
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['error' => 'Only an administrator can confirm an offline payment.'], 403);
         }
         $data = $request->validate([
             'payment_reference' => 'nullable|string',
