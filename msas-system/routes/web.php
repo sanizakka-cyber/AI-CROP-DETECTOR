@@ -285,7 +285,18 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::get('/applications/{user}',              [ApplicationController::class, 'show'])    ->name('applications.show');
     Route::post('/applications/{user}/approve',     [ApplicationController::class, 'approve']) ->name('applications.approve');
     Route::post('/applications/{user}/reject',      [ApplicationController::class, 'reject'])  ->name('applications.reject');
+
+    // Per-document verification (Pending Review / Approved / Rejected / Resubmission Required)
+    Route::post('/applications/documents/{document}/approve', [ApplicationController::class, 'approveDocument'])->name('applications.documents.approve');
+    Route::post('/applications/documents/{document}/reject',  [ApplicationController::class, 'rejectDocument']) ->name('applications.documents.reject');
+    Route::post('/applications/{user}/request-document',      [ApplicationController::class, 'requestDocument'])->name('applications.documents.request');
 });
+
+// Document resubmission — public, signed-link only (no login; pending/rejected
+// applicants cannot authenticate at all, see AuthenticatedSessionController).
+Route::match(['get', 'post'], '/documents/{document}/resubmit', [\App\Http\Controllers\DocumentResubmissionController::class, 'handle'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('documents.resubmit');
 
 // ── Admin: Consultation Management ────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->group(function () {

@@ -61,10 +61,21 @@
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4">Uploaded Documents</h2>
                     @if(!empty($missingDocuments))
                     <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <p class="text-xs font-semibold text-amber-700 mb-1">Missing required document(s) — this application cannot be approved yet:</p>
-                        <ul class="text-xs text-amber-700 list-disc list-inside">
-                            @foreach($missingDocuments as $label)
-                            <li>{{ $label }}</li>
+                        <p class="text-xs font-semibold text-amber-700 mb-2">Missing or unapproved required document(s) — this application cannot be approved yet:</p>
+                        <ul class="text-xs text-amber-700 space-y-1.5">
+                            @foreach($missingDocuments as $item)
+                            <li class="flex items-center justify-between gap-2">
+                                <span>{{ $item['label'] }}{{ $item['neverUploaded'] ? '' : ' (uploaded, awaiting review)' }}</span>
+                                @if($item['neverUploaded'])
+                                <form method="POST" action="{{ route('admin.applications.documents.request', $user) }}" class="shrink-0">
+                                    @csrf
+                                    <input type="hidden" name="document_type" value="{{ $item['type'] }}">
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-300 text-amber-700 hover:bg-amber-100 transition">
+                                        Request from Applicant
+                                    </button>
+                                </form>
+                                @endif
+                            </li>
                             @endforeach
                         </ul>
                     </div>
@@ -80,30 +91,82 @@
                     @else
                     <div class="space-y-3">
                         @foreach($documents as $doc)
-                        <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-lg flex items-center justify-center
-                                            {{ str_contains($doc->mime_type, 'pdf') ? 'bg-red-100' : 'bg-blue-100' }}">
-                                    @if(str_contains($doc->mime_type, 'pdf'))
-                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
-                                    </svg>
-                                    @else
-                                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                                    </svg>
-                                    @endif
+                        @php
+                            $statusStyle = [
+                                'pending_review'        => 'bg-amber-100 text-amber-700',
+                                'approved'               => 'bg-green-100 text-green-700',
+                                'rejected'               => 'bg-red-100 text-red-700',
+                                'resubmission_required'  => 'bg-orange-100 text-orange-700',
+                            ][$doc->status] ?? 'bg-slate-100 text-slate-600';
+                            $isReplaced = $documents->firstWhere('replaces_document_id', $doc->id) !== null;
+                        @endphp
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl {{ $isReplaced ? 'opacity-60' : '' }}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-lg flex items-center justify-center
+                                                {{ str_contains($doc->mime_type, 'pdf') ? 'bg-red-100' : 'bg-blue-100' }}">
+                                        @if(str_contains($doc->mime_type, 'pdf'))
+                                        <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        @else
+                                        <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                        </svg>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-700">
+                                            {{ $doc->document_label }}
+                                            @if($doc->replaces_document_id)<span class="text-xs text-slate-400 font-normal">(replacement)</span>@endif
+                                            @if($isReplaced)<span class="text-xs text-slate-400 font-normal">(superseded)</span>@endif
+                                        </p>
+                                        <p class="text-xs text-slate-400">{{ $doc->original_name }} · {{ $doc->file_size_human }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-700">{{ $doc->document_label }}</p>
-                                    <p class="text-xs text-slate-400">{{ $doc->original_name }} · {{ $doc->file_size_human }}</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-1 rounded-lg text-xs font-bold {{ $statusStyle }}">{{ ucfirst(str_replace('_', ' ', $doc->status)) }}</span>
+                                    <a href="{{ route('admin.applications.document', $doc) }}"
+                                       target="_blank"
+                                       class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition">
+                                        View
+                                    </a>
                                 </div>
                             </div>
-                            <a href="{{ route('admin.applications.document', $doc) }}"
-                               target="_blank"
-                               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition">
-                                View
-                            </a>
+
+                            @if($doc->review_reason)
+                            <p class="text-xs text-slate-500 mt-2 pl-12">Reason: {{ $doc->review_reason }}</p>
+                            @endif
+
+                            @if($doc->status === 'pending_review' && ! $isReplaced)
+                            <div class="flex items-center gap-2 mt-3 pl-12">
+                                <form method="POST" action="{{ route('admin.applications.documents.approve', $doc) }}">
+                                    @csrf
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-700 transition">Approve Document</button>
+                                </form>
+                                <button type="button" onclick="document.getElementById('reject-doc-{{ $doc->id }}').classList.toggle('hidden')"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition">
+                                    Reject / Request Resubmission
+                                </button>
+                            </div>
+                            <div id="reject-doc-{{ $doc->id }}" class="hidden mt-3 pl-12">
+                                <form method="POST" action="{{ route('admin.applications.documents.reject', $doc) }}">
+                                    @csrf
+                                    <textarea name="reason" rows="2" required placeholder="Reason (sent to applicant)…"
+                                              class="w-full text-xs border border-slate-300 rounded-lg p-2 resize-none focus:outline-none focus:ring-2 focus:ring-red-400 mb-2"></textarea>
+                                    <div class="flex items-center gap-2">
+                                        <button type="submit" name="new_status" value="resubmission_required"
+                                                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-500 text-white hover:bg-orange-600 transition">
+                                            Request Resubmission
+                                        </button>
+                                        <button type="submit" name="new_status" value="rejected"
+                                                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white hover:bg-red-700 transition">
+                                            Reject
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            @endif
                         </div>
                         @endforeach
                     </div>
