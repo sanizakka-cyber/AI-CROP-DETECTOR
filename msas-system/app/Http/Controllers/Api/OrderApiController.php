@@ -55,7 +55,13 @@ class OrderApiController extends Controller
         $data = $request->validate([
             'delivery_address'  => 'nullable|string|max:500',
             'delivery_notes'    => 'nullable|string|max:500',
-            'payment_method'    => 'required|in:paystack,flutterwave,transfer,ussd,card,wallet',
+            // 'wallet' was accepted here but never implemented -- checkout()
+            // has no branch that debits a buyer's wallet for any payment
+            // method, so a client sending payment_method=wallet got an
+            // order stuck pending/unpaid with nothing to ever resolve it.
+            // No app UI sends this value (mobile offers only paystack and
+            // transfer); removed until a real wallet-debit flow exists.
+            'payment_method'    => 'required|in:paystack,flutterwave,transfer,ussd,card',
             'payment_channel'   => 'nullable|string|in:gtbank,access,uba,firstbank,zenith,opay,palmpay,kuda,moniepoint,bank_app,pos',
             'discount_code'     => 'nullable|string',
         ]);

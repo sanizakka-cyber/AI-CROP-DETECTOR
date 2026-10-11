@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\Finance;
 use App\Models\Payroll;
 use App\Models\User;
@@ -62,6 +63,16 @@ class FinanceController extends Controller implements HasMiddleware
 
     public function deleteTransaction(Finance $finance)
     {
+        // Deleting a finance record permanently removes the only record of
+        // that income/expense entry -- recorded before delete() so the
+        // audit trail still has the amount/category/type even though the
+        // row itself is gone.
+        AuditLog::record('finance.transaction_deleted', 'Finance', $finance->id, [
+            'type'             => $finance->type,
+            'category'         => $finance->category,
+            'amount'           => $finance->amount,
+            'transaction_date' => (string) $finance->transaction_date,
+        ]);
         $finance->delete();
         return back()->with('success', 'Transaction deleted.');
     }

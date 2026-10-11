@@ -84,4 +84,29 @@ class MarketplaceStockRaceTest extends TestCase
         $this->assertSame(1, \App\Models\Order::count());
         $this->assertSame(7, $product->refresh()->quantity_in_stock);
     }
+
+    /**
+     * 'wallet' was accepted as a payment_method but checkout() never had
+     * any branch that actually debited a buyer's wallet -- selecting it
+     * silently created an order stuck pending/unpaid forever. No app UI
+     * ever sends it; it must now be rejected rather than silently accepted.
+     */
+    public function test_checkout_rejects_the_unimplemented_wallet_payment_method(): void
+    {
+        $farmer = User::factory()->create(['role' => 'farmer']);
+        $dealer = User::factory()->create(['role' => 'agro-dealer']);
+        $product = Product::create([
+            'dealer_id' => $dealer->id, 'seller_type' => 'dealer', 'name' => 'Fertilizer',
+            'category' => 'fertilizer', 'unit' => 'bag', 'cost_price' => 1000, 'selling_price' => 1500,
+            'quantity_in_stock' => 10, 'low_stock_threshold' => 1, 'status' => 'active', 'is_approved' => true,
+        ]);
+        \App\Models\CartItem::create(['user_id' => $farmer->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $token = $farmer->createToken('test')->plainTextToken;
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
+            ->postJson('/api/orders/checkout', ['payment_method' => 'wallet']);
+
+        $response->assertStatus(422);
+        $this->assertSame(0, \App\Models\Order::count());
+    }
 }
