@@ -163,18 +163,34 @@ class SubscriptionActivationService
             ]);
         }
 
-        $newSub = $user->subscriptions()->create([
-            'plan'              => $plan,
-            'status'            => 'active',
-            'billing_cycle'     => $cycle,
-            'starts_at'         => now(),
-            'ends_at'           => now()->addMonths($months),
-            'amount_paid'       => $amount,
-            'payment_reference' => $reference,
-            'payment_method'    => $method,
-            'upgraded_from'     => $activeSub?->plan,
-            'upgraded_at'       => $activeSub ? now() : null,
-        ]);
+        // The duplicate-reference pre-check in paystackCallback() guards
+        // the common sequential case, but check-then-create isn't atomic:
+        // the webhook and the browser/mobile callback can both reach here
+        // for the same reference within the same instant. payment_reference
+        // has a DB-level unique constraint
+        // (2026_06_19_000001_create_subscriptions_table.php:42) as the real
+        // guard for that race -- same pattern already used for the Payment
+        // row below.
+        try {
+            $newSub = $user->subscriptions()->create([
+                'plan'              => $plan,
+                'status'            => 'active',
+                'billing_cycle'     => $cycle,
+                'starts_at'         => now(),
+                'ends_at'           => now()->addMonths($months),
+                'amount_paid'       => $amount,
+                'payment_reference' => $reference,
+                'payment_method'    => $method,
+                'upgraded_from'     => $activeSub?->plan,
+                'upgraded_at'       => $activeSub ? now() : null,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (!str_contains(strtolower($e->getMessage()), 'unique')) {
+                throw $e;
+            }
+            Log::info('Subscription row race: reference already activated by a concurrent request', ['reference' => $reference]);
+            return $user->subscriptions()->where('payment_reference', $reference)->firstOrFail();
+        }
 
         AuditLog::record('subscription.activated', 'Subscription', $newSub->id, [
             'plan'          => $plan,

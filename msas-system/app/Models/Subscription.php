@@ -8,11 +8,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Subscription extends Model
 {
+    // Previously listed 'payment_cycle' and 'paystack_reference' -- neither
+    // column exists; the real names are 'billing_cycle' and
+    // 'payment_reference' (2026_06_19_000001_create_subscriptions_table.php).
+    // Every create()/update() call across SubscriptionController,
+    // SubscriptionActivationService, PaymentController, WebhookController,
+    // and Admin\SubscriptionManagementController passes these under the
+    // real names, but Laravel silently drops anything not in $fillable --
+    // so billing_cycle never actually persisted (every subscription stayed
+    // at the DB default 'monthly' regardless of what was purchased), and
+    // critically payment_reference never persisted either. That broke the
+    // duplicate-payment guard used throughout this module
+    // ($user->subscriptions()->where('payment_reference', $reference)
+    // ->exists()), which always compared against a column that was always
+    // null -- the same Paystack reference could be replayed to any of the
+    // subscription callback/webhook endpoints to create unlimited free
+    // subscription extensions with one real charge. 'upgraded_from' and
+    // 'cancellation_reason' were also written in several places despite
+    // never being fillable, for the same silent-drop reason.
     protected $fillable = [
-        'user_id', 'plan', 'status', 'payment_cycle',
+        'user_id', 'plan', 'status', 'billing_cycle',
         'starts_at', 'ends_at', 'trial_ends_at',
-        'auto_renew', 'amount_paid', 'paystack_reference',
+        'auto_renew', 'amount_paid', 'payment_reference',
         'payment_method', 'activated_by', 'cancelled_at', 'upgraded_at',
+        'upgraded_from', 'cancellation_reason', 'notes',
     ];
 
     protected $casts = [
