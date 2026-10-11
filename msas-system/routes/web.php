@@ -81,9 +81,27 @@ Route::middleware('auth')->group(function () {
 // covers POST/PUT/PATCH/DELETE), so any link, image tag, or link-preview
 // fetch an authenticated admin's browser loaded could silently start an
 // impersonation session with no actual intent from the admin.
+//
+// 'leave' is deliberately NOT behind role:ceo,admin, unlike 'start' below.
+// During impersonation, Auth::user() IS the impersonated target -- so if
+// that middleware covered 'leave' too, impersonating anyone whose role
+// isn't ceo/admin (a farmer, a vet, ...) would make "Leave Impersonation"
+// itself unreachable: the role check fails against the target's role
+// before the controller's own logic (which safely restores only the
+// actor recorded in session('impersonate.original_id') at the real
+// 'start' call, and is a harmless no-op if that key is missing) ever
+// runs. Plain 'auth' is sufficient here; leave() cannot be used to
+// assume an identity, only to restore one already recorded server-side.
+Route::middleware(['auth'])->post('/admin/impersonate/leave', [ImpersonationController::class, 'leave'])->name('impersonate.leave');
+
+// 'leave' above must be registered before the '{user}' wildcard below --
+// a request to .../impersonate/leave would otherwise match '{user}'
+// first, treating the literal string "leave" as a user ID and 404ing on
+// failed route-model-binding. Found while adding regression tests for
+// the CSRF fix above; this ordering bug (and the role-gating one) predate
+// this commit, just under GET instead of POST.
 Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
     Route::post('/admin/impersonate/{user}', [ImpersonationController::class, 'impersonate'])->name('impersonate.start');
-    Route::post('/admin/impersonate/leave',  [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 });
 
 // Role-Specific Dashboards

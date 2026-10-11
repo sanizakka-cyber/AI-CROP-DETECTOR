@@ -71,7 +71,11 @@ class ImpersonationTest extends TestCase
 
         $response = $this->actingAs($farmer)->post(route('impersonate.start', $other));
 
-        $response->assertStatus(403);
+        // RoleMiddleware redirects a farmer to their own dashboard rather
+        // than a bare 403 (it has a redirect target for 'farmer') -- the
+        // controller's own abort(403) is never reached either way.
+        $response->assertRedirect(route('farmer.dashboard'));
+        $this->assertAuthenticatedAs($farmer);
     }
 
     public function test_cannot_impersonate_an_inactive_account(): void
@@ -88,15 +92,22 @@ class ImpersonationTest extends TestCase
     public function test_nested_impersonation_is_blocked(): void
     {
         $ceo = User::factory()->create(['role' => 'ceo']);
-        $farmerA = User::factory()->create(['role' => 'farmer', 'is_active' => true]);
-        $farmerB = User::factory()->create(['role' => 'farmer', 'is_active' => true]);
+        // Impersonating a farmer (or any non-ceo/admin role) would already
+        // be blocked one level earlier by role:ceo,admin middleware on the
+        // second request -- that role check runs against whoever is
+        // CURRENTLY authenticated, which during impersonation is the
+        // target's own role. To actually reach the controller's nested-
+        // impersonation check, the impersonated identity itself needs a
+        // role the middleware admits: an admin, impersonated by the ceo.
+        $adminA = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $adminB = User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
-        $this->actingAs($ceo)->post(route('impersonate.start', $farmerA));
+        $this->actingAs($ceo)->post(route('impersonate.start', $adminA));
         $response = $this->withSession(['impersonate.original_id' => $ceo->id])
-            ->actingAs($farmerA)->post(route('impersonate.start', $farmerB));
+            ->actingAs($adminA)->post(route('impersonate.start', $adminB));
 
         $response->assertSessionHas('error');
-        $this->assertAuthenticatedAs($farmerA);
+        $this->assertAuthenticatedAs($adminA);
     }
 
     public function test_leaving_impersonation_restores_the_original_session(): void
