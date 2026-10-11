@@ -116,7 +116,37 @@ class AiWidgetController extends Controller
     {
         $request->validate([
             'message'  => 'required|string|max:2000',
-            'history'  => 'nullable|string',
+            // 'history' used to be forwarded to the AI engine as an
+            // unvalidated raw string -- the engine's own json.loads() only
+            // checked isinstance(parsed, list), nothing about what was
+            // actually inside each entry. Rejecting a malformed shape here
+            // avoids a wasted round trip to the AI engine (and gives the
+            // client its error immediately) before the engine's own
+            // mirrored check in _validate_chat_history() -- defense in
+            // depth, not a replacement for it, since /chat can also be
+            // reached directly if its URL + key are known.
+            'history' => ['nullable', 'string', function ($attribute, $value, $fail) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                    $fail('The chat history must be a valid JSON array.');
+                    return;
+                }
+                if (count($decoded) > 20) {
+                    $fail('The chat history cannot exceed 20 entries.');
+                    return;
+                }
+                foreach ($decoded as $entry) {
+                    if (!is_array($entry) || !in_array($entry['role'] ?? null, ['user', 'assistant'], true)) {
+                        $fail('Each chat history entry must have a supported role (user or assistant).');
+                        return;
+                    }
+                    $content = $entry['content'] ?? null;
+                    if (!is_string($content) || trim($content) === '' || strlen($content) > 4000) {
+                        $fail('Each chat history entry must have non-empty content no longer than 4000 characters.');
+                        return;
+                    }
+                }
+            }],
             'language' => 'nullable|string|max:10',
         ]);
 

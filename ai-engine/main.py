@@ -38,6 +38,47 @@ def _get_client() -> anthropic.AsyncAnthropic:
 def _pick_model(quality: str = "standard") -> str:
     return AI_MODEL_PRO if quality == "high" else AI_MODEL
 
+# ── /chat history validation ─────────────────────────────────────────────────
+# The client-supplied 'history' field was previously parsed with only an
+# isinstance(parsed, list) check -- no validation of what's actually inside
+# each entry -- before being forwarded verbatim into messages=[...] on a real
+# Anthropic API call. Malformed JSON was silently swallowed into an empty
+# history rather than rejected. None of this let a client literally replace
+# the system prompt (system=system_prompt is a separate parameter, never
+# derived from these entries), but restricting roles to exactly
+# {"user","assistant"} here makes that guarantee explicit and defended in
+# this service too, not just incidentally true of how the Anthropic API
+# happens to be called today.
+_CHAT_VALID_ROLES = {"user", "assistant"}
+_CHAT_MAX_HISTORY_ENTRIES = 20   # matches the existing messages_list[-20:] trim already applied to outgoing history
+_CHAT_MAX_CONTENT_CHARS   = 4000  # generous for one real chat turn; not a token budget, just a sanity ceiling
+
+def _validate_chat_history(raw: str) -> list:
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        raise HTTPException(status_code=422, detail="history must be valid JSON.")
+
+    if not isinstance(parsed, list):
+        raise HTTPException(status_code=422, detail="history must be a JSON array.")
+    if len(parsed) > _CHAT_MAX_HISTORY_ENTRIES:
+        raise HTTPException(status_code=422, detail=f"history cannot exceed {_CHAT_MAX_HISTORY_ENTRIES} entries.")
+
+    validated = []
+    for entry in parsed:
+        if not isinstance(entry, dict):
+            raise HTTPException(status_code=422, detail="each history entry must be an object with role and content.")
+        role = entry.get("role")
+        content = entry.get("content")
+        if role not in _CHAT_VALID_ROLES:
+            raise HTTPException(status_code=422, detail=f"unsupported role in history: {role!r}.")
+        if not isinstance(content, str) or not content.strip():
+            raise HTTPException(status_code=422, detail="history entry content must be a non-empty string.")
+        if len(content) > _CHAT_MAX_CONTENT_CHARS:
+            raise HTTPException(status_code=422, detail=f"history entry content exceeds {_CHAT_MAX_CONTENT_CHARS} characters.")
+        validated.append({"role": role, "content": content})
+    return validated
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def _check_auth(request: Request):
@@ -871,15 +912,14 @@ COMMUNICATION RULES:
   ("Diagnosis", "Treatment", "Warning"), not emoji-prefixed ones
 {lang_note}"""
 
-    # Parse conversation history
-    messages_list = []
-    if history:
-        try:
-            parsed = json.loads(history)
-            if isinstance(parsed, list):
-                messages_list = parsed
-        except (json.JSONDecodeError, ValueError):
-            pass
+    # Parse + validate conversation history -- malformed input is now
+    # rejected with a clear 422 rather than silently treated as no history.
+    messages_list = _validate_chat_history(history) if history else []
+
+    # Also enforce the same content-length ceiling on the live 'message'
+    # field itself, not just entries already round-tripped through 'history'.
+    if len(message) > _CHAT_MAX_CONTENT_CHARS:
+        raise HTTPException(status_code=422, detail=f"message exceeds {_CHAT_MAX_CONTENT_CHARS} characters.")
 
     # Add context as a system note if provided
     user_message = message
