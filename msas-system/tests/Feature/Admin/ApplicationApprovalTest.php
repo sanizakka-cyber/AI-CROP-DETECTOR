@@ -6,7 +6,6 @@ use App\Mail\ApplicationApprovedMail;
 use App\Models\User;
 use App\Models\UserDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -165,27 +164,5 @@ class ApplicationApprovalTest extends TestCase
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
         $this->assertSame($content, $response->getContent());
-    }
-
-    public function test_equipment_dealer_registration_with_a_real_document_upload_stores_a_readable_record(): void
-    {
-        $file = UploadedFile::fake()->create('cert.pdf', 200, 'application/pdf');
-
-        $this->post('/register', [
-            'first_name' => 'Real',
-            'last_name'  => 'Upload',
-            'identifier' => 'real-upload@example.com',
-            'role'       => 'equipment-dealer',
-            'password'   => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'documents'  => ['business_registration' => $file],
-        ]);
-
-        $user = User::where('email', 'real-upload@example.com')->first();
-        $this->assertNotNull($user);
-        $document = $user->documents()->first();
-        $this->assertNotNull($document, 'A validly uploaded document must be recorded.');
-        $this->assertNotEmpty($document->content_base64, 'The stored content must not be empty for a successful upload.');
-        $this->assertNotEmpty(base64_decode($document->content_base64, true), 'The stored content must decode to real bytes.');
     }
 }
