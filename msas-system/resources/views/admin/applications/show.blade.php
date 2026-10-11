@@ -9,6 +9,17 @@
             Back to Applications
         </a>
 
+        @if(session('success'))
+        <div class="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm font-medium">
+            {{ session('success') }}
+        </div>
+        @endif
+        @if(session('error'))
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm font-medium">
+            {{ session('error') }}
+        </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- Main panel --}}
             <div class="lg:col-span-2 space-y-5">
@@ -48,6 +59,16 @@
                 {{-- Documents --}}
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h2 class="text-lg font-extrabold text-slate-800 mb-4">Uploaded Documents</h2>
+                    @if(!empty($missingDocuments))
+                    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p class="text-xs font-semibold text-amber-700 mb-1">Missing required document(s) — this application cannot be approved yet:</p>
+                        <ul class="text-xs text-amber-700 list-disc list-inside">
+                            @foreach($missingDocuments as $label)
+                            <li>{{ $label }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    @endif
                     @if($documents->isEmpty())
                     <div class="text-center py-8 text-slate-400">
                         <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">

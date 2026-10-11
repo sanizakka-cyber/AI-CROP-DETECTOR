@@ -89,6 +89,23 @@ class RegisteredUserController extends Controller
                             continue;
                         }
 
+                        // Read the file's real bytes before trusting
+                        // anything else about it -- a failed read here
+                        // used to still insert a row with an empty
+                        // content_base64, which the admin's "View" button
+                        // would later open as a silent, unexplained blank
+                        // document. Skip the record entirely instead: a
+                        // missing document correctly shows as "required
+                        // document not uploaded" to the reviewing admin,
+                        // which is honest; a broken one did not.
+                        $contents = @file_get_contents($file->getRealPath());
+                        if ($contents === false || $contents === '') {
+                            Log::error('Registration document upload: failed to read file contents', [
+                                'user_id' => $user->id, 'original_name' => $file->getClientOriginalName(),
+                            ]);
+                            continue;
+                        }
+
                         $docType = is_string($key) ? $key : 'document_' . ($key + 1);
                         $label   = $docLabels[$docType] ?? ucwords(str_replace('_', ' ', $docType));
 
@@ -99,7 +116,7 @@ class RegisteredUserController extends Controller
                             'original_name'  => $file->getClientOriginalName(),
                             'mime_type'      => $file->getMimeType(),
                             'file_size'      => $file->getSize(),
-                            'content_base64' => base64_encode(file_get_contents($file->getRealPath())),
+                            'content_base64' => base64_encode($contents),
                         ]);
                     }
                 }
@@ -173,20 +190,6 @@ class RegisteredUserController extends Controller
 
     private function getDocumentLabels(string $role): array
     {
-        return match($role) {
-            'vet'                  => ['vet_license' => 'Veterinary License', 'accreditation' => 'Professional Accreditation'],
-            'agronomist'           => ['professional_license' => 'Professional License', 'proof_of_qualification' => 'Proof of Qualification'],
-            'agro-dealer'          => ['cac_registration' => 'CAC / Business Registration'],
-            'equipment-dealer'     => ['business_registration' => 'Business Registration Certificate'],
-            'agribusiness-owner'   => ['company_registration' => 'Company Registration Certificate'],
-            'cooperative'          => ['cooperative_certificate' => 'Cooperative Certificate', 'members_list' => 'Members List (min. 5)'],
-            'government-agency'    => ['official_documents' => 'Official Government Documentation'],
-            'ngo'                  => ['registration_cert' => 'Registration Certificate', 'tax_exemption' => 'Tax Exemption Certificate'],
-            'research-institution' => ['institutional_affiliation' => 'Institutional Affiliation Letter', 'research_proposal' => 'Research Proposal'],
-            'input-supplier'       => ['cac_registration' => 'CAC / Business Registration'],
-            'logistics-provider'   => ['transport_license' => 'Transport / Haulage License'],
-            'investor'             => ['id_document' => 'Valid ID', 'investment_profile' => 'Investment Profile / Portfolio'],
-            default                => [],
-        };
+        return RegistrationService::requiredDocumentLabels($role);
     }
 }

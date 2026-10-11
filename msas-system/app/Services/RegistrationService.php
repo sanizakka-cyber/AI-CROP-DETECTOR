@@ -30,6 +30,38 @@ class RegistrationService
     ];
 
     /**
+     * Single source of truth for which document types each regulated role
+     * must submit at registration, keyed by the same document_type values
+     * RegisteredUserController::store() writes to user_documents. Used both
+     * to label the upload form and to enforce completeness before approval
+     * (Admin\ApplicationController::approve()) -- previously only the
+     * former existed, so an application with zero documents could still be
+     * approved because nothing on the backend ever checked.
+     *
+     * farmer/general-user are intentionally absent: they skip the
+     * document-verification flow entirely (see createAccount()'s
+     * $needsApproval), so they have no required-document list at all.
+     */
+    public static function requiredDocumentLabels(string $role): array
+    {
+        return match($role) {
+            'vet'                  => ['vet_license' => 'Veterinary License', 'accreditation' => 'Professional Accreditation'],
+            'agronomist'           => ['professional_license' => 'Professional License', 'proof_of_qualification' => 'Proof of Qualification'],
+            'agro-dealer'          => ['cac_registration' => 'CAC / Business Registration'],
+            'equipment-dealer'     => ['business_registration' => 'Business Registration Certificate'],
+            'agribusiness-owner'   => ['company_registration' => 'Company Registration Certificate'],
+            'cooperative'          => ['cooperative_certificate' => 'Cooperative Certificate', 'members_list' => 'Members List (min. 5)'],
+            'government-agency'    => ['official_documents' => 'Official Government Documentation'],
+            'ngo'                  => ['registration_cert' => 'Registration Certificate', 'tax_exemption' => 'Tax Exemption Certificate'],
+            'research-institution' => ['institutional_affiliation' => 'Institutional Affiliation Letter', 'research_proposal' => 'Research Proposal'],
+            'input-supplier'       => ['cac_registration' => 'CAC / Business Registration'],
+            'logistics-provider'   => ['transport_license' => 'Transport / Haulage License'],
+            'investor'             => ['id_document' => 'Valid ID', 'investment_profile' => 'Investment Profile / Portfolio'],
+            default                => [],
+        };
+    }
+
+    /**
      * Detects whether $identifier is an email or phone, normalizes phones,
      * and enforces the same "no duplicate account" rule as the web form.
      *
