@@ -100,6 +100,34 @@ class WebhookController extends Controller
         Payment::where('reference', $reference)
             ->update(['status' => 'refunded']);
 
+        // Marking the Payment row refunded didn't used to unwind whatever
+        // the payment had activated -- a refunded subscriber kept their
+        // active plan, a refunded consultation stayed billable, a refunded
+        // order kept counting toward revenue (scopeRevenueCounted() only
+        // excludes payment_status values other than 'paid', so a gateway
+        // refund has to actually flip that field, not just the Payment's
+        // own status, or the entitlement silently survives the refund).
+        if ($payment) {
+            match ($payment->module) {
+                'subscription' => \App\Models\Subscription::where('payment_reference', $reference)
+                    ->where('status', 'active')
+                    ->update([
+                        'status'              => 'cancelled',
+                        'cancelled_at'        => now(),
+                        'cancellation_reason' => 'Refunded via payment gateway',
+                    ]),
+                'consultation' => $payment->module_id
+                    ? \App\Models\Consultation::where('id', $payment->module_id)
+                        ->update(['payment_status' => 'refunded'])
+                    : null,
+                'marketplace' => $payment->module_id
+                    ? \App\Models\Order::where('id', $payment->module_id)
+                        ->update(['payment_status' => 'refunded'])
+                    : null,
+                default => null,
+            };
+        }
+
         Log::info('Refund processed', ['reference' => $reference]);
         AuditLog::record('payment.refund_processed', 'Payment', $payment?->id, [
             'reference' => $reference,
