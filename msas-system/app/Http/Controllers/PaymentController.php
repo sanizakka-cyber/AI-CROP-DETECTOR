@@ -29,7 +29,7 @@ class PaymentController extends Controller
         $amount = (float) $request->amount;
 
         // Server-side amount validation — never trust client amount for real services
-        $validatedAmount = $this->validateAmount($request->module, $request->module_id, $amount, $request->metadata ?? []);
+        $validatedAmount = $this->paymentService->validateAmount($user, $request->module, $request->module_id, $amount, $request->metadata ?? []);
         if ($validatedAmount === false) {
             return response()->json(['success' => false, 'message' => 'Invalid payment amount.'], 422);
         }
@@ -219,84 +219,4 @@ class PaymentController extends Controller
             ->update(['status' => 'confirmed', 'confirmed_at' => now()]);
     }
 
-    /**
-     * Validate amount server-side based on module.
-     * Returns correct amount in NGN, or false if invalid.
-     */
-    private function validateAmount(string $module, ?int $moduleId, float $clientAmount, array $metadata = []): float|false
-    {
-        return match ($module) {
-            'subscription' => $this->validateSubscriptionAmount($clientAmount, $metadata),
-            'consultation' => $this->validateConsultationAmount($moduleId, $clientAmount),
-            'marketplace'  => $moduleId
-                ? (\App\Models\Order::find($moduleId)?->total ?? false)
-                : false,
-            default => $clientAmount > 0 ? $clientAmount : false,
-        };
-    }
-
-    private function validateConsultationAmount(?int $moduleId, float $clientAmount): float|false
-    {
-        if (!$moduleId) {
-            return $clientAmount > 0 ? $clientAmount : false;
-        }
-
-        $consultation = \App\Models\Consultation::find($moduleId);
-
-        if (!$consultation) {
-            return false;
-        }
-
-        // Verify the authenticated user owns this consultation
-        if ((int) $consultation->farmer_id !== auth()->id()) {
-            Log::warning('Consultation payment: ownership mismatch', [
-                'module_id' => $moduleId,
-                'farmer_id' => $consultation->farmer_id,
-                'auth_id'   => auth()->id(),
-            ]);
-            return false;
-        }
-
-        $fee = (float) $consultation->fee;
-
-        // If the consultation has a pre-set fee, enforce it; otherwise accept client amount
-        if ($fee > 0 && abs($clientAmount - $fee) > 1) {
-            Log::warning('Consultation payment amount mismatch', [
-                'client_amount' => $clientAmount,
-                'expected'      => $fee,
-                'module_id'     => $moduleId,
-            ]);
-            return false;
-        }
-
-        return $fee > 0 ? $fee : ($clientAmount > 0 ? $clientAmount : false);
-    }
-
-    private function validateSubscriptionAmount(float $clientAmount, array $metadata): float|false
-    {
-        $plan  = $metadata['plan']          ?? null;
-        $cycle = $metadata['billing_cycle'] ?? 'monthly';
-
-        if (! $plan) {
-            return $clientAmount > 0 ? $clientAmount : false;
-        }
-
-        $price = config("subscription.plans.{$plan}.price.{$cycle}");
-        if (! $price) {
-            return false;
-        }
-
-        // Allow ±1 NGN tolerance for rounding differences
-        if (abs($clientAmount - $price) > 1) {
-            Log::warning('Subscription payment amount mismatch', [
-                'client_amount' => $clientAmount,
-                'expected'      => $price,
-                'plan'          => $plan,
-                'cycle'         => $cycle,
-            ]);
-            return false;
-        }
-
-        return (float) $price;
-    }
 }

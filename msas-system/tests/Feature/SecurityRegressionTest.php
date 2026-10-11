@@ -438,4 +438,94 @@ class SecurityRegressionTest extends TestCase
         $this->assertNotNull($staff, 'Staff creation must actually create the account, not silently fail.');
         $this->assertSame('Katsina', $staff->state, 'An omitted state must fall back to the column default, not crash or store null.');
     }
+
+    // ── A stolen mobile bearer token must not survive a password change ────────
+    //
+    // None of the three password-change/reset paths previously nulled
+    // api_token, so a stolen token kept working indefinitely across a
+    // password change specifically meant to lock an attacker out. Web
+    // logout()/AuthApiController::logout() already did this correctly;
+    // these are the other three places a password actually changes.
+
+    public function test_voluntary_password_update_revokes_the_mobile_api_token(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('OldPassw0rd!23')]);
+        $token = $user->createToken('test')->plainTextToken;
+        $this->assertNotNull($user->refresh()->api_token);
+
+        $this->actingAs($user)->put('/password', [
+            'current_password'     => 'OldPassw0rd!23',
+            'password'              => 'NewPassw0rd!23',
+            'password_confirmation' => 'NewPassw0rd!23',
+        ]);
+
+        $this->assertNull($user->refresh()->api_token, 'A mobile token must not survive a voluntary password update.');
+    }
+
+    public function test_profile_change_password_revokes_the_mobile_api_token(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('OldPassw0rd!23')]);
+        $user->createToken('test');
+        $this->assertNotNull($user->refresh()->api_token);
+
+        $this->actingAs($user)->post('/change-password', [
+            'current_password'     => 'OldPassw0rd!23',
+            'password'              => 'NewPassw0rd!23',
+            'password_confirmation' => 'NewPassw0rd!23',
+        ]);
+
+        $this->assertNull($user->refresh()->api_token);
+    }
+
+    public function test_password_reset_via_signed_flow_revokes_the_mobile_api_token(): void
+    {
+        $user = User::factory()->create();
+        $user->createToken('test');
+        $this->assertNotNull($user->refresh()->api_token);
+
+        $this->withSession([
+            'reset_token'   => 'test-reset-token',
+            'reset_user_id' => $user->id,
+        ])->post('/reset-password', [
+            'reset_token'           => 'test-reset-token',
+            'password'              => 'NewPassw0rd!23',
+            'password_confirmation' => 'NewPassw0rd!23',
+        ]);
+
+        $this->assertNull($user->refresh()->api_token, 'A mobile token must not survive a password reset -- that is the whole point of a reset.');
+    }
+
+    // ── Bulk PII export (full name/email/phone for every user) must stay CEO/Admin-only ──
+    //
+    // The CSV export route is shared with data-analyst/M&E roles for
+    // legitimate non-PII report types (financial, disease, geographic),
+    // but 'users'/'farmers' stream every user's contact info at record
+    // level -- a "report-only" role could download the entire user table.
+
+    public function test_data_analyst_cannot_export_the_bulk_users_pii_report(): void
+    {
+        $analyst = User::factory()->create(['role' => 'data-analyst']);
+
+        $response = $this->actingAs($analyst)->get('/ceo/reports/users/csv');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_data_analyst_can_still_export_the_non_pii_geographic_report(): void
+    {
+        $analyst = User::factory()->create(['role' => 'data-analyst']);
+
+        $response = $this->actingAs($analyst)->get('/ceo/reports/geographic/csv');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_ceo_can_export_the_bulk_users_pii_report(): void
+    {
+        $ceo = User::factory()->create(['role' => 'ceo']);
+
+        $response = $this->actingAs($ceo)->get('/ceo/reports/users/csv');
+
+        $response->assertStatus(200);
+    }
 }

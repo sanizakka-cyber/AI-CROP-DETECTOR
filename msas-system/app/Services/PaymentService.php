@@ -111,6 +111,25 @@ class PaymentService
             return $payment;
         }
 
+        // Defense-in-depth: the amount was already fixed server-side at
+        // initiatePayment() time (validateAmount()), and Paystack's own
+        // checkout doesn't let the payer change the amount after
+        // initialization -- so these should always match. A mismatch here
+        // would mean something went wrong between initialization and
+        // verification (metadata tampering, a bug, or a replayed/forged
+        // verify response), and this payment must not be trusted just
+        // because Paystack reports status=success.
+        $paidKobo      = (int) ($paystackData['amount'] ?? 0);
+        $expectedKobo  = (int) round($payment->amount * 100);
+        if ($paidKobo > 0 && abs($paidKobo - $expectedKobo) > 1) {
+            Log::warning('Payment amount mismatch at verification -- refusing to mark successful', [
+                'reference'     => $payment->reference,
+                'expected_kobo' => $expectedKobo,
+                'paid_kobo'     => $paidKobo,
+            ]);
+            return $this->markFailed($payment, 'Amount mismatch at verification.');
+        }
+
         $payment->update([
             'status'              => 'success',
             'transaction_id'      => (string) ($paystackData['id'] ?? ''),
@@ -246,5 +265,93 @@ class PaymentService
             hash_hmac('sha512', $payload, $this->secretKey),
             $signature
         );
+    }
+
+    /**
+     * Server-side amount validation -- never trust a client-supplied amount
+     * for a real service. Moved here from PaymentController (where it was
+     * private) so the mobile API controller validates identically instead
+     * of trusting Api\PaymentApiController::initiate()'s raw
+     * $request->amount, which previously went straight to Paystack with no
+     * server-side check at all -- a mobile client could request any
+     * subscription/consultation/order for any amount it chose.
+     *
+     * $user is passed explicitly rather than read from auth()/auth()->id()
+     * so this works identically under the web session guard and the
+     * mobile API's bearer-token guard.
+     */
+    public function validateAmount(User $user, string $module, ?int $moduleId, float $clientAmount, array $metadata = []): float|false
+    {
+        return match ($module) {
+            'subscription' => $this->validateSubscriptionAmount($clientAmount, $metadata),
+            'consultation' => $this->validateConsultationAmount($user, $moduleId, $clientAmount),
+            'marketplace'  => $moduleId
+                ? (\App\Models\Order::find($moduleId)?->total ?? false)
+                : false,
+            default => $clientAmount > 0 ? $clientAmount : false,
+        };
+    }
+
+    private function validateConsultationAmount(User $user, ?int $moduleId, float $clientAmount): float|false
+    {
+        if (!$moduleId) {
+            return $clientAmount > 0 ? $clientAmount : false;
+        }
+
+        $consultation = \App\Models\Consultation::find($moduleId);
+
+        if (!$consultation) {
+            return false;
+        }
+
+        if ((int) $consultation->farmer_id !== $user->id) {
+            Log::warning('Consultation payment: ownership mismatch', [
+                'module_id' => $moduleId,
+                'farmer_id' => $consultation->farmer_id,
+                'user_id'   => $user->id,
+            ]);
+            return false;
+        }
+
+        $fee = (float) $consultation->fee;
+
+        if ($fee > 0 && abs($clientAmount - $fee) > 1) {
+            Log::warning('Consultation payment amount mismatch', [
+                'client_amount' => $clientAmount,
+                'expected'      => $fee,
+                'module_id'     => $moduleId,
+            ]);
+            return false;
+        }
+
+        return $fee > 0 ? $fee : ($clientAmount > 0 ? $clientAmount : false);
+    }
+
+    private function validateSubscriptionAmount(float $clientAmount, array $metadata): float|false
+    {
+        $plan  = $metadata['plan']          ?? null;
+        $cycle = $metadata['billing_cycle'] ?? 'monthly';
+
+        if (! $plan) {
+            return $clientAmount > 0 ? $clientAmount : false;
+        }
+
+        $price = config("subscription.plans.{$plan}.price.{$cycle}");
+        if (! $price) {
+            return false;
+        }
+
+        // Allow +/-1 NGN tolerance for rounding differences
+        if (abs($clientAmount - $price) > 1) {
+            Log::warning('Subscription payment amount mismatch', [
+                'client_amount' => $clientAmount,
+                'expected'      => $price,
+                'plan'          => $plan,
+                'cycle'         => $cycle,
+            ]);
+            return false;
+        }
+
+        return (float) $price;
     }
 }

@@ -26,9 +26,21 @@ class PaymentApiController extends Controller
 
         $user = $request->user();
 
+        // Server-side amount validation — the web PaymentController has
+        // always done this; this mobile endpoint previously passed
+        // $request->amount straight to Paystack with no server-side check
+        // at all, so a mobile client could request any
+        // subscription/consultation/order for any amount of its choosing.
+        $validatedAmount = $this->paymentService->validateAmount(
+            $user, $request->module, $request->module_id, (float) $request->amount, $request->metadata ?? []
+        );
+        if ($validatedAmount === false) {
+            return response()->json(['success' => false, 'message' => 'Invalid payment amount.'], 422);
+        }
+
         $result = $this->paymentService->initiatePayment(
             user:        $user,
-            amount:      (float) $request->amount,
+            amount:      $validatedAmount,
             module:      $request->module,
             description: $request->description,
             callbackUrl: config('app.url') . '/api/payment/mobile-callback',

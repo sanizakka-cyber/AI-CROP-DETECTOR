@@ -131,6 +131,12 @@ class ProfileController extends Controller
 
         $user->password             = Hash::make($request->password);
         $user->force_password_reset = false;
+        // Nulling api_token here doesn't touch this web request's own
+        // session/cookie auth (a separate mechanism), so it doesn't
+        // disrupt the "stay on this session" UX below -- it only revokes
+        // the mobile bearer token, which could be live on an entirely
+        // different, possibly stolen, device.
+        $user->api_token            = null;
         $user->save();
 
         // Revoke all trusted devices — a password change should force re-verification everywhere

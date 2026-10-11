@@ -304,8 +304,13 @@ Route::middleware(['auth', 'role:admin,ceo'])->prefix('admin')->name('admin.')->
     Route::get('/consultations/{consultation}',      [\App\Http\Controllers\Admin\ConsultationController::class, 'show'])         ->name('consultations.show');
     Route::post('/consultations/{consultation}/assign', [\App\Http\Controllers\Admin\ConsultationController::class, 'assign'])    ->name('consultations.assign');
     Route::patch('/consultations/{consultation}/status', [\App\Http\Controllers\Admin\ConsultationController::class, 'updateStatus'])->name('consultations.status');
-    Route::post('/consultations/{consultation}/expert-accept', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertAccept'])->name('consultations.expert.accept');
-    Route::post('/consultations/{consultation}/expert-decline', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertDecline'])->name('consultations.expert.decline');
+    // expert-accept/expert-decline previously lived here too, but their own
+    // logic (abort_if($consultation->expert_id !== auth()->id())) means the
+    // intended caller is the assigned vet/agronomist -- never an admin/ceo,
+    // who always fails that check. Gated under role:admin,ceo with no UI
+    // anywhere pointing at them, they were unreachable by anyone. Moved to
+    // the vet/agronomist route group below, same controller, no route left
+    // behind here (confirmed no other reference to the old route names).
 });
 
 // ── Admin: Order & Rider Management ───────────────────────────────────────────
@@ -458,6 +463,13 @@ Route::middleware(['auth', 'role:vet,agronomist', 'subscription'])->prefix('vet'
     Route::get('/consultation/{consultation}', [\App\Http\Controllers\VetController::class, 'show'])->name('show');
     Route::post('/consultation/{consultation}/respond', [\App\Http\Controllers\VetController::class, 'respond'])->name('respond');
     Route::post('/consultation/{consultation}/start-video', [\App\Http\Controllers\VetController::class, 'startVideo'])->name('start-video');
+    // Reuses Admin\ConsultationController's existing expertAccept/expertDecline
+    // (their internal abort_if($consultation->expert_id !== auth()->id())
+    // already correctly checks for the assigned expert -- only the route's
+    // gating was wrong, not the controller logic) under the role group the
+    // assigned vet/agronomist can actually reach.
+    Route::post('/consultation/{consultation}/accept', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertAccept'])->name('consultation.accept');
+    Route::post('/consultation/{consultation}/decline', [\App\Http\Controllers\Admin\ConsultationController::class, 'expertDecline'])->name('consultation.decline');
     Route::get('/vaccinations',    [\App\Http\Controllers\VetController::class, 'vaccinations'])->name('vaccinations');
     Route::post('/vaccinations',   [\App\Http\Controllers\VetController::class, 'storeVaccination'])->name('vaccinations.store');
     Route::get('/disease-alerts',  [\App\Http\Controllers\VetController::class, 'diseaseAlerts'])->name('disease-alerts');

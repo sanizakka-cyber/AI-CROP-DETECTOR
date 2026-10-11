@@ -135,6 +135,42 @@ $farmer = $consultation->farmer;
         </div>
         @endif
 
+        @if(session('success'))
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:12px 14px;margin-bottom:16px;color:#15803d;font-size:13px;font-weight:600;">
+            {{ session('success') }}
+        </div>
+        @endif
+        @if(session('info'))
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:12px 14px;margin-bottom:16px;color:#1e40af;font-size:13px;font-weight:600;">
+            {{ session('info') }}
+        </div>
+        @endif
+
+        {{-- Accept / decline this assignment -- only while it's still awaiting your response --}}
+        @if($consultation->consultant_status === 'pending_acceptance')
+        <div style="margin-bottom:18px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+            <p style="font-size:12px;color:#1e40af;font-weight:700;margin:0 0 10px;">You've been assigned this case. Accept it to begin, or decline so it can be reassigned.</p>
+            <div style="display:flex;gap:10px;">
+                <form action="{{ route('vet.consultation.accept', $consultation) }}" method="POST">
+                    @csrf
+                    <button type="submit" style="background:#0F6B3E;color:#fff;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Accept Case</button>
+                </form>
+                <button type="button" onclick="document.getElementById('decline-box').classList.toggle('hidden')"
+                        style="background:#fff;color:#dc2626;border:1.5px solid #fecaca;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+                    Decline
+                </button>
+            </div>
+            <div id="decline-box" class="hidden" style="margin-top:12px;">
+                <form action="{{ route('vet.consultation.decline', $consultation) }}" method="POST">
+                    @csrf
+                    <textarea name="reason" rows="2" placeholder="Reason for declining (optional)…"
+                        style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;margin-bottom:8px;box-sizing:border-box;"></textarea>
+                    <button type="submit" style="background:#dc2626;color:#fff;padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Confirm Decline</button>
+                </form>
+            </div>
+        </div>
+        @endif
+
         {{-- Video Call button (before the response form) --}}
         @if($consultation->video_room_id)
         <div style="margin-bottom:18px;padding:14px 16px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">

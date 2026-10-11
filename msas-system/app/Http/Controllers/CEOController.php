@@ -1126,8 +1126,23 @@ class CEOController extends Controller
     }
 
     // ── CSV Export ─────────────────────────────────────────────────
+    /**
+     * 'users'/'farmers' stream every user's full name, email, phone and
+     * state at record level -- a bulk PII export, not a report. The route
+     * is shared with data-analyst/M&E roles for the other (aggregate or
+     * non-contact) report types; those two specifically are restricted to
+     * ceo/admin here rather than narrowing the whole route, since the
+     * other types (financial, diseases, geographic) were deliberately
+     * opened to those roles for legitimate reporting work.
+     */
+    private const PII_EXPORT_TYPES = ['users', 'farmers'];
+
     public function exportCsv(string $type)
     {
+        if (in_array($type, self::PII_EXPORT_TYPES, true) && ! in_array(auth()->user()?->role, ['ceo', 'admin'], true)) {
+            abort(403, 'This export is restricted to CEO/Admin.');
+        }
+
         $data = match($type) {
             'financial' => [
                 'filename' => 'financial-report',
