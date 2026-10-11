@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -241,42 +242,62 @@ class MarketplaceController extends Controller
             return redirect()->route('marketplace')->with('error', 'No items were available to order.');
         }
 
-        $createdOrders = [];
-        foreach ($byDealer as $dealerId => $dealerItems) {
-            $subtotal = collect($dealerItems)->sum(fn ($i) => $i['quantity'] * $i['product']->selling_price);
-            $tax      = round($subtotal * 0.075, 2);
-            $total    = $subtotal + $tax;
+        // Previously this loop ran with no transaction at all -- a failure
+        // partway through a multi-dealer cart (or, with the unguarded
+        // decrementStock() this used to call, a concurrent checkout
+        // taking the last unit of a product between the check above and
+        // the decrement here) left partially-created orders and
+        // decremented stock with no rollback. decrementStock() now
+        // guards the UPDATE itself and reports failure; wrapping the
+        // whole loop means a stock-ran-out mid-checkout rolls back every
+        // order in this request, not just the one that failed, so the
+        // user never ends up with some dealers' orders placed and others
+        // silently missing.
+        try {
+            $createdOrders = DB::transaction(function () use ($byDealer, $request) {
+                $orders = [];
+                foreach ($byDealer as $dealerId => $dealerItems) {
+                    $subtotal = collect($dealerItems)->sum(fn ($i) => $i['quantity'] * $i['product']->selling_price);
+                    $tax      = round($subtotal * 0.075, 2);
+                    $total    = $subtotal + $tax;
 
-            $order = Order::create([
-                'order_number'     => Order::generateNumber(),
-                'buyer_id'         => auth()->id(),
-                'dealer_id'        => $dealerId,
-                'status'           => 'pending',
-                'payment_status'   => 'unpaid',
-                'subtotal'         => $subtotal,
-                'tax'              => $tax,
-                'total'            => $total,
-                'delivery_address' => $request->delivery_address,
-                'delivery_notes'   => $request->delivery_notes,
-            ]);
+                    $order = Order::create([
+                        'order_number'     => Order::generateNumber(),
+                        'buyer_id'         => auth()->id(),
+                        'dealer_id'        => $dealerId,
+                        'status'           => 'pending',
+                        'payment_status'   => 'unpaid',
+                        'subtotal'         => $subtotal,
+                        'tax'              => $tax,
+                        'total'            => $total,
+                        'delivery_address' => $request->delivery_address,
+                        'delivery_notes'   => $request->delivery_notes,
+                    ]);
 
-            foreach ($dealerItems as $item) {
-                $p = $item['product'];
-                OrderItem::create([
-                    'order_id'     => $order->id,
-                    'product_id'   => $p->id,
-                    'product_name' => $p->name,
-                    'product_sku'  => $p->sku,
-                    'unit'         => $p->unit,
-                    'quantity'     => $item['quantity'],
-                    'unit_price'   => $p->selling_price,
-                    'total'        => $item['quantity'] * $p->selling_price,
-                ]);
+                    foreach ($dealerItems as $item) {
+                        $p = $item['product'];
+                        OrderItem::create([
+                            'order_id'     => $order->id,
+                            'product_id'   => $p->id,
+                            'product_name' => $p->name,
+                            'product_sku'  => $p->sku,
+                            'unit'         => $p->unit,
+                            'quantity'     => $item['quantity'],
+                            'unit_price'   => $p->selling_price,
+                            'total'        => $item['quantity'] * $p->selling_price,
+                        ]);
 
-                $p->decrementStock($item['quantity']);
-            }
+                        if (! $p->decrementStock($item['quantity'])) {
+                            throw new \RuntimeException("'{$p->name}' sold out while placing your order. Please review your cart and try again.");
+                        }
+                    }
 
-            $createdOrders[] = $order;
+                    $orders[] = $order;
+                }
+                return $orders;
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->route('marketplace.cart')->with('error', $e->getMessage());
         }
 
         session()->forget('cart');

@@ -90,9 +90,30 @@ class Product extends Model
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
-    public function decrementStock(int $qty): void
+    /**
+     * Atomic, guarded decrement -- the plain decrement() this replaced had
+     * no WHERE guard and no row lock: stock availability was checked in
+     * PHP before an unconditional decrement, so two concurrent checkouts
+     * on the last unit(s) of a product could both pass the check and both
+     * decrement, driving quantity_in_stock negative (overselling). The
+     * WHERE clause means the UPDATE itself only succeeds if enough stock
+     * is still actually there at the moment it runs, not at the moment it
+     * was checked earlier in the request.
+     *
+     * @return bool false if insufficient stock remained (caller must not
+     *              treat the order item as fulfilled in that case).
+     */
+    public function decrementStock(int $qty): bool
     {
-        $this->decrement('quantity_in_stock', $qty);
+        $affected = static::where('id', $this->id)
+            ->where('quantity_in_stock', '>=', $qty)
+            ->decrement('quantity_in_stock', $qty);
+
+        if ($affected > 0) {
+            $this->quantity_in_stock -= $qty;
+        }
+
+        return $affected > 0;
     }
 
     public function syncRating(): void

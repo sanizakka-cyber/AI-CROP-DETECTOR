@@ -84,7 +84,8 @@ class OrderApiController extends Controller
             }
         }
 
-        return DB::transaction(function () use ($cartItems, $user, $data) {
+        try {
+            return DB::transaction(function () use ($cartItems, $user, $data) {
             $subtotal = $cartItems->sum(fn($i) => $i->quantity * $i->product->selling_price);
             $tax      = round($subtotal * 0.075, 2); // 7.5% VAT
             $discount = 0;
@@ -125,8 +126,20 @@ class OrderApiController extends Controller
                         'unit_price'   => $item->product->selling_price,
                         'total'        => $item->quantity * $item->product->selling_price,
                     ]);
-                    // Deduct stock
-                    $item->product->decrementStock($item->quantity);
+                    // Deduct stock -- the pre-check above (line ~82) isn't
+                    // atomic with this decrement; a concurrent checkout on
+                    // the same product between that check and this point
+                    // could have already taken the remaining stock.
+                    // decrementStock() now guards the UPDATE itself
+                    // (WHERE quantity_in_stock >= qty), so a failed
+                    // decrement here means stock genuinely ran out in that
+                    // window -- throwing rolls back this entire
+                    // transaction (order, items, any earlier dealer's
+                    // order in the same checkout) rather than completing
+                    // an order for stock that no longer exists.
+                    if (! $item->product->decrementStock($item->quantity)) {
+                        throw new \RuntimeException("'{$item->product->name}' sold out while placing this order. Please review your cart and try again.");
+                    }
                 }
                 $orders[] = $order->load('items');
             }
@@ -146,7 +159,10 @@ class OrderApiController extends Controller
                 ],
                 'total'   => $total,
             ], 201);
-        });
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 
     public static function transferChannels(): array
