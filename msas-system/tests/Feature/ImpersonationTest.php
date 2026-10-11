@@ -96,15 +96,19 @@ class ImpersonationTest extends TestCase
         // be blocked one level earlier by role:ceo,admin middleware on the
         // second request -- that role check runs against whoever is
         // CURRENTLY authenticated, which during impersonation is the
-        // target's own role. To actually reach the controller's nested-
-        // impersonation check, the impersonated identity itself needs a
-        // role the middleware admits: an admin, impersonated by the ceo.
+        // target's own role. To reach the controller's nested-
+        // impersonation check specifically (not a different one of its
+        // earlier checks), the impersonated identity needs a role the
+        // middleware admits (admin), AND its second target must not
+        // itself trip the separate "admin cannot impersonate ceo/admin"
+        // rule, which aborts with a hard 403 before the nested check ever
+        // runs -- so the second target here is a farmer, not another admin.
         $adminA = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $adminB = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $farmerB = User::factory()->create(['role' => 'farmer', 'is_active' => true]);
 
         $this->actingAs($ceo)->post(route('impersonate.start', $adminA));
         $response = $this->withSession(['impersonate.original_id' => $ceo->id])
-            ->actingAs($adminA)->post(route('impersonate.start', $adminB));
+            ->actingAs($adminA)->post(route('impersonate.start', $farmerB));
 
         $response->assertSessionHas('error');
         $this->assertAuthenticatedAs($adminA);
