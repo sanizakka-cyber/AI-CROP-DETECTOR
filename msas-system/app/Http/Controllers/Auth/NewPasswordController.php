@@ -74,10 +74,14 @@ class NewPasswordController extends Controller
         ]);
 
         $user = User::findOrFail($request->session()->get('reset_user_id'));
-        // Null the mobile API bearer token too -- a password reset is
+        $user->password = Hash::make($request->password);
+        // api_token is deliberately excluded from $fillable, so
+        // update(['api_token' => null]) is silently dropped -- direct
+        // property assignment is required. A password reset is
         // explicitly meant to lock out anyone who had the old password
         // (or a stolen token), so a surviving token would defeat the point.
-        $user->update(['password' => Hash::make($request->password), 'api_token' => null]);
+        $user->api_token = null;
+        $user->save();
 
         // Only the OTP send/verify steps around this were audited before —
         // the actual password change itself left no trail. The actor isn't

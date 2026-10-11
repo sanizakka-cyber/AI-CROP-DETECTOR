@@ -93,14 +93,39 @@ class PaymentAmountValidationTest extends TestCase
         $this->assertEquals(5000, Payment::first()->amount);
     }
 
-    public function test_mobile_api_rejects_a_marketplace_order_payment_for_a_different_amount_than_the_order_total(): void
+    public function test_mobile_api_ignores_a_tampered_amount_and_charges_the_real_order_total(): void
     {
         $buyer = User::factory()->create(['role' => 'farmer']);
         $order = Order::create(['order_number' => 'ORD-TEST-0001', 'buyer_id' => $buyer->id, 'total' => 15000]);
 
+        \Illuminate\Support\Facades\Http::fake([
+            '*/transaction/initialize' => \Illuminate\Support\Facades\Http::response([
+                'status' => true,
+                'data'   => ['authorization_url' => 'https://paystack.test/x', 'access_code' => 'abc', 'reference' => 'ref'],
+            ], 200),
+        ]);
+
+        // validateAmount()'s marketplace branch substitutes the order's own
+        // total rather than comparing against the client's figure and
+        // rejecting -- a different, but equally valid, way of never
+        // trusting client input: the attacker-chosen amount is simply
+        // discarded, not relied upon at all.
         $response = $this->withHeaders($this->apiHeaders($buyer))->postJson('/api/payment/initiate', [
             'module' => 'marketplace', 'module_id' => $order->id,
             'amount' => 1, 'description' => 'Order payment',
+        ]);
+
+        $response->assertOk();
+        $this->assertEquals(15000, Payment::first()->amount, 'The real order total must be charged, never the client-supplied figure.');
+    }
+
+    public function test_mobile_api_rejects_a_marketplace_payment_for_an_order_that_does_not_exist(): void
+    {
+        $buyer = User::factory()->create(['role' => 'farmer']);
+
+        $response = $this->withHeaders($this->apiHeaders($buyer))->postJson('/api/payment/initiate', [
+            'module' => 'marketplace', 'module_id' => 999999,
+            'amount' => 15000, 'description' => 'Order payment',
         ]);
 
         $response->assertStatus(422);
