@@ -96,6 +96,12 @@ export default function CropScanScreen() {
   };
 
   const handleSubmit = async () => {
+    // The submit button is disabled while loading, but that alone only
+    // guards the one tap path through it — a second trigger into this
+    // function directly (e.g. a fast double-tap before the disabled state
+    // re-renders) was not independently guarded.
+    if (loading) return;
+
     // Crop type and plant part are optional hints, not requirements — the
     // AI identifies the crop and plant part on its own when left unset,
     // matching the web scan form exactly.

@@ -152,6 +152,56 @@ const request = async (path, options = {}) => {
   return data;
 };
 
+/**
+ * Multipart (image upload) counterpart to request() above. Can't just call
+ * request() here: it hard-sets Content-Type: application/json, which would
+ * break the multipart boundary React Native/fetch sets automatically for a
+ * FormData body. Previously these calls used bare fetch() with no timeout
+ * at all -- a stalled upload (lost connectivity mid-request, a hung
+ * server) left the screen's loading state stuck forever with no recovery.
+ * Images can legitimately take longer than an ordinary JSON request on a
+ * slow connection, so this uses a longer ceiling than request()'s 20s.
+ */
+async function multipartRequest(path, form) {
+  const token = await getToken();
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: timeoutSignal(60000),
+    });
+  } catch (e) {
+    if (e?.name === 'TimeoutError' || e?.name === 'AbortError') {
+      throw new ApiError('The upload took too long. Please check your connection and try again.', { kind: 'timeout' });
+    }
+    if (e?.message === 'Network request failed' || e?.name === 'TypeError') {
+      throw new ApiError('MSAS could not be reached. Please check your internet connection and try again.', { kind: 'network' });
+    }
+    throw new ApiError(`Unexpected error before reaching MSAS: ${e?.message || String(e)}`, { kind: 'client' });
+  }
+
+  let data = {};
+  try {
+    const text = await res.text();
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new ApiError(
+      res.ok ? 'The server returned an unexpected response. Please try again.' : (STATUS_FALLBACKS[res.status] || `MSAS returned an unexpected error (${res.status}).`),
+      { kind: kindForStatus(res.status), status: res.status }
+    );
+  }
+
+  if (!res.ok) {
+    const fieldMessage = firstFieldError(data);
+    const message = fieldMessage || data.error || data.message || STATUS_FALLBACKS[res.status] || `Upload failed (${res.status}).`;
+    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.details || data.errors || null });
+  }
+
+  return data;
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
   register:   (body) => request('/auth/register',    { method: 'POST', body: JSON.stringify(body) }),
@@ -212,7 +262,6 @@ export const diagnoseAPI = {
    * Uses FormData (not JSON) for multipart upload.
    */
   crop: async ({ cropType, cropPart, farmId, images, location }) => {
-    const token = await getToken();
     const form = new FormData();
     // Both are optional hints — omit entirely when unset so the AI engine
     // identifies the crop/plant part on its own, matching the web scan form.
@@ -228,18 +277,10 @@ export const diagnoseAPI = {
       // must be an array." on every scan attempt.
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
-    const res = await fetch(`${BASE_URL}/diagnose/crop`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
-    return data;
+    return multipartRequest('/diagnose/crop', form);
   },
 
   livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location }) => {
-    const token = await getToken();
     const form = new FormData();
     form.append('animalType', animalType || '');
     form.append('assessmentType', assessmentType || 'comprehensive');
@@ -249,43 +290,22 @@ export const diagnoseAPI = {
     if (behavioral) form.append('behavioral', JSON.stringify(behavioral));
     appendLocationFields(form, location);
     images.forEach((img, i) => {
-      // 'images[]' — PHP/Laravel only collects a multipart field into a
-      // real array when the field name carries the [] suffix; multiple
-      // parts all named plain 'images' collapse to a single value instead
-      // of an array, which is exactly what produced "The images field
-      // must be an array." on every scan attempt.
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
-    const res = await fetch(`${BASE_URL}/diagnose/livestock`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
-    return data;
+    return multipartRequest('/diagnose/livestock', form);
   },
 
   soil: async ({ soilContext, images, location }) => {
-    const token = await getToken();
     const form = new FormData();
     if (soilContext) form.append('soilContext', soilContext);
     appendLocationFields(form, location);
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
-    const res = await fetch(`${BASE_URL}/diagnose/soil`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
-    return data;
+    return multipartRequest('/diagnose/soil', form);
   },
 
   pest: async ({ cropType, locationHint, images, location }) => {
-    const token = await getToken();
     const form = new FormData();
     if (cropType) form.append('cropType', cropType);
     // 'location' here is the free-text region hint field /predict/pest's
@@ -298,14 +318,7 @@ export const diagnoseAPI = {
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
     });
-    const res = await fetch(`${BASE_URL}/diagnose/pest`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(firstFieldError(data) || data.error || data.message || 'Upload failed');
-    return data;
+    return multipartRequest('/diagnose/pest', form);
   },
 
   get:     (id) => request(`/diagnose/${id}`),

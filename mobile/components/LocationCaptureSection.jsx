@@ -57,6 +57,11 @@ export default function LocationCaptureSection({ loc }) {
             loc.gpsStatus.type === 'warning' && styles.statusTextWarning,
             loc.gpsStatus.type === 'error'   && styles.statusTextError,
           ]}>{loc.gpsStatus.message}</Text>
+          {loc.gpsStatus.canOpenSettings && (
+            <TouchableOpacity onPress={loc.openLocationSettings} style={styles.settingsBtn}>
+              <Text style={styles.settingsBtnText}>Open Settings</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -207,6 +212,8 @@ const styles = StyleSheet.create({
   statusTextSuccess: { color: Colors.success },
   statusTextWarning: { color: '#92400E' },
   statusTextError:   { color: Colors.danger },
+  settingsBtn: { marginTop: Spacing.xs, alignSelf: 'flex-start' },
+  settingsBtnText: { ...Typography.tiny, color: Colors.primary, fontWeight: '700', textDecorationLine: 'underline' },
 
   coordsBox: { backgroundColor: Colors.background, borderRadius: Radius.sm, padding: Spacing.sm, marginBottom: Spacing.sm },
   coordsText: { ...Typography.tiny, color: Colors.textSecondary, fontFamily: 'monospace' },

@@ -75,6 +75,7 @@ export default function SoilScanScreen() {
   };
 
   const handleSubmit = async () => {
+    if (loading) return;
     if (images.length === 0) return Alert.alert('', isHausa ? 'Da fatan ɗauki hoto' : 'Please capture at least one photo.');
 
     const lowQuality = qualityResults.find(q => q.score < 40);

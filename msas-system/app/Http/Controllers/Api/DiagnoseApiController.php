@@ -544,6 +544,10 @@ class DiagnoseApiController extends Controller
     public function history(Request $request): JsonResponse
     {
         $diagnoses = Diagnosis::where('user_id', $request->user()->id)
+            // Eager-loaded, not accessed lazily below -- the per-row
+            // ->collectionLocation inside the map() would otherwise fire
+            // one query per diagnosis on a 20-row page.
+            ->with('collectionLocation:id,diagnosis_id,state,lga')
             ->latest()
             ->paginate(20);
 
@@ -569,6 +573,14 @@ class DiagnoseApiController extends Controller
             'status_label'          => $d->statusLabel,
             'image_path'            => $d->image_thumbnail ?? ($d->image_path ? asset('storage/' . $d->image_path) : null),
             'created_at'            => $d->created_at->toISOString(),
+            // The history list previously carried no location information
+            // at all, despite the single-diagnosis detail endpoint (below)
+            // having a full location section -- a lightweight label is
+            // enough for a list row; the detail screen still has the full
+            // picture (coordinates, provenance, verification status).
+            'location_label'        => $d->collectionLocation
+                ? (trim(implode(', ', array_filter([$d->collectionLocation->lga, $d->collectionLocation->state]))) ?: 'Location recorded')
+                : null,
         ]);
 
         return response()->json([

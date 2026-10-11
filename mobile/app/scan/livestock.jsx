@@ -60,6 +60,7 @@ export default function LivestockScanScreen() {
     setSymptoms(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   const handleSubmit = async () => {
+    if (loading) return;
     if (!animal) return Alert.alert('', 'Please select an animal type');
     if (images.length === 0 && assessment !== 'behavioral')
       return Alert.alert('', 'Please add at least one photo');

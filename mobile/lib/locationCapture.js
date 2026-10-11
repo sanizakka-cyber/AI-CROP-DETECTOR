@@ -8,10 +8,23 @@
 // Phase 5, see App\Http\Controllers\Api\DiagnoseApiController::
 // locationRules()) — this is additive on top of an existing, already-tested
 // contract, not a new one.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { locationsAPI } from './api';
 import { buildLocationApiFields } from './locationFields';
+
+// App-level ceiling on top of getCurrentPositionAsync's own behavior -- a
+// native hang (not a rejection) previously left gpsLoading stuck true
+// forever, with no escape for the user. Races the real GPS fetch against
+// this timeout and always resolves one way or the other.
+const GPS_TIMEOUT_MS = 20000;
+
+function isValidCoordinate(latitude, longitude) {
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+    && !(latitude === 0 && longitude === 0); // (0,0) is the ocean off West Africa -- a classic "GPS fix never actually resolved" sentinel, not a real farm location.
+}
 
 export function useLocationCapture() {
   // Nigeria-only for now — the location dataset (App\Data\NigeriaLocations)
@@ -30,8 +43,13 @@ export function useLocationCapture() {
   const [captureMethod, setCaptureMethod] = useState(null);
   const [confirmed, setConfirmed]         = useState(false);
   const [differsFromScan, setDiffersFromScan] = useState(false);
-  const [gpsStatus, setGpsStatus]   = useState(null); // { type: 'success'|'warning'|'error', message }
+  const [gpsStatus, setGpsStatus]   = useState(null); // { type: 'success'|'warning'|'error', message, canOpenSettings? }
   const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Guards every async setState below against firing after the screen that
+  // owns this hook has unmounted (e.g. the user navigated away mid-capture).
+  const isMounted = useRef(true);
+  useEffect(() => () => { isMounted.current = false; }, []);
 
   // Same backend dataset the web scan form and mobile registration screen
   // already use (App\Data\NigeriaLocations via GET /locations) — never a
@@ -70,18 +88,51 @@ export function useLocationCapture() {
     setGpsStatus(null);
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
+      if (!isMounted.current) return;
+
       if (!perm.granted) {
-        setGpsStatus({ type: 'error', message: 'Location permission denied. You can still select your state/LGA manually below.' });
+        // canAskAgain distinguishes a plain "denied, but the OS prompt can
+        // still be shown again" from a permanently-denied/iOS-"restricted"
+        // state, where the only way back is the system Settings app --
+        // previously both collapsed into the same generic message with no
+        // path forward for the permanent case.
+        if (!perm.canAskAgain) {
+          setGpsStatus({
+            type: 'error',
+            canOpenSettings: true,
+            message: 'Location access is turned off for this app and can’t be requested again here. Open Settings to allow it, or select your state/LGA manually below.',
+          });
+        } else {
+          setGpsStatus({ type: 'error', message: 'Location permission denied. You can still select your state/LGA manually below.' });
+        }
         return;
       }
 
       const enabled = await Location.hasServicesEnabledAsync();
+      if (!isMounted.current) return;
       if (!enabled) {
         setGpsStatus({ type: 'error', message: 'Location services are turned off on this device. You can still select your state/LGA manually below.' });
         return;
       }
 
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      // Races the real GPS fetch against an app-level timeout so a native
+      // hang (not a rejection) can never leave gpsLoading stuck true
+      // forever -- getCurrentPositionAsync's own timeout option only
+      // covers some failure modes, not an outright stall. The timer is
+      // cleared as soon as either side settles so a fast GPS fix doesn't
+      // leave a dangling 20s timer alive in the background.
+      let timeoutId;
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+        new Promise((_, reject) => { timeoutId = setTimeout(() => reject({ code: 'E_LOCATION_TIMEOUT' }), GPS_TIMEOUT_MS); }),
+      ]).finally(() => clearTimeout(timeoutId));
+      if (!isMounted.current) return;
+
+      if (!isValidCoordinate(pos.coords.latitude, pos.coords.longitude)) {
+        setGpsStatus({ type: 'error', message: 'The device returned an invalid location reading. You can still select your state/LGA manually below.' });
+        return;
+      }
+
       const acc = Math.round(pos.coords.accuracy || 0);
 
       setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy });
@@ -93,6 +144,7 @@ export function useLocationCapture() {
           : `Location captured (±${acc}m). Please still confirm the state/LGA below.`,
       });
     } catch (e) {
+      if (!isMounted.current) return;
       const timedOut = e?.code === 'E_LOCATION_TIMEOUT' || /timeout/i.test(e?.message || '');
       setGpsStatus({
         type: 'error',
@@ -101,8 +153,12 @@ export function useLocationCapture() {
           : 'Could not get your location. You can still select your state/LGA manually below.',
       });
     } finally {
-      setGpsLoading(false);
+      if (isMounted.current) setGpsLoading(false);
     }
+  }, []);
+
+  const openLocationSettings = useCallback(() => {
+    Linking.openSettings();
   }, []);
 
   // Serializes to the exact loc_* field set the API expects — see
@@ -118,6 +174,6 @@ export function useLocationCapture() {
     confirmed, differsFromScan, gpsStatus, gpsLoading,
     locations, lgasForState,
     setCommunity, setPostalCode, setAddress, setConfirmed, setDiffersFromScan,
-    selectState, selectLga, captureGps, toApiFields,
+    selectState, selectLga, captureGps, toApiFields, openLocationSettings,
   };
 }

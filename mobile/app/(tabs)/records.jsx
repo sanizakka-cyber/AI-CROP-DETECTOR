@@ -75,6 +75,7 @@ export default function RecordsScreen() {
                         <Text style={styles.dxTitle}>{d.subject_name || d.disease_name || d.aiResult?.primaryDiagnosis || 'Processing...'}</Text>
                         <Text style={styles.dxMeta}>
                           {typeLabel(d.type)} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}
+                          {d.location_label ? ` · 📍 ${d.location_label}` : ''}
                         </Text>
                         <Text style={[styles.dxStatus, { color: Colors[sm.colorKey] }]}>
                           {sm.icon} {sm.label}
