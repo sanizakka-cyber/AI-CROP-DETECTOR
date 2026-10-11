@@ -170,9 +170,16 @@ class SubscriptionActivationService
         // has a DB-level unique constraint
         // (2026_06_19_000001_create_subscriptions_table.php:42) as the real
         // guard for that race -- same pattern already used for the Payment
-        // row below.
+        // row below. The create() is wrapped in its own DB::transaction()
+        // (a savepoint, since one is already open) rather than a bare
+        // try/catch: on Postgres, a failed query poisons the *entire*
+        // enclosing transaction ("current transaction is aborted") until
+        // it's rolled back, so the fallback lookup in the catch block
+        // would otherwise fail too -- confirmed by a real Postgres CI run,
+        // not merely theorized. SQLite has no such semantic, which is
+        // exactly why this only surfaced on Postgres.
         try {
-            $newSub = $user->subscriptions()->create([
+            $newSub = \Illuminate\Support\Facades\DB::transaction(fn () => $user->subscriptions()->create([
                 'plan'              => $plan,
                 'status'            => 'active',
                 'billing_cycle'     => $cycle,
@@ -183,7 +190,7 @@ class SubscriptionActivationService
                 'payment_method'    => $method,
                 'upgraded_from'     => $activeSub?->plan,
                 'upgraded_at'       => $activeSub ? now() : null,
-            ]);
+            ]));
         } catch (\Illuminate\Database\QueryException $e) {
             if (!str_contains(strtolower($e->getMessage()), 'unique')) {
                 throw $e;
@@ -211,7 +218,14 @@ class SubscriptionActivationService
         if ($method === 'paystack' && $amount > 0 && !Payment::where('reference', $reference)->exists()) {
             $planName = config("subscription.plans.{$plan}.name");
             try {
-                Payment::create([
+                // Wrapped in its own DB::transaction() (a savepoint, since
+                // one is already open) for the same reason as the
+                // Subscription create() above: on Postgres, a failed query
+                // poisons the entire enclosing transaction until rolled
+                // back, which would otherwise also break the
+                // MobileNotification::send() call still to come after
+                // this block, not just anything inside the catch itself.
+                \Illuminate\Support\Facades\DB::transaction(fn () => Payment::create([
                     'user_id'             => $user->id,
                     'user_type'           => $user->role,
                     'reference'           => $reference,
@@ -226,7 +240,7 @@ class SubscriptionActivationService
                     'paid_at'             => now(),
                     'receipt_number'      => Payment::generateReceiptNumber(),
                     'metadata'            => ['plan' => $plan, 'billing_cycle' => $cycle],
-                ]);
+                ]));
             } catch (\Illuminate\Database\QueryException $e) {
                 // Check-then-create isn't atomic: the webhook and the
                 // browser/mobile callback can both reach here for the same
