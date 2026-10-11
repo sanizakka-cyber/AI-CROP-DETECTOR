@@ -16,7 +16,22 @@ class ReferralController extends Controller
     {
         $user = auth()->user();
         if (!$user->referral_code) {
-            $user->update(['referral_code' => strtoupper(Str::random(8))]);
+            // referral_code has a DB-level unique constraint
+            // (2026_07_28_700003_add_referral_nps_to_users.php), so a
+            // collision can't silently create a duplicate -- but nothing
+            // here retried on one, so the unlucky user who did collide
+            // would see an uncaught 500 on their first visit to this page
+            // instead of simply getting a different code.
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                try {
+                    $user->update(['referral_code' => strtoupper(Str::random(8))]);
+                    break;
+                } catch (\Illuminate\Database\QueryException $e) {
+                    if ($attempt === 4) {
+                        throw $e;
+                    }
+                }
+            }
             $user->refresh();
         }
         $referrals = Referral::where('referrer_id', $user->id)
