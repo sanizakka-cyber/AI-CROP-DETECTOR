@@ -89,11 +89,13 @@
                                         @if($user->id !== auth()->id())
                                             {{-- Impersonate (CEO only, non-self) --}}
                                             @if(auth()->user()->role === 'ceo' && !session('impersonate.original_id'))
-                                                <a href="{{ route('impersonate.start', $user) }}"
-                                                   class="px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition"
-                                                   onclick="return confirm('Login as {{ addslashes($user->first_name . ' ' . $user->last_name) }} ({{ $user->role }})?')">
-                                                    Login As
-                                                </a>
+                                                <form method="POST" action="{{ route('impersonate.start', $user) }}" class="inline"
+                                                      onsubmit="return confirm('Login as {{ addslashes($user->first_name . ' ' . $user->last_name) }} ({{ $user->role }})?')">
+                                                    @csrf
+                                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition">
+                                                        Login As
+                                                    </button>
+                                                </form>
                                             @endif
                                             @if($user->role !== 'ceo')
                                                 <form action="{{ route('admin.users.toggle', $user) }}" method="POST">

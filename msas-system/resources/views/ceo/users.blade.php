@@ -134,10 +134,11 @@
 
                                     {{-- Impersonate --}}
                                     @if($u->id !== auth()->id() && !session('impersonate.original_id'))
-                                    <a href="{{ route('impersonate.start', $u) }}"
-                                       class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition"
-                                       onclick="return confirm('Login as {{ addslashes($u->first_name . ' ' . $u->last_name) }} ({{ $u->role }})?')"
-                                       title="Login As">Login As</a>
+                                    <form method="POST" action="{{ route('impersonate.start', $u) }}" class="inline"
+                                          onsubmit="return confirm('Login as {{ addslashes($u->first_name . ' ' . $u->last_name) }} ({{ $u->role }})?')">
+                                        @csrf
+                                        <button type="submit" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-violet-100 text-violet-700 hover:bg-violet-200 transition" title="Login As">Login As</button>
+                                    </form>
                                     @endif
 
                                     {{-- Delete --}}

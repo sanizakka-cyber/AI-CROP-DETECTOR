@@ -666,10 +666,12 @@
                         &mdash; logged in as {{ $imp?->first_name }} {{ $imp?->last_name }}
                     </span>
                 </div>
-                <a href="{{ route('impersonate.leave') }}"
-                   class="bg-amber-900 hover:bg-amber-800 text-amber-100 px-3 py-1 rounded-lg text-[11px] font-bold transition">
-                    Leave Impersonation
-                </a>
+                <form method="POST" action="{{ route('impersonate.leave') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="bg-amber-900 hover:bg-amber-800 text-amber-100 px-3 py-1 rounded-lg text-[11px] font-bold transition">
+                        Leave Impersonation
+                    </button>
+                </form>
             </div>
             @endif
 

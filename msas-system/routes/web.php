@@ -76,9 +76,14 @@ Route::middleware('auth')->group(function () {
 });
 
 // ── Impersonation (CEO/Admin only) ───────────────────────────────────────────
+// POST, not GET -- logging in as another user is a state-changing action.
+// As a GET route it bypassed Laravel's CSRF protection entirely (which only
+// covers POST/PUT/PATCH/DELETE), so any link, image tag, or link-preview
+// fetch an authenticated admin's browser loaded could silently start an
+// impersonation session with no actual intent from the admin.
 Route::middleware(['auth', 'role:ceo,admin'])->group(function () {
-    Route::get('/admin/impersonate/{user}', [ImpersonationController::class, 'impersonate'])->name('impersonate.start');
-    Route::get('/admin/impersonate/leave',  [ImpersonationController::class, 'leave'])->name('impersonate.leave');
+    Route::post('/admin/impersonate/{user}', [ImpersonationController::class, 'impersonate'])->name('impersonate.start');
+    Route::post('/admin/impersonate/leave',  [ImpersonationController::class, 'leave'])->name('impersonate.leave');
 });
 
 // Role-Specific Dashboards
