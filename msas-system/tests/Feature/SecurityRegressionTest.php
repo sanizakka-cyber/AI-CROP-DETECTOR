@@ -528,4 +528,39 @@ class SecurityRegressionTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    // ── The HTML report preview had the same PII gap as the CSV export, just never fixed ──
+    //
+    // generateReport() renders the identical 'users'/'farmers' record sets
+    // (full name, email, phone, state) as exportCsv() -- exportCsv() was
+    // restricted to ceo/admin, but this on-screen preview of the same data
+    // was not, so a data-analyst/M&E account could still see the full
+    // bulk PII, just not download it as a file.
+
+    public function test_data_analyst_cannot_view_the_bulk_users_pii_report_preview(): void
+    {
+        $analyst = User::factory()->create(['role' => 'data-analyst']);
+
+        $response = $this->actingAs($analyst)->get('/ceo/reports/users');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_data_analyst_can_still_view_the_non_pii_geographic_report_preview(): void
+    {
+        $analyst = User::factory()->create(['role' => 'data-analyst']);
+
+        $response = $this->actingAs($analyst)->get('/ceo/reports/geographic');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_ceo_can_view_the_bulk_users_pii_report_preview(): void
+    {
+        $ceo = User::factory()->create(['role' => 'ceo']);
+
+        $response = $this->actingAs($ceo)->get('/ceo/reports/users');
+
+        $response->assertStatus(200);
+    }
 }

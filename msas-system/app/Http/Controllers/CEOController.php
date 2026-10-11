@@ -1080,6 +1080,17 @@ class CEOController extends Controller
 
     public function generateReport($type)
     {
+        // Same PII guard as exportCsv() below -- this HTML preview renders
+        // the identical 'users'/'farmers' record sets (full name, email,
+        // phone, state) for every user in the DB. exportCsv() was fixed to
+        // block data-analyst/M&E from the CSV, but this on-screen preview
+        // of the same data had no equivalent restriction, so that same PII
+        // was still fully visible to those roles -- they just couldn't
+        // export it to a file.
+        if (in_array($type, self::PII_EXPORT_TYPES, true) && ! in_array(auth()->user()?->role, ['ceo', 'admin'], true)) {
+            abort(403, 'This report is restricted to CEO/Admin.');
+        }
+
         $data = match($type) {
             'financial' => [
                 'title'    => 'Financial Summary Report',
