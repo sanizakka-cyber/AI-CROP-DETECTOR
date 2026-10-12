@@ -21,14 +21,21 @@ export default function RecordsScreen() {
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Same bug already found in cart.jsx/orders.jsx: a failed fetch left
+  // both lists empty with no signal, indistinguishable from a farmer who
+  // genuinely has no records yet.
+  const [loadError, setLoadError] = useState(null);
 
   const load = async () => {
+    setLoadError(null);
     try {
       const [d, a] = await Promise.all([diagnoseAPI.history(), animalsAPI.list()]);
       // API returns { data, diagnoses, ... } — use whichever key is present
       setDiagnoses(d.diagnoses || d.data || []);
       setAnimals(a.animals || a.data || []);
-    } catch {}
+    } catch (e) {
+      setLoadError(e.message || 'Could not load your records. Check your connection and try again.');
+    }
     setLoading(false);
   };
 
@@ -60,7 +67,19 @@ export default function RecordsScreen() {
         </TouchableOpacity>
       </View>
 
-      {tab === 'diagnoses' && (
+      {loadError ? (
+        <View style={styles.section}>
+          <EmptyState
+            icon="⚠️"
+            title={loadError}
+            action={
+              <TouchableOpacity onPress={load} style={{ marginTop: 12 }}>
+                <Text style={{ color: Colors.primary, fontWeight: '600' }}>Retry</Text>
+              </TouchableOpacity>
+            }
+          />
+        </View>
+      ) : tab === 'diagnoses' && (
         <View style={styles.section}>
           {diagnoses.length === 0
             ? <EmptyState icon="🔬" title={t('noDiagnoses')} />
@@ -91,7 +110,7 @@ export default function RecordsScreen() {
         </View>
       )}
 
-      {tab === 'animals' && (
+      {!loadError && tab === 'animals' && (
         <View style={styles.section}>
           <Button
             title={`+ ${t('addAnimal')}`}
