@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Image, Modal, FlatList,
   StyleSheet, ScrollView, KeyboardAvoidingView,
@@ -67,12 +67,19 @@ export default function RegisterScreen() {
   const [lgaSearch, setLgaSearch] = useState('');
   const [countrySearch, setCountrySearch] = useState('');
 
-  useEffect(() => {
+  // A failed fetch used to be swallowed, leaving the (default) Nigeria
+  // state picker with an empty list while validation still demanded a
+  // state and LGA -- registration was impossible with no explanation.
+  const [locError, setLocError] = useState(null);
+  const loadLocations = useCallback(() => {
+    setLocLoading(true);
+    setLocError(null);
     locationsAPI.list()
       .then(res => setLocations({ countries: res.countries || ['Nigeria'], states: res.states || [] }))
-      .catch(() => {}) // keep defaults; state/LGA pickers just show empty lists
+      .catch(e => setLocError(e?.message || 'Could not load the list of states.'))
       .finally(() => setLocLoading(false));
   }, []);
+  useEffect(() => { loadLocations(); }, [loadLocations]);
 
   const lgasForState = useMemo(() => {
     return locations.states.find(s => s.name === form.state)?.lgas || [];
@@ -250,7 +257,15 @@ export default function RegisterScreen() {
                   <Text style={styles.pickerChevron}>▼</Text>
                 </View>
               </TouchableOpacity>
-            ) : (
+            ) : null}
+            {isNigeria && locError && !locLoading ? (
+              <TouchableOpacity onPress={loadLocations} accessibilityRole="button" style={{ marginTop: 6 }}>
+                <Text style={{ color: '#D94F3B', fontSize: 13 }}>
+                  {locError} {isHausa ? 'Danna don sake gwadawa.' : 'Tap to retry.'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+            {isNigeria ? null : (
               <TextInput style={styles.input} value={form.state} onChangeText={set('state')}
                 placeholder="State / Region" placeholderTextColor={C.textLight} autoCapitalize="words" />
             )}

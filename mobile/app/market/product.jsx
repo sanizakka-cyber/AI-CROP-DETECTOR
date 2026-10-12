@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   ActivityIndicator, Image, Alert,
@@ -22,12 +22,19 @@ export default function ProductScreen() {
   const [adding, setAdding]   = useState(false);
   const [tab, setTab]         = useState('details'); // details | instructions | reviews
 
-  useEffect(() => {
+  // A failed fetch used to be swallowed and rendered as "Product not
+  // found" -- an offline farmer was told the product doesn't exist. Only a
+  // real 404 means not-found; anything else gets its message and a Retry.
+  const [loadError, setLoadError] = useState(null);
+  const loadProduct = useCallback(() => {
+    setLoading(true);
+    setLoadError(null);
     marketplaceAPI.product(id)
       .then(res => setProduct(res.data))
-      .catch(() => {})
+      .catch(e => { if (e?.status !== 404) setLoadError(e?.message || 'Could not load this product.'); })
       .finally(() => setLoading(false));
   }, [id]);
+  useEffect(() => { loadProduct(); }, [loadProduct]);
 
   const addToCart = async () => {
     setAdding(true);
@@ -45,6 +52,17 @@ export default function ProductScreen() {
   };
 
   if (loading) return <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+  if (loadError) return (
+    <View style={styles.loader}>
+      <Text style={{ color: '#64748B', fontSize: 16, textAlign: 'center', paddingHorizontal: 24 }}>{loadError}</Text>
+      <TouchableOpacity onPress={loadProduct} style={{ marginTop: 16 }} accessibilityRole="button">
+        <Text style={{ color: Colors.primary, fontWeight: '600' }}>Retry</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 12 }}>
+        <Text style={{ color: Colors.primary, fontWeight: '600' }}>← Go back</Text>
+      </TouchableOpacity>
+    </View>
+  );
   if (!product) return (
     <View style={styles.loader}>
       <Text style={{ color: '#64748B', fontSize: 16 }}>Product not found</Text>

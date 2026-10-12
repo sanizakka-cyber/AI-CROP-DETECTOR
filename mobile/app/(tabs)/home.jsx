@@ -268,8 +268,14 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing]   = useState(false);
   const [loading, setLoading]         = useState(true);
+  // The main dashboard request used to fail silently, which rendered as
+  // real-looking data: farmers saw 0 scans, vets saw "✅ No active
+  // outbreaks in your region", and admins saw "Loading platform data…"
+  // forever. A failure now replaces the role dashboard with an error.
+  const [dashError, setDashError]     = useState(null);
 
   const load = useCallback(async () => {
+    setDashError(null);
     try {
       const role = user?.role;
 
@@ -301,7 +307,9 @@ export default function HomeScreen() {
           setCredit(c);
         } catch { /* insurability is optional */ }
       }
-    } catch { /* offline — data stays null */ }
+    } catch (e) {
+      setDashError(e?.message || 'Could not load your farm data. Check your connection and try again.');
+    }
     finally { setLoading(false); }
   }, [user]);
 
@@ -363,10 +371,22 @@ export default function HomeScreen() {
 
       {!loading && (
         <>
-          {/* ── Role-specific dashboard ── */}
-          {(user?.role === 'admin' || user?.role === 'ceo') && <AdminDashboard data={adminData} isHausa={isHausa} />}
-          {(user?.role === 'vet' || user?.role === 'agronomist') && <VetDashboard outbreaks={outbreaks} isHausa={isHausa} />}
-          {(user?.role === 'farmer' || !user?.role) && (
+          {dashError && (
+            <View style={{ margin: Spacing.md, padding: Spacing.md, borderRadius: 12, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' }}>
+              <Text style={{ color: '#991B1B', fontWeight: '700', marginBottom: 4 }}>
+                {isHausa ? 'An kasa loda bayanan' : 'Dashboard unavailable'}
+              </Text>
+              <Text style={{ color: '#7F1D1D', fontSize: 13 }}>{dashError}</Text>
+              <TouchableOpacity onPress={load} style={{ marginTop: 10 }} accessibilityRole="button">
+                <Text style={{ color: Colors.primary, fontWeight: '700' }}>{isHausa ? 'Sake gwadawa' : 'Retry'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── Role-specific dashboard (hidden on error: its empty values would read as real) ── */}
+          {!dashError && (user?.role === 'admin' || user?.role === 'ceo') && <AdminDashboard data={adminData} isHausa={isHausa} />}
+          {!dashError && (user?.role === 'vet' || user?.role === 'agronomist') && <VetDashboard outbreaks={outbreaks} isHausa={isHausa} />}
+          {!dashError && (user?.role === 'farmer' || !user?.role) && (
             <FarmerDashboard summary={summary} outbreaks={outbreaks} credit={credit} router={router} isHausa={isHausa} />
           )}
           {user?.role && !['admin','ceo','vet','agronomist','farmer'].includes(user.role) && (
