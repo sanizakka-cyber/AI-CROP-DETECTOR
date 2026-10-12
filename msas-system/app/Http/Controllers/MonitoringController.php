@@ -191,8 +191,9 @@ class MonitoringController extends Controller
         }
     }
 
-    public function resolveError(\Illuminate\Http\Request $request, int $id)
+    public function resolveError(\Illuminate\Http\Request $request, string $id)
     {
+        $this->abortIfNotRepresentableId($id);
         ErrorLog::where('id', $id)->update([
             'resolved'    => true,
             'resolved_at' => now(),

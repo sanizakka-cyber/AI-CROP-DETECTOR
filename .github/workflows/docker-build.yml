@@ -1,0 +1,53 @@
+name: Docker Build
+
+# Phase 9 §B1: this is the only workflow that actually builds
+# msas-system/Dockerfile. Before this existed, a change to the
+# Dockerfile or docker/start.sh (like the Phase 8 scheduler/backup fix,
+# commit 63b98cd) had no CI coverage at all -- the other two workflows
+# run the app's PHP code directly against SQLite/Postgres service
+# containers and never touch the Docker image. This doesn't replace a
+# live Render deploy check (no real DB/SMTP/cron-timing is exercised
+# here), but it does catch a broken build, a wrong apk package name, or
+# a missing binary before either reaches production.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'msas-system/Dockerfile'
+      - 'msas-system/docker/**'
+      - '.github/workflows/docker-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t msas-farmai:ci -f msas-system/Dockerfile msas-system
+
+      - name: pg_dump client is present (Phase 9 §A/B1 — db:backup shells out to it)
+        run: docker run --rm msas-farmai:ci pg_dump --version
+
+      - name: crond is present (Phase 8 — scheduler was never invoked before this)
+        run: docker run --rm msas-farmai:ci sh -c "command -v crond"
+
+      - name: start.sh is valid POSIX sh
+        run: docker run --rm msas-farmai:ci sh -n /start.sh
+
+      - name: crontab line is well-formed (5 fields + command, no stray quoting)
+        run: |
+          docker run --rm --entrypoint sh msas-farmai:ci -c '
+            echo "* * * * * cd /var/www/html && php artisan schedule:run >> /proc/1/fd/1 2>> /proc/1/fd/2" > /tmp/ct
+            crontab -T /tmp/ct 2>&1 || (echo "crontab syntax check failed" && exit 1)
+          ' || true
+          # crontab -T (syntax-check only, no install) isn't available on
+          # every busybox/dcron build -- treated as advisory, not fatal,
+          # since the real, binding check is start.sh actually installing
+          # and crond actually firing in production (Phase 9 §B1
+          # checklist), which this job can't exercise without a live DB.

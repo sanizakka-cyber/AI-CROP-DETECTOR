@@ -216,8 +216,9 @@ class FarmerController extends Controller
         return back()->with('success', "Flock registered. Batch ID: <strong>{$batchNumber}</strong>");
     }
 
-    public function updateLivestock(Request $request, int $id)
+    public function updateLivestock(Request $request, string $id)
     {
+        $this->abortIfNotRepresentableId($id);
         $animal = Animal::where('user_id', Auth::id())->findOrFail($id);
 
         $validated = $request->validate([
@@ -232,8 +233,9 @@ class FarmerController extends Controller
         return back()->with('success', 'Animal record updated successfully.');
     }
 
-    public function updatePoultry(Request $request, int $id)
+    public function updatePoultry(Request $request, string $id)
     {
+        $this->abortIfNotRepresentableId($id);
         $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
 
         $validated = $request->validate([
@@ -248,8 +250,9 @@ class FarmerController extends Controller
         return back()->with('success', 'Flock record updated successfully.');
     }
 
-    public function logMortality(Request $request, int $id)
+    public function logMortality(Request $request, string $id)
     {
+        $this->abortIfNotRepresentableId($id);
         $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
 
         $validated = $request->validate([
@@ -268,8 +271,9 @@ class FarmerController extends Controller
         return back()->with('success', "{$validated['count']} mortality logged for batch <strong>{$flock->batch_number}</strong>. Live count: <strong>" . ($currentLive - $validated['count']) . "</strong>.");
     }
 
-    public function logEggs(Request $request, int $id)
+    public function logEggs(Request $request, string $id)
     {
+        $this->abortIfNotRepresentableId($id);
         $flock = PoultryRecord::where('user_id', Auth::id())->findOrFail($id);
 
         $validated = $request->validate([

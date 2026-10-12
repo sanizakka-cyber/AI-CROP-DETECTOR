@@ -92,13 +92,45 @@ class BadIdRouteParameterTest extends TestCase
         $this->assertTrue(in_array($response->status(), [404, 422], true));
     }
 
-    public function test_a_bad_monitoring_error_id_on_a_web_route_returns_404_not_500(): void
+    /** @dataProvider badIdProvider */
+    public function test_a_bad_monitoring_error_id_on_a_web_route_returns_404_not_500(string $badId): void
     {
         $ceo = User::factory()->create(['role' => 'ceo']);
 
-        $response = $this->actingAs($ceo)->post('/ceo/monitoring/errors/abc/resolve');
+        $response = $this->actingAs($ceo)->post("/ceo/monitoring/errors/{$badId}/resolve");
 
-        $this->assertNotEquals(500, $response->status());
+        $this->assertNotEquals(500, $response->status(), "payload '{$badId}' must never produce a 500.");
+        $response->assertStatus(404);
+    }
+
+    /**
+     * Controller::abortIfNotRepresentableId() guards an int-typed route
+     * parameter against a value that's all digits but too large to
+     * represent (e.g. a 30-digit number) -- this is the exact case that
+     * surfaced as a real 500 under SQLite during this fix's own CI run,
+     * since PHP's scalar coercion of an out-of-range numeric string to
+     * `int` doesn't behave like the non-numeric-string case. Covers the
+     * other route handlers that had the same int $param pattern.
+     */
+    /** @dataProvider badIdProvider */
+    public function test_a_bad_livestock_id_on_update_returns_404_not_500(string $badId): void
+    {
+        $farmer = User::factory()->create(['role' => 'farmer']);
+
+        $response = $this->actingAs($farmer)->put("/livestock/{$badId}");
+
+        $this->assertNotEquals(500, $response->status(), "payload '{$badId}' must never produce a 500.");
+        $response->assertStatus(404);
+    }
+
+    /** @dataProvider badIdProvider */
+    public function test_a_bad_product_id_on_remove_from_cart_returns_404_not_500(string $badId): void
+    {
+        $farmer = User::factory()->create(['role' => 'farmer']);
+
+        $response = $this->actingAs($farmer)->post("/marketplace/cart/remove/{$badId}");
+
+        $this->assertNotEquals(500, $response->status(), "payload '{$badId}' must never produce a 500.");
         $response->assertStatus(404);
     }
 

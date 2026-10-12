@@ -30,8 +30,10 @@ class NotificationApiController extends Controller
     }
 
     /** PATCH /notifications/{id}/read */
-    public function markRead(Request $request, int $id): JsonResponse
+    public function markRead(Request $request, string $id): JsonResponse
     {
+        $this->abortIfNotRepresentableId($id);
+
         $notif = MobileNotification::where('id', $id)
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
@@ -52,8 +54,10 @@ class NotificationApiController extends Controller
     }
 
     /** DELETE /notifications/{id} */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
+        $this->abortIfNotRepresentableId($id);
+
         // Cross-account testing found this returning 200 "deleted" for a
         // notification ID belonging to a different user — the where()
         // scope meant the delete() itself matched zero rows (no data was

@@ -167,8 +167,9 @@ class MarketplaceController extends Controller
         return back()->with('success', 'Cart updated.');
     }
 
-    public function removeFromCart(Request $request, int $productId)
+    public function removeFromCart(Request $request, string $productId)
     {
+        $this->abortIfNotRepresentableId($productId);
         $cart = session('cart', []);
         unset($cart[$productId]);
         session(['cart' => $cart]);

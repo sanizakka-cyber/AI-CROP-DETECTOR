@@ -31,6 +31,7 @@ class OperationsController extends Controller implements HasMiddleware
                 'total'       => DB::table('operations_tasks')->count(),
             ];
         } catch (\Exception $e) {
+            \Log::error('OperationsController: tasks query failed', ['error' => $e->getMessage()]);
             $tasks = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
             $stats = ['pending' => 0, 'in_progress' => 0, 'completed' => 0, 'total' => 0];
         }
@@ -63,6 +64,7 @@ class OperationsController extends Controller implements HasMiddleware
                 'updated_at'  => now(),
             ]);
         } catch (\Exception $e) {
+            \Log::error('OperationsController: storeTask failed', ['error' => $e->getMessage()]);
             return back()->with('error', 'Could not save task. Table may need migration.');
         }
 

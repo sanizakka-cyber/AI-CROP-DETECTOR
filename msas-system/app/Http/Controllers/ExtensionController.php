@@ -41,6 +41,7 @@ class ExtensionController extends Controller implements HasMiddleware
             if ($request->farmer_id) $query->where('farmer_id', $request->farmer_id);
             $records = $query->paginate(20)->withQueryString();
         } catch (\Exception $e) {
+            \Log::error('ExtensionController: advisory query failed', ['error' => $e->getMessage()]);
             $records = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
 
@@ -68,6 +69,7 @@ class ExtensionController extends Controller implements HasMiddleware
                 'updated_at'   => now(),
             ]);
         } catch (\Exception $e) {
+            \Log::error('ExtensionController: storeAdvisory failed', ['error' => $e->getMessage()]);
             return back()->with('error', 'Could not save advisory. Table may need migration.');
         }
 
@@ -79,6 +81,7 @@ class ExtensionController extends Controller implements HasMiddleware
         try {
             $records = DB::table('extension_visits')->orderByDesc('visit_date')->paginate(20)->withQueryString();
         } catch (\Exception $e) {
+            \Log::error('ExtensionController: visits query failed', ['error' => $e->getMessage()]);
             $records = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
 
@@ -108,6 +111,7 @@ class ExtensionController extends Controller implements HasMiddleware
                 'updated_at' => now(),
             ]);
         } catch (\Exception $e) {
+            \Log::error('ExtensionController: storeVisit failed', ['error' => $e->getMessage()]);
             return back()->with('error', 'Could not save visit. Table may need migration.');
         }
 
