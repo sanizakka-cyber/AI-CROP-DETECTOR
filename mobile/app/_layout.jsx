@@ -119,6 +119,7 @@ export default function RootLayout() {
             <Stack.Screen name="market/cart" />
             <Stack.Screen name="market/orders" />
             <Stack.Screen name="notifications" />
+            <Stack.Screen name="animals/add" />
             <Stack.Screen name="weather" />
           </Stack>
         </RootGuard>
