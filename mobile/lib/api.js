@@ -80,6 +80,20 @@ function timeoutSignal(ms) {
   return undefined;
 }
 
+/**
+ * Shared 401 handling for request() and multipartRequest(): a 401 while a
+ * token is stored means the session is gone, so clear it, tell
+ * AuthContext (which routes to login with a "session expired" note), and
+ * throw a clear auth error instead of the generic "incorrect password"
+ * fallback.
+ */
+async function handleExpiredSession(path, method) {
+  console.log(`[AUTH DEBUG] 401 on ${method} ${path} with a token present -> clearing session`);
+  await AsyncStorage.removeItem('token');
+  if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
+  return new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });
+}
+
 /** Central request helper with automatic 401 interception */
 const request = async (path, options = {}) => {
   const token = await getToken();
@@ -116,13 +130,9 @@ const request = async (path, options = {}) => {
   // be able to tear down an otherwise perfectly valid session just because
   // that one particular endpoint rejected the request for its own reasons.
   if (res.status === 401 && token && !options.background) {
-    // Which endpoint actually triggered the session wipe — the single most
-    // useful line in `adb logcat` for tracing "login succeeded, then
-    // immediately logged out" back to its actual cause.
-    console.log(`[AUTH DEBUG] 401 on ${options.method || 'GET'} ${path} with a token present -> clearing session`);
-    await AsyncStorage.removeItem('token');
-    if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
-    throw new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });
+    // The endpoint is logged — the single most useful line in `adb logcat`
+    // for tracing "login succeeded, then immediately logged out".
+    throw await handleExpiredSession(path, options.method || 'GET');
   }
 
   let data = {};
@@ -168,7 +178,8 @@ async function multipartRequest(path, form) {
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      // No header at all without a token: "Bearer null" was sent before.
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
       signal: timeoutSignal(60000),
     });
@@ -180,6 +191,13 @@ async function multipartRequest(path, form) {
       throw new ApiError('MSAS could not be reached. Please check your internet connection and try again.', { kind: 'network' });
     }
     throw new ApiError(`Unexpected error before reaching MSAS: ${e?.message || String(e)}`, { kind: 'client' });
+  }
+
+  // An expired session during a scan upload used to surface as the 401
+  // fallback "Email/phone or password is incorrect." with the dead token
+  // still stored, so every retry failed the same way.
+  if (res.status === 401 && token) {
+    throw await handleExpiredSession(path, 'POST');
   }
 
   let data = {};

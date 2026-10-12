@@ -37,7 +37,13 @@ const SAVED_ACCOUNTS_KEY = 'msas_saved_accounts';
 
 export default function LoginScreen() {
   const { t, i18n } = useTranslation();
-  const { login, sessionExpired } = useAuth();
+  const { login, sessionExpired, restoreError, retryRestore } = useAuth();
+  const [restoring, setRestoring] = useState(false);
+  const onRetryRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    try { await retryRestore(); } finally { setRestoring(false); }
+  };
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -125,6 +131,21 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{isHausa ? 'Barka da Dawowa' : 'Welcome Back'}</Text>
           <Text style={styles.cardSubtitle}>{isHausa ? 'Shigar da bayananka don shiga' : 'Sign in to your MSAS account'}</Text>
+
+          {restoreError && !sessionExpired && (
+            <View style={styles.expiredBanner}>
+              <Text style={styles.expiredBannerText}>
+                {isHausa
+                  ? 'Ba a iya tabbatar da shigarka ba saboda babu haɗin intanet.'
+                  : `You're still signed in, but MSAS couldn't be reached to load your account. ${restoreError}`}
+              </Text>
+              <TouchableOpacity onPress={onRetryRestore} disabled={restoring} accessibilityRole="button" style={{ marginTop: 6 }}>
+                <Text style={[styles.expiredBannerText, { textDecorationLine: 'underline' }]}>
+                  {restoring ? (isHausa ? 'Ana sake gwadawa…' : 'Retrying…') : (isHausa ? 'Sake gwadawa' : 'Retry')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {sessionExpired && (
             <View style={styles.expiredBanner}>

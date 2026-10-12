@@ -1,6 +1,6 @@
 // Phase 8: app-start session restore. Only an auth rejection may end the
 // session; being offline (or a 5xx/timeout) must not log the farmer out.
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { renderHook, waitFor, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../lib/api';
 import { AuthProvider, useAuth } from '../AuthContext';
@@ -69,4 +69,30 @@ test('logout clears the cached user', async () => {
   await result.current.logout();
   expect(mockStore.auth_user_cache).toBeUndefined();
   expect(mockStore.token).toBeUndefined();
+});
+
+test('offline with no cached user exposes restoreError, and retry restores the session', async () => {
+  authAPI.me
+    .mockRejectedValueOnce(Object.assign(new Error('MSAS could not be reached.'), { kind: 'network' }))
+    .mockResolvedValueOnce({ user: FARMER });
+  const result = await start();
+  expect(result.current.restoreError).toBe('MSAS could not be reached.');
+  expect(result.current.authStatus).toBe('unauthenticated');
+  await act(async () => { await result.current.retryRestore(); });
+  expect(result.current.restoreError).toBeNull();
+  expect(result.current.user).toEqual(FARMER);
+  expect(JSON.parse(mockStore.auth_user_cache)).toEqual(FARMER);
+});
+
+test('no stored token means no restoreError (a plain signed-out start)', async () => {
+  delete mockStore.token;
+  const result = await start();
+  expect(result.current.restoreError).toBeNull();
+  expect(authAPI.me).not.toHaveBeenCalled();
+});
+
+test('an auth rejection is not reported as a connectivity problem', async () => {
+  authAPI.me.mockRejectedValue(err('auth', 401));
+  const result = await start();
+  expect(result.current.restoreError).toBeNull();
 });

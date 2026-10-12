@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../lib/api';
 
 // Simple auth context using React Context + AsyncStorage
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -39,14 +39,18 @@ export function AuthProvider({ children }) {
   // Out tap, purely so the login screen can show a relevant message —
   // both paths clear the same state either way.
   const [sessionExpired, setSessionExpired] = useState(false);
+  // Set when a saved session exists but could not be checked (offline,
+  // timeout, 5xx) and there is no cached profile to fall back on -- e.g.
+  // the first offline launch after upgrading from a build without the
+  // cache. The login screen offers a retry instead of a bare sign-in form.
+  const [restoreError, setRestoreError] = useState(null);
 
   // Explicit tri-state derived from the above, so consumers never have to
   // reconstruct "loading vs. logged out" from a boolean + a nullable object.
   const authStatus = loading ? 'loading' : user ? 'authenticated' : 'unauthenticated';
 
-  useEffect(() => {
-    // Rehydrate session on app start
-    (async () => {
+  const restoreSession = useCallback(async () => {
+      setRestoreError(null);
       try {
         const stored = await AsyncStorage.getItem('token');
         authDebug('Rehydrate: stored token present?', { present: !!stored });
@@ -70,6 +74,7 @@ export function AuthProvider({ children }) {
               const cached = await readCachedUser();
               authDebug('Rehydrate: /auth/me unreachable, using cached user', { kind: e?.kind, cached: !!cached });
               if (cached) setUser(cached);
+              else setRestoreError(e?.message || 'Could not reach MSAS to restore your session.');
             }
           }
         }
@@ -78,7 +83,11 @@ export function AuthProvider({ children }) {
       } finally {
         setLoading(false);
       }
-    })();
+  }, []);
+
+  useEffect(() => {
+    // Rehydrate session on app start
+    restoreSession();
 
     // Register global callback so api.js can trigger logout on 401
     globalThis.__onAuthExpired = () => {
@@ -89,7 +98,7 @@ export function AuthProvider({ children }) {
       setUser(null);
     };
     return () => { globalThis.__onAuthExpired = null; };
-  }, []);
+  }, [restoreSession]);
 
   // identifier: email or phone — the API's 'phone' field name is kept for
   // wire compatibility, but LoginRequest on the backend accepts either.
@@ -116,6 +125,7 @@ export function AuthProvider({ children }) {
     await AsyncStorage.setItem('token', res.token);
     authDebug('Token persisted', { persisted: true });
     setSessionExpired(false);
+    setRestoreError(null);
     setToken(res.token);
     setUser(res.user);
     cacheUser(res.user);
@@ -163,6 +173,7 @@ export function AuthProvider({ children }) {
     await AsyncStorage.removeItem('token');
     await clearUserCache();
     setSessionExpired(false); // deliberate sign-out, not a 401 kick
+    setRestoreError(null);
     setToken(null);
     setUser(null);
   };
@@ -195,7 +206,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, authStatus, sessionExpired, login, register, verifyOtp, resendOtp, logout, refreshProfile, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, authStatus, sessionExpired, restoreError, retryRestore: restoreSession, login, register, verifyOtp, resendOtp, logout, refreshProfile, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

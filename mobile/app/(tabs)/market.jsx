@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, RefreshControl, FlatList, ActivityIndicator, Image,
@@ -103,6 +103,12 @@ export default function MarketScreen() {
   const [page, setPage]             = useState(1);
   const [hasMore, setHasMore]       = useState(true);
   const [loadError, setLoadError]   = useState(null);
+  // Next-page failures used to be dropped silently, and onEndReached could
+  // fire again mid-request, appending the same page twice. A failed page
+  // now shows a footer with Retry and stops auto-loading until tapped.
+  const [pageError, setPageError]   = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageInFlight = useRef(false);
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -110,8 +116,14 @@ export default function MarketScreen() {
   };
 
   const loadProducts = useCallback(async (reset = true) => {
+    if (!reset) {
+      if (pageInFlight.current) return;
+      pageInFlight.current = true;
+      setLoadingMore(true);
+      setPageError(null);
+    }
     try {
-      if (reset) setLoading(true);
+      if (reset) { setLoading(true); setPageError(null); }
       setLoadError(null);
       const pg = reset ? 1 : page + 1;
       const res = await marketplaceAPI.products({ category, search, sort, page: pg, per_page: 20 });
@@ -125,13 +137,18 @@ export default function MarketScreen() {
         setProducts(prev => [...prev, ...list]);
       }
       setHasMore(list.length === 20);
-      if (!reset) setPage(pg);
+      // Always record the page just loaded. A reset used to leave `page` at
+      // its old value, so the next scroll skipped straight past page 2.
+      setPage(pg);
     } catch (e) {
       if (reset) {
         setProducts([]);
         setLoadError(e?.message || 'Could not load products. Please check your connection and try again.');
+      } else {
+        setPageError(e?.message || 'Could not load more products.');
       }
     } finally {
+      if (!reset) { pageInFlight.current = false; setLoadingMore(false); }
       setLoading(false);
       setRefreshing(false);
     }
@@ -139,8 +156,12 @@ export default function MarketScreen() {
 
   useEffect(() => { loadProducts(true); }, [category, sort]);
 
-  // Debounced search
+  // Debounced search. Skipped on mount: the category/sort effect above
+  // already loads page 1, and this used to fetch it a second time 500ms
+  // after every marketplace open.
+  const searchMounted = useRef(false);
   useEffect(() => {
+    if (!searchMounted.current) { searchMounted.current = true; return undefined; }
     const timer = setTimeout(() => loadProducts(true), 500);
     return () => clearTimeout(timer);
   }, [search]);
@@ -282,7 +303,18 @@ export default function MarketScreen() {
               </View>
             )
           }
-          onEndReached={() => hasMore && loadProducts(false)}
+          ListFooterComponent={
+            products.length === 0 ? null
+            : pageError ? (
+              <TouchableOpacity onPress={() => loadProducts(false)} style={{ padding: 16, alignItems: 'center' }} accessibilityRole="button">
+                <Text style={{ color: Colors.danger, textAlign: 'center' }}>{pageError}</Text>
+                <Text style={{ color: Colors.primary, fontWeight: '700', marginTop: 6 }}>Tap to retry</Text>
+              </TouchableOpacity>
+            ) : loadingMore ? (
+              <ActivityIndicator style={{ padding: 16 }} color={Colors.primary} testID="market-loading-more" />
+            ) : null
+          }
+          onEndReached={() => hasMore && !pageError && loadProducts(false)}
           onEndReachedThreshold={0.3}
         />
       )}
