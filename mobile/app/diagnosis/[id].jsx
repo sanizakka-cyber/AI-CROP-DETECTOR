@@ -45,6 +45,9 @@ export default function DiagnosisDetailScreen() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [recProducts, setRecProducts] = useState([]);
   const [addingId, setAddingId] = useState(null);
+  // A failed fetch used to stop polling but leave diag null, so the screen
+  // sat on the "AI is validating" spinner forever with no way out.
+  const [loadError, setLoadError] = useState(null);
 
   // Voice state
   const [voicePlaying, setVoicePlaying] = useState(false);
@@ -54,6 +57,7 @@ export default function DiagnosisDetailScreen() {
   const load = useCallback(async () => {
     try {
       const { diagnosis } = await diagnoseAPI.get(id);
+      setLoadError(null);
       setDiag(diagnosis);
       if (diagnosis.myFeedback) setFeedbackSent(true);
       // Real terminal states are 'processed', 'reviewed' (the status a
@@ -70,10 +74,17 @@ export default function DiagnosisDetailScreen() {
           }
         }
       }
-    } catch {
+    } catch (e) {
       setPolling(false);
+      setLoadError(e.message || 'Could not load this diagnosis. Check your connection and try again.');
     }
   }, [id]);
+
+  const retryLoad = () => {
+    setLoadError(null);
+    setPolling(true);
+    load();
+  };
 
   const fetchRecommendations = async (diagnosis) => {
     try {
@@ -151,8 +162,21 @@ export default function DiagnosisDetailScreen() {
     try {
       await diagnoseAPI.feedback(id, { rating: wasHelpful ? 'thumbs_up' : 'thumbs_down' });
       setFeedbackSent(true);
-    } catch {}
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not send your feedback. Please try again.');
+    }
   };
+
+  if (loadError && (!diag || diag.status === 'pending')) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Text style={styles.failedIcon}>!</Text>
+        <Text style={styles.loadingText}>{isHausa ? 'An kasa samun sakamakon' : 'Could not load result'}</Text>
+        <Text style={styles.loadingTip}>{loadError}</Text>
+        <Button title={isHausa ? 'Sake gwadawa' : 'Retry'} onPress={retryLoad} />
+      </View>
+    );
+  }
 
   if (!diag || diag.status === 'pending') {
     return (
