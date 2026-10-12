@@ -4,12 +4,18 @@ import {
   ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { cartAPI, ordersAPI } from '../../lib/api';
 import { Colors, Spacing, Shadows } from '../../constants/Theme';
 
+// 'flutterwave' removed (Phase 10): there is no Flutterwave integration
+// anywhere in the backend -- selecting it created an order with
+// literally no code path that could ever mark it paid. See
+// OrderApiController::checkout()'s validation comment for the full
+// history (it had the same no-backend-support bug 'wallet' already had,
+// but unlike 'wallet' this one was actually reachable from this UI).
 const PAYMENT_METHODS = [
   { id: 'paystack', label: '💳 Paystack', sub: 'Card, Bank Transfer, USSD' },
-  { id: 'flutterwave', label: '💰 Flutterwave', sub: 'Card, Wallet, Mobile Money' },
   { id: 'transfer', label: 'Bank Transfer', sub: 'Choose bank, wallet, or transfer channel' },
 ];
 
@@ -108,7 +114,26 @@ export default function CartScreen() {
         payment_channel: payMethod === 'transfer' ? paymentChannel : null,
         delivery_address: address,
       });
-      setOrders(res.data || []);
+      let placedOrders = res.data || [];
+
+      // checkout() only creates the order and starts a Paystack
+      // transaction -- it was never actually completed without this.
+      // Opens the real authorization_url (same pattern subscription.jsx
+      // already uses correctly) and, since openBrowserAsync only
+      // resolves once the browser is closed, re-fetches each order's
+      // real state afterward rather than assuming the payment succeeded.
+      if (res.payment?.authorization_url) {
+        await WebBrowser.openBrowserAsync(res.payment.authorization_url);
+        try {
+          const refreshed = await Promise.all(placedOrders.map(o => ordersAPI.get(o.id)));
+          placedOrders = refreshed.map(r => r.data);
+        } catch {
+          // Refresh is best-effort -- fall back to the pre-payment order
+          // data below rather than blocking the success screen on it.
+        }
+      }
+
+      setOrders(placedOrders);
       setStep('success');
     } catch (e) {
       Alert.alert('Order Failed', e.message || 'Could not place order. Please try again.');
@@ -141,15 +166,25 @@ export default function CartScreen() {
         <Text style={styles.successIcon}>✅</Text>
         <Text style={styles.successTitle}>Order Placed!</Text>
         <Text style={styles.successSub}>Your order has been placed successfully. The dealer will confirm shortly.</Text>
-        {orders.map(o => (
-          <View key={o.id} style={styles.orderCard}>
-            <Text style={styles.orderNum}>{o.order_number}</Text>
-            <Text style={styles.orderTotal}>₦{Number(o.total).toLocaleString()}</Text>
-            <View style={[styles.statusPill, { backgroundColor: '#DBEAFE' }]}>
-              <Text style={{ color: '#1D4ED8', fontSize: 11, fontWeight: '700' }}>Pending</Text>
+        {orders.map(o => {
+          // Reflects the real post-payment state after the Paystack
+          // refresh above (or the pre-payment state for transfer/USSD
+          // orders, which are genuinely still pending until the dealer
+          // confirms) -- never hardcoded, so a buyer who actually paid
+          // isn't shown "Pending" regardless.
+          const paid = o.payment_status === 'paid';
+          return (
+            <View key={o.id} style={styles.orderCard}>
+              <Text style={styles.orderNum}>{o.order_number}</Text>
+              <Text style={styles.orderTotal}>₦{Number(o.total).toLocaleString()}</Text>
+              <View style={[styles.statusPill, { backgroundColor: paid ? '#DCFCE7' : '#DBEAFE' }]}>
+                <Text style={{ color: paid ? '#15803D' : '#1D4ED8', fontSize: 11, fontWeight: '700' }}>
+                  {paid ? 'Paid' : 'Pending'}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
         <TouchableOpacity style={styles.continuBtn} onPress={() => router.replace('/(tabs)/market')}>
           <Text style={styles.continubtnText}>Continue Shopping</Text>
         </TouchableOpacity>

@@ -10,6 +10,9 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class OrderApiController extends Controller
 {
@@ -61,7 +64,19 @@ class OrderApiController extends Controller
             // order stuck pending/unpaid with nothing to ever resolve it.
             // No app UI sends this value (mobile offers only paystack and
             // transfer); removed until a real wallet-debit flow exists.
-            'payment_method'    => 'required|in:paystack,flutterwave,transfer,ussd,card',
+            //
+            // 'flutterwave' was the same bug, worse: the mobile cart UI
+            // actively offered it as a selectable option (unlike 'wallet'),
+            // but there is no Flutterwave integration anywhere in this
+            // codebase at all -- no HTTP calls, no controller logic, and
+            // FLUTTERWAVE_SECRET_KEY is unset even in production
+            // (render.yaml). A buyer who picked it got an order stuck
+            // unpaid with literally no code path that could ever resolve
+            // it. Removed from both this validation and the mobile UI's
+            // PAYMENT_METHODS list together. 'ussd'/'card' are left as-is:
+            // dead the same way, but no app UI sends them today, unlike
+            // this one.
+            'payment_method'    => 'required|in:paystack,transfer,ussd,card',
             'payment_channel'   => 'nullable|string|in:gtbank,access,uba,firstbank,zenith,opay,palmpay,kuda,moniepoint,bank_app,pos',
             'discount_code'     => 'nullable|string',
         ]);
@@ -91,7 +106,7 @@ class OrderApiController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($cartItems, $user, $data) {
+            [$orders, $total] = DB::transaction(function () use ($cartItems, $user, $data) {
             $subtotal = $cartItems->sum(fn($i) => $i->quantity * $i->product->selling_price);
             $tax      = round($subtotal * 0.075, 2); // 7.5% VAT
             $discount = 0;
@@ -153,22 +168,122 @@ class OrderApiController extends Controller
             // Clear cart
             CartItem::where('user_id', $user->id)->delete();
 
-            return response()->json([
-                'data'    => $orders,
-                'message' => 'Order placed successfully',
-                'payment' => [
-                    'method' => $data['payment_method'],
-                    'channel' => $data['payment_method'] === 'transfer' ? $data['payment_channel'] : null,
-                    'instructions' => $data['payment_method'] === 'transfer'
-                        ? 'Use the selected bank, wallet, or transfer channel and confirm payment with the dealer.'
-                        : 'Continue with the selected payment provider.',
-                ],
-                'total'   => $total,
-            ], 201);
+            return [$orders, $total];
             });
         } catch (\RuntimeException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
+
+        $payment = [
+            'method' => $data['payment_method'],
+            'channel' => $data['payment_method'] === 'transfer' ? $data['payment_channel'] : null,
+            'instructions' => $data['payment_method'] === 'transfer'
+                ? 'Use the selected bank, wallet, or transfer channel and confirm payment with the dealer.'
+                : 'Continue with the selected payment provider.',
+            'authorization_url' => null,
+        ];
+
+        // The web buyer-facing checkout (MarketplaceController::placeOrder())
+        // has always initialized a single combined Paystack transaction for
+        // the grand total across every dealer's order and returned its
+        // authorization_url for the browser to follow -- this mobile
+        // endpoint never did either, so selecting Paystack (the default
+        // payment method) created an order the buyer had no way to actually
+        // pay for through the app at all. Mirrors that exact pattern: one
+        // transaction for the summed total, every created order tagged with
+        // the same reference, outside the DB transaction above since an
+        // external HTTP call has no business holding those row locks open.
+        if ($data['payment_method'] === 'paystack' && config('services.paystack.secret_key')) {
+            $reference = 'ORD-' . strtoupper(Str::random(12));
+            $orderIds  = collect($orders)->pluck('id')->toArray();
+
+            $response = Http::withToken(config('services.paystack.secret_key'))
+                ->post(config('services.paystack.payment_url') . '/transaction/initialize', [
+                    'email'        => $user->email,
+                    'amount'       => (int) round($total * 100),
+                    'reference'    => $reference,
+                    'currency'     => 'NGN',
+                    // NOT route('marketplace.payment.callback') -- that route
+                    // reads auth()->id() from a web session, which an
+                    // in-app browser opened by WebBrowser.openBrowserAsync()
+                    // on mobile never has. This dedicated, stateless
+                    // endpoint verifies by reference alone instead, the
+                    // same precedent PaymentApiController::mobileCallback()
+                    // already established for exactly this reason (a
+                    // cryptographically random, unguessable reference is
+                    // the actual security boundary here, not a session).
+                    'callback_url' => config('app.url') . '/api/payment/mobile-marketplace-callback',
+                    'metadata'     => [
+                        'order_ids' => $orderIds,
+                        'user_id'   => $user->id,
+                    ],
+                ]);
+
+            if ($response->successful() && $response->json('status')) {
+                Order::whereIn('id', $orderIds)->update(['payment_reference' => $reference]);
+                $payment['authorization_url'] = $response->json('data.authorization_url');
+                $payment['reference']         = $reference;
+            } else {
+                Log::error('[Mobile checkout] Paystack init failed', ['response' => $response->json()]);
+                $payment['instructions'] = 'Your order was placed but online payment could not be started. Please try again from your Orders screen, or contact support.';
+            }
+        }
+
+        return response()->json([
+            'data'    => $orders,
+            'message' => 'Order placed successfully',
+            'payment' => $payment,
+            'total'   => $total,
+        ], 201);
+    }
+
+    /**
+     * Paystack redirect target for the mobile checkout() flow above --
+     * public by necessity (an in-app browser has no web session to read
+     * auth()->id() from), mirroring MarketplaceController::
+     * paymentCallback()'s verification logic exactly but scoped only by
+     * the reference, the same precedent already established for
+     * Api\PaymentApiController::mobileCallback(). The reference is
+     * Str::random(12) over a 62-character alphabet, generated server-side
+     * and never guessable by a third party.
+     */
+    public function mobilePaymentCallback(Request $request)
+    {
+        $reference = $request->query('reference') ?? $request->query('trxref');
+        if (!$reference) {
+            return response()->json(['success' => false, 'message' => 'No reference provided.'], 400);
+        }
+
+        $response = Http::withToken(config('services.paystack.secret_key'))
+            ->get(config('services.paystack.payment_url') . "/transaction/verify/{$reference}");
+
+        if (!$response->successful() || $response->json('data.status') !== 'success') {
+            return response()->json(['success' => false, 'message' => 'Payment verification failed.'], 422);
+        }
+
+        $orders = Order::where('payment_reference', $reference)->get();
+        if ($orders->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No matching order found for this reference.'], 404);
+        }
+
+        foreach ($orders as $order) {
+            $order->update([
+                'payment_status'  => 'paid',
+                'payment_method'  => 'paystack',
+                'payment_channel' => 'online',
+            ]);
+            \App\Models\AuditLog::record('order.payment_confirmed', 'Order', $order->id, [
+                'reference' => $reference,
+                'amount'    => $order->total,
+                'source'    => 'mobile',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment confirmed. Your ' . $orders->count() . ' order(s) are now being processed.',
+            'order_ids' => $orders->pluck('id')->values(),
+        ]);
     }
 
     public static function transferChannels(): array

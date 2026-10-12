@@ -323,6 +323,15 @@ Route::get('/payment/mobile-callback', [PaymentApiController::class, 'mobileCall
     ->middleware('throttle:20,1')
     ->name('api.payment.mobile-callback');
 
+// Mobile marketplace checkout callback — same pattern as the payment
+// callback above, but for Api\OrderApiController::checkout()'s directly-
+// tagged multi-order Order.payment_reference flow (mirrors
+// MarketplaceController::placeOrder()/paymentCallback() on web), not the
+// generic single-module_id Payment-row pipeline the callback above verifies.
+Route::get('/payment/mobile-marketplace-callback', [OrderApiController::class, 'mobilePaymentCallback'])
+    ->middleware('throttle:20,1')
+    ->name('api.payment.mobile-marketplace-callback');
+
 // Mobile subscription callback — same pattern as the payment callback above
 Route::get('/subscription/paystack-callback', [SubscriptionApiController::class, 'paystackCallback'])
     ->middleware('throttle:20,1')
