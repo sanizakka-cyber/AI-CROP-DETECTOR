@@ -1,0 +1,75 @@
+name: Update league/commonmark (one-off)
+
+# Phase 9 §B7: league/commonmark 2.10.1 (the version this project's
+# composer.lock currently pins, as a transitive dependency of
+# laravel/framework -- not listed in composer.json directly) has two
+# dependency advisories (1 medium, 1 high), both confirmed not
+# exploitable in this app (no code path ever renders user content
+# through CommonMark -- see the Phase 8 report). A patched version
+# (2.10.3) exists on Packagist. Bumping a transitive dependency
+# correctly means regenerating composer.lock via `composer update`,
+# which needs a working Composer -- unavailable in the environment
+# this fix was otherwise built in (AV-blocked locally), so this runs
+# the update here instead, where PHP/Composer already work, gated by
+# the full test suite before it ever commits anything.
+#
+# workflow_dispatch only -- this is a one-time bump, not a recurring job.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: msas-system
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, sqlite3, curl, fileinfo, gd, zip, intl, bcmath, exif, pcntl
+          coverage: none
+
+      - name: Create .env
+        # Matches security-regression-tests.yml's own proven pattern --
+        # an empty file silences phpdotenv's missing-.env warning; real
+        # config comes from phpunit.xml's <env> tags and $GITHUB_ENV.
+        run: touch .env
+
+      - name: Generate app key
+        run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
+      - name: Ensure bootstrap/cache exists
+        run: mkdir -p bootstrap/cache
+
+      - name: Composer install (baseline)
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
+
+      - name: Update league/commonmark only
+        run: composer update league/commonmark --with-all-dependencies --no-interaction
+
+      - name: Confirm the advisories are actually resolved
+        run: composer audit --locked || true
+
+      - name: Run full test suite against SQLite (gate before committing)
+        run: php artisan test
+
+      - name: Commit and push composer.lock if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- composer.lock; then
+            echo "composer.lock unchanged -- league/commonmark was already up to date, nothing to commit."
+            exit 0
+          fi
+          git add composer.lock
+          git commit -m "Update league/commonmark to resolve 2 dependency advisories (Phase 9 §B7)" \
+                      -m "Bumped via composer update --with-all-dependencies, run here because no local Composer was available. Full SQLite test suite passed before this commit."
+          git push
