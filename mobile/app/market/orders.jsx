@@ -21,13 +21,21 @@ export default function OrdersScreen() {
   const [orders, setOrders]       = useState([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Same bug cart.jsx had: a failed fetch left orders=[] with no signal,
+  // rendering identically to "no orders yet" on first load (pull-to-
+  // refresh at least gave a retry path, but no way to tell the two
+  // states apart).
+  const [ordersError, setOrdersError] = useState(null);
 
   const loadOrders = async (silent = false) => {
     if (!silent) setLoading(true);
+    setOrdersError(null);
     try {
       const res = await ordersAPI.list();
       setOrders(res.data || []);
-    } catch {}
+    } catch (e) {
+      setOrdersError(e.message || 'Could not load your orders. Check your connection and try again.');
+    }
     finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -43,6 +51,18 @@ export default function OrdersScreen() {
   };
 
   if (loading) return <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+
+  if (ordersError) {
+    return (
+      <View style={styles.empty}>
+        <Text style={{ fontSize: 48, marginBottom: 12 }}>⚠️</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#334155', textAlign: 'center', paddingHorizontal: 24 }}>{ordersError}</Text>
+        <TouchableOpacity onPress={() => loadOrders()} style={{ marginTop: 16 }}>
+          <Text style={{ color: Colors.primary, fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
