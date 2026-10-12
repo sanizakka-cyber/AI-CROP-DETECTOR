@@ -1,0 +1,36 @@
+name: Mobile Tests
+
+# Phase 9 §B9: before this existed, mobile/ had real Jest tests (14,
+# then 31 after this change) but nothing in CI ever ran them -- a
+# regression here could only ever be caught by someone remembering to
+# run `npx jest` locally first.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest
+        run: npx jest --ci
