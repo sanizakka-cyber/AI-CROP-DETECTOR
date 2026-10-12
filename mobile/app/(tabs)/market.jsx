@@ -278,7 +278,7 @@ export default function MarketScreen() {
               <View style={styles.empty}>
                 <Text style={styles.emptyIcon}>🏪</Text>
                 <Text style={styles.emptyText}>No products available yet</Text>
-                <Text style={styles.emptySub}>Sellers haven't listed products in this marketplace yet — check back soon</Text>
+                <Text style={styles.emptySub}>Sellers haven&apos;t listed products in this marketplace yet — check back soon</Text>
               </View>
             )
           }
