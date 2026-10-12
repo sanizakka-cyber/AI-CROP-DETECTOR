@@ -1,14 +1,52 @@
-# Exclude backend and other non-mobile directories from EAS build uploads
+# EAS uses THIS file INSTEAD of .gitignore when it builds the upload
+# archive, so it must repeat every .gitignore rule that protects secrets or
+# keeps the archive small. Keep it the only .easignore: a mobile/.easignore
+# makes EAS skip this file entirely (archive grew to 2.2 GB last time).
+
+# Backend and other non-mobile directories
 msas-system/
 web/
 ai-engine/
 deploy/
 docs/
 server/
+laravel/
 
-# Exclude generated/installed files that EAS rebuilds server-side
-mobile/node_modules/
+# Generated/installed files that EAS rebuilds server-side
+**/node_modules/
 mobile/.expo/
 mobile/android/
 mobile/ios/Pods/
 mobile/ios/build/
+mobile/dist/
+mobile/web-build/
+mobile/.kotlin/
+
+# Secrets and signing material (mirrors .gitignore + mobile/.gitignore).
+# EAS injects EXPO_PUBLIC_* from the eas.json build profile, not .env.
+.env
+.env.*
+**/.env
+**/.env.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+**/KEYSTORE_CREDENTIALS.txt
+QA_CREDENTIALS_HANDOVER_GUIDE.md
+qa-credentials-*.txt
+
+# Large local artifacts that are not part of the app
+*.apk
+*.aab
+*.zip
+apk_inspect/
+*.pdf
+*_files/
+.claude/
+.vscode/
+*.log
+coverage/
