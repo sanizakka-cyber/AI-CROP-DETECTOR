@@ -30,7 +30,7 @@ class ErrorLog extends Model
                 'category'        => $category,
                 'level'           => 'error',
                 'exception_class' => get_class($e),
-                'message'         => mb_substr($e->getMessage(), 0, 500),
+                'message'         => mb_substr(self::redactConnectionDetails($e->getMessage()), 0, 500),
                 'file'            => mb_substr($e->getFile(), 0, 500),
                 'line'            => $e->getLine(),
                 'url'             => mb_substr(request()->fullUrl(), 0, 1000),
@@ -42,5 +42,29 @@ class ErrorLog extends Model
         } catch (\Throwable) {
             // Never let error logging crash the app
         }
+    }
+
+    /**
+     * Phase 9 §A3: a raw PDO/Postgres connection error's message can
+     * include the database host (and sometimes the configured
+     * username) verbatim -- this page is readable by ceo and admin, not
+     * only ceo, but neither role has a reason to see where the database
+     * physically lives. Strips the exact configured host/username out
+     * of any captured message before it's stored, rather than trying to
+     * pattern-match every possible driver error format.
+     */
+    private static function redactConnectionDetails(string $message): string
+    {
+        $host = config('database.connections.pgsql.host');
+        $user = config('database.connections.pgsql.username');
+
+        if ($host) {
+            $message = str_replace($host, '[db-host-redacted]', $message);
+        }
+        if ($user) {
+            $message = str_replace($user, '[db-user-redacted]', $message);
+        }
+
+        return $message;
     }
 }

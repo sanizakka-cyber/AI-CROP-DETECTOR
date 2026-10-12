@@ -44,6 +44,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 
+        // Phase 9 §A2/A5: a value that's all digits (e.g. a very large
+        // number) still matches the [0-9]+ route constraints in
+        // AppServiceProvider -- it reaches the database, where it can
+        // overflow Postgres's bigint range (SQLSTATE 22003, "numeric
+        // value out of range"), not just arrive as a non-numeric string
+        // (22P02, "invalid input syntax for type bigint"). Both are the
+        // same class of problem -- malformed/out-of-range client input,
+        // not an application bug -- and get the same clean-404 treatment
+        // in both closures below.
+        $idShapedSqlstates = ['22P02', '22003'];
+
         // Structured logging for all unhandled exceptions.
         //
         // This closure can run before Laravel's facade root or container
@@ -53,8 +64,24 @@ return Application::configure(basePath: dirname(__DIR__))
         // mask the exception it was asked to report, so everything
         // Laravel-dependent below is wrapped, with a raw error_log() as
         // the last-resort fallback that needs nothing from the framework.
-        $exceptions->report(function (\Throwable $e) {
+        $exceptions->report(function (\Throwable $e) use ($idShapedSqlstates) {
           try {
+            // See $idShapedSqlstates comment above. Route::pattern()
+            // constraints (AppServiceProvider::constrainIdRouteParameters())
+            // stop a non-numeric value before it reaches the database for
+            // every known {id}-style route, but this is a second,
+            // independent layer for anything that reaches a numeric
+            // column some other way (e.g. an id taken from the request
+            // body rather than the URL, which a route pattern can't
+            // constrain) or that's all-digits but out of bigint range.
+            // This is bad client input, not an application bug -- it must
+            // render as a clean 404 (handled in the render() block below)
+            // and must never be written to ErrorLog as an unresolved error.
+            if ($e instanceof \Illuminate\Database\QueryException
+                && in_array($e->errorInfo[0] ?? $e->getCode(), $idShapedSqlstates, true)) {
+                return;
+            }
+
             $context = [
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
@@ -145,6 +172,20 @@ return Application::configure(basePath: dirname(__DIR__))
                     'details' => $e->errors(),
                 ], 422);
             }
+        });
+
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, $request) use ($idShapedSqlstates) {
+            if (! in_array($e->errorInfo[0] ?? $e->getCode(), $idShapedSqlstates, true)) {
+                return null; // not this specific case -- fall through to Laravel's default 500 handling
+            }
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json(['error' => 'Resource not found.'], 404);
+            }
+            // No app-level resources/views/errors/404.blade.php exists, so
+            // response()->view('errors.404', ...) would itself crash with
+            // a missing-view error -- a plain response is the only option
+            // here that can't fail the same way a view lookup could.
+            return response('Not Found', 404);
         });
 
         $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
