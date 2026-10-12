@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   ActivityIndicator, RefreshControl, Alert,
@@ -59,6 +59,10 @@ export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [error, setError]         = useState(null);
+  const [markingAll, setMarkingAll] = useState(false);
+  // Refs, not state: a fast double-tap fires twice before a re-render could
+  // disable anything. Tracks ids with a request already in flight.
+  const busy = useRef(new Set());
 
   const load = useCallback(async () => {
     setError(null);
@@ -79,15 +83,27 @@ export default function NotificationsScreen() {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
+  // Best-effort by design: tapping a card is not an explicit "mark read"
+  // command, and on failure the card simply stays unread, which is the
+  // truthful state. No alert, so an offline tap doesn't nag.
   const markRead = async (id) => {
+    if (busy.current.has(`read:${id}`)) return;
+    busy.current.add(`read:${id}`);
     try {
       await notificationsAPI.markRead(id);
       setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
       setUnreadCount(c => Math.max(0, c - 1));
-    } catch {}
+    } catch {
+      // see comment above
+    } finally {
+      busy.current.delete(`read:${id}`);
+    }
   };
 
   const markAllRead = async () => {
+    if (busy.current.has('all')) return;
+    busy.current.add('all');
+    setMarkingAll(true);
     try {
       await notificationsAPI.markAllRead();
       const now = new Date().toISOString();
@@ -95,17 +111,25 @@ export default function NotificationsScreen() {
       setUnreadCount(0);
     } catch (e) {
       Alert.alert('Error', e.message || 'Could not mark notifications as read. Please try again.');
+    } finally {
+      busy.current.delete('all');
+      setMarkingAll(false);
     }
   };
 
   const deleteItem = async (id) => {
+    if (busy.current.has(`del:${id}`)) return;
+    busy.current.add(`del:${id}`);
     try {
       await notificationsAPI.delete(id);
+      // Removed only after the server confirms; on failure the card stays.
       const removed = items.find(n => n.id === id);
       setItems(prev => prev.filter(n => n.id !== id));
       if (removed && !removed.read_at) setUnreadCount(c => Math.max(0, c - 1));
     } catch (e) {
       Alert.alert('Error', e.message || 'Could not delete this notification. Please try again.');
+    } finally {
+      busy.current.delete(`del:${id}`);
     }
   };
 
@@ -129,7 +153,7 @@ export default function NotificationsScreen() {
           {unreadCount > 0 && <Text style={styles.headerBadge}> · {unreadCount} new</Text>}
         </Text>
         {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllRead} style={styles.markAllBtn}>
+          <TouchableOpacity onPress={markAllRead} style={[styles.markAllBtn, markingAll && { opacity: 0.5 }]} disabled={markingAll}>
             <Text style={styles.markAllText}>{isHausa ? 'Karanta Duka' : 'Mark all read'}</Text>
           </TouchableOpacity>
         )}
