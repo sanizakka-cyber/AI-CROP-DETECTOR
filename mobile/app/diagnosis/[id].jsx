@@ -17,6 +17,11 @@ import { Button, Card, SeverityBadge } from '../../components/UI';
 import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
 import { VoiceService } from '../../services/VoiceService';
 
+// A scan normally leaves 'pending' within seconds. If it hasn't after this
+// long, stop polling and tell the farmer instead of spinning forever.
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 3 * 60 * 1000;
+
 const DEFAULT_EXPERT_PHONE = '08129582957';
 const DEFAULT_WHATSAPP = 'https://wa.me/2348129582957';
 
@@ -40,24 +45,56 @@ export default function DiagnosisDetailScreen() {
   const isHausa = i18n.language === 'ha';
 
   const [diag, setDiag] = useState(null);
-  const [polling, setPolling] = useState(true);
   const [activeTab, setActiveTab] = useState('treatment');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const feedbackInFlight = useRef(false);
   const [recProducts, setRecProducts] = useState([]);
   const [addingId, setAddingId] = useState(null);
   // A failed fetch used to stop polling but leave diag null, so the screen
   // sat on the "AI is validating" spinner forever with no way out.
   const [loadError, setLoadError] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
 
   // Voice state
   const [voicePlaying, setVoicePlaying] = useState(false);
   const [voiceSpeed, setVoiceSpeed] = useState(1.0);
   const voiceNarration = useRef(null);
 
-  const load = useCallback(async () => {
-    try {
-      const { diagnosis } = await diagnoseAPI.get(id);
-      setLoadError(null);
+  // Polling is a chain of setTimeouts, not a setInterval: the next request
+  // is only scheduled after the previous one settles, so slow responses
+  // can never stack up. Each run gets a number; Retry or unmount bumps it,
+  // which makes any still-in-flight response from an older run a no-op.
+  const pollRun = useRef(0);
+  const pollTimer = useRef(null);
+  const voiceTimer = useRef(null);
+  // Latest-render handler for a finished result, so the poll loop (created
+  // once per id) never calls a stale playVoice/voiceEnabled/language.
+  const onFinishedRef = useRef(null);
+
+  const stopPolling = useCallback(() => {
+    pollRun.current += 1;
+    clearTimeout(pollTimer.current);
+    pollTimer.current = null;
+  }, []);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    const run = pollRun.current;
+    const deadline = Date.now() + POLL_TIMEOUT_MS;
+    setLoadError(null);
+    setTimedOut(false);
+
+    const tick = async () => {
+      let diagnosis;
+      try {
+        ({ diagnosis } = await diagnoseAPI.get(id));
+      } catch (e) {
+        if (run !== pollRun.current) return;
+        setLoadError(e.message || 'Could not load this diagnosis. Check your connection and try again.');
+        return;
+      }
+      if (run !== pollRun.current) return;
       setDiag(diagnosis);
       if (diagnosis.myFeedback) setFeedbackSent(true);
       // Real terminal states are 'processed', 'reviewed' (the status a
@@ -65,26 +102,17 @@ export default function DiagnosisDetailScreen() {
       // DiagnosisResultMapper::fromAiResult()) and 'needs_review' (AI
       // genuinely produced no result). Only 'pending' means "still
       // working" — there is no 'failed' status anywhere in the schema.
-      if (diagnosis.status !== 'pending') {
-        setPolling(false);
-        if (diagnosis.status === 'processed' || diagnosis.status === 'reviewed') {
-          fetchRecommendations(diagnosis);
-          if (voiceEnabled && !voiceNarration.current) {
-            setTimeout(() => playVoice(diagnosis), 600);
-          }
-        }
+      if (diagnosis.status === 'pending') {
+        if (Date.now() >= deadline) { setTimedOut(true); return; }
+        pollTimer.current = setTimeout(tick, POLL_INTERVAL_MS);
+        return;
       }
-    } catch (e) {
-      setPolling(false);
-      setLoadError(e.message || 'Could not load this diagnosis. Check your connection and try again.');
-    }
-  }, [id]);
+      onFinishedRef.current?.(diagnosis);
+    };
+    tick();
+  }, [id, stopPolling]);
 
-  const retryLoad = () => {
-    setLoadError(null);
-    setPolling(true);
-    load();
-  };
+  const retryLoad = () => startPolling();
 
   const fetchRecommendations = async (diagnosis) => {
     try {
@@ -135,6 +163,16 @@ export default function DiagnosisDetailScreen() {
     setVoicePlaying(false);
   };
 
+  onFinishedRef.current = (diagnosis) => {
+    if (diagnosis.status === 'processed' || diagnosis.status === 'reviewed') {
+      fetchRecommendations(diagnosis);
+      if (voiceEnabled && !voiceNarration.current) {
+        clearTimeout(voiceTimer.current);
+        voiceTimer.current = setTimeout(() => playVoice(diagnosis), 600);
+      }
+    }
+  };
+
   const addToCart = async (product) => {
     setAddingId(product.id);
     try {
@@ -148,32 +186,48 @@ export default function DiagnosisDetailScreen() {
   };
 
   useEffect(() => {
-    load();
-    const interval = setInterval(() => {
-      if (polling) load();
-    }, 3000);
+    startPolling();
     return () => {
-      clearInterval(interval);
+      // Leaving the screen: no further requests, no late voice playback.
+      stopPolling();
+      clearTimeout(voiceTimer.current);
       VoiceService.stop();
     };
-  }, [load, polling]);
+  }, [startPolling, stopPolling]);
 
   const sendFeedback = async (wasHelpful) => {
+    if (feedbackInFlight.current) return; // double-tap would submit twice
+    feedbackInFlight.current = true;
+    setFeedbackSending(true);
     try {
       await diagnoseAPI.feedback(id, { rating: wasHelpful ? 'thumbs_up' : 'thumbs_down' });
       setFeedbackSent(true);
     } catch (e) {
       Alert.alert('Error', e.message || 'Could not send your feedback. Please try again.');
+    } finally {
+      feedbackInFlight.current = false;
+      setFeedbackSending(false);
     }
   };
 
-  if (loadError && (!diag || diag.status === 'pending')) {
+  if ((loadError || timedOut) && (!diag || diag.status === 'pending')) {
     return (
       <View style={styles.loadingScreen}>
         <Text style={styles.failedIcon}>!</Text>
-        <Text style={styles.loadingText}>{isHausa ? 'An kasa samun sakamakon' : 'Could not load result'}</Text>
-        <Text style={styles.loadingTip}>{loadError}</Text>
-        <Button title={isHausa ? 'Sake gwadawa' : 'Retry'} onPress={retryLoad} />
+        <Text style={styles.loadingText}>
+          {timedOut
+            ? (isHausa ? 'Binciken yana ɗaukar lokaci' : 'Analysis is taking longer than expected')
+            : (isHausa ? 'An kasa samun sakamakon' : 'Could not load result')}
+        </Text>
+        <Text style={styles.loadingTip}>
+          {timedOut
+            ? (isHausa ? 'Za ka iya sake dubawa, ko ka duba Bayanan ka daga baya.' : 'Your scan is saved. Check again now, or find it later under Records.')
+            : loadError}
+        </Text>
+        <Button title={timedOut ? (isHausa ? 'Sake dubawa' : 'Check again') : (isHausa ? 'Sake gwadawa' : 'Retry')} onPress={retryLoad} />
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: Spacing.md }} accessibilityRole="button">
+          <Text style={{ color: Colors.primary, fontWeight: '600' }}>{isHausa ? 'Koma' : 'Go back'}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -470,10 +524,10 @@ export default function DiagnosisDetailScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>{t('wasHelpful')}</Text>
           <View style={styles.feedbackRow}>
-            <TouchableOpacity style={styles.feedbackBtn} onPress={() => sendFeedback(true)}>
+            <TouchableOpacity style={styles.feedbackBtn} onPress={() => sendFeedback(true)} disabled={feedbackSending}>
               <Text style={styles.feedbackLabel}>{isHausa ? 'Eh' : 'Yes'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.feedbackBtn} onPress={() => sendFeedback(false)}>
+            <TouchableOpacity style={styles.feedbackBtn} onPress={() => sendFeedback(false)} disabled={feedbackSending}>
               <Text style={styles.feedbackLabel}>{isHausa ? "A'a" : 'No'}</Text>
             </TouchableOpacity>
           </View>
