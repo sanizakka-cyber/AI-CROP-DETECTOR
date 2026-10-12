@@ -55,6 +55,21 @@ php artisan db:seed --class=SuperAdminSeeder --force 2>/dev/null || true
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Laravel's scheduler (routes/console.php: subscriptions:expire/remind,
+# db:backup, system:health, digest:weekly) requires something to invoke
+# `artisan schedule:run` every minute -- this container previously only
+# ran php-fpm + nginx, so none of those commands, including the daily
+# database backup, had ever actually run in production. Runs as www-data
+# (not root) via /etc/crontabs/www-data so the job has exactly the same
+# filesystem permissions php-fpm's own workers already run with.
+echo "==> Installing Laravel scheduler cron job..."
+echo "* * * * * cd /var/www/html && php artisan schedule:run >> /proc/1/fd/1 2>> /proc/1/fd/2" > /etc/crontabs/www-data
+chown www-data:www-data /etc/crontabs/www-data
+chmod 600 /etc/crontabs/www-data
+
+echo "==> Starting cron..."
+crond -b -l 2
+
 echo "==> Starting PHP-FPM..."
 php-fpm --nodaemonize &
 

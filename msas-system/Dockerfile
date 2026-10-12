@@ -3,10 +3,24 @@ FROM php:8.2-fpm-alpine
 # ── System packages ──────────────────────────────────────────────────────────
 RUN apk add --no-cache \
     nginx \
+    dcron \
     git unzip curl \
     postgresql-dev \
     libzip-dev libpng-dev oniguruma-dev \
     freetype-dev libjpeg-turbo-dev
+
+# db:backup (app/Console/Commands/BackupDatabase.php) shells out to pg_dump,
+# but postgresql-dev above only provides headers for compiling pdo_pgsql --
+# not the pg_dump binary. Without this, the scheduled backup command would
+# fail with "pg_dump: not found" even once the scheduler itself is running
+# (see docker/start.sh). The exact versioned package name available in
+# Alpine's repo index can shift between php:8.2-fpm-alpine's underlying
+# Alpine release, so this tries the versions actually used by this project
+# (CI runs postgres:16) before falling back to whatever else is available,
+# rather than hard-failing the whole image build on a version mismatch.
+RUN apk add --no-cache postgresql16-client \
+ || apk add --no-cache postgresql15-client \
+ || apk add --no-cache postgresql-client
 
 # ── PHP extensions ────────────────────────────────────────────────────────────
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
