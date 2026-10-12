@@ -345,7 +345,9 @@ If the image does not show a plant, set:
 subject_name | Not a plant
 disease | Invalid image — please upload a clear photo of the affected plant or crop part
 confidence | 0
-severity | None{lang_note}"""
+severity | None
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
 
     content = image_blocks + [{"type": "text", "text": prompt}]
 
@@ -458,7 +460,9 @@ referral | <specific signs or timeframe requiring emergency vet>
 explanation | <2–3 sentences on WHICH specific visual signs led to this diagnosis>
 
 If the image does not show livestock, set subject_name to "Not livestock" and disease to "Invalid image".
-If no image was provided, set confidence no higher than 30.{lang_note}"""
+If no image was provided, set confidence no higher than 30.
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
 
     content = image_blocks + [{"type": "text", "text": prompt}]
 
@@ -552,7 +556,9 @@ explanation | <2–3 sentences on WHICH visual properties informed this assessme
 
 If the image does not clearly show soil, set:
 subject_name | Invalid image
-confidence | 0{lang_note}"""
+confidence | 0
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
 
     content = image_blocks + [{"type": "text", "text": prompt}]
 
@@ -647,7 +653,9 @@ explanation | <2–3 sentences on WHICH specific visual features identified this
 
 If the image does not show a pest, weed, or pathogen clearly, set:
 pest_name | Not identified
-confidence | 0{lang_note}"""
+confidence | 0
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
 
     content = image_blocks + [{"type": "text", "text": prompt}]
 
