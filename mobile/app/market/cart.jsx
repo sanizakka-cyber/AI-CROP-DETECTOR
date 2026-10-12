@@ -38,13 +38,22 @@ export default function CartScreen() {
   const [address, setAddress]     = useState('');
   const [placing, setPlacing]     = useState(false);
   const [orders, setOrders]       = useState([]);
+  // A failed fetch left items/total untouched (empty on first mount) with
+  // no signal that anything went wrong -- the cart rendered as "Your cart
+  // is empty" indistinguishably from a genuinely empty cart, which is
+  // actively misleading if the user's cart actually has items and the
+  // request just failed. Tracked separately so the two render differently.
+  const [cartError, setCartError] = useState(null);
 
   const loadCart = async () => {
+    setCartError(null);
     try {
       const res = await cartAPI.get();
       setItems(res.data || []);
       setTotal(res.total || 0);
-    } catch {}
+    } catch (e) {
+      setCartError(e.message || 'Could not load your cart. Check your connection and try again.');
+    }
     finally { setLoading(false); }
   };
 
@@ -57,7 +66,9 @@ export default function CartScreen() {
       await cartAPI.update(item.id, newQty);
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, quantity: newQty, line_total: newQty * i.product.selling_price } : i));
       setTotal(prev => prev + (delta * item.product.selling_price));
-    } catch {}
+    } catch (e) {
+      Alert.alert('Could Not Update', e.message || 'Please check your connection and try again.');
+    }
   };
 
   const removeItem = async (item) => {
@@ -65,7 +76,9 @@ export default function CartScreen() {
       await cartAPI.remove(item.id);
       setItems(prev => prev.filter(i => i.id !== item.id));
       setTotal(prev => prev - item.line_total);
-    } catch {}
+    } catch (e) {
+      Alert.alert('Could Not Remove Item', e.message || 'Please check your connection and try again.');
+    }
   };
 
   const clearCart = () => {
@@ -108,6 +121,18 @@ export default function CartScreen() {
   const grandTotal = total + tax;
 
   if (loading) return <View style={styles.loader}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+
+  if (cartError) {
+    return (
+      <View style={styles.empty}>
+        <Text style={{ fontSize: 48, marginBottom: 12 }}>⚠️</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#334155', textAlign: 'center', paddingHorizontal: 24 }}>{cartError}</Text>
+        <TouchableOpacity onPress={loadCart} style={{ marginTop: 16 }}>
+          <Text style={{ color: Colors.primary, fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (step === 'success') {
