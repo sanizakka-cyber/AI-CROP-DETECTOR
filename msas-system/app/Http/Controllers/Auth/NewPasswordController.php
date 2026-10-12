@@ -83,6 +83,16 @@ class NewPasswordController extends Controller
         $user->api_token = null;
         $user->save();
 
+        // A forgot-password reset is the path a user takes specifically
+        // when they suspect their account is compromised -- leaving a
+        // previously-trusted device able to skip 2FA after the reset
+        // would mean the one factor a reset can't invalidate (device
+        // trust) survives it. ProfileController::changePassword()
+        // already revokes trusted devices on a voluntary password
+        // change for exactly this reason; this path was missing the
+        // same call.
+        \App\Models\TrustedDevice::where('user_id', $user->id)->delete();
+
         // Only the OTP send/verify steps around this were audited before —
         // the actual password change itself left no trail. The actor isn't
         // authenticated at this point (that's the whole point of a reset),
