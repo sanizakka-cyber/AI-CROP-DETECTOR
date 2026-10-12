@@ -39,6 +39,14 @@ export function SubscriptionProvider({ children }) {
 
   const fetchSubscription = useCallback(async () => {
     if (!token || !user || user.role !== 'farmer') return;
+    const restoreCached = async () => {
+      try {
+        const cached = await AsyncStorage.getItem('msas_subscription');
+        if (cached) setSubscription(JSON.parse(cached));
+      } catch {
+        // corrupt cache: leave subscription as-is
+      }
+    };
     try {
       setLoading(true);
       const res = await fetch(`${API_ROOT}/api/subscription/status`, {
@@ -46,17 +54,22 @@ export function SubscriptionProvider({ children }) {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
+        // No timeout before: a stalled request left `loading` true forever.
+        signal: typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(20000) : undefined,
       });
       if (res.ok) {
         const data = await res.json();
         setSubscription(data.subscription ?? null);
         setUsage(data.usage ?? {});
         await AsyncStorage.setItem('msas_subscription', JSON.stringify(data.subscription ?? null));
+      } else {
+        // A 5xx used to be ignored, leaving subscription null -- a paying
+        // farmer was treated as unsubscribed and locked out of features.
+        await restoreCached();
       }
     } catch {
-      // Offline: fall back to cached value
-      const cached = await AsyncStorage.getItem('msas_subscription');
-      if (cached) setSubscription(JSON.parse(cached));
+      // Offline / timeout: fall back to cached value
+      await restoreCached();
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,20 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+// Last confirmed /auth/me (or login) user, so a farmer who opens the app
+// with no signal keeps their session instead of being logged out.
+const USER_CACHE_KEY = 'auth_user_cache';
+const cacheUser = (u) => AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(u)).catch(() => {});
+const clearUserCache = () => AsyncStorage.removeItem(USER_CACHE_KEY).catch(() => {});
+async function readCachedUser() {
+  try {
+    const raw = await AsyncStorage.getItem(USER_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null; // corrupt cache is treated as no cache
+  }
+}
+
 /**
  * Auth lifecycle tracing — intentionally NOT gated behind __DEV__. Release
  * APK builds set __DEV__ to false, which would silently strip these from
@@ -38,13 +52,29 @@ export function AuthProvider({ children }) {
         authDebug('Rehydrate: stored token present?', { present: !!stored });
         if (stored) {
           setToken(stored);
-          const { user: me } = await authAPI.me();
-          authDebug('Rehydrate: /auth/me', { status: 200, userReceived: !!me });
-          setUser(me);
+          try {
+            const { user: me } = await authAPI.me();
+            authDebug('Rehydrate: /auth/me', { status: 200, userReceived: !!me });
+            setUser(me);
+            if (me) cacheUser(me);
+          } catch (e) {
+            // Only a real auth rejection ends the session. Previously ANY
+            // failure (no signal, timeout, a 500) deleted the token, so
+            // opening the app offline logged the farmer out.
+            if (e?.kind === 'auth') {
+              authDebug('Rehydrate: /auth/me rejected the token, clearing', { status: e?.status });
+              await AsyncStorage.removeItem('token');
+              await clearUserCache();
+              setToken(null);
+            } else {
+              const cached = await readCachedUser();
+              authDebug('Rehydrate: /auth/me unreachable, using cached user', { kind: e?.kind, cached: !!cached });
+              if (cached) setUser(cached);
+            }
+          }
         }
       } catch (e) {
-        authDebug('Rehydrate: /auth/me failed, clearing token', { status: e?.status, kind: e?.kind });
-        await AsyncStorage.removeItem('token');
+        authDebug('Rehydrate: storage read failed', { message: e?.message });
       } finally {
         setLoading(false);
       }
@@ -54,6 +84,7 @@ export function AuthProvider({ children }) {
     globalThis.__onAuthExpired = () => {
       authDebug('Session expired (401 with a stored token) — clearing', {});
       setSessionExpired(true);
+      clearUserCache();
       setToken(null);
       setUser(null);
     };
@@ -87,6 +118,7 @@ export function AuthProvider({ children }) {
     setSessionExpired(false);
     setToken(res.token);
     setUser(res.user);
+    cacheUser(res.user);
   };
 
   /**
@@ -105,6 +137,7 @@ export function AuthProvider({ children }) {
       await AsyncStorage.setItem('token', res.token);
       setToken(res.token);
       setUser(res.user);
+      cacheUser(res.user);
       return { status: 'authenticated' };
     }
     if (res.needs_verification) {
@@ -121,12 +154,14 @@ export function AuthProvider({ children }) {
     await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
+    cacheUser(u);
   };
 
   const resendOtp = (identifier) => authAPI.resendOtp(identifier);
 
   const logout = async () => {
     await AsyncStorage.removeItem('token');
+    await clearUserCache();
     setSessionExpired(false); // deliberate sign-out, not a 401 kick
     setToken(null);
     setUser(null);
@@ -138,6 +173,7 @@ export function AuthProvider({ children }) {
     try {
       const { user: u } = await authAPI.me();
       setUser(u);
+      if (u) cacheUser(u);
       return u;
     } catch (err) {
       console.error('Profile refresh failed:', err);
@@ -151,6 +187,7 @@ export function AuthProvider({ children }) {
     try {
       const { user: u } = await authAPI.updateProfile(updates);
       setUser(u);
+      if (u) cacheUser(u);
       return u;
     } catch (err) {
       throw err;
