@@ -93,7 +93,9 @@ export default function NotificationsScreen() {
       const now = new Date().toISOString();
       setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at || now })));
       setUnreadCount(0);
-    } catch {}
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not mark notifications as read. Please try again.');
+    }
   };
 
   const deleteItem = async (id) => {
@@ -102,7 +104,9 @@ export default function NotificationsScreen() {
       const removed = items.find(n => n.id === id);
       setItems(prev => prev.filter(n => n.id !== id));
       if (removed && !removed.read_at) setUnreadCount(c => Math.max(0, c - 1));
-    } catch {}
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not delete this notification. Please try again.');
+    }
   };
 
   if (loading) {
