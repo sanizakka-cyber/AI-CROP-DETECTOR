@@ -74,4 +74,22 @@ class LocationValidationServiceTest extends TestCase
         $this->assertTrue($result['valid']);
         $this->assertSame([], $result['warnings']);
     }
+
+    /**
+     * (0, 0) is the Gulf of Guinea -- the classic "GPS fix never actually
+     * resolved, client sent its sentinel default" bug class named
+     * explicitly in the Phase 8 audit brief. For a Nigeria-labelled sample
+     * (the only country this app currently supports -- see mobile
+     * lib/locationCapture.js's own matching client-side guard), it falls
+     * well outside the Nigeria bounding box and must be flagged, not
+     * silently stored as a confirmed real location.
+     */
+    public function test_zero_zero_is_flagged_not_silently_accepted_for_nigeria(): void
+    {
+        $result = LocationValidationService::validate(['latitude' => 0.0, 'longitude' => 0.0, 'country' => 'Nigeria']);
+
+        $this->assertTrue($result['valid'], 'A valid global coordinate must never be hard-rejected, only flagged.');
+        $this->assertSame('boundary_mismatch_flagged', $result['verification_status']);
+        $this->assertNotEmpty($result['warnings'], '(0,0) must be flagged as implausible for a Nigeria-labelled sample, not silently accepted.');
+    }
 }
