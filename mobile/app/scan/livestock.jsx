@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { diagnoseAPI } from '../../lib/api';
+import { validateImageForScanning } from '../../lib/imageValidator';
 import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
@@ -40,11 +41,19 @@ export default function LivestockScanScreen() {
   const [animal, setAnimal] = useState(null);
   const [assessment, setAssessment] = useState('fecal');
   const [images, setImages] = useState([]);
+  const [qualityResults, setQualityResults] = useState([]);
+  const [validating, setValidating] = useState(false);
   const [symptoms, setSymptoms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState('');
   const loc = useLocationCapture();
 
+  // Mirrors crop/pest/soil's pickImage exactly (see app/scan/crop.jsx) --
+  // livestock was the one scan screen that never ran images through
+  // validateImageForScanning() at all, so a blurry, tiny, or stale photo
+  // (the exact cases the other three scans reject) sailed through
+  // unchecked here. Looped, not single-asset, since this screen alone
+  // allows multi-select.
   const pickImage = async (source) => {
     const perms = source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -53,7 +62,25 @@ export default function LivestockScanScreen() {
     const result = source === 'camera'
       ? await ImagePicker.launchCameraAsync({ quality: 0.75 })
       : await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, quality: 0.75 });
-    if (!result.canceled) setImages(prev => [...prev, ...result.assets]);
+    if (result.canceled) return;
+
+    setValidating(true);
+    const newQuality = [];
+    const validAssets = [];
+    for (const asset of result.assets) {
+      asset._source = source;
+      const validation = await validateImageForScanning(asset, 'livestock');
+      if (!validation.valid) {
+        Alert.alert('Image Rejected', validation.error);
+        setValidating(false);
+        return;
+      }
+      newQuality.push({ score: validation.qualityScore, warnings: validation.warnings });
+      validAssets.push(asset);
+    }
+    setImages(prev => [...prev, ...validAssets]);
+    setQualityResults(prev => [...prev, ...newQuality]);
+    setValidating(false);
   };
 
   const toggleSymptom = (s) =>
@@ -64,6 +91,13 @@ export default function LivestockScanScreen() {
     if (!animal) return Alert.alert('', 'Please select an animal type');
     if (images.length === 0 && assessment !== 'behavioral')
       return Alert.alert('', 'Please add at least one photo');
+
+    // Final quality gate, matching crop/pest/soil exactly.
+    const lowQuality = qualityResults.find(q => q.score < 40);
+    if (lowQuality) {
+      return Alert.alert('Quality Check Failed', '❌ One or more images failed quality validation. Please retake in better conditions.');
+    }
+
     setLoading(true);
     try {
       const { diagnosisId } = await diagnoseAPI.livestock({
@@ -85,6 +119,7 @@ export default function LivestockScanScreen() {
   return (
     <View style={{ flex: 1 }}>
       {loading && <LoadingOverlay message="Analysing animal health..." />}
+      {validating && <LoadingOverlay message="Validating image quality..." />}
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
@@ -146,7 +181,10 @@ export default function LivestockScanScreen() {
                     <Image source={{ uri: img.uri }} style={styles.previewImg} />
                     <TouchableOpacity
                       style={styles.removeImg}
-                      onPress={() => setImages(imgs => imgs.filter((_, j) => j !== i))}
+                      onPress={() => {
+                        setImages(imgs => imgs.filter((_, j) => j !== i));
+                        setQualityResults(qs => qs.filter((_, j) => j !== i));
+                      }}
                     >
                       <Text style={{ color: 'white', fontSize: 11 }}>✕</Text>
                     </TouchableOpacity>
