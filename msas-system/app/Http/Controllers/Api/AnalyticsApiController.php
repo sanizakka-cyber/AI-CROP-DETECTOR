@@ -110,34 +110,62 @@ class AnalyticsApiController extends Controller
         ]);
     }
 
-    // GET /analytics/outbreaks — disease outbreak trends (last 30 days, admin/analyst roles only)
+    // GET /analytics/outbreaks — disease trends over the last 30 days.
+    // Staff roles see national figures. Farmers, vets and agronomists see
+    // their own state (from each scan's recorded collection location), and
+    // only diseases with at least 2 cases, so no single farm is identifiable.
+    // Only real findings count: photo problems, inconclusive results, AI
+    // outages and healthy results are not "outbreaks".
     public function outbreaks(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! Roles::isAny($user->role, ['ceo', 'admin', 'data-analyst', 'm-e-officer', 'government-agency', 'research-institution'])) {
+        $isStaff = Roles::isAny($user->role, ['ceo', 'admin', 'data-analyst', 'm-e-officer', 'government-agency', 'research-institution']);
+        $isField = Roles::isAny($user->role, ['farmer', 'vet', 'agronomist']);
+        if (! $isStaff && ! $isField) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
+        $region = (! $isStaff && $user->state) ? $user->state : null;
+
         try {
-            $outbreaks = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
+            $query = Diagnosis::select('disease_name', 'type', DB::raw('count(*) as cases'))
                 ->where('created_at', '>=', now()->subDays(30))
                 ->whereNotNull('disease_name')
-                ->where('disease_name', '!=', 'Pending Expert Review')
-                ->groupBy('disease_name', 'type')
+                ->where(fn ($q) => $q->whereNull('assessment_outcome')->orWhere('assessment_outcome', 'assessed'))
+                ->where(fn ($q) => $q->whereNull('confidence_decision')->orWhereNotIn('confidence_decision', ['ai_unavailable', 'malformed_response']))
+                ->whereNotIn('disease_name', [
+                    'Pending Expert Review', 'Requires expert review',
+                    \App\Services\DiagnosisResultMapper::outcomeHeadline('poor_image'),
+                    \App\Services\DiagnosisResultMapper::outcomeHeadline('unsupported_subject'),
+                    \App\Services\DiagnosisResultMapper::outcomeHeadline('uncertain'),
+                ])
+                ->whereRaw("LOWER(disease_name) NOT LIKE 'healthy%'");
+
+            if ($region !== null) {
+                $query->whereHas('collectionLocation', fn ($q) => $q->whereRaw('LOWER(state) = ?', [mb_strtolower($region)]));
+            }
+            if (! $isStaff) {
+                $query->havingRaw('count(*) >= 2');
+            }
+
+            $outbreaks = $query->groupBy('disease_name', 'type')
                 ->orderByDesc('cases')
                 ->take(10)
                 ->get()
-                ->map(fn($d) => [
+                ->map(fn ($d) => [
                     'disease'  => $d->disease_name,
                     'type'     => $d->type,
-                    'cases'    => $d->cases,
+                    'cases'    => (int) $d->cases,
+                    'count'    => (int) $d->cases,          // the app's vet screen reads "count"
+                    'region'   => $region ?? 'Nigeria',
+                    'forecast' => 'Last 30 days',
                     'severity' => $d->cases >= 10 ? 'high' : ($d->cases >= 4 ? 'medium' : 'low'),
                 ]);
         } catch (\Exception $e) {
             $outbreaks = collect([]);
         }
 
-        return response()->json(['outbreaks' => $outbreaks]);
+        return response()->json(['outbreaks' => $outbreaks, 'region' => $region ?? 'Nigeria']);
     }
 
     // GET /analytics/outcomes — treatment success breakdown (admin/analyst roles only)
