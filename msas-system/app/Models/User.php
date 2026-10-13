@@ -181,14 +181,43 @@ class User extends Authenticatable
         return 'data:image/svg+xml;base64,' . base64_encode($svg);
     }
 
-    /** Generate a new API token, store its hash, return the plain text token. */
+    /** Max signed-in devices per user; the oldest token is dropped beyond this. */
+    public const MAX_API_TOKENS = 10;
+
+    /**
+     * Generate a new API token for one device, store its hash, return the
+     * plain text token. Each device gets its own row in api_tokens, so a new
+     * sign-in no longer signs out the user's other devices. users.api_token
+     * still receives the newest hash so a rollback cannot log anyone out.
+     */
     public function createToken(string $name = 'mobile'): object
     {
         $plain = bin2hex(random_bytes(32));
+        $hash  = hash('sha256', $plain);
+
+        ApiToken::create(['user_id' => $this->id, 'token_hash' => $hash, 'name' => mb_substr($name, 0, 60)]);
+        $keep = ApiToken::where('user_id', $this->id)->latest('id')->limit(self::MAX_API_TOKENS)->pluck('id');
+        ApiToken::where('user_id', $this->id)->whereNotIn('id', $keep)->delete();
+
         // api_token is excluded from $fillable — use direct assignment so the DB is written
-        $this->api_token = hash('sha256', $plain);
+        $this->api_token = $hash;
         $this->saveQuietly();
         return (object) ['plainTextToken' => $plain];
+    }
+
+    public function apiTokens()
+    {
+        return $this->hasMany(ApiToken::class);
+    }
+
+    /**
+     * Sign out every device: for password changes/resets and anything else
+     * that must lock out a possibly stolen token. Caller saves the user.
+     */
+    public function revokeAllApiTokens(): void
+    {
+        $this->apiTokens()->delete();
+        $this->api_token = null;
     }
 
     // ── RBAC Relationships ─────────────────────────────────────────────────────

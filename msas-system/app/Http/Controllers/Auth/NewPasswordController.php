@@ -80,7 +80,7 @@ class NewPasswordController extends Controller
         // property assignment is required. A password reset is
         // explicitly meant to lock out anyone who had the old password
         // (or a stolen token), so a surviving token would defeat the point.
-        $user->api_token = null;
+        $user->revokeAllApiTokens(); // every device, not just the newest token
         $user->save();
 
         // A forgot-password reset is the path a user takes specifically

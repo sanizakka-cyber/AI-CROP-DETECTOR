@@ -258,9 +258,14 @@ class AuthApiController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        // api_token excluded from $fillable — use direct assignment so the token is actually revoked
+        // Sign out THIS device only. Other signed-in devices keep their own tokens.
         $user = $request->user();
-        $user->api_token       = null;
+        $hash = hash('sha256', (string) $request->bearerToken());
+        \App\Models\ApiToken::where('user_id', $user->id)->where('token_hash', $hash)->delete();
+        // api_token excluded from $fillable — direct assignment so it is actually cleared
+        if ($user->api_token === $hash) {
+            $user->api_token = null;
+        }
         $user->expo_push_token = null;
         $user->saveQuietly();
         return response()->json(['message' => 'Logged out']);

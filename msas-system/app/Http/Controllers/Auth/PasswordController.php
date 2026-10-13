@@ -29,7 +29,7 @@ class PasswordController extends Controller
         // outlive the password change it was supposed to be defended by.
         // AuthApiController::logout() already does this; this is the one
         // other place a password actually changes.
-        $user->api_token = null;
+        $user->revokeAllApiTokens(); // every device, not just the newest token
         $user->save();
 
         return back()->with('status', 'password-updated');

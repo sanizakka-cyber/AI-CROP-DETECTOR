@@ -136,7 +136,7 @@ class ProfileController extends Controller
         // disrupt the "stay on this session" UX below -- it only revokes
         // the mobile bearer token, which could be live on an entirely
         // different, possibly stolen, device.
-        $user->api_token            = null;
+        $user->revokeAllApiTokens(); // every device, not just the newest token
         $user->save();
 
         // Revoke all trusted devices — a password change should force re-verification everywhere
