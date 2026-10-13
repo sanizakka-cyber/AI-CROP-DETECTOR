@@ -18,9 +18,12 @@ class SubscriptionLimitService
             return ['allowed' => true, 'used' => 0, 'limit' => -1, 'remaining' => -1];
         }
 
+        // A scan the AI never answered (engine outage/timeout) is not a scan
+        // the farmer received; it must not use up their monthly quota.
         $used = Diagnosis::where('user_id', $user->id)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
+            ->where(fn ($q) => $q->whereNull('confidence_decision')->orWhere('confidence_decision', '!=', 'ai_unavailable'))
             ->count();
 
         return [

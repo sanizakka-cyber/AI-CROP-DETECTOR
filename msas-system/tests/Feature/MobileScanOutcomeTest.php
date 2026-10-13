@@ -182,4 +182,24 @@ class MobileScanOutcomeTest extends TestCase
             return false;
         });
     }
+
+    public function test_scans_the_ai_never_answered_do_not_use_up_the_monthly_quota(): void
+    {
+        Http::fake([
+            '*/health' => Http::response(['status' => 'ok']),
+            '*/predict/crop' => Http::sequence()
+                ->push(['detail' => 'down'], 503)
+                ->push(['detail' => 'down'], 503)
+                ->push(['assessment_outcome' => 'assessed', 'disease' => 'Healthy', 'confidence' => 90, 'confidence_valid' => true]),
+        ]);
+        $user = $this->farmer();
+        $svc = app(\App\Services\SubscriptionLimitService::class);
+
+        $this->scan($user)->assertStatus(202);
+        $this->scan($user)->assertStatus(202);
+        $this->assertSame(0, $svc->canScan($user)['used'], 'Outage records are not counted.');
+
+        $this->scan($user)->assertOk();
+        $this->assertSame(1, $svc->canScan($user)['used']);
+    }
 }
