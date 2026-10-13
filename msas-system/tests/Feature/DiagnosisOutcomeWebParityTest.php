@@ -86,6 +86,19 @@ class DiagnosisOutcomeWebParityTest extends TestCase
         $show->assertJsonPath('diagnosis.statusLabel', 'Retake Photo');
     }
 
+    public function test_a_confident_result_lists_other_possibilities_on_web_and_report(): void
+    {
+        $user = User::factory()->create(['role' => 'farmer']);
+        $d = Diagnosis::create([
+            'user_id' => $user->id, 'type' => 'plant', 'status' => 'reviewed', 'disease_name' => 'Late blight',
+            'confidence_score' => 78, 'assessment_outcome' => 'assessed',
+            'alternative_findings' => [['name' => 'Early blight', 'why_considered' => 'Target rings absent']],
+        ]);
+
+        $this->actingAs($user)->get(route('diagnostics.history'))->assertSee('Other possibilities considered')->assertSee('Early blight');
+        $this->actingAs($user)->get(route('diagnostics.report', $d))->assertSee('Other possibilities considered')->assertSee('Early blight');
+    }
+
     public function test_a_scan_without_location_shows_unavailable_not_the_home_address(): void
     {
         $user = User::factory()->create(['role' => 'farmer', 'state' => 'Kano']);

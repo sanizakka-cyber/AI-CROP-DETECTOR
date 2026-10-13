@@ -76,6 +76,13 @@ test('a missing score shows "No score", never 0%, and no invented "accepted" ima
   expect(screen.queryByText(/Image: accepted/)).toBeNull();
 });
 
+test('a confident result still lists the other possibilities considered', async () => {
+  await show({ ...base, aiResult: { primaryDiagnosis: 'Late blight', confidence: 78 },
+    assessment: { outcome: 'assessed', imageQuality: 'good', alternativeFindings: [{ name: 'Early blight', why_considered: 'Target rings absent' }] } });
+  expect(screen.getByText('Other possibilities considered')).toBeTruthy();
+  expect(screen.getByText('- Early blight: Target rings absent')).toBeTruthy();
+});
+
 test('an empty treatment tab says nothing is recommended instead of rendering blank', async () => {
   await show({ ...base, aiResult: { primaryDiagnosis: 'Late blight', confidence: 78 }, assessment: { outcome: 'assessed', imageQuality: 'good' } });
   expect(screen.getByText('Nothing is recommended here for this result.')).toBeTruthy();

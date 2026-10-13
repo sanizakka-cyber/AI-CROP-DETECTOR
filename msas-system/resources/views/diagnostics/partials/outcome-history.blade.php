@@ -52,6 +52,17 @@
 </div>
 @endif
 
+@if($outcome === 'assessed' && !empty($diagnosis->alternative_findings))
+<div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{{ __('Other possibilities considered') }}</div>
+    <ul class="text-xs text-slate-700 list-disc ml-4 space-y-0.5">
+        @foreach($diagnosis->alternative_findings as $alt)
+            <li><strong>{{ $alt['name'] ?? '' }}</strong>@if(!empty($alt['why_considered'])): {{ $alt['why_considered'] }}@endif</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 @if($diagnosis->organic_options)
 <div class="bg-lime-50 border border-lime-100 rounded-xl p-3">
     <div class="text-[10px] font-bold text-lime-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">

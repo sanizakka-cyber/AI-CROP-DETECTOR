@@ -522,6 +522,15 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
+      {!isUncertain && assessment.alternativeFindings?.length > 0 && (
+        <Card style={styles.card}>
+          <Text style={styles.cardTitle}>{isHausa ? "Wasu yiwuwar da aka yi la'akari da su" : 'Other possibilities considered'}</Text>
+          {assessment.alternativeFindings.map((alt, i) => (
+            <Text key={i} style={styles.treatBody}>- {alt.name}{alt.why_considered ? `: ${alt.why_considered}` : ''}</Text>
+          ))}
+        </Card>
+      )}
+
       <Text style={styles.sectionTitle}>{t('treatment')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
         {[

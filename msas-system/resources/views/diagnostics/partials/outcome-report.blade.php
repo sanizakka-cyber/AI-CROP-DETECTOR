@@ -38,6 +38,13 @@
 </div>
 @endif
 
+@if($outcome === 'assessed' && !empty($diagnosis->alternative_findings))
+<div class="section-card s-slate" style="margin-bottom:10px">
+    <div class="section-label">{{ __('Other possibilities considered') }}</div>
+    <p>{{ collect($diagnosis->alternative_findings)->map(fn ($a) => ($a['name'] ?? '') . (!empty($a['why_considered']) ? ' (' . $a['why_considered'] . ')' : ''))->filter()->implode('; ') }}</p>
+</div>
+@endif
+
 @if($diagnosis->organic_options)
 <div class="section-card s-lime" style="margin-bottom:10px">
     <div class="section-label">{{ __('Organic / non-chemical options') }}</div>
