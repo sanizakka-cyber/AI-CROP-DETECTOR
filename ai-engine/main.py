@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, ImageOps, UnidentifiedImageError
 import anthropic
 import uvicorn
+import logging
+
+from diagnosis_contract import build_prompt, finalize, schema_for
 
 app = FastAPI(title="MSAS FarmAI Inference Engine", version="5.0.0")
 
@@ -286,8 +289,7 @@ async def health():
 
 # ─── /predict/crop ────────────────────────────────────────────────────────────
 
-@app.post("/predict/crop")
-async def predict_crop(
+async def _legacy_predict_crop(
     request: Request,
     cropType: Optional[str] = Form(None),
     cropPart: Optional[str] = Form(None),
@@ -400,8 +402,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
 
 # ─── /predict/livestock ───────────────────────────────────────────────────────
 
-@app.post("/predict/livestock")
-async def predict_livestock(
+async def _legacy_predict_livestock(
     request: Request,
     animalType: Optional[str] = Form(None),
     assessmentType: Optional[str] = Form(None),
@@ -514,8 +515,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
 
 # ─── /predict/soil ────────────────────────────────────────────────────────────
 
-@app.post("/predict/soil")
-async def predict_soil(
+async def _legacy_predict_soil(
     request: Request,
     soilContext: Optional[str] = Form(None),
     language: Optional[str] = Form("en"),
@@ -606,8 +606,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
 
 # ─── /predict/pest ────────────────────────────────────────────────────────────
 
-@app.post("/predict/pest")
-async def predict_pest(
+async def _legacy_predict_pest(
     request: Request,
     cropType: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
@@ -701,6 +700,146 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
         "explanation":         fields.get("explanation",         ""),
         "scan_type":           "pest",
     }
+
+# ─── Structured diagnosis (Phase 11) ──────────────────────────────────────────
+# All four scan endpoints use one strict JSON contract (diagnosis_contract.py)
+# through structured outputs. The previous pipe-delimited handlers are kept
+# below as _legacy_predict_* and serve as an automatic fallback: if the API
+# rejects the structured request itself (HTTP 400, e.g. a schema limit), the
+# scan is re-run through the proven legacy prompt instead of failing. That
+# fallback is visible in every response as contract_version "legacy-fallback".
+
+_SCAN_MAX_TOKENS = 8000  # was 1024-1536: adaptive thinking shares this budget, so long replies were cut short
+_log = logging.getLogger("msas.diagnosis")
+
+
+class _SchemaRejected(Exception):
+    pass
+
+
+async def _run_structured(mode: str, image_blocks: List[dict], prompt: str) -> tuple:
+    client = _get_client()
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL,
+            max_tokens=_SCAN_MAX_TOKENS,
+            messages=[{"role": "user", "content": image_blocks + [{"type": "text", "text": prompt}]}],
+            output_config={"format": {"type": "json_schema", "schema": schema_for(mode)}},
+        )
+    except anthropic.BadRequestError as e:
+        raise _SchemaRejected(str(e)) from e
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail={"error": "provider_unavailable", "message": f"AI service error: {str(e)}"})
+
+    # A refusal or a reply cut off at max_tokens is a technical failure, never
+    # a diagnosis: report it instead of parsing a partial answer.
+    if message.stop_reason in ("refusal", "max_tokens"):
+        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": f"AI reply incomplete ({message.stop_reason})."})
+    text = _extract_text(message)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        data = None
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": "AI reply was not valid JSON."})
+    return data, text
+
+
+async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict], prompt: str, legacy):
+    try:
+        data, text = await _run_structured(mode, image_blocks, prompt)
+    except _SchemaRejected as e:
+        _log.warning("structured %s request rejected, using legacy prompt: %s", mode, e)
+        for img in images:
+            await img.seek(0)
+        result = await legacy()
+        if isinstance(result, dict):
+            result["contract_version"] = "legacy-fallback"
+        return result
+    return {**_model_meta(AI_MODEL, text), **finalize(mode, data)}
+
+
+def _hint(**pairs) -> str:
+    parts = [f" {label}: {value}." for label, value in pairs.items() if value]
+    return ("\n\nFarmer-provided context (a hint, not proof):" + "".join(parts)) if parts else ""
+
+
+@app.post("/predict/crop")
+async def predict_crop(
+    request: Request,
+    cropType: Optional[str] = Form(None),
+    cropPart: Optional[str] = Form(None),
+    language: Optional[str] = Form("en"),
+    images: List[UploadFile] = File(...),
+):
+    _check_auth(request)
+    _get_client()
+    image_blocks = await _read_images_b64(images)
+    prompt = build_prompt("crop", _hint(**{"Reported crop": cropType, "Photographed part": cropPart})) + _lang_instruction(language or "en")
+    return await _diagnose("crop", images, image_blocks, prompt,
+                           lambda: _legacy_predict_crop(request, cropType, cropPart, language, images))
+
+
+@app.post("/predict/livestock")
+async def predict_livestock(
+    request: Request,
+    animalType: Optional[str] = Form(None),
+    assessmentType: Optional[str] = Form(None),
+    symptoms: Optional[str] = Form(None),
+    language: Optional[str] = Form("en"),
+    images: List[UploadFile] = File(default=[]),
+):
+    _check_auth(request)
+    _get_client()
+    image_blocks = await _read_images_b64(images) if images else []
+    if not image_blocks:
+        # No photo: nothing to assess visually. The legacy prompt told the
+        # model to answer "based on common conditions", i.e. to guess.
+        return {
+            **finalize("livestock", {
+                "assessment_outcome": "poor_image", "subject_present": True, "image_quality": "poor",
+                "image_issues": ["subject_not_visible"],
+                "photo_tips": ["Add at least one clear photo of the animal or the affected area."],
+                "when_to_seek_expert": "If the animal is weak, not eating, bleeding or breathing with difficulty, call a veterinarian now.",
+            }),
+            "ai_model": None, "ai_model_version": None, "raw_model_output": None,
+            "confidence_interpretation": None, "validation_status": "unvalidated",
+        }
+    prompt = build_prompt("livestock", _hint(**{"Reported animal": animalType, "Assessment area": assessmentType, "Reported symptoms": symptoms})) + _lang_instruction(language or "en")
+    return await _diagnose("livestock", images, image_blocks, prompt,
+                           lambda: _legacy_predict_livestock(request, animalType, assessmentType, language, images))
+
+
+@app.post("/predict/soil")
+async def predict_soil(
+    request: Request,
+    soilContext: Optional[str] = Form(None),
+    language: Optional[str] = Form("en"),
+    images: List[UploadFile] = File(...),
+):
+    _check_auth(request)
+    _get_client()
+    image_blocks = await _read_images_b64(images)
+    prompt = build_prompt("soil", _hint(**{"Farmer context": soilContext})) + _lang_instruction(language or "en")
+    return await _diagnose("soil", images, image_blocks, prompt,
+                           lambda: _legacy_predict_soil(request, soilContext, language, images))
+
+
+@app.post("/predict/pest")
+async def predict_pest(
+    request: Request,
+    cropType: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    language: Optional[str] = Form("en"),
+    images: List[UploadFile] = File(...),
+):
+    """Pest identification: insect, weed, or pathogen, kept distinct from the damage it causes."""
+    _check_auth(request)
+    _get_client()
+    image_blocks = await _read_images_b64(images)
+    prompt = build_prompt("pest", _hint(**{"Affected crop": cropType, "Location": location})) + _lang_instruction(language or "en")
+    return await _diagnose("pest", images, image_blocks, prompt,
+                           lambda: _legacy_predict_pest(request, cropType, location, language, images))
 
 # ─── /predict/weather ─────────────────────────────────────────────────────────
 
