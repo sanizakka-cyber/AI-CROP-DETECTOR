@@ -1,0 +1,8 @@
+image,mode,expected,synonyms,expected_outcome
+crop/maize_nclb_01.jpg,crop,Northern corn leaf blight,Exserohilum turcicum|turcicum leaf blight,
+crop/tomato_late_blight_01.jpg,crop,Late blight,Phytophthora infestans,
+livestock/goat_ppr_01.jpg,livestock,Peste des petits ruminants,PPR,
+soil/laterite_01.jpg,soil,Laterite,lateritic,
+pest/fall_armyworm_01.jpg,pest,Fall armyworm,Spodoptera frugiperda,
+rejections/blurred_leaf_01.jpg,crop,,,poor_image
+rejections/stapler_01.jpg,crop,,,unsupported_subject
