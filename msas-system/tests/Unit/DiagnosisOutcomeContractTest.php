@@ -129,6 +129,15 @@ class DiagnosisOutcomeContractTest extends TestCase
         $this->assertSame('needs_review', $out['status']);
     }
 
+    public function test_organic_options_get_their_own_field(): void
+    {
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult(['organic_treatment' => 'Remove and burn infected leaves']));
+        $this->assertSame('Remove and burn infected leaves', $out['organic_options']);
+
+        $none = DiagnosisResultMapper::fromAiResult($this->aiResult(['organic_treatment' => 'No effective organic alternative']));
+        $this->assertNull($none['organic_options']);
+    }
+
     public function test_overlong_ai_text_is_capped_for_short_columns_so_the_insert_cannot_fail(): void
     {
         $long = str_repeat('Leaf ', 120); // 600 chars

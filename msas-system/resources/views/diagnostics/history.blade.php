@@ -294,6 +294,8 @@
                         @endif
                     </div>
 
+                    @include('diagnostics.partials.outcome-history')
+
                     {{-- Findings row: symptoms + cause + environment --}}
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         @if($diagnosis->symptoms_identified)

@@ -434,6 +434,7 @@ class DiagnoseApiController extends Controller
                 'fertilizerRecommendation' => $d->fertilizer_recommendation,
                 'recoveryPeriod' => $d->recovery_period,
                 'bestPractices' => $d->best_practices,
+                'organicOptions' => $d->organic_options,
                 'vetReferralAdvice' => $d->vet_referral_advice,
             ],
             'myFeedback' => $myFeedback ? ['rating' => $myFeedback->rating] : null,

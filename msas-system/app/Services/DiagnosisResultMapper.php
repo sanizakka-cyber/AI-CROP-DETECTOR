@@ -170,7 +170,18 @@ class DiagnosisResultMapper
             'alternative_findings'      => array_values((array) ($aiResult['alternative_findings'] ?? [])) ?: null,
             'what_cannot_be_confirmed'  => $aiResult['what_cannot_be_confirmed'] ?? null,
             'contract_version'          => $aiResult['contract_version'] ?? null,
+            // Kept in best_practices too (above) so older app builds still show it.
+            'organic_options'           => self::organicOptions($aiResult),
         ];
+    }
+
+    private static function organicOptions(array $aiResult): ?string
+    {
+        $opt = $aiResult['organic_treatment'] ?? $aiResult['biological_control'] ?? null;
+        if (!is_string($opt) || trim($opt) === '' || str_starts_with(strtolower($opt), 'no')) {
+            return null;
+        }
+        return $opt;
     }
 
     public const OUTCOMES = ['assessed', 'uncertain', 'poor_image', 'unsupported_subject'];

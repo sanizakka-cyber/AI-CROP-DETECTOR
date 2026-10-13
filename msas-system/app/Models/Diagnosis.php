@@ -62,6 +62,7 @@ class Diagnosis extends Model
         'what_cannot_be_confirmed',
         'contract_version',
         'client_scan_id',
+        'organic_options',
         // Optional research metadata (spec 6D / 7)
         'research_metadata',
         'consent_research_use',

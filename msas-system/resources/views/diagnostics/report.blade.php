@@ -387,6 +387,7 @@ a { color: inherit; text-decoration: none; }
 
     {{-- ── Detailed Findings ───────────────────────────────────────────── --}}
     <div class="sections">
+        @include('diagnostics.partials.outcome-report')
 
         {{-- Symptoms + Cause + Environment --}}
         @php $row1 = collect(['symptoms_identified','cause','environmental_factors'])->filter(fn($f)=>!empty($diagnosis->$f)); @endphp
