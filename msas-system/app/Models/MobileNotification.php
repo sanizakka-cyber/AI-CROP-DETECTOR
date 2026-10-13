@@ -40,6 +40,12 @@ class MobileNotification extends Model
      */
     public static function send(int $userId, string $title, string $body, string $type = 'system', array $data = [], string $icon = '🔔'): self
     {
+        // title/body are varchar(255). Callers embed AI-generated text (e.g.
+        // a diagnosis name), and an over-long value failed the insert, which
+        // turned a completed scan into HTTP 500. Cap here, once, for every caller.
+        $title = \Illuminate\Support\Str::limit($title, 250, '...');
+        $body  = \Illuminate\Support\Str::limit($body, 250, '...');
+
         $notif = self::create([
             'user_id' => $userId,
             'title'   => $title,
