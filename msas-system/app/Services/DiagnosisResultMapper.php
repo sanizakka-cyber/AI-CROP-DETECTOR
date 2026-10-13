@@ -32,7 +32,25 @@ class DiagnosisResultMapper
     /** Automated-acceptance line — mirrors Diagnosis::getConfidenceLabelAttribute()'s own band. Kept in one place so a future change to the threshold can't update one and miss the other. */
     public const CONFIDENCE_DECISION_THRESHOLD = 65.0;
 
+    /** varchar(255) columns filled from AI text; capped so an over-long value can never fail the insert. */
+    private const SHORT_COLUMNS = ['subject_name', 'scientific_name', 'detected_part', 'health_status', 'severity_level', 'urgency_level', 'image_quality'];
+
+    private static function capShortColumns(array $row): array
+    {
+        foreach (self::SHORT_COLUMNS as $col) {
+            if (isset($row[$col]) && is_string($row[$col]) && mb_strlen($row[$col]) > 255) {
+                $row[$col] = rtrim(mb_substr($row[$col], 0, 252)) . '...';
+            }
+        }
+        return $row;
+    }
+
     public static function fromAiResult(array $aiResult): array
+    {
+        return self::capShortColumns(self::mapAiResult($aiResult));
+    }
+
+    private static function mapAiResult(array $aiResult): array
     {
         // Fields with no matching column get folded into the explanation
         // text as extra context rather than silently dropped or forced

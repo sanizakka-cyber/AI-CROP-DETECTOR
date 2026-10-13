@@ -128,4 +128,18 @@ class DiagnosisOutcomeContractTest extends TestCase
         $this->assertSame('provider_error', $out['assessment_outcome']);
         $this->assertSame('needs_review', $out['status']);
     }
+
+    public function test_overlong_ai_text_is_capped_for_short_columns_so_the_insert_cannot_fail(): void
+    {
+        $long = str_repeat('Leaf ', 120); // 600 chars
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult([
+            'subject_name' => $long, 'health_status' => $long, 'detected_part' => $long,
+            'recovery_period' => $long, // TEXT column: kept whole
+        ]));
+
+        $this->assertLessThanOrEqual(255, mb_strlen($out['subject_name']));
+        $this->assertLessThanOrEqual(255, mb_strlen($out['health_status']));
+        $this->assertLessThanOrEqual(255, mb_strlen($out['detected_part']));
+        $this->assertSame($long, $out['recovery_period']);
+    }
 }

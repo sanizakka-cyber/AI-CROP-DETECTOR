@@ -202,4 +202,24 @@ class MobileScanOutcomeTest extends TestCase
         $this->scan($user)->assertOk();
         $this->assertSame(1, $svc->canScan($user)['used']);
     }
+
+    /** Live-verification regression: a long recovery text failed the PostgreSQL insert with HTTP 500. */
+    public function test_long_ai_text_fields_are_stored_without_error(): void
+    {
+        $long = str_repeat('Check the leaves every three days and remove any new lesions. ', 12); // ~750 chars
+        Http::fake([
+            '*/health' => Http::response(['status' => 'ok']),
+            '*/predict/crop' => Http::response([
+                'assessment_outcome' => 'assessed', 'disease' => 'Late blight ' . $long, 'confidence' => 80,
+                'confidence_valid' => true, 'recovery_period' => $long, 'health_status' => $long,
+                'subject_name' => $long, 'scientific_name' => $long, 'detected_part' => $long,
+            ]),
+        ]);
+
+        $this->scan($this->farmer())->assertOk();
+
+        $d = Diagnosis::first();
+        $this->assertSame($long, $d->recovery_period);
+        $this->assertLessThanOrEqual(255, mb_strlen($d->subject_name));
+    }
 }
