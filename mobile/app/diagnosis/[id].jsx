@@ -278,7 +278,7 @@ export default function DiagnosisDetailScreen() {
           <Card style={styles.outcomeCard}>
             <Text style={styles.cardTitle}>{isHausa ? 'Matsalolin hoto' : 'What was wrong with the photo'}</Text>
             {assessment.imageIssues.map(issue => (
-              <Text key={issue} style={styles.treatBody}>- {IMAGE_ISSUE_LABELS[issue] || issue.replace(/_/g, ' ')}</Text>
+              <Text key={issue} style={styles.treatBody}>- {(isHausa ? IMAGE_ISSUE_LABELS_HA : IMAGE_ISSUE_LABELS)[issue] || issue.replace(/_/g, ' ')}</Text>
             ))}
           </Card>
         )}
@@ -334,11 +334,11 @@ export default function DiagnosisDetailScreen() {
         <View style={styles.metaRow}>
           <SeverityBadge severity={result.severity} />
           <View style={styles.confBadge}>
-            <Text style={styles.confText}>{hasConfidence ? `${confidence}% confidence` : 'No score'}</Text>
+            <Text style={styles.confText}>{hasConfidence ? `${confidence}% ${isHausa ? 'tabbaci' : 'confidence'}` : (isHausa ? 'Babu maki' : 'No score')}</Text>
           </View>
           {imageQuality && (
             <View style={styles.qualityBadge}>
-              <Text style={styles.qualityText}>Image: {imageQuality}</Text>
+              <Text style={styles.qualityText}>{isHausa ? 'Hoto' : 'Image'}: {imageQuality}</Text>
             </View>
           )}
         </View>
@@ -694,6 +694,20 @@ const IMAGE_ISSUE_LABELS = {
   colour_distorted: 'Colours look distorted',
   screen_or_printed_photo: 'This looks like a photo of a screen or print',
   multiple_subjects: 'Several subjects are mixed in one photo',
+};
+
+const IMAGE_ISSUE_LABELS_HA = {
+  blurred: 'Hoton ya dushe',
+  too_dark: 'Hoton ya yi duhu sosai',
+  overexposed_or_glare: 'Haske ya yi yawa, ko akwai walƙiya a kan abin',
+  too_far: 'Abin da ake ɗauka ya yi nisa',
+  too_close: 'Ya yi kusa sosai: an yanke wani ɓangare',
+  subject_partly_visible: 'Wani ɓangare kawai na abin ake gani',
+  subject_not_visible: 'Ba a ganin abin da ake bincika',
+  low_resolution: 'Hoton bai da inganci sosai',
+  colour_distorted: 'Launuka sun canza',
+  screen_or_printed_photo: 'Kamar hoton allo ne ko na takarda',
+  multiple_subjects: 'Abubuwa da yawa sun haɗu a hoto ɗaya',
 };
 
 const styles = StyleSheet.create({

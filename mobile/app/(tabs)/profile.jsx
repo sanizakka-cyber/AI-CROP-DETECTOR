@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image, Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +25,25 @@ export default function ProfileScreen() {
 
   const isHa = language === 'ha';
 
+  // Same expert line the diagnosis screen uses (app/diagnosis/[id].jsx).
+  const EXPERT_PHONE = '08129582957';
+  const appVersion = Constants.expoConfig?.version;
+
   const MENU = [
+    {
+      icon: '📦',
+      labelEn: 'My Orders',
+      labelHa: 'Odar da na yi',
+      // Order history was only reachable from the screen shown right after
+      // a successful checkout.
+      action: () => router.push('/market/orders'),
+    },
+    {
+      icon: '🛒',
+      labelEn: 'My Cart',
+      labelHa: 'Kwandon sayayya',
+      action: () => router.push('/market/cart'),
+    },
     {
       icon: '🐄',
       labelEn: 'My Animals',
@@ -47,7 +66,15 @@ export default function ProfileScreen() {
       icon: '📞',
       labelEn: 'Contact Expert Vet',
       labelHa: 'Tuntubi Likita',
-      action: () => Alert.alert('FarmAI Vet Line', 'Call: +234 800 FARMAI VET'),
+      // Was "+234 800 FARMAI VET", which is not a dialable number.
+      action: () => Alert.alert(
+        isHa ? 'Layin Likitan Dabbobi' : 'MSAS Expert Line',
+        `${isHa ? 'Kira' : 'Call'}: ${EXPERT_PHONE}`,
+        [
+          { text: isHa ? 'Soke' : 'Cancel', style: 'cancel' },
+          { text: isHa ? 'Kira yanzu' : 'Call now', onPress: () => Linking.openURL(`tel:${EXPERT_PHONE}`) },
+        ],
+      ),
     },
     {
       icon: 'ℹ️',
@@ -55,7 +82,7 @@ export default function ProfileScreen() {
       labelHa: 'Acikin FarmAI',
       action: () =>
         Alert.alert(
-          'FarmAI v1.0',
+          appVersion ? `MSAS FarmAI v${appVersion}` : 'MSAS FarmAI',
           'AI-Powered Agricultural Health Platform for Katsina State, Nigeria.\n\nBuilt for smallholder farmers.'
         ),
     },

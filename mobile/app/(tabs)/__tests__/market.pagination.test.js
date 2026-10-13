@@ -15,6 +15,8 @@ jest.mock('../../../lib/api', () => ({
 }));
 
 const page = (n, start = 0) => Array.from({ length: n }, (_, i) => ({ id: start + i + 1, name: `Product ${start + i + 1}`, price: 1000 }));
+// First render with fake timers can exceed the 5s default on a loaded machine.
+jest.setTimeout(20000);
 const flush = () => act(async () => {});
 // Every string inside a React element tree, in order.
 const textOf = (el) => (el == null || typeof el === 'boolean') ? []

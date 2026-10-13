@@ -10,7 +10,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
   useLocalSearchParams: () => ({ id: '7' }),
 }));
-jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: 'en' } }) }));
+let mockLang = 'en';
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k) => k, i18n: { language: mockLang } }) }));
 jest.mock('../../../lib/api', () => ({
   diagnoseAPI: { get: jest.fn(), feedback: jest.fn() },
   marketplaceAPI: { recommended: jest.fn(() => Promise.resolve({ data: [] })) },
@@ -87,4 +88,11 @@ test('an empty treatment tab says nothing is recommended instead of rendering bl
   await show({ ...base, aiResult: { primaryDiagnosis: 'Late blight', confidence: 78 }, assessment: { outcome: 'assessed', imageQuality: 'good' } });
   expect(screen.getByText('Nothing is recommended here for this result.')).toBeTruthy();
   expect(screen.getByText('Image: good')).toBeTruthy();
+});
+
+test('photo issues and the score label are in Hausa when the app is in Hausa', async () => {
+  mockLang = 'ha';
+  await show({ ...base, assessment: { outcome: 'poor_image', imageIssues: ['blurred'], photoTips: [] } });
+  expect(screen.getByText('- Hoton ya dushe')).toBeTruthy();
+  mockLang = 'en';
 });
