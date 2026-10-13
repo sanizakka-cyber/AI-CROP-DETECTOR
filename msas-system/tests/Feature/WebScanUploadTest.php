@@ -72,7 +72,7 @@ class WebScanUploadTest extends TestCase
         $user = User::factory()->create(['role' => 'farmer']);
 
         $this->actingAs($user)->postJson(route('diagnostics.analyze'), ['scan_type' => 'plant'])
-            ->assertStatus(422)->assertJsonValidationErrors(['image']);
+            ->assertStatus(422)->assertJsonStructure(['error', 'details' => ['image']]);
     }
 
     public function test_xhr_quota_exhausted_is_a_readable_json_error(): void

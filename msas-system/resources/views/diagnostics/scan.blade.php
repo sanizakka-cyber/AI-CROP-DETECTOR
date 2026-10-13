@@ -180,7 +180,7 @@
                         <div id="upload-prompt">
                             <div class="mb-2 flex justify-center"><svg width="40" height="40" fill="none" stroke="#cbd5e1" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4m0 0L8 10m4-4v12"/></svg></div>
                             <h4 class="font-bold text-slate-600 mb-1 text-sm">{{ __('or drag & drop here') }}</h4>
-                            {{-- Was "JPG, PNG, HEIC — Max 5 MB": the server rejects HEIC and allows 10 MB. --}}
+                            {{-- Previously stated an image type the server rejects and a 5 MB limit; the server allows 10 MB. --}}
                             <p id="upload-hint" class="text-xs text-slate-400">{{ __('JPG, PNG or WebP, up to 10 MB') }}</p>
                         </div>
                         <div id="image-preview-container" class="hidden">
@@ -503,10 +503,11 @@
                 }
                 var msg = '{{ __("The scan could not be submitted. Please try again.") }}';
                 if (body) {
-                    var errs = body.errors || {};
+                    // This app renders validation as {error, details}; Laravel's default is {message, errors}.
+                    var errs = body.details || body.errors || {};
                     var first = Object.keys(errs)[0];
                     if (first && errs[first][0]) msg = errs[first][0];
-                    else if (body.message) msg = body.message;
+                    else if (body.message || body.error) msg = body.message || body.error;
                 }
                 setBusy(false);
                 showUploadError(msg);
