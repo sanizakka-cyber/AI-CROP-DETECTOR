@@ -345,7 +345,10 @@ const styles = StyleSheet.create({
   searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, color: Colors.white, fontSize: 14 },
 
-  catScroll: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingVertical: 10 },
+  // flexGrow/flexShrink 0: in this column layout the FlatList below takes
+  // the flexible space, and a shrinkable horizontal ScrollView was squeezed
+  // to its padding, so every category chip rendered as an empty sliver.
+  catScroll: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingVertical: 10, flexGrow: 0, flexShrink: 0 },
   catChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1.5, borderColor: '#E2E8F0', marginRight: 8, backgroundColor: Colors.white },
   catChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   catIcon: { fontSize: 14, marginRight: 4 },

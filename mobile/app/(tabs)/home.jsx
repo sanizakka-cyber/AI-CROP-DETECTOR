@@ -227,17 +227,23 @@ function StaffDashboard({ user, isHausa }) {
   );
 }
 
-function VetDashboard({ outbreaks, isHausa }) {
+function VetDashboard({ outbreaks, outbreaksError, isHausa }) {
   return (
     <>
       <SectionHeader title="🩺 Veterinary Portal" />
       <View style={styles.statsGrid}>
-        <StatCard icon="📋" value={outbreaks.length} label="Active Alerts"  color="#DC2626" />
+        <StatCard icon="📋" value={outbreaksError ? '—' : outbreaks.length} label="Active Alerts"  color="#DC2626" />
         <StatCard icon="🌍" value="Katsina"          label="Coverage Area"  color={Colors.primary} />
         <StatCard icon="⚕️" value="Ready"            label="Status"         color="#16A34A" />
       </View>
       <SectionHeader title="🌍 Regional Outbreak Map" />
-      {outbreaks.length === 0 ? (
+      {outbreaksError ? (
+        // Never "No active outbreaks" when the data could not be loaded:
+        // that reassurance is exactly what a vet must not see falsely.
+        <View style={styles.insightsCard}>
+          <Text style={styles.insightItem}>{outbreaksError}</Text>
+        </View>
+      ) : outbreaks.length === 0 ? (
         <View style={styles.insightsCard}>
           <Text style={styles.insightItem}>✅ No active outbreaks in your region.</Text>
         </View>
@@ -273,6 +279,11 @@ export default function HomeScreen() {
   // outbreaks in your region", and admins saw "Loading platform data…"
   // forever. A failure now replaces the role dashboard with an error.
   const [dashError, setDashError]     = useState(null);
+  // /analytics/outbreaks is restricted server-side to admin/analyst/
+  // government/research roles, so a farmer or vet gets 403. For farmers it
+  // is a secondary panel (hidden on failure); for vets it is the main data,
+  // so its own message replaces the panel instead of the whole dashboard.
+  const [outbreaksError, setOutbreaksError] = useState(null);
 
   const load = useCallback(async () => {
     setDashError(null);
@@ -293,15 +304,27 @@ export default function HomeScreen() {
         const res = await analyticsAPI.adminSummary();
         setAdminData(res.summary);
       } else if (role === 'vet' || role === 'agronomist') {
-        const res = await analyticsAPI.outbreaks();
-        setOutbreaks(res.outbreaks || []);
+        try {
+          const res = await analyticsAPI.outbreaks();
+          setOutbreaks(res.outbreaks || []);
+          setOutbreaksError(null);
+        } catch (e) {
+          if (e?.status !== 403) throw e; // real failures still show the dashboard error
+          setOutbreaks([]);
+          setOutbreaksError(isHausa
+            ? 'Bayanan annoba ba su samuwa ga matsayinka a yanzu.'
+            : 'Outbreak data is not available for your account role yet.');
+        }
       } else {
-        const [s, o] = await Promise.all([
+        // The farmer's own summary is required; regional outbreaks are an
+        // optional extra and must not take the whole dashboard down.
+        const [s, o] = await Promise.allSettled([
           analyticsAPI.summary(),
           analyticsAPI.outbreaks(),
         ]);
-        setSummary(s.summary);
-        setOutbreaks(o.outbreaks || []);
+        if (s.status === 'rejected') throw s.reason;
+        setSummary(s.value.summary);
+        setOutbreaks(o.status === 'fulfilled' ? (o.value.outbreaks || []) : []);
         try {
           const c = await analyticsAPI.insurability();
           setCredit(c);
@@ -311,7 +334,7 @@ export default function HomeScreen() {
       setDashError(e?.message || 'Could not load your farm data. Check your connection and try again.');
     }
     finally { setLoading(false); }
-  }, [user]);
+  }, [user, isHausa]);
 
   useEffect(() => { load(); }, [load]);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
@@ -385,7 +408,7 @@ export default function HomeScreen() {
 
           {/* ── Role-specific dashboard (hidden on error: its empty values would read as real) ── */}
           {!dashError && (user?.role === 'admin' || user?.role === 'ceo') && <AdminDashboard data={adminData} isHausa={isHausa} />}
-          {!dashError && (user?.role === 'vet' || user?.role === 'agronomist') && <VetDashboard outbreaks={outbreaks} isHausa={isHausa} />}
+          {!dashError && (user?.role === 'vet' || user?.role === 'agronomist') && <VetDashboard outbreaks={outbreaks} outbreaksError={outbreaksError} isHausa={isHausa} />}
           {!dashError && (user?.role === 'farmer' || !user?.role) && (
             <FarmerDashboard summary={summary} outbreaks={outbreaks} credit={credit} router={router} isHausa={isHausa} />
           )}

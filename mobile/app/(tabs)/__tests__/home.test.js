@@ -63,3 +63,37 @@ test('weather/notification failure alone does not block the dashboard', async ()
   await flush();
   expect(screen.queryByText('Dashboard unavailable')).toBeNull();
 });
+
+// Found on-device in Phase 9: /analytics/outbreaks returns 403 for farmers
+// and vets (server allows admin/analyst/government/research only).
+const forbidden = () => Object.assign(new Error('Forbidden'), { status: 403 });
+
+test('farmer: a forbidden outbreaks call does not take down the dashboard', async () => {
+  mockUser = { role: 'farmer', name: 'Musa' };
+  analyticsAPI.summary.mockResolvedValueOnce({ summary: { total: 7, processed: 5, crop: 4, livestock: 3, recent: [] } });
+  analyticsAPI.outbreaks.mockRejectedValueOnce(forbidden());
+  analyticsAPI.insurability.mockResolvedValueOnce(null);
+  render(<HomeScreen />);
+  await flush();
+  expect(screen.queryByText('Dashboard unavailable')).toBeNull();
+  expect(screen.getAllByText('7').length).toBeGreaterThan(0);
+});
+
+test('farmer: a failed summary still shows the dashboard error', async () => {
+  mockUser = { role: 'farmer', name: 'Musa' };
+  analyticsAPI.summary.mockRejectedValueOnce(new Error('MSAS could not be reached.'));
+  analyticsAPI.outbreaks.mockResolvedValueOnce({ outbreaks: [] });
+  render(<HomeScreen />);
+  await flush();
+  expect(screen.getByText('Dashboard unavailable')).toBeTruthy();
+});
+
+test('vet: a forbidden outbreaks call says so instead of "No active outbreaks"', async () => {
+  mockUser = { role: 'vet', name: 'Amina' };
+  analyticsAPI.outbreaks.mockRejectedValueOnce(forbidden());
+  render(<HomeScreen />);
+  await flush();
+  expect(screen.getByText('Outbreak data is not available for your account role yet.')).toBeTruthy();
+  expect(screen.queryByText(/No active outbreaks/)).toBeNull();
+  expect(screen.queryByText('Dashboard unavailable')).toBeNull();
+});
