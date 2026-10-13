@@ -90,6 +90,10 @@ class DiagnosticController extends Controller
         $scanCheck = app(\App\Services\SubscriptionLimitService::class)->canScan(auth()->user());
         if (!$scanCheck['allowed']) {
             $limit = $scanCheck['limit'];
+            if ($request->expectsJson()) {
+                $msg = "You have used all {$limit} AI scans for this month. Upgrade your plan to continue.";
+                return response()->json(['message' => $msg, 'errors' => ['image' => [$msg]], 'upgrade_url' => route('subscription.plans')], 403);
+            }
             return back()->withErrors(['image' => "You have used all {$limit} AI scans for this month. <a href=\"" . route('subscription.plans') . "\" class=\"underline font-semibold\">Upgrade your plan to continue →</a>"]);
         }
 
@@ -280,6 +284,14 @@ class DiagnosticController extends Controller
                 ? 'Scan complete! Your full AI diagnosis is ready — view it below.'
                 : 'Image saved. Our experts will review your scan and respond shortly.',
         };
+
+        // The scan form uploads with XMLHttpRequest (for real upload progress).
+        // Answer it with JSON instead of a redirect: a redirect would be
+        // followed inside the XHR and consume the flash message unseen.
+        if ($request->expectsJson()) {
+            session()->flash('success', $message);
+            return response()->json(['redirect' => route('diagnostics.history'), 'diagnosis_id' => $diagnosis->id, 'message' => $message]);
+        }
 
         return redirect()->route('diagnostics.history')->with('success', $message);
     }

@@ -171,7 +171,8 @@
 
                     {{-- Hidden file input — capture attribute toggled by JS --}}
                     <input type="file" name="image" id="file-upload" class="hidden"
-                           accept="image/*" required onchange="previewImage(event)">
+                           accept="image/jpeg,image/png,image/webp" required onchange="previewImage(event)"
+                           aria-describedby="upload-hint upload-error">
 
                     {{-- Drop zone for desktop drag-and-drop --}}
                     <div id="drop-area" class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 transition cursor-pointer"
@@ -179,15 +180,18 @@
                         <div id="upload-prompt">
                             <div class="mb-2 flex justify-center"><svg width="40" height="40" fill="none" stroke="#cbd5e1" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4m0 0L8 10m4-4v12"/></svg></div>
                             <h4 class="font-bold text-slate-600 mb-1 text-sm">{{ __('or drag & drop here') }}</h4>
-                            <p class="text-xs text-slate-400">{{ __('JPG, PNG, HEIC — Max 5 MB') }}</p>
+                            {{-- Was "JPG, PNG, HEIC — Max 5 MB": the server rejects HEIC and allows 10 MB. --}}
+                            <p id="upload-hint" class="text-xs text-slate-400">{{ __('JPG, PNG or WebP, up to 10 MB') }}</p>
                         </div>
                         <div id="image-preview-container" class="hidden">
                             <img id="image-preview" src="#" alt="Preview" class="max-h-64 mx-auto rounded-lg shadow-md">
                             <p class="text-emerald-600 font-bold mt-3 text-sm flex items-center justify-center gap-1"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> {{ __('Image Ready') }}</p>
+                            <p id="image-file-name" class="text-xs text-slate-500 mt-1 break-all"></p>
                             <button type="button" onclick="resetUpload(); event.stopPropagation();"
                                 class="mt-2 text-xs text-red-500 hover:underline relative z-10">{{ __('Remove & try again') }}</button>
                         </div>
                     </div>
+                    <p id="upload-error" class="text-red-600 text-xs mt-2 font-semibold hidden" role="alert"></p>
                     @error('image')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -268,9 +272,10 @@
                     <div class="inline-block w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <h4 class="font-bold text-lg mb-1">{{ __('AI Engine Analysing...') }}</h4>
                     <p class="text-sm text-slate-400">{{ __('Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.') }}</p>
-                    <div class="w-full bg-slate-700 rounded-full h-2 mt-4 overflow-hidden">
-                        <div class="bg-emerald-500 h-2 rounded-full w-0 animate-[fillProgress_30s_ease-in-out_forwards]"></div>
+                    <div class="w-full bg-slate-700 rounded-full h-2 mt-4 overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="upload-progress-bar">
+                        <div id="upload-progress-fill" class="bg-emerald-500 h-2 rounded-full transition-all" style="width:0%"></div>
                     </div>
+                    <p id="upload-progress-text" class="text-xs text-slate-400 mt-2">{{ __('Uploading photo…') }}</p>
                 </div>
 
                 <div class="text-right">
@@ -394,7 +399,9 @@
             e.preventDefault();
             da.classList.remove('border-emerald-400', 'bg-emerald-50');
             var files = e.dataTransfer && e.dataTransfer.files;
-            if (files && files[0] && files[0].type.startsWith('image/')) {
+            var dropProblem = files && files[0] ? validateFile(files[0]) : '{{ __("Please choose a photo.") }}';
+            if (dropProblem) { showUploadError(dropProblem); return; }
+            if (files && files[0]) {
                 try {
                     var dt = new DataTransfer();
                     dt.items.add(files[0]);
@@ -409,9 +416,28 @@
         });
     })();
 
+    var ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    var MAX_BYTES = 10 * 1024 * 1024; // matches the server's max:10240 KB
+    function showUploadError(msg) {
+        var el = document.getElementById('upload-error');
+        el.textContent = msg || '';
+        el.classList.toggle('hidden', !msg);
+    }
+    function validateFile(file) {
+        if (!file) return '{{ __("Please choose a photo.") }}';
+        if (ACCEPTED_TYPES.indexOf(file.type) === -1) return '{{ __("This file type is not supported. Choose a JPG, PNG or WebP photo.") }}';
+        if (file.size > MAX_BYTES) return '{{ __("This photo is larger than 10 MB. Choose a smaller photo.") }}';
+        return null;
+    }
+
     function previewImage(event) {
         var input = event.target;
         if (input.files && input.files[0]) {
+            var problem = validateFile(input.files[0]);
+            if (problem) { resetUpload(); showUploadError(problem); return; }
+            showUploadError(null);
+            var f = input.files[0];
+            document.getElementById('image-file-name').textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(1) + ' MB)';
             var reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('image-preview').src = e.target.result;
@@ -426,17 +452,72 @@
         input.value = '';
         input.removeAttribute('capture');
         document.getElementById('image-preview').src = '#';
+        document.getElementById('image-file-name').textContent = '';
         document.getElementById('image-preview-container').classList.add('hidden');
         document.getElementById('upload-prompt').classList.remove('hidden');
     }
-    document.getElementById('scanForm').addEventListener('submit', function() {
-        if (document.getElementById('file-upload').files.length > 0) {
-            document.getElementById('scanning-progress').classList.remove('hidden');
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').classList.add('opacity-50', 'cursor-not-allowed');
-            document.getElementById('submitBtn').innerHTML = 'Analysing...';
+    (function() {
+        var form = document.getElementById('scanForm');
+        var btn = document.getElementById('submitBtn');
+        var btnHtml = btn.innerHTML;
+        var submitting = false;
+        function setBusy(busy) {
+            submitting = busy;
+            btn.disabled = busy;
+            btn.classList.toggle('opacity-50', busy);
+            btn.classList.toggle('cursor-not-allowed', busy);
+            btn.innerHTML = busy ? '{{ __("Analysing...") }}' : btnHtml;
+            document.getElementById('scanning-progress').classList.toggle('hidden', !busy);
         }
-    });
+        function setProgress(pct, text) {
+            document.getElementById('upload-progress-fill').style.width = pct + '%';
+            document.getElementById('upload-progress-bar').setAttribute('aria-valuenow', String(pct));
+            if (text) document.getElementById('upload-progress-text').textContent = text;
+        }
+        form.addEventListener('submit', function(e) {
+            var input = document.getElementById('file-upload');
+            var problem = validateFile(input.files[0]);
+            if (problem) { e.preventDefault(); showUploadError(problem); return; }
+            if (submitting) { e.preventDefault(); return; }       // no duplicate scans
+            if (!window.XMLHttpRequest || !window.FormData) { setBusy(true); return; } // native post fallback
+            e.preventDefault();
+            showUploadError(null);
+            setBusy(true);
+            setProgress(0, '{{ __("Uploading photo…") }}');
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', form.action);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.upload.onprogress = function(ev) {
+                if (ev.lengthComputable) {
+                    var pct = Math.round(ev.loaded / ev.total * 100);
+                    setProgress(pct, pct < 100 ? '{{ __("Uploading photo…") }} ' + pct + '%' : '{{ __("Photo uploaded. The AI is analysing it, this can take 15–30 seconds.") }}');
+                }
+            };
+            xhr.onload = function() {
+                var body = null;
+                try { body = JSON.parse(xhr.responseText); } catch (err) {}
+                if (xhr.status >= 200 && xhr.status < 300 && body && body.redirect) {
+                    window.location.href = body.redirect;   // result message was flashed server-side
+                    return;
+                }
+                var msg = '{{ __("The scan could not be submitted. Please try again.") }}';
+                if (body) {
+                    var errs = body.errors || {};
+                    var first = Object.keys(errs)[0];
+                    if (first && errs[first][0]) msg = errs[first][0];
+                    else if (body.message) msg = body.message;
+                }
+                setBusy(false);
+                showUploadError(msg);
+            };
+            xhr.onerror = function() {
+                setBusy(false);
+                showUploadError('{{ __("Connection lost while uploading. Check your internet and try again.") }}');
+            };
+            xhr.send(new FormData(form));
+        });
+    })();
     </script>
 
     <style>
