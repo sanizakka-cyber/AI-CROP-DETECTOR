@@ -53,6 +53,15 @@ class Diagnosis extends Model
         'decision_threshold',
         'validation_status',
         'generated_by',
+        // Phase 11 canonical contract: which recoverable state this result is in
+        'assessment_outcome',
+        'image_quality',
+        'image_issues',
+        'photo_tips',
+        'alternative_findings',
+        'what_cannot_be_confirmed',
+        'contract_version',
+        'client_scan_id',
         // Optional research metadata (spec 6D / 7)
         'research_metadata',
         'consent_research_use',
@@ -63,6 +72,9 @@ class Diagnosis extends Model
         'decision_threshold'    => 'float',
         'research_metadata'     => 'array',
         'consent_research_use'  => 'boolean',
+        'image_issues'          => 'array',
+        'photo_tips'            => 'array',
+        'alternative_findings'  => 'array',
     ];
 
     /**
@@ -134,6 +146,17 @@ class Diagnosis extends Model
         }
         if ($this->status === 'pending') {
             return 'Pending Review';
+        }
+        // Phase 11 outcomes say what happened more precisely than a score band.
+        $outcomeLabel = match ($this->assessment_outcome) {
+            'poor_image'          => 'Retake Photo',
+            'unsupported_subject' => 'Wrong Subject',
+            'uncertain'           => 'Inconclusive',
+            'provider_error'      => 'Failed',
+            default               => null,
+        };
+        if ($outcomeLabel !== null) {
+            return $outcomeLabel;
         }
         if (in_array($this->status, ['reviewed', 'confirmed'], true)) {
             return ($this->confidence_score !== null && $this->confidence_score < 65)

@@ -112,8 +112,9 @@ class DiagnosticController extends Controller
             default  => "{$baseUrl}/predict/livestock",
         };
 
-        $aiResult      = null;
-        $failureReason = null;
+        $aiResult        = null;
+        $failureReason   = null;
+        $engineRejection = null;
 
         if (!file_exists($fullPath) || !is_readable($fullPath)) {
             $failureReason = "File unreadable: {$fullPath}";
@@ -205,6 +206,7 @@ class DiagnosticController extends Controller
                         $failureReason = "200 OK but non-JSON: " . substr($rbody, 0, 200);
                     }
                 } else {
+                    $engineRejection = DiagnosisResultMapper::fromEngineRejection($status, json_decode($rbody, true));
                     $failureReason = "HTTP {$status}: " . substr($rbody, 0, 300);
                     Log::warning('[AI] non-200 response', ['status' => $status, 'body' => substr($rbody, 0, 300)]);
                 }
@@ -246,6 +248,11 @@ class DiagnosticController extends Controller
         // ── 6. Build diagnosis record ─────────────────────────────────────────
         if ($aiResult) {
             $diagnosisData = DiagnosisResultMapper::fromAiResult($aiResult);
+        } elseif (!empty($engineRejection)) {
+            // The engine read the upload and rejected the image itself: a
+            // "retake photo" result, not an AI outage (Phase 11).
+            $diagnosisData = $engineRejection;
+            $aiResult = $engineRejection;
         } else {
             Log::warning('AI scan failed, falling back to expert review', ['reason' => $failureReason]);
             $diagnosisData = DiagnosisResultMapper::aiUnavailableFallback();
@@ -264,9 +271,15 @@ class DiagnosticController extends Controller
 
         \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
 
-        $message = $aiResult
-            ? 'Scan complete! Your full AI diagnosis is ready — view it below.'
-            : 'Image saved. Our experts will review your scan and respond shortly.';
+        $message = match ($diagnosis->assessment_outcome) {
+            'poor_image'          => 'We could not assess this photo. See the tips below and retake it.',
+            'unsupported_subject' => 'This photo does not show what this scan type needs. See the tips below.',
+            'uncertain'           => 'Scan complete, but the result is inconclusive. See what to check next below.',
+            'provider_error'      => 'Image saved. Our experts will review your scan and respond shortly.',
+            default               => $aiResult
+                ? 'Scan complete! Your full AI diagnosis is ready — view it below.'
+                : 'Image saved. Our experts will review your scan and respond shortly.',
+        };
 
         return redirect()->route('diagnostics.history')->with('success', $message);
     }

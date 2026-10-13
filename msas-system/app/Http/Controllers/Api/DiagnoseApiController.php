@@ -138,8 +138,34 @@ class DiagnoseApiController extends Controller
         ];
     }
 
-    public function crop(Request $request): JsonResponse
+    /**
+     * Phase 11: one scan flow for crop/livestock/soil/pest (previously four
+     * near-identical copies). Differences from before, all deliberate:
+     *  - The photo is stored BEFORE the engine call, so a failed or rejected
+     *    scan still keeps the farmer's image (it used to be discarded).
+     *  - An engine 4xx (it read the request and rejected the image) is stored
+     *    as a "retake photo" result, not as "AI engine unavailable".
+     *  - The request locale is forwarded, as the web scan flow already did.
+     *  - A repeated submission carrying the same client_scan_id returns the
+     *    scan already created, so a retry after a network timeout cannot
+     *    create (and count) a duplicate.
+     */
+    private function runScan(Request $request, string $type, string $endpoint, array $rules, array $textFields, array $notif): JsonResponse
     {
+        $this->normalizeEmptyLocationStrings($request);
+        $request->validate(array_merge($rules, [
+            'client_scan_id' => ['sometimes', 'nullable', 'string', 'max:64'],
+        ], $this->locationRules()));
+
+        if ($request->filled('client_scan_id')) {
+            $existing = Diagnosis::where('user_id', $request->user()->id)
+                ->where('client_scan_id', $request->client_scan_id)
+                ->first();
+            if ($existing) {
+                return response()->json(['diagnosisId' => $existing->id, 'scan_ref' => $existing->scan_ref, 'duplicate' => true]);
+            }
+        }
+
         $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
         if (! $scanCheck['allowed']) {
             return response()->json([
@@ -148,221 +174,101 @@ class DiagnoseApiController extends Controller
             ], 403);
         }
 
-        // cropType/cropPart are optional hints, not requirements — matches
-        // the web scan form exactly (DiagnosticController::analyze() only
-        // sends them when non-empty via array_filter). The AI engine is
-        // fully capable of identifying the crop and plant part on its own;
-        // forcing a selection here was a mobile-only restriction the web
-        // flow never had.
-        $this->normalizeEmptyLocationStrings($request);
-        $request->validate(array_merge([
-            'cropType' => ['sometimes', 'nullable', 'string'],
-            'cropPart' => ['sometimes', 'nullable', 'string'],
-            'images'   => ['required', 'array', 'min:1'],
-            'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', new NotEmptyFile(), 'max:10240'],
-        ], $this->locationRules()));
+        $files     = $request->file('images', []);
+        $imagePath = null;
+        $fullPath  = null;
+        if (count($files) > 0) {
+            $imagePath = $files[0]->store('diagnoses', 'public');
+            $fullPath  = Storage::disk('public')->path($imagePath);
+        }
 
         $this->warmAiEngine();
 
         try {
-            $pending = $this->aiHttp();
-            if ($request->filled('cropType')) $pending = $pending->attach('cropType', $request->cropType);
-            if ($request->filled('cropPart')) $pending = $pending->attach('cropPart', $request->cropPart);
-
-            foreach ($request->file('images', []) as $i => $file) {
+            $pending = $this->aiHttp()->attach('language', app()->getLocale());
+            foreach ($textFields as $field => $value) {
+                if ($value !== null && $value !== '') {
+                    $pending = $pending->attach($field, (string) $value);
+                }
+            }
+            foreach ($files as $i => $file) {
                 $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
             }
-
-            $response = $pending->post($this->aiBase() . '/predict/crop');
+            $response = $pending->post($this->aiBase() . $endpoint);
         } catch (\Exception $e) {
-            Log::error('Mobile crop scan: AI engine exception', ['error' => $e->getMessage()]);
-            return $this->storeUnavailable($request, 'plant', null, '🔬 Crop Scan — Expert Review Needed');
+            Log::error("Mobile {$type} scan: AI engine exception", ['error' => $e->getMessage()]);
+            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
         }
 
         if (! $response->successful()) {
-            Log::warning('Mobile crop scan: AI engine non-2xx', ['status' => $response->status()]);
-            return $this->storeUnavailable($request, 'plant', null, '🔬 Crop Scan — Expert Review Needed');
+            Log::warning("Mobile {$type} scan: AI engine non-2xx", ['status' => $response->status()]);
+            $rejection = DiagnosisResultMapper::fromEngineRejection($response->status(), $response->json());
+            if ($rejection !== null) {
+                return $this->finishScan($request, $type, null, $imagePath, $fullPath, $notif['ready'], $rejection);
+            }
+            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
         }
 
         $aiResult = $response->json();
-
-        $imagePath = null;
-        $fullPath  = null;
-        if ($request->hasFile('images')) {
-            $file      = $request->file('images')[0];
-            $imagePath = $file->store('diagnoses', 'public');
-            $fullPath  = Storage::disk('public')->path($imagePath);
+        if (! is_array($aiResult)) {
+            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
         }
 
-        return $this->finishScan($request, 'plant', $aiResult, $imagePath, $fullPath, '🔬 Crop Scan Result Ready');
+        return $this->finishScan($request, $type, $aiResult, $imagePath, $fullPath, $notif['ready']);
+    }
+
+    private function imageRules(bool $required = true): array
+    {
+        return [
+            'images'   => $required ? ['required', 'array', 'min:1', 'max:5'] : ['sometimes', 'array', 'max:5'],
+            'images.*' => ['file', 'image', 'mimes:jpeg,jpg,png,webp', new NotEmptyFile(), 'max:10240'],
+        ];
+    }
+
+    public function crop(Request $request): JsonResponse
+    {
+        // cropType/cropPart are optional hints, matching the web scan form.
+        return $this->runScan($request, 'plant', '/predict/crop', array_merge([
+            'cropType' => ['sometimes', 'nullable', 'string'],
+            'cropPart' => ['sometimes', 'nullable', 'string'],
+        ], $this->imageRules()), [
+            'cropType' => $request->input('cropType'),
+            'cropPart' => $request->input('cropPart'),
+        ], ['ready' => '🔬 Crop Scan Result Ready', 'failed' => '🔬 Crop Scan — Expert Review Needed']);
     }
 
     public function livestock(Request $request): JsonResponse
     {
-        $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
-        if (! $scanCheck['allowed']) {
-            return response()->json([
-                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
-                'scan_limit' => $scanCheck,
-            ], 403);
-        }
-
-        $this->normalizeEmptyLocationStrings($request);
-        $request->validate(array_merge([
+        // No placeholder image any more: with no photo the engine returns an
+        // honest "add a photo" result instead of being made to guess.
+        return $this->runScan($request, 'animal', '/predict/livestock', array_merge([
             'animalType'     => ['required', 'string'],
             'assessmentType' => ['required', 'string'],
-            'images'         => ['sometimes', 'array', 'max:5'],
-            // Phase 7: was max:5120 (5MB) -- the only one of the four scan
-            // endpoints inconsistent with the other three's 10240 (10MB).
-            // No documented reason for livestock specifically to have a
-            // tighter per-image limit; standardized to match.
-            'images.*'       => ['file', 'image', 'mimes:jpeg,jpg,png,webp', new NotEmptyFile(), 'max:10240'],
-        ], $this->locationRules()));
-
-        $this->warmAiEngine();
-
-        try {
-            $pending = $this->aiHttp()
-                ->attach('animalType', $request->animalType)
-                ->attach('assessmentType', $request->assessmentType);
-
-            $files = $request->file('images', []);
-
-            if (count($files) > 0) {
-                foreach ($files as $i => $file) {
-                    $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
-                }
-            } else {
-                $placeholder = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
-                $pending = $pending->attach('images', $placeholder, 'placeholder.png');
-            }
-
-            $response = $pending->post($this->aiBase() . '/predict/livestock');
-        } catch (\Exception $e) {
-            Log::error('Mobile livestock scan: AI engine exception', ['error' => $e->getMessage()]);
-            return $this->storeUnavailable($request, 'animal', null, '🐄 Livestock Scan — Expert Review Needed');
-        }
-
-        if (! $response->successful()) {
-            Log::warning('Mobile livestock scan: AI engine non-2xx', ['status' => $response->status()]);
-            return $this->storeUnavailable($request, 'animal', null, '🐄 Livestock Scan — Expert Review Needed');
-        }
-
-        $aiResult = $response->json();
-
-        $imagePath = null;
-        $fullPath  = null;
-        if ($request->hasFile('images')) {
-            $file      = $request->file('images')[0];
-            $imagePath = $file->store('diagnoses', 'public');
-            $fullPath  = Storage::disk('public')->path($imagePath);
-        }
-
-        return $this->finishScan($request, 'animal', $aiResult, $imagePath, $fullPath, '🐄 Livestock Scan Result Ready');
+        ], $this->imageRules(false)), [
+            'animalType'     => $request->input('animalType'),
+            'assessmentType' => $request->input('assessmentType'),
+            'symptoms'       => $request->input('symptoms'),
+        ], ['ready' => '🐄 Livestock Scan Result Ready', 'failed' => '🐄 Livestock Scan — Expert Review Needed']);
     }
 
     public function soil(Request $request): JsonResponse
     {
-        $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
-        if (! $scanCheck['allowed']) {
-            return response()->json([
-                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
-                'scan_limit' => $scanCheck,
-            ], 403);
-        }
-
-        $this->normalizeEmptyLocationStrings($request);
-        $request->validate(array_merge([
+        return $this->runScan($request, 'soil', '/predict/soil', array_merge([
             'soilContext' => ['sometimes', 'nullable', 'string', 'max:300'],
-            'images'      => ['required', 'array', 'min:1'],
-            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', new NotEmptyFile(), 'max:10240'],
-        ], $this->locationRules()));
-
-        $this->warmAiEngine();
-
-        try {
-            $pending = $this->aiHttp();
-            if ($request->filled('soilContext')) $pending = $pending->attach('soilContext', $request->soilContext);
-
-            foreach ($request->file('images', []) as $i => $file) {
-                $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
-            }
-
-            $response = $pending->post($this->aiBase() . '/predict/soil');
-        } catch (\Exception $e) {
-            Log::error('Mobile soil scan: AI engine exception', ['error' => $e->getMessage()]);
-            return $this->storeUnavailable($request, 'soil', null, '🧪 Soil Scan — Expert Review Needed');
-        }
-
-        if (! $response->successful()) {
-            Log::warning('Mobile soil scan: AI engine non-2xx', ['status' => $response->status()]);
-            return $this->storeUnavailable($request, 'soil', null, '🧪 Soil Scan — Expert Review Needed');
-        }
-
-        $aiResult = $response->json();
-
-        $imagePath = null;
-        $fullPath  = null;
-        if ($request->hasFile('images')) {
-            $file      = $request->file('images')[0];
-            $imagePath = $file->store('diagnoses', 'public');
-            $fullPath  = Storage::disk('public')->path($imagePath);
-        }
-
-        return $this->finishScan($request, 'soil', $aiResult, $imagePath, $fullPath, '🧪 Soil Scan Result Ready');
+        ], $this->imageRules()), [
+            'soilContext' => $request->input('soilContext'),
+        ], ['ready' => '🧪 Soil Scan Result Ready', 'failed' => '🧪 Soil Scan — Expert Review Needed']);
     }
 
     public function pest(Request $request): JsonResponse
     {
-        $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
-        if (! $scanCheck['allowed']) {
-            return response()->json([
-                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
-                'scan_limit' => $scanCheck,
-            ], 403);
-        }
-
-        $this->normalizeEmptyLocationStrings($request);
-        $request->validate(array_merge([
-            'cropType'    => ['sometimes', 'nullable', 'string'],
-            'location'    => ['sometimes', 'nullable', 'string', 'max:100'],
-            'images'      => ['required', 'array', 'min:1'],
-            'images.*'    => ['file', 'image', 'mimes:jpeg,jpg,png,webp', new NotEmptyFile(), 'max:10240'],
-        ], $this->locationRules()));
-
-        $this->warmAiEngine();
-
-        try {
-            $pending = $this->aiHttp();
-            if ($request->filled('cropType')) $pending = $pending->attach('cropType', $request->cropType);
-            if ($request->filled('location')) $pending = $pending->attach('location', $request->location);
-
-            foreach ($request->file('images', []) as $i => $file) {
-                $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
-            }
-
-            $response = $pending->post($this->aiBase() . '/predict/pest');
-        } catch (\Exception $e) {
-            Log::error('Mobile pest scan: AI engine exception', ['error' => $e->getMessage()]);
-            return $this->storeUnavailable($request, 'pest', null, '🔍 Pest ID — Expert Review Needed');
-        }
-
-        if (! $response->successful()) {
-            Log::warning('Mobile pest scan: AI engine non-2xx', ['status' => $response->status()]);
-            return $this->storeUnavailable($request, 'pest', null, '🔍 Pest ID — Expert Review Needed');
-        }
-
-        $aiResult = $response->json();
-
-        $imagePath = null;
-        $fullPath  = null;
-        if ($request->hasFile('images')) {
-            $file      = $request->file('images')[0];
-            $imagePath = $file->store('diagnoses', 'public');
-            $fullPath  = Storage::disk('public')->path($imagePath);
-        }
-
-        return $this->finishScan($request, 'pest', $aiResult, $imagePath, $fullPath, '🔍 Pest ID Result Ready');
+        return $this->runScan($request, 'pest', '/predict/pest', array_merge([
+            'cropType' => ['sometimes', 'nullable', 'string'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:100'],
+        ], $this->imageRules()), [
+            'cropType' => $request->input('cropType'),
+            'location' => $request->input('location'),
+        ], ['ready' => '🔍 Pest ID Result Ready', 'failed' => '🔍 Pest ID — Expert Review Needed']);
     }
 
     /**
@@ -371,9 +277,9 @@ class DiagnoseApiController extends Controller
      * immediately-renderable payload, and notifies the user. Replaces the
      * narrow 6-field version each endpoint previously built independently.
      */
-    private function finishScan(Request $request, string $type, array $aiResult, ?string $imagePath, ?string $fullPath, string $notifTitle): JsonResponse
+    private function finishScan(Request $request, string $type, ?array $aiResult, ?string $imagePath, ?string $fullPath, string $notifTitle, ?array $mapped = null): JsonResponse
     {
-        $data = DiagnosisResultMapper::fromAiResult($aiResult);
+        $data = $mapped ?? DiagnosisResultMapper::fromAiResult($aiResult ?? []);
         $thumbnail = $fullPath ? $this->makeThumbnail($fullPath) : null;
 
         $diagnosis = Diagnosis::create(array_merge($data, [
@@ -383,6 +289,7 @@ class DiagnoseApiController extends Controller
             'image_path'      => $imagePath,
             'image_thumbnail' => $thumbnail,
             'language'        => app()->getLocale(),
+            'client_scan_id'  => $request->input('client_scan_id') ?: null,
         ]));
 
         CollectionLocation::createFromRequest($request, $diagnosis);
@@ -403,14 +310,16 @@ class DiagnoseApiController extends Controller
     }
 
     /** The AI genuinely didn't respond — still creates a real, honestly-labeled record instead of silently failing the request with no trace of the attempted scan. */
-    private function storeUnavailable(Request $request, string $type, ?string $imagePath, string $notifTitle): JsonResponse
+    private function storeUnavailable(Request $request, string $type, ?string $imagePath, ?string $fullPath, string $notifTitle): JsonResponse
     {
         $diagnosis = Diagnosis::create(array_merge(DiagnosisResultMapper::aiUnavailableFallback(), [
-            'user_id'    => $request->user()->id,
-            'scan_ref'   => Diagnosis::generateScanRef(),
-            'type'       => $type,
-            'image_path' => $imagePath,
-            'language'   => app()->getLocale(),
+            'user_id'         => $request->user()->id,
+            'scan_ref'        => Diagnosis::generateScanRef(),
+            'type'            => $type,
+            'image_path'      => $imagePath,
+            'image_thumbnail' => $fullPath ? $this->makeThumbnail($fullPath) : null,
+            'language'        => app()->getLocale(),
+            'client_scan_id'  => $request->input('client_scan_id') ?: null,
         ]));
 
         CollectionLocation::createFromRequest($request, $diagnosis);
@@ -506,6 +415,17 @@ class DiagnoseApiController extends Controller
                 'differsFromScanLocation' => $loc->differs_from_scan_location,
                 'collectedAt'             => $loc->collected_at?->toISOString(),
             ] : null,
+            // Phase 11 canonical contract: which recoverable state the result
+            // is in, and what to do next. outcome is null on legacy records.
+            'assessment' => [
+                'outcome'               => $d->assessment_outcome,
+                'imageQuality'          => $d->image_quality,
+                'imageIssues'           => $d->image_issues ?? [],
+                'photoTips'             => $d->photo_tips ?? [],
+                'alternativeFindings'   => $d->alternative_findings ?? [],
+                'whatCannotBeConfirmed' => $d->what_cannot_be_confirmed,
+                'contractVersion'       => $d->contract_version,
+            ],
             'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [
                 'immediateActions' => $d->first_aid_steps ? [['action' => $d->first_aid_steps]] : [],

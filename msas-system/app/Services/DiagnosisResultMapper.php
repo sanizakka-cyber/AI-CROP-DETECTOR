@@ -81,8 +81,18 @@ class DiagnosisResultMapper
         $healthStatus = $aiResult['health_status'] ?? $aiResult['status'] ?? null;
         $isAmbiguous  = $healthStatus !== null && in_array(strtolower($healthStatus), ['uncertain', 'multi-issue'], true);
 
+        // Phase 11 contract: the engine states which recoverable state this
+        // result is in. Absent on responses from an engine predating it.
+        $outcome = $aiResult['assessment_outcome'] ?? null;
+        if (!in_array($outcome, self::OUTCOMES, true)) {
+            $outcome = null;
+        }
+
         $confidenceDecision = match (true) {
             !$confidenceValid                                               => 'malformed_response',
+            $outcome === 'unsupported_subject'                              => 'unsupported_subject',
+            $outcome === 'poor_image'                                       => 'poor_image',
+            $outcome === 'uncertain'                                        => 'uncertain',
             $isAmbiguous                                                    => 'ambiguous',
             $confidenceScore !== null && $confidenceScore < self::CONFIDENCE_DECISION_THRESHOLD => 'low_confidence_review',
             default                                                         => 'sufficient',
@@ -96,9 +106,10 @@ class DiagnosisResultMapper
             'health_status'             => $healthStatus,
             'severity_level'            => $aiResult['severity']        ?? $aiResult['severity_level'] ?? null,
             // Core
-            'disease_name'              => $aiResult['disease'] ?? $aiResult['pest_name'] ?? $aiResult['condition'] ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? 'Requires expert review',
+            'disease_name'              => $aiResult['disease'] ?? $aiResult['pest_name'] ?? $aiResult['condition'] ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? self::outcomeHeadline($outcome),
             'confidence_score'          => $confidenceScore,
-            'urgency_level'             => $aiResult['urgency'] ?? 'Medium',
+            // Never invent an urgency for a result with no finding.
+            'urgency_level'             => $aiResult['urgency'] ?? ($outcome === null ? 'Medium' : null),
             // Findings
             'symptoms_identified'       => $aiResult['symptoms_identified']   ?? $aiResult['damage_type'] ?? null,
             'cause'                     => $aiResult['cause']                 ?? $aiResult['pest_type']   ?? null,
@@ -132,7 +143,56 @@ class DiagnosisResultMapper
             'decision_threshold'        => self::CONFIDENCE_DECISION_THRESHOLD,
             'validation_status'         => $aiResult['validation_status'] ?? 'unvalidated',
             'generated_by'              => 'primary_model',
+
+            // Phase 11 canonical contract
+            'assessment_outcome'        => $outcome,
+            'image_quality'             => $aiResult['image_quality'] ?? null,
+            'image_issues'              => array_values((array) ($aiResult['image_issues'] ?? [])) ?: null,
+            'photo_tips'                => array_values((array) ($aiResult['photo_tips'] ?? [])) ?: null,
+            'alternative_findings'      => array_values((array) ($aiResult['alternative_findings'] ?? [])) ?: null,
+            'what_cannot_be_confirmed'  => $aiResult['what_cannot_be_confirmed'] ?? null,
+            'contract_version'          => $aiResult['contract_version'] ?? null,
         ];
+    }
+
+    public const OUTCOMES = ['assessed', 'uncertain', 'poor_image', 'unsupported_subject'];
+
+    /** Shown as the record's headline when there is no finding to name. */
+    public static function outcomeHeadline(?string $outcome): string
+    {
+        return match ($outcome) {
+            'poor_image'          => 'Photo too unclear to assess',
+            'unsupported_subject' => 'Photo does not show the scanned subject',
+            'uncertain'           => 'Inconclusive: more evidence needed',
+            default               => 'Requires expert review',
+        };
+    }
+
+    /**
+     * The engine answered with a 4xx: it read the request and rejected the
+     * image itself (undecodable or unusable file). That is a photo problem
+     * the farmer can fix, not an AI outage, so it must not be stored as
+     * "AI engine temporarily unavailable, an expert will review".
+     */
+    public static function fromEngineRejection(int $httpStatus, ?array $body): ?array
+    {
+        if ($httpStatus < 400 || $httpStatus >= 500) {
+            return null;
+        }
+        $detail  = $body['detail'] ?? null;
+        $message = is_array($detail) ? ($detail['message'] ?? null) : (is_string($detail) ? $detail : null);
+
+        return array_merge(self::aiUnavailableFallback(), [
+            'disease_name'             => self::outcomeHeadline('poor_image'),
+            'status'                   => 'reviewed',
+            'urgency_level'            => null,
+            'vet_referral_advice'      => null,
+            'explanation'              => $message ?: 'The photo could not be read. Please retake it.',
+            'confidence_decision'      => 'poor_image',
+            'assessment_outcome'       => 'poor_image',
+            'image_quality'            => 'poor',
+            'photo_tips'               => ['Use a clear JPEG or PNG photo taken with the camera.', 'Hold the phone steady and fill the frame with the subject.'],
+        ]);
     }
 
     /** The AI genuinely produced no result (unavailable/timeout/bad response) — honest fallback, never a fabricated diagnosis. */
@@ -174,6 +234,13 @@ class DiagnosisResultMapper
             'decision_threshold'        => self::CONFIDENCE_DECISION_THRESHOLD,
             'validation_status'         => 'unvalidated',
             'generated_by'              => null,
+            'assessment_outcome'        => 'provider_error',
+            'image_quality'             => null,
+            'image_issues'              => null,
+            'photo_tips'                => null,
+            'alternative_findings'      => null,
+            'what_cannot_be_confirmed'  => null,
+            'contract_version'          => null,
         ];
     }
 }
