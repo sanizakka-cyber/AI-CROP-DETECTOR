@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
  */
 class DiagnosisOutcomeContractTest extends TestCase
 {
-    private function result(array $overrides = []): array
+    private function aiResult(array $overrides = []): array
     {
         return array_merge([
             'contract_version'   => '2026-10-phase11',
@@ -34,7 +34,7 @@ class DiagnosisOutcomeContractTest extends TestCase
 
     public function test_assessed_result_keeps_finding_and_stores_contract_fields(): void
     {
-        $out = DiagnosisResultMapper::fromAiResult($this->result());
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult());
 
         $this->assertSame('assessed', $out['assessment_outcome']);
         $this->assertSame('Late blight', $out['disease_name']);
@@ -46,7 +46,7 @@ class DiagnosisOutcomeContractTest extends TestCase
 
     public function test_poor_image_gets_an_honest_headline_no_urgency_and_photo_tips(): void
     {
-        $out = DiagnosisResultMapper::fromAiResult($this->result([
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult([
             'assessment_outcome' => 'poor_image', 'image_quality' => 'poor', 'image_issues' => ['blurred'],
             'photo_tips' => ['Hold the phone steady'], 'disease' => null, 'subject_name' => null,
             'scientific_name' => null, 'confidence' => null, 'urgency' => null, 'health_status' => null,
@@ -64,7 +64,7 @@ class DiagnosisOutcomeContractTest extends TestCase
 
     public function test_unsupported_subject_is_labelled_as_such_not_as_ambiguous(): void
     {
-        $out = DiagnosisResultMapper::fromAiResult($this->result([
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult([
             'assessment_outcome' => 'unsupported_subject', 'disease' => null, 'confidence' => null,
             'urgency' => null, 'health_status' => null,
         ]));
@@ -75,7 +75,7 @@ class DiagnosisOutcomeContractTest extends TestCase
 
     public function test_uncertain_keeps_candidates_and_is_not_called_ambiguous(): void
     {
-        $out = DiagnosisResultMapper::fromAiResult($this->result([
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult([
             'assessment_outcome' => 'uncertain', 'confidence' => 35, 'health_status' => 'Uncertain',
             'alternative_findings' => [['name' => 'Early blight', 'why_considered' => 'Similar lesions']],
             'what_cannot_be_confirmed' => 'Spores not visible',
@@ -89,13 +89,13 @@ class DiagnosisOutcomeContractTest extends TestCase
 
     public function test_an_unknown_outcome_value_is_ignored_not_trusted(): void
     {
-        $out = DiagnosisResultMapper::fromAiResult($this->result(['assessment_outcome' => 'definitely_fine']));
+        $out = DiagnosisResultMapper::fromAiResult($this->aiResult(['assessment_outcome' => 'definitely_fine']));
         $this->assertNull($out['assessment_outcome']);
     }
 
     public function test_legacy_engine_reply_without_outcome_behaves_as_before(): void
     {
-        $legacy = $this->result();
+        $legacy = $this->aiResult();
         unset($legacy['assessment_outcome'], $legacy['contract_version'], $legacy['urgency']);
         $out = DiagnosisResultMapper::fromAiResult($legacy);
 
