@@ -10,7 +10,11 @@ class SubscriptionLimitService
 {
     public function canScan(User $user): array
     {
-        $sub   = $user->subscriptions()->where('status', 'active')->latest()->first();
+        // User::activeSubscription() is the one definition of a current plan:
+        // a paid plan not yet ended OR a trial not yet ended. This used to
+        // match status='active' only, so trial users got Free-plan limits
+        // and a paid plan that had already ended kept its limits.
+        $sub   = $user->activeSubscription();
         $plan  = $sub ? $sub->plan : 'free';
         $limit = $sub ? $sub->getLimit('ai_scans_per_month') : config('subscription.plans.free.limits.ai_scans_per_month', 5);
 
@@ -37,7 +41,11 @@ class SubscriptionLimitService
 
     public function canConsult(User $user, string $type = 'vet'): array
     {
-        $sub   = $user->subscriptions()->where('status', 'active')->latest()->first();
+        // User::activeSubscription() is the one definition of a current plan:
+        // a paid plan not yet ended OR a trial not yet ended. This used to
+        // match status='active' only, so trial users got Free-plan limits
+        // and a paid plan that had already ended kept its limits.
+        $sub   = $user->activeSubscription();
         $key   = $type === 'vet' ? 'vet_consultations_per_cycle' : 'agronomist_consultations_per_cycle';
         $plan  = $sub ? $sub->plan : 'free';
         $limit = $sub ? $sub->getLimit($key) : 0;
