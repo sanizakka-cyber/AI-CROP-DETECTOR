@@ -9,8 +9,6 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 import anthropic
 import uvicorn
 
-from diagnosis_contract import build_prompt, finalize, schema_for
-
 app = FastAPI(title="MSAS FarmAI Inference Engine", version="5.0.0")
 
 app.add_middleware(
@@ -286,53 +284,6 @@ async def health():
         "model_pro": AI_MODEL_PRO,
     }
 
-# ─── Structured diagnosis (Phase 11) ──────────────────────────────────────────
-# All four scan endpoints share one strict JSON contract (diagnosis_contract.py)
-# delivered through structured outputs, replacing the pipe-delimited replies
-# whose missing fields were silently back-filled with invented defaults.
-
-_SCAN_MAX_TOKENS = 8000  # was 1024-1536: adaptive thinking shares this budget, so long replies were being cut short
-
-
-class _MalformedReply(Exception):
-    pass
-
-
-async def _run_structured(mode: str, image_blocks: List[dict], prompt: str) -> tuple:
-    client = _get_client()
-    try:
-        message = await client.messages.create(
-            model=AI_MODEL,
-            max_tokens=_SCAN_MAX_TOKENS,
-            messages=[{"role": "user", "content": image_blocks + [{"type": "text", "text": prompt}]}],
-            output_config={"format": {"type": "json_schema", "schema": schema_for(mode)}},
-        )
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail={"error": "provider_unavailable", "message": f"AI service error: {str(e)}"})
-
-    # A refusal or a reply cut off at max_tokens is a technical failure, never
-    # a diagnosis -- report it as such instead of parsing a partial answer.
-    if message.stop_reason in ("refusal", "max_tokens"):
-        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": f"AI reply incomplete ({message.stop_reason})."})
-    text = _extract_text(message)
-    try:
-        data = json.loads(text)
-        if not isinstance(data, dict):
-            raise _MalformedReply()
-    except (json.JSONDecodeError, _MalformedReply):
-        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": "AI reply was not valid JSON."})
-    return data, text
-
-
-def _structured_result(mode: str, data: dict, raw_text: str) -> dict:
-    return {**_model_meta(AI_MODEL, raw_text), **finalize(mode, data)}
-
-
-def _hint(**pairs) -> str:
-    parts = [f" {label}: {value}." for label, value in pairs.items() if value]
-    return ("\n\nFarmer-provided context (a hint, not proof):" + "".join(parts)) if parts else ""
-
-
 # ─── /predict/crop ────────────────────────────────────────────────────────────
 
 @app.post("/predict/crop")
@@ -344,11 +295,108 @@ async def predict_crop(
     images: List[UploadFile] = File(...),
 ):
     _check_auth(request)
-    _get_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images)
-    prompt = build_prompt("crop", _hint(**{"Reported crop": cropType, "Photographed part": cropPart})) + _lang_instruction(language or "en")
-    data, text = await _run_structured("crop", image_blocks, prompt)
-    return _structured_result("crop", data, text)
+
+    hint = ""
+    if cropType: hint += f" The farmer reports this is a {cropType}."
+    if cropPart: hint += f" The photographed area is the {cropPart}."
+    if hint:     hint = f"\n\nFarmer hint:{hint}"
+
+    lang_note = _lang_instruction(language or "en")
+
+    prompt = f"""You are a world-class agricultural scientist, plant pathologist, and agronomist with deep expertise in Nigerian, West African, and tropical farming systems.
+
+Carefully examine the uploaded image of a crop or plant and provide a thorough, accurate diagnosis.{hint}
+
+IMPORTANT GUIDELINES:
+- Auto-identify the plant species and the specific plant part visible in the image
+- Report your ACTUAL confidence based on image quality and symptom clarity — never inflate scores
+- If the image is unclear or low-quality, lower your confidence accordingly
+- If the plant appears healthy, say so clearly
+- Be specific: name diseases, deficiencies, and pests precisely
+
+Respond ONLY in this exact pipe-delimited format (one field per line, no extra text before or after):
+
+subject_name | <common crop name, e.g. "Cassava", "Maize", "Tomato", "Pepper", or "Unknown">
+scientific_name | <scientific name, e.g. "Manihot esculenta", or "Unknown">
+detected_part | <Leaf, Stem, Fruit, Root, Flower, Seed, Whole Plant, or Unknown>
+health_status | <Healthy, Diseased, Nutrient-Deficient, Pest-Affected, Water-Stressed, Multi-Issue, or Uncertain>
+disease | <precise disease name; "Healthy — No disease detected" if healthy>
+confidence | <integer 0–100>
+severity | <None, Mild, Moderate, Severe, Critical>
+symptoms_identified | <2–4 specific visual symptoms, comma-separated>
+cause | <one sentence: root pathological or physiological cause>
+environmental_factors | <temperature, humidity, drainage, or management factors>
+nutrient_deficiencies | <specific nutrient(s) and visible signs, or "None detected">
+pest_detection | <pest name and evidence, or "No pest detected">
+urgency | <Low, Medium, High, Emergency>
+first_aid | <3 immediate actionable steps numbered: 1) ... 2) ... 3) ...>
+medication | <specific product, active ingredient, concentration, dosage, application method>
+organic_treatment | <a non-synthetic alternative, e.g. neem oil, copper or sulfur spray, baking-soda solution, companion planting; or "No effective organic alternative — chemical treatment recommended" if none applies>
+preventive_measures | <2–3 specific prevention strategies>
+fertilizer_recommendation | <specific fertilizer, NPK ratio, kg per hectare, timing>
+recovery_period | <realistic time to recovery, e.g. "2–4 weeks">
+best_practices | <1–2 long-term management tips>
+referral | <specific threshold or signs to escalate to agronomist>
+explanation | <2–3 sentences explaining WHICH visual features led to this diagnosis>
+
+If the image does not show a plant, set:
+subject_name | Not a plant
+disease | Invalid image — please upload a clear photo of the affected plant or crop part
+confidence | 0
+severity | None
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL, max_tokens=1536,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = _extract_text(message)
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    fields = _parse_pipe(text)
+
+    if fields.get("subject_name", "").lower() == "not a plant":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Image does not appear to show a plant or crop. Please upload a clear photo of the affected plant part.",
+        })
+
+    conf = _parse_confidence(fields.get("confidence"))
+
+    return {
+        **_model_meta(AI_MODEL, text),
+        "subject_name":              fields.get("subject_name",             "Unknown"),
+        "scientific_name":           fields.get("scientific_name",          "Unknown"),
+        "detected_part":             fields.get("detected_part",            "Unknown"),
+        "health_status":             fields.get("health_status",            "Uncertain"),
+        "disease":                   fields.get("disease",                  "Unknown"),
+        "confidence":                conf["value"],
+        "confidence_valid":          conf["valid"],
+        "severity":                  fields.get("severity",                 "Moderate"),
+        "symptoms_identified":       fields.get("symptoms_identified",      ""),
+        "cause":                     fields.get("cause",                    ""),
+        "environmental_factors":     fields.get("environmental_factors",    ""),
+        "nutrient_deficiencies":     fields.get("nutrient_deficiencies",    "None detected"),
+        "pest_detection":            fields.get("pest_detection",           "No pest detected"),
+        "urgency":                   fields.get("urgency",                  "Medium"),
+        "first_aid":                 fields.get("first_aid",                ""),
+        "medication":                fields.get("medication",               "Consult an agronomist."),
+        "organic_treatment":         fields.get("organic_treatment",        ""),
+        "preventive_measures":       fields.get("preventive_measures",      ""),
+        "fertilizer_recommendation": fields.get("fertilizer_recommendation",""),
+        "recovery_period":           fields.get("recovery_period",          ""),
+        "best_practices":            fields.get("best_practices",           ""),
+        "referral":                  fields.get("referral",                 "Contact an agronomist if symptoms persist."),
+        "explanation":               fields.get("explanation",              ""),
+        "scan_type":                 "crop",
+    }
 
 # ─── /predict/livestock ───────────────────────────────────────────────────────
 
@@ -357,29 +405,112 @@ async def predict_livestock(
     request: Request,
     animalType: Optional[str] = Form(None),
     assessmentType: Optional[str] = Form(None),
-    symptoms: Optional[str] = Form(None),
     language: Optional[str] = Form("en"),
     images: List[UploadFile] = File(default=[]),
 ):
     _check_auth(request)
-    _get_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images) if images else []
-    if not image_blocks:
-        # No photo: there is nothing to assess visually. Previously the model
-        # was told to answer "based on common conditions", i.e. to guess.
-        return {
-            **finalize("livestock", {
-                "assessment_outcome": "poor_image", "subject_present": True, "image_quality": "poor",
-                "image_issues": ["subject_not_visible"],
-                "photo_tips": ["Add at least one clear photo of the animal or the affected area."],
-                "when_to_seek_expert": "If the animal is weak, not eating, bleeding or breathing with difficulty, call a veterinarian now.",
-            }),
-            "ai_model": None, "ai_model_version": None, "raw_model_output": None,
-            "confidence_interpretation": None, "validation_status": "unvalidated",
-        }
-    prompt = build_prompt("livestock", _hint(**{"Reported animal": animalType, "Assessment area": assessmentType, "Reported symptoms": symptoms})) + _lang_instruction(language or "en")
-    data, text = await _run_structured("livestock", image_blocks, prompt)
-    return _structured_result("livestock", data, text)
+
+    hint = ""
+    if animalType:     hint += f" The farmer reports this is a {animalType}."
+    if assessmentType: hint += f" Assessment area: {assessmentType}."
+    if hint:           hint = f"\n\nFarmer hint:{hint}"
+
+    has_image = bool(image_blocks)
+    image_instruction = (
+        "Carefully examine the uploaded image and provide a thorough visual diagnosis."
+        if has_image else
+        "No image was provided. Base your assessment on common conditions in West African smallholder livestock."
+    )
+
+    lang_note = _lang_instruction(language or "en")
+
+    prompt = f"""You are a world-class veterinarian and livestock health expert with deep expertise in Nigerian and West African smallholder farming systems.
+
+{image_instruction}{hint}
+
+IMPORTANT GUIDELINES:
+- Auto-identify the animal species and breed if visible
+- Report your ACTUAL confidence based on visible signs — never inflate scores
+- If no image is provided, lower confidence significantly and state this limitation
+
+Respond ONLY in this exact pipe-delimited format (one field per line, no extra text):
+
+subject_name | <animal species, e.g. "Cattle", "Goat", "Broiler Chicken", "Pig", or "Unknown">
+scientific_name | <scientific name, e.g. "Bos taurus", or "N/A">
+breed | <breed if identifiable, or "Unknown">
+detected_part | <Skin/Coat, Eyes, Hooves/Feet, Droppings, Wound/Lesion, Whole Body, or Unknown>
+health_status | <Healthy, Diseased, Injured, Malnourished, Parasite-Infested, Stressed, or Uncertain>
+disease | <condition name; or "Healthy — No condition detected">
+confidence | <integer 0–100>
+severity | <None, Mild, Moderate, Severe, Critical>
+symptoms_identified | <2–4 specific visual or reported symptoms, comma-separated>
+cause | <one sentence: root pathological or physiological cause>
+environmental_factors | <housing, feed, management, or climate factors>
+urgency | <Low, Medium, High, Emergency>
+first_aid | <3 immediate steps numbered: 1) ... 2) ... 3) ...>
+medication | <specific veterinary product, dosage, route, duration>
+organic_treatment | <a natural or non-drug remedy/husbandry option where safe and appropriate, e.g. herbal dewormer, dietary adjustment; or "None — veterinary medication required" if the condition needs it>
+preventive_measures | <2–3 specific prevention strategies>
+vet_recommendation | <vaccinations due, tests needed, referral urgency>
+recovery_period | <realistic recovery time with treatment>
+best_practices | <1–2 long-term herd/flock management tips>
+referral | <specific signs or timeframe requiring emergency vet>
+explanation | <2–3 sentences on WHICH specific visual signs led to this diagnosis>
+
+If the image does not show livestock, set subject_name to "Not livestock" and disease to "Invalid image".
+If no image was provided, set confidence no higher than 30.
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL, max_tokens=1536,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = _extract_text(message)
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    fields = _parse_pipe(text)
+
+    if fields.get("subject_name", "").lower() == "not livestock":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Image does not appear to show livestock. Please upload a clear photo of the affected animal.",
+        })
+
+    conf = _parse_confidence(fields.get("confidence"))
+
+    return {
+        **_model_meta(AI_MODEL, text),
+        "subject_name":         fields.get("subject_name",         "Unknown"),
+        "scientific_name":      fields.get("scientific_name",       "N/A"),
+        "breed":                fields.get("breed",                 "Unknown"),
+        "detected_part":        fields.get("detected_part",         "Unknown"),
+        "health_status":        fields.get("health_status",         "Uncertain"),
+        "disease":              fields.get("disease",               "Unknown"),
+        "confidence":           conf["value"],
+        "confidence_valid":     conf["valid"],
+        "severity":             fields.get("severity",              "Moderate"),
+        "symptoms_identified":  fields.get("symptoms_identified",   ""),
+        "cause":                fields.get("cause",                 ""),
+        "environmental_factors":fields.get("environmental_factors", ""),
+        "urgency":              fields.get("urgency",               "High"),
+        "first_aid":            fields.get("first_aid",             "Isolate the animal immediately."),
+        "medication":           fields.get("medication",            "Requires veterinary prescription."),
+        "organic_treatment":    fields.get("organic_treatment",     ""),
+        "preventive_measures":  fields.get("preventive_measures",   ""),
+        "vet_recommendation":   fields.get("vet_recommendation",    ""),
+        "recovery_period":      fields.get("recovery_period",       ""),
+        "best_practices":       fields.get("best_practices",        ""),
+        "referral":             fields.get("referral",              "Seek veterinary attention within 24 hours."),
+        "explanation":          fields.get("explanation",           ""),
+        "scan_type":            "livestock",
+    }
 
 # ─── /predict/soil ────────────────────────────────────────────────────────────
 
@@ -391,11 +522,87 @@ async def predict_soil(
     images: List[UploadFile] = File(...),
 ):
     _check_auth(request)
-    _get_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images)
-    prompt = build_prompt("soil", _hint(**{"Farmer context": soilContext})) + _lang_instruction(language or "en")
-    data, text = await _run_structured("soil", image_blocks, prompt)
-    return _structured_result("soil", data, text)
+
+    context_note = f"\nFarmer context: {soilContext}" if soilContext else ""
+    lang_note    = _lang_instruction(language or "en")
+
+    prompt = f"""You are a world-class soil scientist, pedologist, and agronomist with deep expertise in Nigerian and West African farming soils.
+
+Carefully examine the uploaded soil sample image and provide a thorough visual assessment.{context_note}
+
+IMPORTANT GUIDELINES:
+- Assess visual soil properties: texture, structure, colour, organic matter, moisture
+- Confidence should reflect the limitation of visual-only assessment — lab test is always more definitive
+
+Respond ONLY in this exact pipe-delimited format (one field per line, no extra text):
+
+subject_name | <soil type, e.g. "Sandy Loam", "Clay", "Laterite", "Loamy Sand">
+health_status | <Good, Fair, Poor, Degraded, Compacted, Waterlogged>
+confidence | <integer 0–100>
+ph_estimate | <estimated pH range, e.g. "6.0–6.5 (slightly acidic)"; "Unknown" if cannot determine>
+nutrients | <apparent nutrient profile based on visual cues>
+nutrient_deficiencies | <specific deficiencies suspected, or "None visually apparent">
+urgency | <Low, Medium, High>
+suitable_crops | <3–5 crops best suited to this soil type and condition>
+fertilizer_recommendation | <specific fertilizer, NPK ratio, kg per hectare, timing>
+amendment_recommendation | <organic matter, lime, gypsum, or other amendments with quantities>
+pest_detection | <soil pests or nematode damage if visible, or "None detected">
+recovery_period | <time to improve soil health with recommended amendments>
+best_practices | <2–3 long-term soil health management tips>
+referral | <specific reason and timing for a laboratory soil test>
+explanation | <2–3 sentences on WHICH visual properties informed this assessment>
+
+If the image does not clearly show soil, set:
+subject_name | Invalid image
+confidence | 0
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL, max_tokens=1024,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = _extract_text(message)
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    fields = _parse_pipe(text)
+
+    if fields.get("subject_name", "").lower() == "invalid image":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Image does not appear to show a soil sample. Please upload a clear photo of the soil.",
+        })
+
+    conf = _parse_confidence(fields.get("confidence"))
+
+    return {
+        **_model_meta(AI_MODEL, text),
+        "subject_name":              fields.get("subject_name",              "Unknown soil type"),
+        "health_status":             fields.get("health_status",             "Unknown"),
+        "confidence":                conf["value"],
+        "confidence_valid":          conf["valid"],
+        "ph_estimate":               fields.get("ph_estimate",               "Unknown"),
+        "nutrients":                 fields.get("nutrients",                  "Assessment unavailable"),
+        "nutrient_deficiencies":     fields.get("nutrient_deficiencies",     "None visually apparent"),
+        "urgency":                   fields.get("urgency",                   "Medium"),
+        "suitable_crops":            fields.get("suitable_crops",            "Consult an agronomist"),
+        "fertilizer_recommendation": fields.get("fertilizer_recommendation", ""),
+        "amendment_recommendation":  fields.get("amendment_recommendation",  ""),
+        "pest_detection":            fields.get("pest_detection",            "None detected"),
+        "recovery_period":           fields.get("recovery_period",           ""),
+        "best_practices":            fields.get("best_practices",            ""),
+        "referral":                  fields.get("referral",                  "Consult an extension officer for a soil test."),
+        "explanation":               fields.get("explanation",               ""),
+        "condition":                 fields.get("subject_name",              "Unknown"),
+        "recommendation":            fields.get("fertilizer_recommendation", "Apply balanced NPK fertiliser."),
+        "scan_type":                 "soil",
+    }
 
 # ─── /predict/pest ────────────────────────────────────────────────────────────
 
@@ -407,13 +614,93 @@ async def predict_pest(
     language: Optional[str] = Form("en"),
     images: List[UploadFile] = File(...),
 ):
-    """Pest identification -- insect, weed, or pathogen, kept distinct from the damage it causes."""
+    """Standalone pest identification — insect, weed, or pathogen from an image."""
     _check_auth(request)
-    _get_client()
+    client = _get_client()
     image_blocks = await _read_images_b64(images)
-    prompt = build_prompt("pest", _hint(**{"Affected crop": cropType, "Location": location})) + _lang_instruction(language or "en")
-    data, text = await _run_structured("pest", image_blocks, prompt)
-    return _structured_result("pest", data, text)
+
+    context = ""
+    if cropType:  context += f" Crop affected: {cropType}."
+    if location:  context += f" Location: {location}."
+    if context:   context = f"\n\nFarmer context:{context}"
+
+    lang_note = _lang_instruction(language or "en")
+
+    prompt = f"""You are a world-class entomologist, plant pathologist, and agronomist specialising in Nigerian and West African pest management.
+
+Carefully examine the uploaded image and identify the pest, weed, or pathogen present.{context}
+
+Respond ONLY in this exact pipe-delimited format:
+
+pest_name | <common name, e.g. "Fall Armyworm", "Striga Weed", "Aphid Colony", "Cassava Mealybug">
+scientific_name | <scientific name, or "Unknown">
+pest_type | <Insect, Weed, Fungal Pathogen, Bacterial Pathogen, Nematode, Rodent, Bird, or Unknown>
+host_crops | <crops this pest commonly attacks, comma-separated>
+confidence | <integer 0–100>
+severity | <None, Mild, Moderate, Severe, Critical>
+damage_type | <what this pest does to the crop, e.g. "leaf mining, stem boring, root damage">
+spread_risk | <Low, Medium, High — likelihood of spreading to neighbouring farms>
+urgency | <Low, Medium, High, Emergency>
+immediate_action | <3 steps to take right now numbered: 1) ... 2) ... 3) ...>
+chemical_control | <specific pesticide, active ingredient, dilution rate, application method>
+biological_control | <natural predators, biopesticides, or organic methods>
+cultural_control | <crop rotation, intercropping, sanitation, or mechanical methods>
+preventive_measures | <2–3 strategies to prevent future infestation>
+economic_threshold | <at what infestation level should chemical control begin>
+recovery_period | <estimated time to recovery with treatment>
+referral | <when to escalate to an extension officer or plant health clinic>
+explanation | <2–3 sentences on WHICH specific visual features identified this pest>
+
+If the image does not show a pest, weed, or pathogen clearly, set:
+pest_name | Not identified
+confidence | 0
+
+Write every field's value in plain text only: no Markdown symbols (#, **, *, backticks), no emojis, and no em-dashes or en-dashes (use a comma or colon instead).{lang_note}"""
+
+    content = image_blocks + [{"type": "text", "text": prompt}]
+
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL, max_tokens=1024,
+            messages=[{"role": "user", "content": content}],
+        )
+        text = _extract_text(message)
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+
+    fields = _parse_pipe(text)
+
+    if fields.get("pest_name", "").lower() == "not identified":
+        raise HTTPException(status_code=422, detail={
+            "accepted": False,
+            "message": "Could not identify a pest from this image. Please upload a clearer, closer photo.",
+        })
+
+    conf = _parse_confidence(fields.get("confidence"))
+
+    return {
+        **_model_meta(AI_MODEL, text),
+        "pest_name":           fields.get("pest_name",           "Unknown"),
+        "scientific_name":     fields.get("scientific_name",     "Unknown"),
+        "pest_type":           fields.get("pest_type",           "Unknown"),
+        "host_crops":          fields.get("host_crops",          ""),
+        "confidence":          conf["value"],
+        "confidence_valid":    conf["valid"],
+        "severity":            fields.get("severity",            "Moderate"),
+        "damage_type":         fields.get("damage_type",         ""),
+        "spread_risk":         fields.get("spread_risk",         "Medium"),
+        "urgency":             fields.get("urgency",             "High"),
+        "immediate_action":    fields.get("immediate_action",    ""),
+        "chemical_control":    fields.get("chemical_control",    "Consult an agronomist."),
+        "biological_control":  fields.get("biological_control",  ""),
+        "cultural_control":    fields.get("cultural_control",    ""),
+        "preventive_measures": fields.get("preventive_measures", ""),
+        "economic_threshold":  fields.get("economic_threshold",  ""),
+        "recovery_period":     fields.get("recovery_period",     ""),
+        "referral":            fields.get("referral",            "Contact extension officer if infestation spreads."),
+        "explanation":         fields.get("explanation",         ""),
+        "scan_type":           "pest",
+    }
 
 # ─── /predict/weather ─────────────────────────────────────────────────────────
 
