@@ -257,10 +257,56 @@ export default function DiagnosisDetailScreen() {
     );
   }
 
+  const assessment = diag.assessment || {};
+  const outcome = assessment.outcome || null;
+
+  // Phase 11: a photo that could not be assessed, or that shows the wrong
+  // subject, is a recoverable state with specific retake guidance, not a
+  // diagnosis with empty "treatment" tabs.
+  if (outcome === 'poor_image' || outcome === 'unsupported_subject') {
+    const wrongSubject = outcome === 'unsupported_subject';
+    return (
+      <ScrollView style={styles.root} contentContainerStyle={[styles.content, { padding: Spacing.lg, paddingTop: 60 }]}>
+        <Text style={styles.outcomeIcon}>{wrongSubject ? '🔍' : '📷'}</Text>
+        <Text style={styles.outcomeTitle} testID="outcome-title">
+          {wrongSubject
+            ? (isHausa ? 'Hoton bai nuna abin da ake bincika ba' : 'This photo does not show what this scan needs')
+            : (isHausa ? 'Hoton bai fito sosai ba' : 'Photo too unclear to assess')}
+        </Text>
+        {diag.aiResult?.explanation ? <Text style={styles.outcomeBody}>{diag.aiResult.explanation}</Text> : null}
+        {assessment.imageIssues?.length > 0 && (
+          <Card style={styles.outcomeCard}>
+            <Text style={styles.cardTitle}>{isHausa ? 'Matsalolin hoto' : 'What was wrong with the photo'}</Text>
+            {assessment.imageIssues.map(issue => (
+              <Text key={issue} style={styles.treatBody}>- {IMAGE_ISSUE_LABELS[issue] || issue.replace(/_/g, ' ')}</Text>
+            ))}
+          </Card>
+        )}
+        {assessment.photoTips?.length > 0 && (
+          <Card style={styles.outcomeCard}>
+            <Text style={styles.cardTitle}>{isHausa ? 'Yadda za a dauki hoto mai kyau' : 'How to retake the photo'}</Text>
+            {assessment.photoTips.map((tip, i) => (
+              <Text key={i} style={styles.treatBody}>{i + 1}. {tip}</Text>
+            ))}
+          </Card>
+        )}
+        <Text style={styles.outcomeNote}>
+          {isHausa ? 'Ba a bayar da magani ba saboda ba a iya tantance hoton ba.' : 'No treatment is suggested because the photo could not be assessed.'}
+        </Text>
+        <Button title={isHausa ? 'Sake daukar hoto' : 'Retake photo'} onPress={() => router.push('/(tabs)/scan')} style={{ marginTop: Spacing.md }} />
+        <Button title={isHausa ? 'Koma zuwa bayanai' : 'Back to records'} onPress={() => router.back()} variant="outline" style={{ marginTop: Spacing.sm }} />
+      </ScrollView>
+    );
+  }
+
   const result = diag.aiResult || {};
   const plan = diag.treatmentPlan || {};
   const validation = diag.imageValidation || result.validation || {};
-  const confidence = Number(result.confidence || 0);
+  // null means "no score", never 0%.
+  const hasConfidence = result.confidence !== null && result.confidence !== undefined;
+  const confidence = hasConfidence ? Number(result.confidence) : null;
+  const imageQuality = assessment.imageQuality || validation.quality?.status || null;
+  const isUncertain = outcome === 'uncertain';
   const isEmergency = result.severity === 'emergency';
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
@@ -271,7 +317,8 @@ export default function DiagnosisDetailScreen() {
     consultation.recommended ||
     result.needsExpertReview ||
     result.needsVetVisit ||
-    confidence < 70 ||
+    isUncertain ||
+    (hasConfidence && confidence < 70) ||
     ['severe', 'emergency'].includes(result.severity);
 
   return (
@@ -287,11 +334,13 @@ export default function DiagnosisDetailScreen() {
         <View style={styles.metaRow}>
           <SeverityBadge severity={result.severity} />
           <View style={styles.confBadge}>
-            <Text style={styles.confText}>{confidence}% confidence</Text>
+            <Text style={styles.confText}>{hasConfidence ? `${confidence}% confidence` : 'No score'}</Text>
           </View>
-          <View style={styles.qualityBadge}>
-            <Text style={styles.qualityText}>Image: {validation.quality?.status || 'accepted'}</Text>
-          </View>
+          {imageQuality && (
+            <View style={styles.qualityBadge}>
+              <Text style={styles.qualityText}>Image: {imageQuality}</Text>
+            </View>
+          )}
         </View>
         {result.contagionRisk && result.contagionRisk !== 'none' && (
           <View style={styles.contagionRow}>
@@ -449,6 +498,30 @@ export default function DiagnosisDetailScreen() {
         </View>
       </Card>
 
+      {isUncertain && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="uncertain-card">
+          <Text style={styles.cardTitle}>{isHausa ? 'Sakamako bai tabbata ba' : 'Inconclusive result'}</Text>
+          {assessment.whatCannotBeConfirmed ? <Text style={styles.treatBody}>{assessment.whatCannotBeConfirmed}</Text> : null}
+          {assessment.alternativeFindings?.length > 0 && (
+            <>
+              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{isHausa ? 'Wasu yiwuwar' : 'Other possibilities'}</Text>
+              {assessment.alternativeFindings.map((alt, i) => (
+                <Text key={i} style={styles.treatBody}>- {alt.name}{alt.why_considered ? `: ${alt.why_considered}` : ''}</Text>
+              ))}
+            </>
+          )}
+          {assessment.photoTips?.length > 0 && (
+            <>
+              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{isHausa ? 'Don samun tabbaci' : 'To get a clearer answer'}</Text>
+              {assessment.photoTips.map((tip, i) => <Text key={i} style={styles.treatBody}>{i + 1}. {tip}</Text>)}
+            </>
+          )}
+          <Text style={[styles.treatBody, { marginTop: Spacing.sm }]}>
+            {isHausa ? 'Ba a bayar da magani ba har sai an tabbatar da matsalar.' : 'No treatment is recommended until the problem is confirmed.'}
+          </Text>
+        </Card>
+      )}
+
       <Text style={styles.sectionTitle}>{t('treatment')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabRow}>
         {[
@@ -473,6 +546,12 @@ export default function DiagnosisDetailScreen() {
           <Text style={styles.treatBody}>{isHausa ? action.actionHa || action.action : action.action}</Text>
         </Card>
       ))}
+
+      {activeTab === 'organic' && plan.organicOptions && (
+        <Card style={styles.treatCard}>
+          <Text style={styles.treatBody}>{plan.organicOptions}</Text>
+        </Card>
+      )}
 
       {activeTab === 'organic' && plan.organicRemedies?.map((remedy, index) => (
         <Card key={index} style={styles.treatCard}>
@@ -511,6 +590,22 @@ export default function DiagnosisDetailScreen() {
               <Text style={styles.treatBody}>{plan.preventiveMeasures || 'Not applicable for this diagnosis.'}</Text>
             </Card>
       )}
+
+      {(() => {
+        const empty = {
+          treatment: !plan.immediateActions?.length,
+          organic: !plan.organicOptions && !plan.organicRemedies?.length,
+          chemical: !plan.chemicalTreatments?.length && !plan.dosageGuidance?.length,
+          prevention: false,
+        }[activeTab];
+        return empty ? (
+          <Card style={styles.treatCard} testID="empty-tab">
+            <Text style={styles.treatBody}>
+              {isHausa ? 'Babu shawarar da ta dace da wannan sakamakon.' : 'Nothing is recommended here for this result.'}
+            </Text>
+          </Card>
+        ) : null;
+      })()}
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Additional Recommendations</Text>
@@ -578,7 +673,27 @@ export default function DiagnosisDetailScreen() {
   );
 }
 
+const IMAGE_ISSUE_LABELS = {
+  blurred: 'The photo is blurred',
+  too_dark: 'The photo is too dark',
+  overexposed_or_glare: 'Too bright, or glare on the subject',
+  too_far: 'The subject is too far away',
+  too_close: 'Too close: the subject is cut off',
+  subject_partly_visible: 'Only part of the subject is visible',
+  subject_not_visible: 'The subject is not visible',
+  low_resolution: 'The image resolution is too low',
+  colour_distorted: 'Colours look distorted',
+  screen_or_printed_photo: 'This looks like a photo of a screen or print',
+  multiple_subjects: 'Several subjects are mixed in one photo',
+};
+
 const styles = StyleSheet.create({
+  outcomeIcon: { fontSize: 56, textAlign: 'center' },
+  outcomeTitle: { ...Typography.h2, color: Colors.textPrimary, textAlign: 'center', marginTop: Spacing.sm },
+  outcomeBody: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
+  outcomeCard: { marginTop: Spacing.md },
+  outcomeNote: { ...Typography.small, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md },
+  uncertainCard: { borderLeftWidth: 4, borderLeftColor: Colors.warning },
   root: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 80 },
   loadingScreen: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background, padding: Spacing.lg },

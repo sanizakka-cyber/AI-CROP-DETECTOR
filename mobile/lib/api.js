@@ -279,8 +279,9 @@ export const diagnoseAPI = {
    * Upload images and metadata for crop diagnosis.
    * Uses FormData (not JSON) for multipart upload.
    */
-  crop: async ({ cropType, cropPart, farmId, images, location }) => {
+  crop: async ({ cropType, cropPart, farmId, images, location, clientScanId }) => {
     const form = new FormData();
+    if (clientScanId) form.append('client_scan_id', clientScanId);
     // Both are optional hints — omit entirely when unset so the AI engine
     // identifies the crop/plant part on its own, matching the web scan form.
     if (cropType) form.append('cropType', cropType);
@@ -293,13 +294,14 @@ export const diagnoseAPI = {
       // parts all named plain 'images' collapse to a single value instead
       // of an array, which is exactly what produced "The images field
       // must be an array." on every scan attempt.
-      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
     return multipartRequest('/diagnose/crop', form);
   },
 
-  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location }) => {
+  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location, clientScanId }) => {
     const form = new FormData();
+    if (clientScanId) form.append('client_scan_id', clientScanId);
     form.append('animalType', animalType || '');
     form.append('assessmentType', assessmentType || 'comprehensive');
     if (animalId) form.append('animalId', animalId);
@@ -308,23 +310,25 @@ export const diagnoseAPI = {
     if (behavioral) form.append('behavioral', JSON.stringify(behavioral));
     appendLocationFields(form, location);
     images.forEach((img, i) => {
-      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
     return multipartRequest('/diagnose/livestock', form);
   },
 
-  soil: async ({ soilContext, images, location }) => {
+  soil: async ({ soilContext, images, location, clientScanId }) => {
     const form = new FormData();
+    if (clientScanId) form.append('client_scan_id', clientScanId);
     if (soilContext) form.append('soilContext', soilContext);
     appendLocationFields(form, location);
     images.forEach((img, i) => {
-      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
     return multipartRequest('/diagnose/soil', form);
   },
 
-  pest: async ({ cropType, locationHint, images, location }) => {
+  pest: async ({ cropType, locationHint, images, location, clientScanId }) => {
     const form = new FormData();
+    if (clientScanId) form.append('client_scan_id', clientScanId);
     if (cropType) form.append('cropType', cropType);
     // 'location' here is the free-text region hint field /predict/pest's
     // prompt already accepted before Phase 6 (e.g. "Kano, Northern
@@ -334,7 +338,7 @@ export const diagnoseAPI = {
     if (locationHint) form.append('location', locationHint);
     appendLocationFields(form, location);
     images.forEach((img, i) => {
-      form.append('images[]', { uri: img.uri, name: `img_${i}.jpg`, type: 'image/jpeg' });
+      form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
     return multipartRequest('/diagnose/pest', form);
   },

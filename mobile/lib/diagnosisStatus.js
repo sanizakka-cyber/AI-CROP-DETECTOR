@@ -18,6 +18,10 @@ export function statusMeta(status, statusLabel) {
   }[status] || (status ? status.replace(/_/g, ' ') : 'Processing');
 
   if (label === 'Failed') return { label, icon: '❌', colorKey: 'danger' };
+  // Phase 11 outcome labels (Diagnosis::getStatusLabelAttribute()).
+  if (label === 'Retake Photo') return { label, icon: '📷', colorKey: 'warning' };
+  if (label === 'Wrong Subject') return { label, icon: '🔍', colorKey: 'warning' };
+  if (label === 'Inconclusive') return { label, icon: '❔', colorKey: 'warning' };
   if (label === 'Pending Review' || label === 'Processing') return { label, icon: '⏳', colorKey: 'warning' };
   if (label === 'Low Confidence') return { label, icon: '⚠️', colorKey: 'warning' };
   return { label, icon: '✅', colorKey: 'success' };

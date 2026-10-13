@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import ScanImageButtons from '../../components/ScanImageButtons';
+import { acquireScanImages, newClientScanId } from '../../lib/scanImagePicker';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Alert, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning } from '../../lib/imageValidator';
 import { useLocationCapture } from '../../lib/locationCapture';
@@ -54,14 +55,16 @@ export default function LivestockScanScreen() {
   // (the exact cases the other three scans reject) sailed through
   // unchecked here. Looped, not single-asset, since this screen alone
   // allows multi-select.
+  // Generated once per submission and reused if the farmer retries after a
+  // network failure, so the backend returns the scan it already created
+  // instead of creating (and counting) a duplicate.
+  const scanIdRef = useRef(null);
+
   const pickImage = async (source) => {
-    const perms = source === 'camera'
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perms.granted) return Alert.alert('Permission required', 'Please allow camera access.');
-    const result = source === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.75 })
-      : await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: true, quality: 0.75 });
+    // A new photo means a new scan: a later submit must not reuse the old id.
+    scanIdRef.current = null;
+    const result = await acquireScanImages(source, { multiple: true, quality: 0.75 });
+    if (result.error) return Alert.alert(isHausa ? 'Ba a karɓi hoton ba' : 'Photo not accepted', result.error);
     if (result.canceled) return;
 
     setValidating(true);
@@ -100,7 +103,9 @@ export default function LivestockScanScreen() {
 
     setLoading(true);
     try {
+      if (!scanIdRef.current) scanIdRef.current = newClientScanId();
       const { diagnosisId } = await diagnoseAPI.livestock({
+        clientScanId: scanIdRef.current,
         animalType: animal.id,
         assessmentType: assessment,
         images,          // empty array is fine for behavioral-only assessments
@@ -164,24 +169,17 @@ export default function LivestockScanScreen() {
         {assessment !== 'behavioral' && (
           <>
             <Text style={styles.stepTitle}>{isHausa ? 'Mataki 3: Ɗauki Hoto' : 'Step 3: Add Photos'}</Text>
-            <View style={styles.photoButtons}>
-              <TouchableOpacity style={styles.photoBtn} onPress={() => pickImage('camera')}>
-                <Text style={styles.photoBtnIcon}>📷</Text>
-                <Text style={styles.photoBtnText}>{t('takePhoto')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.photoBtn} onPress={() => pickImage('gallery')}>
-                <Text style={styles.photoBtnIcon}>🖼️</Text>
-                <Text style={styles.photoBtnText}>{t('fromGallery')}</Text>
-              </TouchableOpacity>
-            </View>
+            <ScanImageButtons onPick={pickImage} isHausa={isHausa} disabled={validating || loading} />
             {images.length > 0 && (
               <ScrollView horizontal style={styles.previews} showsHorizontalScrollIndicator={false}>
                 {images.map((img, i) => (
                   <View key={i} style={styles.previewWrap}>
                     <Image source={{ uri: img.uri }} style={styles.previewImg} />
+{img.fileName ? <Text numberOfLines={1} style={{ fontSize: 10, maxWidth: 80, color: '#64748B' }}>{img.fileName}</Text> : null}
                     <TouchableOpacity
                       style={styles.removeImg}
                       onPress={() => {
+                        scanIdRef.current = null;
                         setImages(imgs => imgs.filter((_, j) => j !== i));
                         setQualityResults(qs => qs.filter((_, j) => j !== i));
                       }}

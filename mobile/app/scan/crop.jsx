@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import ScanImageButtons from '../../components/ScanImageButtons';
+import { acquireScanImages, newClientScanId } from '../../lib/scanImagePicker';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Alert, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning, qualityLabel } from '../../lib/imageValidator';
 import { useLocationCapture } from '../../lib/locationCapture';
@@ -57,16 +58,16 @@ export default function CropScanScreen() {
   const [qualityResults, setQualityResults] = useState([]);
   const loc = useLocationCapture();
 
+  // Generated once per submission and reused if the farmer retries after a
+  // network failure, so the backend returns the scan it already created
+  // instead of creating (and counting) a duplicate.
+  const scanIdRef = useRef(null);
+
   const pickImage = async (source) => {
-    const perms = source === 'camera'
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perms.granted) return Alert.alert('Permission Required', 'Please allow camera access in your device settings.');
-
-    const result = source === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.85, exif: true })
-      : await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: false, quality: 0.85, exif: true });
-
+    // A new photo means a new scan: a later submit must not reuse the old id.
+    scanIdRef.current = null;
+    const result = await acquireScanImages(source, { multiple: false, quality: 0.85 });
+    if (result.error) return Alert.alert(isHausa ? 'Ba a karɓi hoton ba' : 'Photo not accepted', result.error);
     if (result.canceled) return;
 
     setValidating(true);
@@ -91,6 +92,7 @@ export default function CropScanScreen() {
   };
 
   const removeImage = (i) => {
+    scanIdRef.current = null;
     setImages(prev => prev.filter((_, j) => j !== i));
     setQualityResults(prev => prev.filter((_, j) => j !== i));
   };
@@ -115,7 +117,9 @@ export default function CropScanScreen() {
 
     setLoading(true);
     try {
+      if (!scanIdRef.current) scanIdRef.current = newClientScanId();
       const { diagnosisId } = await diagnoseAPI.crop({
+        clientScanId: scanIdRef.current,
         cropType: crop?.id,
         cropPart: part === LET_AI_DETECT ? undefined : part,
         images,
@@ -186,17 +190,7 @@ export default function CropScanScreen() {
           </Text>
         </View>
 
-        <View style={styles.photoButtons}>
-          <TouchableOpacity style={[styles.photoBtn, styles.photoBtnPrimary]} onPress={() => pickImage('camera')}>
-            <Text style={styles.photoBtnIcon}>📷</Text>
-            <Text style={styles.photoBtnTextPrimary}>{isHausa ? 'Ɗauki Hoto' : 'Take Photo'}</Text>
-            <Text style={styles.photoBtnBadge}>RECOMMENDED</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.photoBtn} onPress={() => pickImage('gallery')}>
-            <Text style={styles.photoBtnIcon}>🖼️</Text>
-            <Text style={styles.photoBtnText}>{isHausa ? 'Daga Gallery' : 'From Gallery'}</Text>
-          </TouchableOpacity>
-        </View>
+        <ScanImageButtons onPick={pickImage} isHausa={isHausa} disabled={validating || loading} />
 
         {/* Image Previews with Quality */}
         {images.length > 0 && (
@@ -204,6 +198,7 @@ export default function CropScanScreen() {
             {images.map((img, i) => (
               <View key={i} style={styles.previewWrap}>
                 <Image source={{ uri: img.uri }} style={styles.previewImg} />
+{img.fileName ? <Text numberOfLines={1} style={{ fontSize: 10, maxWidth: 80, color: '#64748B' }}>{img.fileName}</Text> : null}
                 {qualityResults[i] && (
                   <View style={[styles.qualityOverlay, { backgroundColor: qualityLabel(qualityResults[i].score).color }]}>
                     <Text style={styles.qualityOverlayText}>{qualityResults[i].score}%</Text>

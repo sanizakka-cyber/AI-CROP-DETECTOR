@@ -2,7 +2,7 @@
   "expo": {
     "name": "MSAS FarmAI",
     "slug": "msas-livestock-agro",
-    "version": "1.4.4",
+    "version": "1.4.5",
     "orientation": "portrait",
     "icon": "./assets/branding/android/ic_launcher_standalone.png",
     "scheme": "farmai",
@@ -18,7 +18,7 @@
       }
     },
     "android": {
-      "versionCode": 20,
+      "versionCode": 21,
       "adaptiveIcon": {
         "foregroundImage": "./assets/branding/android/ic_launcher_foreground.png",
         "monochromeImage": "./assets/branding/android/ic_launcher_monochrome.png",

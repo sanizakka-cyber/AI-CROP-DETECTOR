@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import ScanImageButtons from '../../components/ScanImageButtons';
+import { acquireScanImages, newClientScanId } from '../../lib/scanImagePicker';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Image, Alert, TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import * as ImagePicker from 'expo-image-picker';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { diagnoseAPI } from '../../lib/api';
 import { validateImageForScanning, qualityLabel } from '../../lib/imageValidator';
@@ -40,16 +41,16 @@ export default function PestScanScreen() {
   const [qualityResults, setQualityResults] = useState([]);
   const loc = useLocationCapture();
 
+  // Generated once per submission and reused if the farmer retries after a
+  // network failure, so the backend returns the scan it already created
+  // instead of creating (and counting) a duplicate.
+  const scanIdRef = useRef(null);
+
   const pickImage = async (source) => {
-    const perms = source === 'camera'
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perms.granted) return Alert.alert('Permission Required', 'Please allow camera access in your device settings.');
-
-    const result = source === 'camera'
-      ? await ImagePicker.launchCameraAsync({ quality: 0.85, exif: true })
-      : await ImagePicker.launchImageLibraryAsync({ allowsMultipleSelection: false, quality: 0.85, exif: true });
-
+    // A new photo means a new scan: a later submit must not reuse the old id.
+    scanIdRef.current = null;
+    const result = await acquireScanImages(source, { multiple: false, quality: 0.85 });
+    if (result.error) return Alert.alert(isHausa ? 'Ba a karɓi hoton ba' : 'Photo not accepted', result.error);
     if (result.canceled) return;
 
     setValidating(true);
@@ -74,6 +75,7 @@ export default function PestScanScreen() {
   };
 
   const removeImage = (i) => {
+    scanIdRef.current = null;
     setImages(prev => prev.filter((_, j) => j !== i));
     setQualityResults(prev => prev.filter((_, j) => j !== i));
   };
@@ -89,7 +91,9 @@ export default function PestScanScreen() {
 
     setLoading(true);
     try {
+      if (!scanIdRef.current) scanIdRef.current = newClientScanId();
       const { diagnosisId } = await diagnoseAPI.pest({
+        clientScanId: scanIdRef.current,
         cropType: cropType.trim() || undefined,
         locationHint: regionHint.trim() || undefined,
         images,
@@ -141,22 +145,14 @@ export default function PestScanScreen() {
         <LocationCaptureSection loc={loc} />
 
         <Text style={styles.stepTitle}>{isHausa ? 'Ɗauki Hoton Kwaro' : 'Capture Pest Photo'}</Text>
-        <View style={styles.photoButtons}>
-          <TouchableOpacity style={[styles.photoBtn, styles.photoBtnPrimary]} onPress={() => pickImage('camera')}>
-            <MaterialCommunityIcons name="camera" size={28} color={Colors.white} />
-            <Text style={styles.photoBtnTextPrimary}>{isHausa ? 'Ɗauki Hoto' : 'Take Photo'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.photoBtn} onPress={() => pickImage('gallery')}>
-            <MaterialCommunityIcons name="image-multiple-outline" size={28} color={Colors.textSecondary} />
-            <Text style={styles.photoBtnText}>{isHausa ? 'Daga Gallery' : 'From Gallery'}</Text>
-          </TouchableOpacity>
-        </View>
+        <ScanImageButtons onPick={pickImage} isHausa={isHausa} disabled={validating || loading} />
 
         {images.length > 0 && (
           <ScrollView horizontal style={styles.previews} showsHorizontalScrollIndicator={false}>
             {images.map((img, i) => (
               <View key={i} style={styles.previewWrap}>
                 <Image source={{ uri: img.uri }} style={styles.previewImg} />
+{img.fileName ? <Text numberOfLines={1} style={{ fontSize: 10, maxWidth: 80, color: '#64748B' }}>{img.fileName}</Text> : null}
                 {qualityResults[i] && (
                   <View style={[styles.qualityOverlay, { backgroundColor: qualityLabel(qualityResults[i].score).color }]}>
                     <Text style={styles.qualityOverlayText}>{qualityResults[i].score}%</Text>
