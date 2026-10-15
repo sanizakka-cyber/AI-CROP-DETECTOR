@@ -59,6 +59,8 @@ export default function LivestockScanScreen() {
   // network failure, so the backend returns the scan it already created
   // instead of creating (and counting) a duplicate.
   const scanIdRef = useRef(null);
+  // Upload percentage while the photo is sent (null = not uploading).
+  const [uploadPct, setUploadPct] = useState(null);
 
   const pickImage = async (source) => {
     // A new photo means a new scan: a later submit must not reuse the old id.
@@ -104,8 +106,10 @@ export default function LivestockScanScreen() {
     setLoading(true);
     try {
       if (!scanIdRef.current) scanIdRef.current = newClientScanId();
+      setUploadPct(0);
       const { diagnosisId } = await diagnoseAPI.livestock({
         clientScanId: scanIdRef.current,
+        onProgress: setUploadPct,
         animalType: animal.id,
         assessmentType: assessment,
         images,          // empty array is fine for behavioral-only assessments
@@ -118,12 +122,13 @@ export default function LivestockScanScreen() {
       Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
+      setUploadPct(null);
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {loading && <LoadingOverlay message="Analysing animal health..." />}
+      {loading && <LoadingOverlay message={uploadPct !== null && uploadPct < 100 ? `${isHausa ? 'Ana aika hoto' : 'Uploading photo'}… ${uploadPct}%` : (isHausa ? 'Ana bincika lafiyar dabba...' : 'Analysing animal health...')} />}
       {validating && <LoadingOverlay message="Validating image quality..." />}
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         <View style={styles.header}>

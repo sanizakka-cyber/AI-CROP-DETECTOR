@@ -41,6 +41,8 @@ export default function SoilScanScreen() {
   // network failure, so the backend returns the scan it already created
   // instead of creating (and counting) a duplicate.
   const scanIdRef = useRef(null);
+  // Upload percentage while the photo is sent (null = not uploading).
+  const [uploadPct, setUploadPct] = useState(null);
 
   const pickImage = async (source) => {
     // A new photo means a new scan: a later submit must not reuse the old id.
@@ -88,8 +90,10 @@ export default function SoilScanScreen() {
     setLoading(true);
     try {
       if (!scanIdRef.current) scanIdRef.current = newClientScanId();
+      setUploadPct(0);
       const { diagnosisId } = await diagnoseAPI.soil({
         clientScanId: scanIdRef.current,
+        onProgress: setUploadPct,
         soilContext: context.trim() || undefined,
         images,
         location: loc.toApiFields(),
@@ -99,12 +103,13 @@ export default function SoilScanScreen() {
       Alert.alert('Scan Failed', e.message);
     } finally {
       setLoading(false);
+      setUploadPct(null);
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {loading && <LoadingOverlay message={isHausa ? 'Ana bincika hoto ta AI...' : 'AI is analysing your soil sample...'} />}
+      {loading && <LoadingOverlay message={uploadPct !== null && uploadPct < 100 ? `${isHausa ? 'Ana aika hoto' : 'Uploading photo'}… ${uploadPct}%` : (isHausa ? 'Ana bincika hoto ta AI...' : 'AI is analysing your soil sample...')} />}
       {validating && <LoadingOverlay message={isHausa ? 'Ana tabbatar da ingancin hoto...' : 'Validating image quality...'} />}
 
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
