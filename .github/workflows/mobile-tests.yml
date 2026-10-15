@@ -12,6 +12,11 @@ on:
     paths:
       - 'mobile/**'
       - '.github/workflows/mobile-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-tests.yml'
 
 permissions:
   contents: read
