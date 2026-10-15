@@ -11,11 +11,13 @@ on:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'shared-fixtures/**'
       - '.github/workflows/mobile-tests.yml'
   pull_request:
     branches: [main]
     paths:
       - 'mobile/**'
+      - 'shared-fixtures/**'
       - '.github/workflows/mobile-tests.yml'
 
 permissions:

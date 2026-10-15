@@ -18,11 +18,13 @@ on:
     branches: [main]
     paths:
       - 'msas-system/**'
+      - 'shared-fixtures/**'
       - '.github/workflows/postgres-tests.yml'
   pull_request:
     branches: [main]
     paths:
       - 'msas-system/**'
+      - 'shared-fixtures/**'
       - '.github/workflows/postgres-tests.yml'
 
 permissions:
