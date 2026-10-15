@@ -26,7 +26,7 @@ class CanonicalDiagnosisParityTest extends TestCase
         return json_decode(file_get_contents(base_path('../shared-fixtures/canonical-diagnosis.json')), true);
     }
 
-    private function seed(User $user): Diagnosis
+    private function seedCanonical(User $user): Diagnosis
     {
         $f = $this->fixture();
         $d = Diagnosis::create(array_merge($f['record'], ['user_id' => $user->id]));
@@ -51,7 +51,7 @@ class CanonicalDiagnosisParityTest extends TestCase
     public function test_api_returns_exactly_what_the_app_parity_test_renders(): void
     {
         $user = User::factory()->create(['role' => 'farmer']);
-        $d = $this->seed($user);
+        $d = $this->seedCanonical($user);
 
         $res = $this->withHeaders(['Authorization' => 'Bearer ' . $user->createToken('t')->plainTextToken])
             ->getJson("/api/diagnose/{$d->id}");
@@ -71,7 +71,7 @@ class CanonicalDiagnosisParityTest extends TestCase
     public function test_web_history_and_report_show_every_field_the_app_shows(): void
     {
         $user = User::factory()->create(['role' => 'farmer']);
-        $d = $this->seed($user);
+        $d = $this->seedCanonical($user);
 
         $history = $this->visibleText($this->actingAs($user)->get(route('diagnostics.history'))->assertOk()->getContent());
         $report  = $this->visibleText($this->actingAs($user)->get(route('diagnostics.report', $d))->assertOk()->getContent());
