@@ -1,0 +1,5 @@
+# Service runtime (also enough to run the tests with a fake engine)
+fastapi>=0.110,<1
+uvicorn[standard]>=0.29,<1
+numpy>=1.26,<3
+pydantic>=2.6,<3

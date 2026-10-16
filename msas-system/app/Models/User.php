@@ -18,7 +18,7 @@ class User extends Authenticatable
     protected $fillable = [
         'first_name', 'middle_name', 'last_name',
         'email', 'phone', 'role', 'state', 'lga', 'ward', 'village', 'country',
-        'password', 'profile_photo', 'language', 'last_seen',
+        'password', 'profile_photo', 'language', 'preferred_language', 'last_seen',
         'is_active', 'is_verified', 'is_pilot', 'force_password_reset',
         'email_verified_at', 'phone_verified_at',
         'expo_push_token', 'fcm_token',

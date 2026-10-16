@@ -1226,6 +1226,59 @@ Provide ONLY the translated text, no explanations or meta-commentary."""
     return {"translated_text": translated, "language": lang_name}
 
 
+# ─── /translate/scan-result ("Listen to your result") ─────────────────────────
+# Structured, field-by-field translation of a finished scan result. Laravel
+# stores the reply, checks numbers/units/product names against the source,
+# and never calls this again for the same source text and language.
+
+import translation_contract as _tc
+
+
+@app.post("/translate/scan-result")
+async def translate_scan_result(request: Request):
+    _check_auth(request)
+    try:
+        body = await request.json()
+    except ValueError:
+        raise HTTPException(status_code=422, detail={"error": "invalid_json", "message": "Body must be JSON."})
+
+    content = body.get("content") or {}
+    target_name = str(body.get("target_language_name") or "").strip()
+    source_name = str(body.get("source_language_name") or "English").strip()
+    if not target_name or not isinstance(content, dict) or not all(k in content for k in _tc.CONTENT_KEYS):
+        raise HTTPException(status_code=422, detail={
+            "error": "invalid_request",
+            "message": "content needs observations, explanation, recommendations and safety_note; target_language_name is required.",
+        })
+
+    prompt = _tc.build_prompt(source_name, target_name, content,
+                              body.get("glossary") or [], body.get("protected_terms") or [])
+    client = _get_client()
+    try:
+        message = await client.messages.create(
+            model=AI_MODEL,
+            max_tokens=8000,
+            messages=[{"role": "user", "content": prompt}],
+            output_config={"format": {"type": "json_schema", "schema": _tc.schema()}},
+        )
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=503, detail={"error": "provider_unavailable", "message": f"AI service error: {str(e)}"})
+
+    if message.stop_reason in ("refusal", "max_tokens"):
+        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": f"Translation incomplete ({message.stop_reason})."})
+    try:
+        translated = json.loads(_extract_text(message))
+    except json.JSONDecodeError:
+        translated = None
+    if not isinstance(translated, dict):
+        raise HTTPException(status_code=502, detail={"error": "malformed_response", "message": "Translation was not valid JSON."})
+    problem = _tc.shape_ok(content, translated)
+    if problem:
+        raise HTTPException(status_code=502, detail={"error": "shape_mismatch", "message": problem})
+
+    return {"translated": {k: translated[k] for k in _tc.CONTENT_KEYS}, "model": AI_MODEL}
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8001))
     uvicorn.run(app, host="0.0.0.0", port=port)
