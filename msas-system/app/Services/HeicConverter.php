@@ -46,8 +46,11 @@ class HeicConverter
         file_put_contents($path, $bytes);
         $name = pathinfo((string) $file->getClientOriginalName(), PATHINFO_FILENAME) ?: 'photo';
 
-        // test=true: the converted file was not itself "uploaded", but it stands in for one.
-        return new UploadedFile($path, "{$name}.jpg", 'image/jpeg', null, true);
+        // Laravel's own UploadedFile with test=true: the converted file was not
+        // itself "uploaded" (is_uploaded_file() is false), but stands in for one.
+        // A plain Symfony object would be re-wrapped by Laravel without the
+        // test flag and then fail validation as an invalid upload.
+        return new \Illuminate\Http\UploadedFile($path, "{$name}.jpg", 'image/jpeg', null, true);
     }
 
     public function driver(): string
