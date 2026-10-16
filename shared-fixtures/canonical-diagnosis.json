@@ -1,0 +1,94 @@
+{
+  "_about": "One stored scan, read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php checks the API returns `api` for `record`+`location` and that the web history and report show every `mustDisplay` string; mobile/app/diagnosis/__tests__/canonicalParity.test.js renders `api` in the app and checks the same strings. A field change that only one client handles breaks one of the two tests.",
+  "record": {
+    "type": "plant",
+    "status": "reviewed",
+    "subject_name": "Tomato",
+    "scientific_name": "Solanum lycopersicum",
+    "detected_part": "Leaf",
+    "health_status": "Diseased",
+    "severity_level": "Moderate",
+    "disease_name": "Late blight (Phytophthora infestans)",
+    "confidence_score": 78,
+    "urgency_level": "High",
+    "symptoms_identified": "dark water-soaked lesions, white growth on leaf underside",
+    "cause": "Fungus-like pathogen spread in cool wet weather",
+    "first_aid_steps": "1) Remove and destroy infected leaves 2) Avoid overhead watering",
+    "recommended_medication": "Copper-based fungicide, applied at the rate on the product label",
+    "preventive_measures": "Rotate crops away from tomato and potato",
+    "organic_options": "Remove infected plants and improve air flow",
+    "best_practices": "Organic/natural option: Remove infected plants and improve air flow",
+    "explanation": "Water-soaked lesions with white sporulation are typical of late blight",
+    "confidence_decision": "sufficient",
+    "assessment_outcome": "assessed",
+    "image_quality": "good",
+    "image_issues": [],
+    "photo_tips": [],
+    "alternative_findings": [{"name": "Early blight", "why_considered": "Brown lesions, but no target rings"}],
+    "contract_version": "2026-10-phase11",
+    "ai_model_name": "claude-sonnet-5",
+    "validation_status": "unvalidated"
+  },
+  "location": {
+    "country": "Nigeria",
+    "state": "Katsina",
+    "lga": "Funtua",
+    "capture_method": "administrative_selection",
+    "differs_from_scan_location": true,
+    "verification_status": "unverified"
+  },
+  "api": {
+    "type": "crop",
+    "status": "reviewed",
+    "statusLabel": "Completed",
+    "subjectName": "Tomato",
+    "scientificName": "Solanum lycopersicum",
+    "detectedPart": "Leaf",
+    "aiResult": {
+      "primaryDiagnosis": "Late blight (Phytophthora infestans)",
+      "confidence": 78,
+      "severity": "high",
+      "severityLevel": "Moderate",
+      "healthStatus": "Diseased",
+      "symptomsIdentified": "dark water-soaked lesions, white growth on leaf underside",
+      "explanation": "Water-soaked lesions with white sporulation are typical of late blight"
+    },
+    "assessment": {
+      "outcome": "assessed",
+      "imageQuality": "good",
+      "imageIssues": [],
+      "photoTips": [],
+      "alternativeFindings": [{"name": "Early blight", "why_considered": "Brown lesions, but no target rings"}],
+      "contractVersion": "2026-10-phase11"
+    },
+    "treatmentPlan": {
+      "immediateActions": [{"action": "1) Remove and destroy infected leaves 2) Avoid overhead watering"}],
+      "chemicalTreatments": [{"product": "Copper-based fungicide, applied at the rate on the product label"}],
+      "preventiveMeasures": "Rotate crops away from tomato and potato",
+      "organicOptions": "Remove infected plants and improve air flow"
+    },
+    "collectionLocation": {
+      "state": "Katsina",
+      "lga": "Funtua",
+      "differsFromScanLocation": true
+    },
+    "confidenceProvenance": {
+      "aiModelName": "claude-sonnet-5",
+      "confidenceDecision": "sufficient",
+      "validationStatus": "unvalidated"
+    }
+  },
+  "mustDisplay": [
+    "Late blight (Phytophthora infestans)",
+    "Tomato",
+    "Solanum lycopersicum",
+    "78%",
+    "dark water-soaked lesions, white growth on leaf underside",
+    "Early blight",
+    "Remove and destroy infected leaves",
+    "Remove infected plants and improve air flow",
+    "Katsina",
+    "Funtua",
+    "Scanned at a different location than collected"
+  ]
+}

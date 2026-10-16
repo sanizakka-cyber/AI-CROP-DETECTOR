@@ -1,0 +1,74 @@
+{
+  "_about": "A stored scan below the confidence threshold (65% by default), read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php (API subset, web history, PDF report) and mobile/app/diagnosis/__tests__/lowConfidenceParity.test.js (app result screen). Neither side may present it as one diagnosis: both show 'Not certain', the possible conditions, the confirm-with-an-expert message and the AI disclaimer.",
+  "record": {
+    "type": "livestock",
+    "status": "reviewed",
+    "language": "en",
+    "subject_name": "Cattle",
+    "disease_name": "Ringworm (Trichophyton verrucosum)",
+    "confidence_score": 55,
+    "urgency_level": "Medium",
+    "symptoms_identified": "circular grey crusted patches on the neck",
+    "recommended_medication": "Topical antifungal, as directed by a vet",
+    "organic_options": "Isolate the animal and clean shared equipment",
+    "explanation": "Crusted circular patches fit ringworm, but nodules would point elsewhere",
+    "confidence_decision": "low_confidence_review",
+    "assessment_outcome": "assessed",
+    "image_quality": "acceptable",
+    "image_issues": [],
+    "photo_tips": [],
+    "alternative_findings": [
+      { "name": "Mange", "why_considered": "Crusting and hair loss" },
+      { "name": "Lumpy skin disease", "why_considered": "Raised skin lesions" }
+    ],
+    "contract_version": "2026-10-phase11",
+    "ai_model_name": "claude-sonnet-5",
+    "validation_status": "unvalidated"
+  },
+  "api": {
+    "type": "livestock",
+    "status": "reviewed",
+    "statusLabel": "Low Confidence",
+    "subjectName": "Cattle",
+    "aiResult": {
+      "primaryDiagnosis": "Ringworm (Trichophyton verrucosum)",
+      "confidence": 55,
+      "symptomsIdentified": "circular grey crusted patches on the neck",
+      "explanation": "Crusted circular patches fit ringworm, but nodules would point elsewhere"
+    },
+    "assessment": {
+      "outcome": "assessed",
+      "imageQuality": "acceptable",
+      "imageIssues": [],
+      "photoTips": [],
+      "alternativeFindings": [
+        { "name": "Mange", "why_considered": "Crusting and hair loss" },
+        { "name": "Lumpy skin disease", "why_considered": "Raised skin lesions" }
+      ],
+      "contractVersion": "2026-10-phase11",
+      "notCertain": true,
+      "minConfidence": 65,
+      "possibleConditions": ["Ringworm (Trichophyton verrucosum)", "Mange", "Lumpy skin disease"]
+    },
+    "treatmentPlan": {
+      "immediateActions": [],
+      "chemicalTreatments": [{ "product": "Topical antifungal, as directed by a vet" }],
+      "organicOptions": "Isolate the animal and clean shared equipment"
+    },
+    "confidenceProvenance": {
+      "aiModelName": "claude-sonnet-5",
+      "confidenceDecision": "low_confidence_review",
+      "validationStatus": "unvalidated"
+    }
+  },
+  "headline": "Not certain",
+  "mustDisplay": [
+    "Not certain",
+    "Ringworm (Trichophyton verrucosum)",
+    "Mange",
+    "Lumpy skin disease",
+    "Please confirm with a vet or extension officer before treating.",
+    "AI guidance can be wrong; confirm with an expert.",
+    "55%"
+  ]
+}

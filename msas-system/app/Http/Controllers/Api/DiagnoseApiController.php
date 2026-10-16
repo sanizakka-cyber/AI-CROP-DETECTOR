@@ -425,6 +425,11 @@ class DiagnoseApiController extends Controller
                 'alternativeFindings'   => $d->alternative_findings ?? [],
                 'whatCannotBeConfirmed' => $d->what_cannot_be_confirmed,
                 'contractVersion'       => $d->contract_version,
+                // Low-confidence rule: below minConfidence the app shows "Not certain"
+                // with these possible conditions instead of one diagnosis.
+                'notCertain'            => $d->is_not_certain,
+                'minConfidence'         => Diagnosis::minConfidence(),
+                'possibleConditions'    => $d->is_not_certain ? $d->possible_conditions : [],
             ],
             'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [

@@ -122,11 +122,52 @@ class Diagnosis extends Model
         $tier = match (true) {
             $pct >= 85 => 'High Confidence',
             $pct >= 70 => 'Good Confidence',
-            $pct >= 65 => 'Acceptable / Review if necessary',
+            $pct >= self::minConfidence() => 'Acceptable / Review if necessary',
             default    => 'Low Confidence / Expert Review Required',
         };
 
         return "{$pct}% — {$tier}";
+    }
+
+    /** The confidence (percent) below which a result is never shown as a single diagnosis. */
+    public static function minConfidence(): float
+    {
+        return \App\Services\DiagnosisResultMapper::threshold();
+    }
+
+    /**
+     * Low-confidence rule: an assessed result whose confidence is below the
+     * threshold is shown as "Not certain" with its possible conditions,
+     * never as one diagnosis. Rejected photos, inconclusive results and AI
+     * outages have their own screens and are not affected.
+     */
+    public function getIsNotCertainAttribute(): bool
+    {
+        return $this->confidence_score !== null
+            && (float) $this->confidence_score < self::minConfidence()
+            && in_array($this->assessment_outcome, [null, 'assessed'], true)
+            && !in_array($this->status, ['pending', 'needs_review'], true);
+    }
+
+    /** The top possible conditions: the AI's leading finding, then the alternatives it considered. */
+    public function getPossibleConditionsAttribute(): array
+    {
+        $names = [];
+        if ($this->disease_name && !in_array(mb_strtolower(trim($this->disease_name)), ['unknown', 'none', 'n/a'], true)) {
+            $names[] = trim($this->disease_name);
+        }
+        foreach ($this->alternative_findings ?? [] as $alt) {
+            if (!empty($alt['name'])) {
+                $names[] = trim($alt['name']);
+            }
+        }
+        $unique = [];
+        foreach ($names as $n) {
+            if (!in_array(mb_strtolower($n), array_map('mb_strtolower', $unique), true)) {
+                $unique[] = $n;
+            }
+        }
+        return array_slice($unique, 0, (int) config('diagnosis.possible_conditions', 3));
     }
 
     /** Plain "87%" (or null) — for spots that only need the number, one format everywhere. */
@@ -160,7 +201,9 @@ class Diagnosis extends Model
             return $outcomeLabel;
         }
         if (in_array($this->status, ['reviewed', 'confirmed'], true)) {
-            return ($this->confidence_score !== null && $this->confidence_score < 65)
+            // Same rule as the "Not certain" result screen; the label text is
+            // what the CEO analytics group on (HasCeoScanFilters).
+            return $this->is_not_certain
                 ? 'Low Confidence'
                 : 'Completed';
         }

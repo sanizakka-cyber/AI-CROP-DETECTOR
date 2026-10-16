@@ -18,6 +18,12 @@ class SubscriptionLimitService
         $plan  = $sub ? $sub->plan : 'free';
         $limit = $sub ? $sub->getLimit('ai_scans_per_month') : config('subscription.plans.free.limits.ai_scans_per_month', 5);
 
+        // Dedicated QA accounts on staging (config/qa.php; always off in production).
+        if (config('qa.enabled') && $user->is_qa) {
+            $plan  = 'qa';
+            $limit = (int) config('qa.scan_limit', 200);
+        }
+
         if ($limit === -1) {
             return ['allowed' => true, 'used' => 0, 'limit' => -1, 'remaining' => -1];
         }

@@ -35,7 +35,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 MODES = {"crop", "livestock", "soil", "pest"}
 OUTCOMES = {"assessed", "uncertain", "poor_image", "unsupported_subject"}
@@ -92,13 +92,16 @@ def call_engine(url, key, mode, image_path, timeout=180):
         return e.code, payload, time.time() - t0
 
 
-def score(rows, results):
+def score(rows, results, min_confidence=65):
     """Pure function: rows + engine results -> report dict (unit-tested)."""
     per_mode = defaultdict(lambda: {"images": 0, "errors": 0, "label_items": 0, "answered": 0, "correct": 0,
                                     "outcome_items": 0, "outcome_correct": 0, "bands": defaultdict(lambda: [0, 0]),
-                                    "mistakes": []})
+                                    "mistakes": [], "conditions": defaultdict(lambda: {
+                                        "n": 0, "answered": 0, "correct": 0, "not_certain": 0, "confusions": Counter()})})
     for row, res in zip(rows, results):
         m = per_mode[row["mode"]]
+        c = m["conditions"][row["expected"] or f"outcome:{row['expected_outcome']}"]
+        c["n"] += 1
         m["images"] += 1
         status, body = res["status"], res["body"] or {}
         if status != 200:
@@ -116,10 +119,16 @@ def score(rows, results):
         if outcome != "assessed":
             continue  # declined to answer: counted against coverage, not accuracy
         m["answered"] += 1
+        c["answered"] += 1
         finding = body.get("disease") or body.get("pest_name")
         ok = label_matches(finding, row["names"])
         m["correct"] += ok
+        c["correct"] += ok
         conf = body.get("confidence")
+        if isinstance(conf, (int, float)) and conf < min_confidence:
+            c["not_certain"] += 1  # the app/web would show "Not certain", not this finding
+        if not ok:
+            c["confusions"][(finding or "(none)").strip()] += 1
         if isinstance(conf, (int, float)):
             for lo, hi in BANDS:
                 if lo <= conf < hi:
@@ -138,16 +147,67 @@ def score(rows, results):
             "rejection_accuracy": round(m["outcome_correct"] / m["outcome_items"], 3) if m["outcome_items"] else None,
             "confidence_bands": {b: {"n": n, "accuracy": round(c / n, 3)} for b, (n, c) in sorted(m["bands"].items())},
             "mistakes": m["mistakes"],
+            "conditions": {
+                name: {
+                    "n": c["n"],
+                    "accuracy": round(c["correct"] / c["n"], 3) if c["n"] else None,
+                    "accuracy_when_answered": round(c["correct"] / c["answered"], 3) if c["answered"] else None,
+                    "shown_as_not_certain": c["not_certain"],
+                    "top_confusions": c["confusions"].most_common(3),
+                } for name, c in sorted(m["conditions"].items())
+            },
         }
     return report
 
 
+def consistency(rows, runs):
+    """Same photo, several runs: how often does the finding stay the same? (pure, unit-tested)"""
+    out = defaultdict(lambda: {"images": 0, "same_finding": 0, "confidence_spread": []})
+    for i, row in enumerate(rows):
+        bodies = [r[i]["body"] or {} for r in runs if r[i]["status"] == 200]
+        if len(bodies) < 2:
+            continue
+        o = out[row["expected"] or row["mode"]]
+        o["images"] += 1
+        findings = {(b.get("disease") or b.get("pest_name") or b.get("assessment_outcome") or "").strip().lower() for b in bodies}
+        o["same_finding"] += len(findings) == 1
+        confs = [b.get("confidence") for b in bodies if isinstance(b.get("confidence"), (int, float))]
+        if len(confs) >= 2:
+            o["confidence_spread"].append(max(confs) - min(confs))
+    return {k: {"images": v["images"], "same_finding_rate": round(v["same_finding"] / v["images"], 3) if v["images"] else None,
+                "mean_confidence_spread": round(sum(v["confidence_spread"]) / len(v["confidence_spread"]), 1) if v["confidence_spread"] else None}
+            for k, v in sorted(out.items())}
+
+
+def compare(before, after):
+    """Per-condition accuracy before vs after a change (two saved reports)."""
+    lines = [f"{'mode/condition':45} {'before':>8} {'after':>8} {'change':>8}"]
+    for mode in sorted(set(before) | set(after)):
+        conds = set(before.get(mode, {}).get("conditions", {})) | set(after.get(mode, {}).get("conditions", {}))
+        for c in sorted(conds):
+            b = before.get(mode, {}).get("conditions", {}).get(c, {}).get("accuracy")
+            a = after.get(mode, {}).get("conditions", {}).get(c, {}).get("accuracy")
+            d = f"{a - b:+.3f}" if a is not None and b is not None else "n/a"
+            lines.append(f"{(mode + '/' + c)[:45]:45} {b if b is not None else '-':>8} {a if a is not None else '-':>8} {d:>8}")
+    return "\n".join(lines)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("manifest")
+    ap.add_argument("manifest", nargs="?")
     ap.add_argument("--out", default="eval_results.json")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--repeats", type=int, default=1, help="run each image N times and report consistency")
+    ap.add_argument("--min-confidence", type=float, default=65, help="the app's Not-certain threshold")
+    ap.add_argument("--compare", nargs=2, metavar=("BEFORE_JSON", "AFTER_JSON"), help="compare two saved runs and exit")
     a = ap.parse_args(argv)
+
+    if a.compare:
+        before, after = (json.load(open(f, encoding="utf-8"))["report"] for f in a.compare)
+        print(compare(before, after))
+        return 0
+    if not a.manifest:
+        ap.error("manifest is required (except with --compare)")
 
     rows, errors = load_manifest(a.manifest)
     if errors:
@@ -162,17 +222,21 @@ def main(argv=None):
         print("Set ENGINE_URL (and ENGINE_API_KEY if the engine requires one).")
         return 2
 
-    results = []
-    for i, r in enumerate(rows, 1):
-        status, body, secs = call_engine(url, key, r["mode"], r["image"])
-        results.append({"status": status, "body": body, "seconds": round(secs, 1)})
-        print(f"[{i}/{len(rows)}] {r['mode']:9} {status} {secs:5.1f}s {os.path.basename(r['image'])}: "
-              f"{body.get('assessment_outcome')} / {body.get('disease') or body.get('pest_name')} / {body.get('confidence')}")
+    runs = []
+    for rep in range(max(1, a.repeats)):
+        results = []
+        for i, r in enumerate(rows, 1):
+            status, body, secs = call_engine(url, key, r["mode"], r["image"])
+            results.append({"status": status, "body": body, "seconds": round(secs, 1)})
+            print(f"[run {rep + 1}, {i}/{len(rows)}] {r['mode']:9} {status} {secs:5.1f}s {os.path.basename(r['image'])}: "
+                  f"{body.get('assessment_outcome')} / {body.get('disease') or body.get('pest_name')} / {body.get('confidence')}")
+        runs.append(results)
 
-    report = score(rows, results)
-    json.dump({"report": report, "raw": [{**r, **res} for r, res in zip(rows, results)]},
+    report = score(rows, runs[0], a.min_confidence)
+    cons = consistency(rows, runs) if len(runs) > 1 else None
+    json.dump({"report": report, "consistency": cons, "raw": [[{**r, **res} for r, res in zip(rows, run)] for run in runs]},
               open(a.out, "w", encoding="utf-8"), indent=1, default=str)
-    print(json.dumps(report, indent=1, default=str))
+    print(json.dumps({"report": report, "consistency": cons}, indent=1, default=str))
     print(f"Saved {a.out}")
     return 0
 

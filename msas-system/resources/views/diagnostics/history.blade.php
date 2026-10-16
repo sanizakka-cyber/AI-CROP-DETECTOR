@@ -232,7 +232,7 @@
                             @endif
                         </div>
 
-                        @if($diagnosis->confidence_score !== null && $diagnosis->confidence_score < 65)
+                        @if($diagnosis->is_not_certain)
                         <div class="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW CONF.</div>
                         @endif
                     </div>
@@ -275,6 +275,9 @@
                 <div class="md:col-span-3 space-y-4">
 
                     {{-- Disease headline --}}
+                    @if($diagnosis->is_not_certain)
+                    @include('diagnostics.partials.not-certain')
+                    @else
                     <div class="{{ $theme['ibg'] }} border border-opacity-30 rounded-xl px-4 py-3 flex items-start justify-between gap-3 flex-wrap"
                          style="border-color: inherit">
                         <div>
@@ -293,6 +296,9 @@
                         </div>
                         @endif
                     </div>
+                    @endif
+
+                    @include('diagnostics.partials.ai-disclaimer')
 
                     @include('diagnostics.partials.outcome-history')
 

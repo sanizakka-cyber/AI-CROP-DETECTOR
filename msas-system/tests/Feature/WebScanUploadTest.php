@@ -34,9 +34,9 @@ class WebScanUploadTest extends TestCase
     {
         $page = $this->actingAs(User::factory()->create(['role' => 'farmer']))->get(route('diagnostics.scan'));
         $page->assertOk();
-        $page->assertSee('accept="image/jpeg,image/png,image/webp"', false);
-        $page->assertSee('JPG, PNG or WebP, up to 10 MB');
-        $page->assertDontSee('HEIC');
+        // Phase 12.1: HEIC/HEIF is accepted and converted to JPEG on the server.
+        $page->assertSee('accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"', false);
+        $page->assertSee('JPG, PNG, WebP or HEIC, up to 10 MB');
         $page->assertSee('Take Photo');
         $page->assertSee('Select Photo');
         $page->assertSee('Browse Files');

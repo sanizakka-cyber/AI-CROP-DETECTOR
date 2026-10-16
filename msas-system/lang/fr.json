@@ -308,7 +308,7 @@
   "Pest ID": "Identification des Ravageurs",
   "Auto-detects species & disease": "Détecte automatiquement l'espèce & la maladie",
   "Auto-detects breed & condition": "Détecte automatiquement la race & l'état",
-  "Nutrients, pH, Recommendations": "Nutriments, pH, Recommandations",
+  "Nutrients, Recommendations": "Nutriments, Recommandations",
   "Insects, weeds & pathogens": "Insectes, mauvaises herbes & pathogènes",
   "Crop Type": "Type de culture",
   "Plant Part": "Partie de la plante",
@@ -396,5 +396,13 @@
   "What this confidence score means": "Ce que signifie ce score de confiance",
   "What was wrong with the photo": "Ce qui n'allait pas avec la photo",
   "Your browser does not support location capture. Please select your state/LGA manually.": "Votre navigateur ne permet pas la localisation. Veuillez choisir votre État/LGA manuellement.",
-  "e.g., Funtua town": "par ex. la ville de Funtua"
+  "e.g., Funtua town": "par ex. la ville de Funtua",
+  "Not certain": "Pas certain",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "L'IA n'est pas assez sûre pour donner un seul diagnostic. Voici les problèmes possibles :",
+  "Possible conditions": "Problèmes possibles",
+  "Please confirm with a vet or extension officer before treating.": "Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",
+  "AI guidance can be wrong; confirm with an expert.": "Les conseils de l'IA peuvent être erronés ; confirmez auprès d'un expert.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP ou HEIC, jusqu'à 10 Mo",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Ce type de fichier n'est pas pris en charge. Choisissez une photo JPG, PNG, WebP ou HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Photo HEIC : elle sera convertie en JPEG lors de l'analyse."
 }

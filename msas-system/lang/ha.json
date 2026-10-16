@@ -308,7 +308,7 @@
   "Pest ID": "Gano Ƙwari",
   "Auto-detects species & disease": "Na'ura na gano nau'i & cuta ta atomatik",
   "Auto-detects breed & condition": "Na'ura na gano nau'i & yanayi ta atomatik",
-  "Nutrients, pH, Recommendations": "Abubuwan Gina Jiki, pH, da Shawarwari",
+  "Nutrients, Recommendations": "Abubuwan Gina Jiki da Shawarwari",
   "Insects, weeds & pathogens": "Ƙwari, ciyayi maras amfani & ƙwayoyin cuta",
   "Crop Type": "Nau'in Amfanin Gona",
   "Plant Part": "Ɓangaren Tsiro",
@@ -396,5 +396,13 @@
   "What this confidence score means": "Ma'anar wannan makin tabbaci",
   "What was wrong with the photo": "Abin da ke damun hoton",
   "Your browser does not support location capture. Please select your state/LGA manually.": "Burauzarka ba ya goyon bayan ɗaukar wuri. Da fatan ka zaɓi jiharka/ƙaramar hukumarka.",
-  "e.g., Funtua town": "misali, garin Funtua"
+  "e.g., Funtua town": "misali, garin Funtua",
+  "Not certain": "Ba a tabbata ba",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI ba ta da isasshen tabbaci don ba da cuta ɗaya. Ga cututtukan da za su iya kasancewa:",
+  "Possible conditions": "Cututtukan da za su iya kasancewa",
+  "Please confirm with a vet or extension officer before treating.": "Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
+  "AI guidance can be wrong; confirm with an expert.": "Shawarar AI na iya yin kuskure; ka tabbatar da ƙwararre.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP ko HEIC, har zuwa 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Ba a karɓar irin wannan fayil ba. Zaɓi hoton JPG, PNG, WebP ko HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Hoton HEIC: za a mayar da shi JPEG idan ka fara bincike."
 }

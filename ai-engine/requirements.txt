@@ -8,6 +8,8 @@ fastapi==0.141.1
 uvicorn[standard]==0.52.4
 python-multipart==0.0.32
 pillow==12.3.0
+# HEIC/HEIF decoding (bundles libheif); see _to_srgb / convert_to_jpeg in main.py.
+pillow-heif==1.8.1
 anthropic==1.4.0
 a2wsgi==1.10.10
 python-dotenv==1.2.3

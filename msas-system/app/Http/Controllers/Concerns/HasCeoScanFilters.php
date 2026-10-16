@@ -113,11 +113,14 @@ trait HasCeoScanFilters
     // confidence — never touches the raw `status` column other code relies on.
     private function displayStatusCaseSql(): string
     {
+        // Same threshold as the "Not certain" result screen (config/diagnosis.php).
+        // A float from config, never user input, so it is safe to inline.
+        $min = (float) \App\Models\Diagnosis::minConfidence();
         return <<<SQL
             CASE
                 WHEN diagnoses.status = 'needs_review' THEN 'Failed'
                 WHEN diagnoses.status = 'pending' THEN 'Processing'
-                WHEN diagnoses.status IN ('reviewed','confirmed') AND diagnoses.confidence_score IS NOT NULL AND diagnoses.confidence_score < 65 THEN 'Low Confidence'
+                WHEN diagnoses.status IN ('reviewed','confirmed') AND diagnoses.confidence_score IS NOT NULL AND diagnoses.confidence_score < {$min} THEN 'Low Confidence'
                 WHEN diagnoses.status IN ('reviewed','confirmed') THEN 'Completed'
                 ELSE 'Unknown'
             END
