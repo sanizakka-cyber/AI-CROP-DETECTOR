@@ -35,6 +35,10 @@ class DiagnosisResultMapper
     /** The configured threshold (config/diagnosis.php), defaulting to the constant above. */
     public static function threshold(): float
     {
+        // Plain unit tests use the mapper without a booted app (no config).
+        if (!app()->bound('config')) {
+            return self::CONFIDENCE_DECISION_THRESHOLD;
+        }
         return (float) config('diagnosis.min_confidence', self::CONFIDENCE_DECISION_THRESHOLD);
     }
 

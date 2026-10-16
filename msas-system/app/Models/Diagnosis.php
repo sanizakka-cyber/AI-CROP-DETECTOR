@@ -132,7 +132,7 @@ class Diagnosis extends Model
     /** The confidence (percent) below which a result is never shown as a single diagnosis. */
     public static function minConfidence(): float
     {
-        return (float) config('diagnosis.min_confidence', 65);
+        return \App\Services\DiagnosisResultMapper::threshold();
     }
 
     /**
