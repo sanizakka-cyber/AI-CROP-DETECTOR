@@ -79,14 +79,8 @@
 </section>
 
 @once
-<style>
-    .listen-sentence { border-radius: .25rem; transition: background-color .15s; }
-    .listen-sentence.is-current { background: #065f46; color: #fff; outline: 2px solid #34d399; }
-    .listen-text h4 { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: #6ee7b7; font-weight: 800; }
-</style>
-<script>
-(function () {
-    var T = @json([
+@php
+    $listenStrings = [
         'listen' => __('Listen'), 'pause' => __('Pause'), 'preparing' => __('Preparing your result in this language…'),
         'preparingAudio' => __('Preparing audio…'), 'noVoice' => __('Audio is not available for this language yet. Read the result below.'),
         'unavailable' => __('Audio is temporarily unavailable. Read the result below; we are still trying.'),
@@ -96,7 +90,16 @@
         'observations' => __('Observations'), 'explanation' => __('Explanation'),
         'recommendations' => __('Recommendations'), 'safety_note' => __('Safety note'),
         'reviewed' => __('Marked reviewed'),
-    ]);
+    ];
+@endphp
+<style>
+    .listen-sentence { border-radius: .25rem; transition: background-color .15s; }
+    .listen-sentence.is-current { background: #065f46; color: #fff; outline: 2px solid #34d399; }
+    .listen-text h4 { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: #6ee7b7; font-weight: 800; }
+</style>
+<script>
+(function () {
+    var T = @json($listenStrings);
     var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
     function req(method, url, body) {
