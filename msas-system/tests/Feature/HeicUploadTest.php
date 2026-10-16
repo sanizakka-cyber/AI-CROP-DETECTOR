@@ -24,7 +24,8 @@ class HeicUploadTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('public');
+        Storage::fake('public'); // app uploads
+        Storage::fake('local');  // web uploads (private disk)
         config(['services.ai_engine.url' => 'http://engine.test', 'services.heic.driver' => 'engine']);
     }
 
@@ -108,7 +109,8 @@ class HeicUploadTest extends TestCase
             ->assertOk()->assertJsonPath('diagnosis_id', Diagnosis::sole()->id);
 
         Http::assertSent(fn ($r) => str_ends_with($r->url(), '/convert/image'));
-        $this->assertSame("\xFF\xD8\xFF", substr(Storage::disk('public')->get(Diagnosis::sole()->image_path), 0, 3));
+        // The web form stores photos on the private 'local' disk.
+        $this->assertSame("\xFF\xD8\xFF", substr(Storage::disk('local')->get(Diagnosis::sole()->image_path), 0, 3));
     }
 
     public function test_a_photo_that_cannot_be_converted_gets_a_clear_message_and_no_scan(): void
