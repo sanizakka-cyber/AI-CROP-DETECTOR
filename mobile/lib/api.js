@@ -375,6 +375,21 @@ export const diagnoseAPI = {
   feedback: (id, body) => request(`/diagnose/${id}/feedback`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
+// ── Listen to your result ─────────────────────────────────────────────────────
+// Translation and audio are generated once on the server and cached; the
+// POSTs start them (202 while running) and the GETs are polled.
+export const speechAPI = {
+  languages:     () => request('/speech/languages'),
+  translate:     (scanId, { lang, remember = false, audio = true }) =>
+    request(`/scans/${scanId}/translate`, { method: 'POST', body: JSON.stringify({ lang, remember, audio }) }),
+  translation:   (scanId, lang) => request(`/scans/${scanId}/translation/${encodeURIComponent(lang)}`),
+  requestAudio:  (scanId, { lang, voice, rate } = {}) =>
+    request(`/scans/${scanId}/audio`, { method: 'POST', body: JSON.stringify({ lang, voice, rate }) }),
+  audio:         (scanId, lang) => request(`/scans/${scanId}/audio/${encodeURIComponent(lang)}`),
+  feedback:      (body) => request('/tts-feedback', { method: 'POST', body: JSON.stringify(body) }),
+  review:        (scanId, lang) => request(`/scans/${scanId}/translation/${encodeURIComponent(lang)}/review`, { method: 'POST' }),
+};
+
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const analyticsAPI = {
   summary:      () => request('/analytics/summary'),

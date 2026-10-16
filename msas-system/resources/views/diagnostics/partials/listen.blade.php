@@ -186,6 +186,7 @@
             var t = await req('POST', root.dataset.translateUrl, { lang: lang, remember: this.q('.listen-remember').checked, audio: true });
             for (var i = 0; t.status === 'pending' && i < 60 && token === this.loadToken; i++) {
                 await wait(1500);
+                if (token !== this.loadToken) return; // another language was picked meanwhile
                 t = await req('GET', url('translationUrl'));
             }
             if (token !== this.loadToken) return;
@@ -204,6 +205,7 @@
                 if (a.status === 'retrying') this.status(a.message || T.unavailable);
                 else if (Date.now() - started > 20000) this.status(T.slow);
                 await wait(2000);
+                if (token !== this.loadToken) return;
                 a = await req('GET', url('audioShowUrl'));
             }
             if (token !== this.loadToken) return;

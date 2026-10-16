@@ -18,6 +18,9 @@ jest.mock('../../../lib/api', () => ({
   cartAPI: { add: jest.fn() },
 }));
 jest.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', voiceEnabled: false }), LANGUAGES: [] }));
+// The Listen panel has its own tests (components/__tests__/ListenPanel.test.js).
+const mockListenPanel = jest.fn(() => null);
+jest.mock('../../../components/ListenPanel', () => (props) => mockListenPanel(props));
 jest.mock('../../../services/VoiceService', () => ({ VoiceService: { speak: jest.fn(), stop: jest.fn() } }));
 
 const base = {

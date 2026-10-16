@@ -14,8 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { diagnoseAPI, marketplaceAPI, cartAPI } from '../../lib/api';
 import { Colors, Radius, Spacing, Typography, Shadows } from '../../constants/Theme';
 import { Button, Card, SeverityBadge } from '../../components/UI';
-import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
-import { VoiceService } from '../../services/VoiceService';
+import ListenPanel from '../../components/ListenPanel';
 
 // A scan normally leaves 'pending' within seconds. If it hasn't after this
 // long, stop polling and tell the farmer instead of spinning forever.
@@ -41,7 +40,6 @@ export default function DiagnosisDetailScreen() {
   const { id } = useLocalSearchParams();
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { language, voiceEnabled } = useLanguage();
   const isHausa = i18n.language === 'ha';
 
   const [diag, setDiag] = useState(null);
@@ -56,10 +54,6 @@ export default function DiagnosisDetailScreen() {
   const [loadError, setLoadError] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
 
-  // Voice state
-  const [voicePlaying, setVoicePlaying] = useState(false);
-  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
-  const voiceNarration = useRef(null);
 
   // Polling is a chain of setTimeouts, not a setInterval: the next request
   // is only scheduled after the previous one settles, so slow responses
@@ -67,9 +61,8 @@ export default function DiagnosisDetailScreen() {
   // which makes any still-in-flight response from an older run a no-op.
   const pollRun = useRef(0);
   const pollTimer = useRef(null);
-  const voiceTimer = useRef(null);
   // Latest-render handler for a finished result, so the poll loop (created
-  // once per id) never calls a stale playVoice/voiceEnabled/language.
+  // once per id) never calls a stale handler.
   const onFinishedRef = useRef(null);
 
   const stopPolling = useCallback(() => {
@@ -129,47 +122,9 @@ export default function DiagnosisDetailScreen() {
     } catch {}
   };
 
-  const buildNarration = (diagnosis) => {
-    const result = diagnosis.aiResult    || {};
-    const plan   = diagnosis.treatmentPlan || {};
-    switch (diagnosis.type) {
-      case 'livestock': return VoiceService.buildLivestockNarration(result, plan, language);
-      case 'soil':       return VoiceService.buildSoilNarration(result, plan, language);
-      case 'pest':       return VoiceService.buildPestNarration(result, plan, language);
-      default:           return VoiceService.buildCropNarration(result, plan, language);
-    }
-  };
-
-  const playVoice = (diagnosis, speed = voiceSpeed) => {
-    const text = voiceNarration.current || buildNarration(diagnosis);
-    voiceNarration.current = text;
-    setVoicePlaying(true);
-    VoiceService.speak(text, language, {
-      rate: speed,
-      onDone: () => setVoicePlaying(false),
-      onError: () => setVoicePlaying(false),
-      onUnavailableVoice: (langCode) => {
-        const langName = LANGUAGES.find(l => l.code === langCode)?.name || langCode;
-        Alert.alert(
-          'Voice Not Available',
-          `This device doesn't have a ${langName} voice installed, so narration will play in a different language instead.`
-        );
-      },
-    });
-  };
-
-  const stopVoice = () => {
-    VoiceService.stop();
-    setVoicePlaying(false);
-  };
-
   onFinishedRef.current = (diagnosis) => {
     if (diagnosis.status === 'processed' || diagnosis.status === 'reviewed') {
       fetchRecommendations(diagnosis);
-      if (voiceEnabled && !voiceNarration.current) {
-        clearTimeout(voiceTimer.current);
-        voiceTimer.current = setTimeout(() => playVoice(diagnosis), 600);
-      }
     }
   };
 
@@ -188,10 +143,8 @@ export default function DiagnosisDetailScreen() {
   useEffect(() => {
     startPolling();
     return () => {
-      // Leaving the screen: no further requests, no late voice playback.
+      // Leaving the screen: no further requests.
       stopPolling();
-      clearTimeout(voiceTimer.current);
-      VoiceService.stop();
     };
   }, [startPolling, stopPolling]);
 
@@ -349,45 +302,8 @@ export default function DiagnosisDetailScreen() {
         )}
       </View>
 
-      {/* Voice Control Bar */}
-      <View style={styles.voiceBar}>
-        <TouchableOpacity
-          style={[styles.voiceBtn, voicePlaying && styles.voiceBtnActive]}
-          onPress={() => voicePlaying ? stopVoice() : playVoice(diag)}
-        >
-          <Text style={styles.voiceBtnIcon}>{voicePlaying ? '⏸' : '▶'}</Text>
-          <Text style={styles.voiceBtnLabel}>{voicePlaying ? (isHausa ? 'Tsaya' : 'Pause') : (isHausa ? 'Kara' : 'Play')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.voiceBtn}
-          onPress={() => { stopVoice(); setTimeout(() => playVoice(diag), 100); }}
-        >
-          <Text style={styles.voiceBtnIcon}>↩</Text>
-          <Text style={styles.voiceBtnLabel}>{isHausa ? 'Sake' : 'Replay'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.voiceBtn} onPress={stopVoice}>
-          <Text style={styles.voiceBtnIcon}>■</Text>
-          <Text style={styles.voiceBtnLabel}>{isHausa ? 'Daina' : 'Stop'}</Text>
-        </TouchableOpacity>
-
-        {/* Speed selector */}
-        <View style={styles.speedRow}>
-          {[0.75, 1.0, 1.25, 1.5].map((sp) => (
-            <TouchableOpacity
-              key={sp}
-              style={[styles.speedPill, voiceSpeed === sp && styles.speedPillActive]}
-              onPress={() => {
-                setVoiceSpeed(sp);
-                if (voicePlaying) { stopVoice(); setTimeout(() => playVoice(diag, sp), 100); }
-              }}
-            >
-              <Text style={[styles.speedText, voiceSpeed === sp && styles.speedTextActive]}>{sp}x</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      {/* Listen to your result: chosen language, read aloud, sentence highlighting */}
+      <ListenPanel scanId={diag.id ?? id} uiHausa={isHausa} />
 
       {consultationRecommended && (
         <Card style={styles.consultCard}>
@@ -800,37 +716,4 @@ const styles = StyleSheet.create({
   recAddBtn: { backgroundColor: Colors.primary, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, minWidth: 60, alignItems: 'center' },
   recAddBtnDisabled: { backgroundColor: '#CBD5E1' },
   recAddBtnText: { color: Colors.white, fontWeight: '700', fontSize: 12 },
-
-  // Voice bar
-  voiceBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B2447',
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  voiceBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  voiceBtnActive: { backgroundColor: Colors.primary },
-  voiceBtnIcon: { fontSize: 14, color: '#fff' },
-  voiceBtnLabel: { fontSize: 12, color: '#fff', fontWeight: '600' },
-  speedRow: { flexDirection: 'row', gap: 4, marginLeft: 'auto' },
-  speedPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  speedPillActive:   { backgroundColor: Colors.accent },
-  speedText:         { color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700' },
-  speedTextActive:   { color: '#fff' },
 });
