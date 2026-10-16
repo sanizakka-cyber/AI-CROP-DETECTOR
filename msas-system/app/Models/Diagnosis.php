@@ -168,6 +168,13 @@ class Diagnosis extends Model
         return ucfirst(str_replace('_', ' ', $this->status));
     }
 
+    protected static function booted(): void
+    {
+        // "Listen to your result": optionally prepare the farmer's language
+        // in the background right after a scan (off unless SPEECH_PREGENERATE).
+        static::created(fn (Diagnosis $d) => \App\Services\Speech\Pregenerate::afterScan($d));
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

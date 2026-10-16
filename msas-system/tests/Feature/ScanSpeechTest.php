@@ -408,6 +408,25 @@ class ScanSpeechTest extends TestCase
         $this->assertSame(0, $this->translatorCalls() + $this->ttsCalls()); // nothing generated until the farmer asks
     }
 
+    public function test_pregeneration_prepares_the_saved_language_after_a_scan_only_when_enabled(): void
+    {
+        $this->fakeTranslator();
+        $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ha']);
+
+        $this->scan($farmer); // off by default
+        $this->assertSame(0, ScanResultTranslation::count());
+
+        config(['speech.pregenerate' => true]);
+        $d = $this->scan($farmer);
+        $this->assertSame('ready', ScanResultTranslation::where('diagnosis_id', $d->id)->value('status'));
+        $this->assertSame('ready', ScanResultAudio::where('diagnosis_id', $d->id)->value('status'));
+
+        // A scan that is still pending, or a farmer with no saved language, is left alone.
+        $this->scan($farmer, ['status' => 'pending']);
+        $this->scan(User::factory()->create(['role' => 'farmer']));
+        $this->assertSame(1, ScanResultTranslation::count());
+    }
+
     public function test_web_routes_use_the_same_flow(): void
     {
         $this->fakeTranslator();

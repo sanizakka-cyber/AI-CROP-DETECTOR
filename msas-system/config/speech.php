@@ -20,6 +20,10 @@ return [
     // a signed Laravel route.
     'disk' => env('SPEECH_DISK', env('R2_BUCKET') ? 'r2' : 'local'),
 
+    // Prepare text + audio in the farmer's saved language right after each scan,
+    // so Listen plays at once. Off by default: one translation + one synthesis per scan.
+    'pregenerate' => (bool) env('SPEECH_PREGENERATE', false),
+
     'default_rate'      => 0.9,   // calm, not rushed
     'max_segment_chars' => 200,
     'pause_comma_ms'    => 250,
