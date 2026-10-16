@@ -333,5 +333,8 @@
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "الذكاء الاصطناعي غير متأكد بما يكفي لإعطاء تشخيص واحد. هذه هي الحالات المحتملة:",
   "Possible conditions": "الحالات المحتملة",
   "Please confirm with a vet or extension officer before treating.": "يرجى التأكد من طبيب بيطري أو مرشد زراعي قبل العلاج.",
-  "AI guidance can be wrong; confirm with an expert.": "قد تكون إرشادات الذكاء الاصطناعي خاطئة؛ تأكد مع خبير."
+  "AI guidance can be wrong; confirm with an expert.": "قد تكون إرشادات الذكاء الاصطناعي خاطئة؛ تأكد مع خبير.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG أو PNG أو WebP أو HEIC، حتى 10 ميغابايت",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "نوع الملف هذا غير مدعوم. اختر صورة JPG أو PNG أو WebP أو HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "صورة HEIC: سيتم تحويلها إلى JPEG عند التحليل."
 }

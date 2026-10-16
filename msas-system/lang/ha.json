@@ -401,5 +401,8 @@
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI ba ta da isasshen tabbaci don ba da cuta ɗaya. Ga cututtukan da za su iya kasancewa:",
   "Possible conditions": "Cututtukan da za su iya kasancewa",
   "Please confirm with a vet or extension officer before treating.": "Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
-  "AI guidance can be wrong; confirm with an expert.": "Shawarar AI na iya yin kuskure; ka tabbatar da ƙwararre."
+  "AI guidance can be wrong; confirm with an expert.": "Shawarar AI na iya yin kuskure; ka tabbatar da ƙwararre.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP ko HEIC, har zuwa 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Ba a karɓar irin wannan fayil ba. Zaɓi hoton JPG, PNG, WebP ko HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Hoton HEIC: za a mayar da shi JPEG idan ka fara bincike."
 }

@@ -333,5 +333,8 @@
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI enweghị ezigbo ntụkwasị obi iji kwuo otu ọrịa. Ndị a bụ ọrịa ndị nwere ike ịbụ:",
   "Possible conditions": "Ọrịa ndị nwere ike ịbụ",
   "Please confirm with a vet or extension officer before treating.": "Biko kwado ya na dọkịta anụmanụ ma ọ bụ onye ndụmọdụ ugbo tupu ị gwọọ.",
-  "AI guidance can be wrong; confirm with an expert.": "Ndụmọdụ AI nwere ike ihie ụzọ; kwado ya na ọkachamara."
+  "AI guidance can be wrong; confirm with an expert.": "Ndụmọdụ AI nwere ike ihie ụzọ; kwado ya na ọkachamara.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP ma ọ bụ HEIC, ruo 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Anaghị anabata ụdị faịlụ a. Họrọ foto JPG, PNG, WebP ma ọ bụ HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Foto HEIC: a ga-agbanwe ya ka ọ bụrụ JPEG mgbe ị nyochara ya."
 }

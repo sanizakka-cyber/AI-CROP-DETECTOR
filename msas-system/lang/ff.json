@@ -332,5 +332,8 @@
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI heɓaay hoolaare yonnde ngam wiyde ñawu gooto. Ñabbuuji ɗi ina waawi wonde ko ɗii:",
   "Possible conditions": "Ñabbuuji ɗi ina waawi wonde",
   "Please confirm with a vet or extension officer before treating.": "Tiiɗno, ndaar e cafroowo kulle walla jaŋngingoowo remooɓe hade safrude.",
-  "AI guidance can be wrong; confirm with an expert.": "Kawgal AI ina waawi juumde; ndaar e gannduɗo."
+  "AI guidance can be wrong; confirm with an expert.": "Kawgal AI ina waawi juumde; ndaar e gannduɗo.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP walla HEIC, haa 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Fayil ngal jaɓaaka. Suɓo foto JPG, PNG, WebP walla HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Foto HEIC: ma waylite JPEG so a ƴeewtii."
 }

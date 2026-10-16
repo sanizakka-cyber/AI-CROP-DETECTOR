@@ -136,7 +136,7 @@ Route::middleware('auth.api')->group(function () {
     Route::delete('/notifications/{id}',        [NotificationApiController::class, 'destroy']);
 
     // AI Diagnosis (rate-limited: 20 scans per minute per user)
-    Route::middleware('throttle:20,1')->group(function () {
+    Route::middleware(['throttle:20,1', 'heic'])->group(function () {
         Route::post('/diagnose/crop',      [DiagnoseApiController::class, 'crop']);
         Route::post('/diagnose/livestock', [DiagnoseApiController::class, 'livestock']);
         Route::post('/diagnose/soil',      [DiagnoseApiController::class, 'soil']);

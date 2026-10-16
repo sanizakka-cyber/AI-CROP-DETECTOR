@@ -333,5 +333,8 @@
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI kò ní ìdánilójú tó láti fún ọ ní àrùn kan ṣoṣo. Àwọn àrùn tó ṣeé ṣe nìwọ̀nyí:",
   "Possible conditions": "Àwọn àrùn tó ṣeé ṣe",
   "Please confirm with a vet or extension officer before treating.": "Jọ̀wọ́ fìdí rẹ̀ múlẹ̀ pẹ̀lú dókítà ẹranko tàbí òṣìṣẹ́ àgbẹ̀ kí o tó tọ́jú.",
-  "AI guidance can be wrong; confirm with an expert.": "Ìmọ̀ràn AI lè ṣàṣìṣe; fìdí rẹ̀ múlẹ̀ pẹ̀lú amòye."
+  "AI guidance can be wrong; confirm with an expert.": "Ìmọ̀ràn AI lè ṣàṣìṣe; fìdí rẹ̀ múlẹ̀ pẹ̀lú amòye.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP tàbí HEIC, títí dé 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "A kò gba irú fáìlì yìí. Yan fọ́tò JPG, PNG, WebP tàbí HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Fọ́tò HEIC: a ó yí i padà sí JPEG nígbà tí o bá ṣe àyẹ̀wò."
 }
