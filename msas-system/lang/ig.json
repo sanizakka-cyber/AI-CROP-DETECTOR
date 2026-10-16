@@ -328,5 +328,10 @@
   "or drag & drop here": "ma ọ bụ dọrọ na ntụpụ ebe a",
   "Image Ready": "Foto Dị Njikere",
   "Remove & try again": "Wepụ & nwaa ọzọ",
-  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision na-achọpụta isiokwu ma na-enyocha maka ọrịa. Nke a nwere ike were sekọnd 15-30."
+  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision na-achọpụta isiokwu ma na-enyocha maka ọrịa. Nke a nwere ike were sekọnd 15-30.",
+  "Not certain": "O doghị anya",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI enweghị ezigbo ntụkwasị obi iji kwuo otu ọrịa. Ndị a bụ ọrịa ndị nwere ike ịbụ:",
+  "Possible conditions": "Ọrịa ndị nwere ike ịbụ",
+  "Please confirm with a vet or extension officer before treating.": "Biko kwado ya na dọkịta anụmanụ ma ọ bụ onye ndụmọdụ ugbo tupu ị gwọọ.",
+  "AI guidance can be wrong; confirm with an expert.": "Ndụmọdụ AI nwere ike ihie ụzọ; kwado ya na ọkachamara."
 }

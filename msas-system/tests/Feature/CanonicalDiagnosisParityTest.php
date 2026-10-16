@@ -68,6 +68,41 @@ class CanonicalDiagnosisParityTest extends TestCase
         return preg_replace('/(\d)\s+%/', '$1%', $text);
     }
 
+    private function lowConfidence(): array
+    {
+        return json_decode(file_get_contents(base_path('../shared-fixtures/low-confidence-diagnosis.json')), true);
+    }
+
+    /** Phase 12.1: the low-confidence screen, from shared-fixtures/low-confidence-diagnosis.json. */
+    public function test_low_confidence_api_matches_what_the_app_renders(): void
+    {
+        $user = User::factory()->create(['role' => 'farmer']);
+        $d = Diagnosis::create(array_merge($this->lowConfidence()['record'], ['user_id' => $user->id]));
+
+        $res = $this->withHeaders(['Authorization' => 'Bearer ' . $user->createToken('t')->plainTextToken])
+            ->getJson("/api/diagnose/{$d->id}");
+
+        $res->assertOk();
+        $this->assertSubset($this->lowConfidence()['api'], $res->json('diagnosis'));
+    }
+
+    public function test_low_confidence_web_history_and_report_show_what_the_app_shows(): void
+    {
+        $user = User::factory()->create(['role' => 'farmer']);
+        $d = Diagnosis::create(array_merge($this->lowConfidence()['record'], ['user_id' => $user->id]));
+
+        $history = $this->visibleText($this->actingAs($user)->get(route('diagnostics.history'))->assertOk()->getContent());
+        $reportHtml = $this->actingAs($user)->get(route('diagnostics.report', $d))->assertOk()->getContent();
+        $report  = $this->visibleText($reportHtml);
+
+        foreach ($this->lowConfidence()['mustDisplay'] as $text) {
+            $this->assertStringContainsString($text, $history, "Web history page is missing: {$text}");
+            $this->assertStringContainsString($text, $report, "Web report is missing: {$text}");
+        }
+        // The headline is "Not certain", never the leading condition.
+        $this->assertStringContainsString('<div class="diag-name">' . $this->lowConfidence()['headline'] . '</div>', $reportHtml);
+    }
+
     public function test_web_history_and_report_show_every_field_the_app_shows(): void
     {
         $user = User::factory()->create(['role' => 'farmer']);

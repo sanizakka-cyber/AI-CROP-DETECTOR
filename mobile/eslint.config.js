@@ -15,7 +15,7 @@ module.exports = defineConfig([
     ignores: ['dist/*'],
   },
   {
-    files: ['**/__tests__/**/*.{js,jsx}', '**/*.test.{js,jsx}'],
+    files: ['**/__tests__/**/*.{js,jsx}', '**/*.test.{js,jsx}', 'jest.setup.js'],
     languageOptions: { globals: jestGlobals },
   },
 ]);

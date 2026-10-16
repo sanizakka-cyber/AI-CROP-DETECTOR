@@ -329,5 +329,10 @@
   "JPG, PNG or WebP, up to 10 MB": "JPG, PNG or WebP, up to 10 MB",
   "Image Ready": "Image Ready",
   "Remove & try again": "Remove & try again",
-  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds."
+  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.",
+  "Not certain": "Not certain",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "The AI is not sure enough to give one diagnosis. These are the possible conditions:",
+  "Possible conditions": "Possible conditions",
+  "Please confirm with a vet or extension officer before treating.": "Please confirm with a vet or extension officer before treating.",
+  "AI guidance can be wrong; confirm with an expert.": "AI guidance can be wrong; confirm with an expert."
 }

@@ -328,5 +328,10 @@
   "or drag & drop here": "tàbí fa àti jù sílẹ̀ níbí",
   "Image Ready": "Àwòrán Ti Ṣetán",
   "Remove & try again": "Yọ & gbìyànjú lẹ́ẹ̀kan si",
-  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision ń dámọ̀ kókó ọ̀rọ̀ tí ó sì ń ṣàyẹ̀wò fún àwọn àrùn. Èyí lè gba ìṣẹ́jú 15-30."
+  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision ń dámọ̀ kókó ọ̀rọ̀ tí ó sì ń ṣàyẹ̀wò fún àwọn àrùn. Èyí lè gba ìṣẹ́jú 15-30.",
+  "Not certain": "Kò dájú",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI kò ní ìdánilójú tó láti fún ọ ní àrùn kan ṣoṣo. Àwọn àrùn tó ṣeé ṣe nìwọ̀nyí:",
+  "Possible conditions": "Àwọn àrùn tó ṣeé ṣe",
+  "Please confirm with a vet or extension officer before treating.": "Jọ̀wọ́ fìdí rẹ̀ múlẹ̀ pẹ̀lú dókítà ẹranko tàbí òṣìṣẹ́ àgbẹ̀ kí o tó tọ́jú.",
+  "AI guidance can be wrong; confirm with an expert.": "Ìmọ̀ràn AI lè ṣàṣìṣe; fìdí rẹ̀ múlẹ̀ pẹ̀lú amòye."
 }

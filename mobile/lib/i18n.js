@@ -20,7 +20,13 @@ const en = {
     poultry: 'Poultry', healthy: 'Healthy', sick: 'Sick', recovering: 'Recovering', products: 'Products',
     searchProducts: 'Search products...', addToCart: 'Add to Cart', orderNow: 'Order Now',
     inStock: 'In Stock', price: 'Price', error: 'Something went wrong', retry: 'Retry',
-    offline: 'You are offline. Results saved for sync.'
+    offline: 'You are offline. Results saved for sync.',
+    soilScanDesc: "Nutrients & recommendations",
+    notCertain: "Not certain",
+    notCertainBody: "The AI is not sure enough to give one diagnosis. These are the possible conditions:",
+    possibleConditions: "Possible conditions",
+    confirmWithExpert: "Please confirm with a vet or extension officer before treating.",
+    aiDisclaimer: "AI guidance can be wrong; confirm with an expert."
   }
 };
 
@@ -43,7 +49,13 @@ const ha = {
     poultry: 'Kaji', healthy: 'Mai lafiya', sick: 'Marasa lafiya', recovering: 'Ana waraka', products: 'Kayayyaki',
     searchProducts: 'Nemo kayayyaki...', addToCart: 'Ƙara zuwa Kwandon', orderNow: 'Oda Yanzu',
     inStock: 'Akwai Hannun', price: 'Farashi', error: 'Wani abu ya faru', retry: 'Sake Gwadawa',
-    offline: 'Ba ku da intanet. An adana sakamako don aika daga baya.'
+    offline: 'Ba ku da intanet. An adana sakamako don aika daga baya.',
+    soilScanDesc: "Abinci da shawarwari",
+    notCertain: "Ba a tabbata ba",
+    notCertainBody: "AI ba ta da isasshen tabbaci don ba da cuta ɗaya. Ga cututtukan da za su iya kasancewa:",
+    possibleConditions: "Cututtukan da za su iya kasancewa",
+    confirmWithExpert: "Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
+    aiDisclaimer: "Shawarar AI na iya yin kuskure; ka tabbatar da ƙwararre."
   }
 };
 
@@ -66,7 +78,13 @@ const ig = {
     poultry: 'Anụ ufe', healthy: 'Ahụike', sick: 'Ọrịa', recovering: 'Na-agbake', products: 'Ngwaahịa',
     searchProducts: 'Chọọ ngwaahịa...', addToCart: 'Tinye na ụgbọ', orderNow: 'Nye iwu ugbu a',
     inStock: 'Na ngwaahịa', price: 'Ọnụahịa', error: 'Ihe mebiri emebi', retry: 'Gbalịa ọzọ',
-    offline: 'Ị nọghị na ịntanetị. E chekwaara nsonaazụ.'
+    offline: 'Ị nọghị na ịntanetị. E chekwaara nsonaazụ.',
+    soilScanDesc: "Nri ala na ndụmọdụ",
+    notCertain: "O doghị anya",
+    notCertainBody: "AI enweghị ezigbo ntụkwasị obi iji kwuo otu ọrịa. Ndị a bụ ọrịa ndị nwere ike ịbụ:",
+    possibleConditions: "Ọrịa ndị nwere ike ịbụ",
+    confirmWithExpert: "Biko kwado ya na dọkịta anụmanụ ma ọ bụ onye ndụmọdụ ugbo tupu ị gwọọ.",
+    aiDisclaimer: "Ndụmọdụ AI nwere ike ihie ụzọ; kwado ya na ọkachamara."
   }
 };
 
@@ -89,7 +107,13 @@ const yo = {
     poultry: 'Adie', healthy: 'Ni ilera', sick: 'Nṣaisan', recovering: 'Ngba iwosan', products: 'Awọn ọja',
     searchProducts: 'Wa awọn ọja...', addToCart: 'Fi sinu kẹkẹ', orderNow: 'Bere bayi',
     inStock: 'Wa ninu itaja', price: 'Iye', error: 'Nkan ti ko tọ', retry: 'Tun gbiyanju',
-    offline: 'O ko ni ayelujara. Esi ti wa ni fipamọ.'
+    offline: 'O ko ni ayelujara. Esi ti wa ni fipamọ.',
+    soilScanDesc: "Àwọn èròjà ilẹ̀ àti ìmọ̀ràn",
+    notCertain: "Kò dájú",
+    notCertainBody: "AI kò ní ìdánilójú tó láti fún ọ ní àrùn kan ṣoṣo. Àwọn àrùn tó ṣeé ṣe nìwọ̀nyí:",
+    possibleConditions: "Àwọn àrùn tó ṣeé ṣe",
+    confirmWithExpert: "Jọ̀wọ́ fìdí rẹ̀ múlẹ̀ pẹ̀lú dókítà ẹranko tàbí òṣìṣẹ́ àgbẹ̀ kí o tó tọ́jú.",
+    aiDisclaimer: "Ìmọ̀ràn AI lè ṣàṣìṣe; fìdí rẹ̀ múlẹ̀ pẹ̀lú amòye."
   }
 };
 
@@ -112,7 +136,13 @@ const ff = {
     poultry: 'Gertooɗe', healthy: 'Jam', sick: 'Nawɗo', recovering: 'Hooƴi jam', products: 'Kujeeji',
     searchProducts: 'Tefu kujeeji...', addToCart: 'Ɓesdu', orderNow: 'Yamdu jooni',
     inStock: 'Ndon', price: 'Ceedey', error: 'Fella', retry: 'Pahin',
-    offline: 'A walaa netwok.'
+    offline: 'A walaa netwok.',
+    soilScanDesc: "Salaaji e humpitaali",
+    notCertain: "Alaa ko tabiti",
+    notCertainBody: "AI heɓaay hoolaare yonnde ngam wiyde ñawu gooto. Ñabbuuji ɗi ina waawi wonde ko ɗii:",
+    possibleConditions: "Ñabbuuji ɗi ina waawi wonde",
+    confirmWithExpert: "Tiiɗno, ndaar e cafroowo kulle walla jaŋngingoowo remooɓe hade safrude.",
+    aiDisclaimer: "Kawgal AI ina waawi juumde; ndaar e gannduɗo."
   }
 };
 
@@ -135,15 +165,24 @@ const fr = {
     poultry: 'Volaille', healthy: 'En bonne santé', sick: 'Malade', recovering: 'En convalescence', products: 'Produits',
     searchProducts: 'Rechercher des produits...', addToCart: 'Ajouter au panier', orderNow: 'Commander',
     inStock: 'En stock', price: 'Prix', error: 'Un problème est survenu', retry: 'Réessayer',
-    offline: 'Vous êtes hors ligne. Résultats sauvegardés.'
+    offline: 'Vous êtes hors ligne. Résultats sauvegardés.',
+    soilScanDesc: "Nutriments et recommandations",
+    notCertain: "Pas certain",
+    notCertainBody: "L'IA n'est pas assez sûre pour donner un seul diagnostic. Voici les problèmes possibles :",
+    possibleConditions: "Problèmes possibles",
+    confirmWithExpert: "Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",
+    aiDisclaimer: "Les conseils de l'IA peuvent être erronés ; confirmez auprès d'un expert."
   }
 };
+
+// Exported so tests can check every language (and render with real strings).
+export const resources = { en, ha, ig, yo, ff, fr };
 
 i18n
   .use(initReactI18next)
   .init({
     compatibilityJSON: 'v4',
-    resources: { en, ha, ig, yo, ff, fr },
+    resources,
     lng: 'en',
     fallbackLng: 'en',
     interpolation: { escapeValue: false },
