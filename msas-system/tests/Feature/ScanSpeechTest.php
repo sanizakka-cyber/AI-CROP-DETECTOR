@@ -238,6 +238,27 @@ class ScanSpeechTest extends TestCase
         $this->api($farmer)->postJson("/api/scans/{$d->id}/audio", ['lang' => 'ha'])->assertOk()->assertJsonPath('status', 'ready');
     }
 
+    public function test_a_failed_translation_is_retried_when_the_farmer_asks_again(): void
+    {
+        $farmer = User::factory()->create(['role' => 'farmer']);
+        $d = $this->scan($farmer);
+        $up = false;
+        Http::fake([
+            self::ENGINE . '/translate/scan-result' => function (HttpRequest $r) use (&$up) {
+                return $up ? Http::response(['translated' => array_merge($r['content'], ['safety_note' => 'Wannan shawarar AI ce.'])])
+                           : Http::response(['detail' => 'overloaded'], 503);
+            },
+            self::TTS . '/synthesize' => fn (HttpRequest $r) => $this->ttsReply($r),
+        ]);
+
+        $first = $this->api($farmer)->postJson("/api/scans/{$d->id}/translate", ['lang' => 'ha'])->assertOk();
+        $this->assertSame('failed', $first->json('status'));
+        $this->assertNotEmpty($first->json('source.content.recommendations')); // original text still shown
+
+        $up = true;
+        $this->api($farmer)->postJson("/api/scans/{$d->id}/translate", ['lang' => 'ha'])->assertOk()->assertJsonPath('status', 'ready');
+    }
+
     public function test_the_fallback_provider_is_used_when_the_primary_fails(): void
     {
         config(['speech.elevenlabs.key' => 'test-key']);

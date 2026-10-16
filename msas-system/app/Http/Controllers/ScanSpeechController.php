@@ -56,7 +56,7 @@ class ScanSpeechController extends Controller
         }
 
         $row = $this->translator->prepare($diagnosis, $lang);
-        if ($row->status === 'pending' && ($row->wasRecentlyCreated || $row->wasChanged('source_hash') || $this->stale($row))) {
+        if ($row->status === 'pending' && $this->needsJob($row)) {
             $this->queue(new TranslateScanResult($diagnosis->id, $lang->code, (bool) ($data['audio'] ?? true)));
         }
 
@@ -92,7 +92,7 @@ class ScanSpeechController extends Controller
         $translation = $this->translator->prepare($diagnosis, $lang);
         if (!$translation->isReady()) {
             if ($translation->status === 'pending') {
-                if ($translation->wasRecentlyCreated || $translation->wasChanged('source_hash') || $this->stale($translation)) {
+                if ($this->needsJob($translation)) {
                     $this->queue(new TranslateScanResult($diagnosis->id, $lang->code, true, $voice, $rate));
                 }
                 return response()->json(['lang' => $lang->code, 'status' => 'translating', 'message' => 'Preparing your result in this language.'], 202);
@@ -270,6 +270,16 @@ class ScanSpeechController extends Controller
     private function unavailable(SpeechLanguage $lang): array
     {
         return ['lang' => $lang->code, 'status' => 'unavailable', 'message' => 'Audio is not available for this language yet. The text is shown.'];
+    }
+
+    /**
+     * Queue a job only for a row this request just created or reset (new, a
+     * changed result, or a failed one being retried), or one whose job seems
+     * lost. A row already pending from an earlier click keeps its queued job.
+     */
+    private function needsJob($row): bool
+    {
+        return $row->wasRecentlyCreated || $row->wasChanged('status') || $row->wasChanged('source_hash') || $this->stale($row);
     }
 
     private function stale($row): bool

@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Log;
  */
 class ScanTranslator
 {
+    /** Older scans may be in a language that is not (yet) a speech language. */
+    private const NAMES = ['en' => 'English', 'ha' => 'Hausa', 'yo' => 'Yoruba', 'ig' => 'Igbo', 'fr' => 'French',
+        'ar' => 'Arabic', 'ff' => 'Fulfulde', 'sw' => 'Swahili'];
+
     /** Current stored translation, or a fresh "pending" row when the source changed or none exists. */
     public function prepare(Diagnosis $d, SpeechLanguage $lang): ScanResultTranslation
     {
@@ -87,7 +91,7 @@ class ScanTranslator
         }
 
         $res = $http->post("{$base}/translate/scan-result", [
-            'source_language_name' => SpeechLanguage::findCode($sourceLang)?->name_english ?? $sourceLang,
+            'source_language_name' => SpeechLanguage::findCode($sourceLang)?->name_english ?? (self::NAMES[$sourceLang] ?? $sourceLang),
             'target_language_name' => $target->name_english,
             'content'              => $content,
             'glossary'             => GlossaryTerm::where('lang', $target->code)->where('kind', 'glossary')
