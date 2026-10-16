@@ -1,0 +1,50 @@
+name: Speech Service Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tts-service/**'
+      - '.github/workflows/tts-service-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tts-service/**'
+      - '.github/workflows/tts-service-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tts-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ffmpeg so the real MP3 encoding test runs (it is skipped without it).
+      # Model weights are NOT installed: the tests use a fake engine.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        shell: bash
+        run: |
+          pytest tests/ -v -rs 2>&1 | tee /tmp/pytest.log
+          exit ${PIPESTATUS[0]}
+
+      # Lint the Dockerfile (syntax and build checks) without building it; the
+      # full image (torch + model code, several GB) is built at deploy time.
+      - name: Check Dockerfile
+        run: docker buildx build --check -f Dockerfile .
