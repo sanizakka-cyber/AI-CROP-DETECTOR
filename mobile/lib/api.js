@@ -172,17 +172,41 @@ const request = async (path, options = {}) => {
  * Images can legitimately take longer than an ordinary JSON request on a
  * slow connection, so this uses a longer ceiling than request()'s 20s.
  */
-async function multipartRequest(path, form) {
+/**
+ * XMLHttpRequest instead of fetch: fetch exposes no upload progress in React
+ * Native, so the scan screens could only show a spinner. Resolves with a
+ * fetch-like { status, ok, text() } so the response handling below is shared.
+ */
+function xhrUpload(url, form, headers, timeoutMs, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.timeout = timeoutMs;
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+      };
+    }
+    xhr.onload = () => resolve({ status: xhr.status, ok: xhr.status >= 200 && xhr.status < 300, text: async () => xhr.responseText || '' });
+    xhr.ontimeout = () => { const e = new Error('timeout'); e.name = 'TimeoutError'; reject(e); };
+    xhr.onerror = () => { const e = new TypeError('Network request failed'); reject(e); };
+    xhr.send(form);
+  });
+}
+
+// The server waits up to 180s for the AI engine (DiagnoseApiController::aiHttp());
+// the old 60s client limit could report "took too long" while the scan was
+// still being created. client_scan_id makes a retry after a timeout safe.
+const UPLOAD_TIMEOUT_MS = 180000;
+
+async function multipartRequest(path, form, { onProgress } = {}) {
   const token = await getToken();
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      method: 'POST',
-      // No header at all without a token: "Bearer null" was sent before.
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: form,
-      signal: timeoutSignal(60000),
-    });
+    // No header at all without a token: "Bearer null" was sent before.
+    const headers = { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+    res = await xhrUpload(`${BASE_URL}${path}`, form, headers, UPLOAD_TIMEOUT_MS, onProgress);
   } catch (e) {
     if (e?.name === 'TimeoutError' || e?.name === 'AbortError') {
       throw new ApiError('The upload took too long. Please check your connection and try again.', { kind: 'timeout' });
@@ -279,7 +303,7 @@ export const diagnoseAPI = {
    * Upload images and metadata for crop diagnosis.
    * Uses FormData (not JSON) for multipart upload.
    */
-  crop: async ({ cropType, cropPart, farmId, images, location, clientScanId }) => {
+  crop: async ({ cropType, cropPart, farmId, images, location, clientScanId, onProgress }) => {
     const form = new FormData();
     if (clientScanId) form.append('client_scan_id', clientScanId);
     // Both are optional hints — omit entirely when unset so the AI engine
@@ -296,10 +320,10 @@ export const diagnoseAPI = {
       // must be an array." on every scan attempt.
       form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
-    return multipartRequest('/diagnose/crop', form);
+    return multipartRequest('/diagnose/crop', form, { onProgress });
   },
 
-  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location, clientScanId }) => {
+  livestock: async ({ animalId, animalType, assessmentType, farmId, symptoms, behavioral, images, location, clientScanId, onProgress }) => {
     const form = new FormData();
     if (clientScanId) form.append('client_scan_id', clientScanId);
     form.append('animalType', animalType || '');
@@ -312,10 +336,10 @@ export const diagnoseAPI = {
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
-    return multipartRequest('/diagnose/livestock', form);
+    return multipartRequest('/diagnose/livestock', form, { onProgress });
   },
 
-  soil: async ({ soilContext, images, location, clientScanId }) => {
+  soil: async ({ soilContext, images, location, clientScanId, onProgress }) => {
     const form = new FormData();
     if (clientScanId) form.append('client_scan_id', clientScanId);
     if (soilContext) form.append('soilContext', soilContext);
@@ -323,10 +347,10 @@ export const diagnoseAPI = {
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
-    return multipartRequest('/diagnose/soil', form);
+    return multipartRequest('/diagnose/soil', form, { onProgress });
   },
 
-  pest: async ({ cropType, locationHint, images, location, clientScanId }) => {
+  pest: async ({ cropType, locationHint, images, location, clientScanId, onProgress }) => {
     const form = new FormData();
     if (clientScanId) form.append('client_scan_id', clientScanId);
     if (cropType) form.append('cropType', cropType);
@@ -340,7 +364,7 @@ export const diagnoseAPI = {
     images.forEach((img, i) => {
       form.append('images[]', { uri: img.uri, name: img.fileName || `img_${i}.jpg`, type: img.mimeType || 'image/jpeg' });
     });
-    return multipartRequest('/diagnose/pest', form);
+    return multipartRequest('/diagnose/pest', form, { onProgress });
   },
 
   get:     (id) => request(`/diagnose/${id}`),
@@ -349,6 +373,21 @@ export const diagnoseAPI = {
     return request(`/diagnose?${qs}`);
   },
   feedback: (id, body) => request(`/diagnose/${id}/feedback`, { method: 'PATCH', body: JSON.stringify(body) }),
+};
+
+// ── Listen to your result ─────────────────────────────────────────────────────
+// Translation and audio are generated once on the server and cached; the
+// POSTs start them (202 while running) and the GETs are polled.
+export const speechAPI = {
+  languages:     () => request('/speech/languages'),
+  translate:     (scanId, { lang, remember = false, audio = true }) =>
+    request(`/scans/${scanId}/translate`, { method: 'POST', body: JSON.stringify({ lang, remember, audio }) }),
+  translation:   (scanId, lang) => request(`/scans/${scanId}/translation/${encodeURIComponent(lang)}`),
+  requestAudio:  (scanId, { lang, voice, rate } = {}) =>
+    request(`/scans/${scanId}/audio`, { method: 'POST', body: JSON.stringify({ lang, voice, rate }) }),
+  audio:         (scanId, lang) => request(`/scans/${scanId}/audio/${encodeURIComponent(lang)}`),
+  feedback:      (body) => request('/tts-feedback', { method: 'POST', body: JSON.stringify(body) }),
+  review:        (scanId, lang) => request(`/scans/${scanId}/translation/${encodeURIComponent(lang)}/review`, { method: 'POST' }),
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────────

@@ -1,0 +1,7 @@
+# Model runtime, installed in the Docker image only.
+# torch/torchaudio come from the CPU wheel index (see Dockerfile).
+transformers>=4.44,<5
+outetts
+uroman
+inflect
+gdown

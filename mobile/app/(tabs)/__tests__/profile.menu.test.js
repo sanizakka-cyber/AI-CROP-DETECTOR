@@ -2,7 +2,7 @@
 // reachable right after a checkout), and the expert line is a real number.
 import React from 'react';
 import { Alert, Linking } from 'react-native';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import ProfileScreen from '../profile.jsx';
 
 const mockPush = jest.fn();
@@ -19,6 +19,12 @@ jest.mock('../../../context/LanguageContext', () => ({
   LANGUAGES: [{ code: 'en', name: 'English' }],
 }));
 jest.mock('../../../components/LanguagePicker', () => () => null);
+jest.mock('../../../lib/api', () => ({
+  speechAPI: { languages: jest.fn(() => Promise.resolve({ credits: [
+    { provider: 'yarngpt', label: 'YarnGPT2 (self-hosted)', license: 'Apache-2.0', credit: null },
+    { provider: 'farmerline', label: 'FarmerlineML Hausa (self-hosted)', license: 'CC-BY-4.0', credit: 'Hausa voice: FarmerlineML' },
+  ] })) },
+}));
 jest.mock('../../../services/VoiceService', () => ({ VoiceService: { speak: jest.fn(), stop: jest.fn() } }));
 
 beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
@@ -44,4 +50,13 @@ test('About shows the real app version', () => {
   render(<ProfileScreen />);
   fireEvent.press(screen.getByText('About FarmAI'));
   expect(Alert.alert.mock.calls[0][0]).toBe('MSAS FarmAI v9.9.9');
+});
+
+test('the voices used for spoken results are credited', async () => {
+  render(<ProfileScreen />);
+  await act(async () => {});
+  const credits = screen.getByTestId('voice-credits');
+  const text = [].concat(credits.props.children).join('');
+  expect(text).toContain('Hausa voice: FarmerlineML');
+  expect(text).toContain('YarnGPT2 (self-hosted) (Apache-2.0)');
 });
