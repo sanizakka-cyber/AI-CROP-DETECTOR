@@ -121,7 +121,7 @@ export default function SoilScanScreen() {
             <MaterialCommunityIcons name="shovel" size={22} color={Colors.textPrimary} />
             <Text style={styles.headerTitle}>{isHausa ? 'Bincika Ƙasa' : 'Soil Sample Scanner'}</Text>
           </View>
-          <Text style={styles.headerSub}>{isHausa ? 'Abinci, pH da shawarwarin gudanarwa' : 'Nutrients, pH & management recommendations'}</Text>
+          <Text style={styles.headerSub}>{isHausa ? 'Abinci da shawarwarin gudanarwa' : 'Nutrients & management recommendations'}</Text>
         </View>
 
         <View style={styles.noticeBox}>

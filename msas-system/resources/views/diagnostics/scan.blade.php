@@ -62,7 +62,7 @@
                             <div class="rounded-xl border-2 border-slate-200 p-4 text-center hover:bg-slate-50 transition peer-checked:border-amber-700 peer-checked:bg-amber-50 peer-checked:text-amber-800">
                                 <div class="mb-2 flex justify-center"><svg width="40" height="40" fill="none" stroke="#b45309" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
                                 <div class="font-bold text-sm">{{ __('Soil Sample') }}</div>
-                                <div class="text-xs text-slate-500 mt-1">{{ __('Nutrients, pH, Recommendations') }}</div>
+                                <div class="text-xs text-slate-500 mt-1">{{ __('Nutrients, Recommendations') }}</div>
                             </div>
                         </label>
                         <label class="cursor-pointer">
