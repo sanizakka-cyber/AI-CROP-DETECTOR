@@ -72,6 +72,11 @@ return new class extends Migration
                 $table->decimal('duration_sec', 8, 2)->nullable();
                 $table->unsignedInteger('size_bytes')->nullable();
                 $table->json('segments')->nullable();     // [{text, start, end}] for sentence highlighting
+                // Sentence-by-sentence audio, playable before the whole file is ready:
+                // [{index, sentence, path, mime, duration_sec, size_bytes, speech_start, speech_end}]
+                $table->json('chunks')->nullable();
+                $table->unsignedSmallInteger('chunks_total')->nullable();
+                $table->unsignedInteger('first_chunk_ms')->nullable(); // time to first playable audio
                 $table->string('status', 20)->default('pending'); // pending | ready | failed
                 $table->unsignedTinyInteger('attempts')->default(0);
                 $table->unsignedInteger('latency_ms')->nullable();

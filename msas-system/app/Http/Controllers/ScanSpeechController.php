@@ -187,6 +187,16 @@ class ScanSpeechController extends Controller
         return $disk->response($audio->audio_path, null, $headers);
     }
 
+    /** Signed URL target: streams one finished sentence file. */
+    public function chunk(ScanResultAudio $audio, int $index)
+    {
+        $chunk = collect($audio->readyChunks())->firstWhere('index', $index);
+        abort_unless($chunk, 404);
+        $disk = Storage::disk($this->audio->disk());
+        abort_unless($disk->exists($chunk['path']), 404);
+        return $disk->response($chunk['path'], null, ['Content-Type' => $chunk['mime'] ?: 'audio/mpeg', 'Cache-Control' => 'private, max-age=86400']);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private function authorizeLanguage(Request $request, Diagnosis $diagnosis, ?string $code = null): SpeechLanguage
@@ -248,12 +258,27 @@ class ScanSpeechController extends Controller
             'provider' => $row->provider,
             'rate'     => (float) $row->rate,
             'message'  => match ($status) {
-                'pending'  => 'Preparing audio…',
+                'pending'  => 'Audio is being prepared…',
                 'retrying' => 'Audio is temporarily unavailable. Read the result below; we are still trying.',
                 'failed'   => 'Audio is temporarily unavailable. Read the result below and try again later.',
                 default    => null,
             },
         ];
+        // Sentence files play in order as soon as the first one exists, so the
+        // farmer hears speech before the whole result has been generated.
+        $chunks = $row->readyChunks();
+        if ($chunks || $row->chunks_total) {
+            $payload['chunksTotal'] = (int) ($row->chunks_total ?: count($chunks));
+            $payload['chunks'] = array_map(fn ($c) => [
+                'index'       => $c['index'],
+                'sentence'    => $c['sentence'],
+                'url'         => $this->audio->chunkUrl($row, $c),
+                'durationSec' => $c['duration_sec'],
+            ], $chunks);
+            if (!$row->isReady()) {
+                $payload['sentences'] = $row->segments ?? [];
+            }
+        }
         if ($row->isReady()) {
             $payload += [
                 'url'         => $this->audio->url($row),

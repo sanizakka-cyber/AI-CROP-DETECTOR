@@ -12,6 +12,8 @@ import DiagnosisDetailScreen from '../[id].jsx';
 
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../../shared-fixtures/low-confidence-diagnosis.json'), 'utf8'));
 
+// The Listen panel has its own tests (components/__tests__/ListenPanel.test.js).
+jest.mock('../../../components/ListenPanel', () => () => null);
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn(), push: jest.fn() }), useLocalSearchParams: () => ({ id: '1' }) }));
 // Real English strings from lib/i18n.js, so the test sees what a farmer sees.
 jest.mock('react-i18next', () => ({

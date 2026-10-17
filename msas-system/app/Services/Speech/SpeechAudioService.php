@@ -40,6 +40,13 @@ class SpeechAudioService
     }
 
     /**
+     * Speaks the result one sentence at a time. Each sentence file is saved
+     * as soon as it is made, so the app and web can start playing the first
+     * sentence while the rest are still being generated. When every sentence
+     * is done they are joined into one file for download and offline use.
+     *
+     * A retry after a temporary failure keeps the sentences already made.
+     *
      * @throws TtsException when every configured provider failed (the job retries)
      */
     public function generate(ScanResultAudio $audio, ScanResultTranslation $translation, SpeechLanguage $lang): ScanResultAudio
@@ -48,6 +55,7 @@ class SpeechAudioService
         if (!$script['segments']) {
             throw TtsException::permanent('Nothing to read aloud.');
         }
+        $groups = self::sentenceGroups($script['segments']);
 
         $attempts = [[$lang->provider, $audio->voice]];
         if ($lang->fallback_provider && $lang->fallback_voice) {
@@ -62,45 +70,118 @@ class SpeechAudioService
             $key = hash('sha256', json_encode([$script['segments'], $lang->code, $voice, $provider, $audio->rate], JSON_UNESCAPED_UNICODE));
 
             if ($cached = $this->cached($key)) {
-                // Same key = same sentences, so the cached sentence timings apply as they are.
-                $audio->update(array_merge($cached->only(['audio_path', 'mime', 'duration_sec', 'size_bytes', 'segments']), [
-                    'provider' => $provider, 'cache_key' => $key, 'status' => 'ready', 'error' => null, 'latency_ms' => 0,
+                // Same key = same sentences, so the cached files and timings apply as they are.
+                $audio->update(array_merge($cached->only(['audio_path', 'mime', 'duration_sec', 'size_bytes', 'segments', 'chunks', 'chunks_total']), [
+                    'provider' => $provider, 'cache_key' => $key, 'status' => 'ready', 'error' => null, 'latency_ms' => 0, 'first_chunk_ms' => 0,
                 ]));
                 return $audio;
             }
 
+            if ($audio->cache_key !== $key) {
+                // New text, voice or provider: start over. Sentences without
+                // times let clients show the text while the audio arrives.
+                $audio->update([
+                    'cache_key' => $key, 'provider' => $provider, 'chunks' => [], 'chunks_total' => count($groups),
+                    'segments' => $this->sentenceTimes($script, []), 'first_chunk_ms' => null,
+                ]);
+            }
+            $chunks = [];
+            foreach ($audio->chunks ?? [] as $c) {
+                $chunks[$c['index']] = $c;
+            }
+
             $started = microtime(true);
             try {
-                $out = ProviderRegistry::make($provider)->synthesize($script['segments'], $lang->code, $voice, (float) $audio->rate);
+                $tts = ProviderRegistry::make($provider);
+                foreach ($groups as $n => [$sentence, $segments]) {
+                    if (isset($chunks[$n]) && Storage::disk($this->disk())->exists($chunks[$n]['path'])) {
+                        continue;
+                    }
+                    $out = $tts->synthesize($segments, $lang->code, $voice, (float) $audio->rate);
+                    $path = "speech/{$key}/{$n}.{$out->extension}";
+                    Storage::disk($this->disk())->put($path, $out->bytes);
+                    $chunks[$n] = [
+                        'index' => $n, 'sentence' => $sentence, 'path' => $path, 'mime' => $out->mime, 'extension' => $out->extension,
+                        'duration_sec' => round($out->durationSec, 2), 'size_bytes' => strlen($out->bytes),
+                        'speech_start' => (float) ($out->segmentTimes[0][0] ?? 0),
+                        'speech_end' => (float) ($out->segmentTimes[count($segments) - 1][1] ?? $out->durationSec),
+                    ];
+                    ksort($chunks);
+                    $update = ['chunks' => array_values($chunks)];
+                    if ($audio->first_chunk_ms === null) {
+                        $update['first_chunk_ms'] = (int) round((microtime(true) - $started) * 1000);
+                    }
+                    $audio->update($update);
+                }
             } catch (TtsException $e) {
+                Log::warning('TTS provider failed', ['diagnosis_id' => $audio->diagnosis_id, 'lang' => $lang->code, 'provider' => $provider,
+                    'sentences_done' => count($chunks), 'error' => $e->getMessage()]);
+                if ($chunks && !$e->permanent) {
+                    // Some sentences are already playable: retry this voice rather than switch voices mid-result.
+                    $audio->update(['error' => substr("{$provider}: {$e->getMessage()}", 0, 1000), 'attempts' => $audio->attempts + 1]);
+                    throw $e;
+                }
                 $errors[] = "{$provider}: {$e->getMessage()}";
-                Log::warning('TTS provider failed', ['diagnosis_id' => $audio->diagnosis_id, 'lang' => $lang->code, 'provider' => $provider, 'error' => $e->getMessage()]);
                 continue;
             }
-            $latency = (int) round((microtime(true) - $started) * 1000);
 
-            $path = "speech/{$key}.{$out->extension}";
-            Storage::disk($this->disk())->put($path, $out->bytes);
-
-            $segmentTimes = [];
-            foreach ($script['segments'] as $i => $seg) {
-                $segmentTimes[] = ['sentence' => $seg['sentence'], 'start' => $out->segmentTimes[$i][0] ?? 0, 'end' => $out->segmentTimes[$i][1] ?? 0];
-            }
-
-            $audio->update([
-                'provider' => $provider, 'cache_key' => $key, 'audio_path' => $path, 'mime' => $out->mime,
-                'duration_sec' => $out->durationSec, 'size_bytes' => strlen($out->bytes),
-                'segments' => $this->sentenceTimes($script, $segmentTimes),
-                'status' => 'ready', 'error' => null, 'latency_ms' => $latency,
-            ]);
-            Log::info('TTS generated', ['diagnosis_id' => $audio->diagnosis_id, 'lang' => $lang->code, 'provider' => $provider,
-                'voice' => $voice, 'latency_ms' => $latency, 'bytes' => strlen($out->bytes)]);
-            return $audio;
+            return $this->finish($audio, $script, $chunks, $provider, $voice, (int) round((microtime(true) - $started) * 1000));
         }
 
         $audio->update(['error' => substr(implode(' | ', $errors) ?: 'No voice configured.', 0, 1000), 'attempts' => $audio->attempts + 1]);
         $permanent = !$errors;
         throw $permanent ? TtsException::permanent($audio->error) : new TtsException($audio->error);
+    }
+
+    /** [[sentence index, [segments]]] in reading order: one audio file per sentence. */
+    public static function sentenceGroups(array $segments): array
+    {
+        $groups = [];
+        foreach ($segments as $seg) {
+            $s = $seg['sentence'] ?? count($groups);
+            if (!$groups || $groups[count($groups) - 1][0] !== $s) {
+                $groups[] = [$s, []];
+            }
+            $groups[count($groups) - 1][1][] = $seg;
+        }
+        return $groups;
+    }
+
+    /** Join the sentence files into one (MP3 frames and Ogg pages concatenate) and mark the row ready. */
+    private function finish(ScanResultAudio $audio, array $script, array $chunks, string $provider, string $voice, int $latency): ScanResultAudio
+    {
+        $disk = Storage::disk($this->disk());
+        $bytes = '';
+        $t = 0.0;
+        $times = [];
+        foreach ($chunks as $c) {
+            $bytes .= $disk->get($c['path']);
+            $times[] = ['sentence' => $c['sentence'], 'start' => round($t + $c['speech_start'], 2), 'end' => round($t + $c['speech_end'], 2)];
+            $t += $c['duration_sec'];
+        }
+        $first = reset($chunks);
+        $path = "speech/{$audio->cache_key}.{$first['extension']}";
+        $disk->put($path, $bytes);
+
+        $audio->update([
+            'provider' => $provider, 'audio_path' => $path, 'mime' => $first['mime'],
+            'duration_sec' => round($t, 2), 'size_bytes' => strlen($bytes),
+            'segments' => $this->sentenceTimes($script, $times),
+            'status' => 'ready', 'error' => null, 'latency_ms' => $latency,
+        ]);
+        Log::info('TTS generated', ['diagnosis_id' => $audio->diagnosis_id, 'lang' => $audio->lang, 'provider' => $provider,
+            'voice' => $voice, 'sentences' => count($chunks), 'first_chunk_ms' => $audio->first_chunk_ms,
+            'latency_ms' => $latency, 'bytes' => strlen($bytes)]);
+        return $audio;
+    }
+
+    /** Signed, short-lived URL for one finished sentence file. */
+    public function chunkUrl(ScanResultAudio $audio, array $chunk): string
+    {
+        if (config("filesystems.disks.{$this->disk()}.driver") === 's3') {
+            return Storage::disk($this->disk())->temporaryUrl($chunk['path'], now()->addMinutes(30));
+        }
+        return URL::temporarySignedRoute('speech.chunk', now()->addMinutes(30), ['audio' => $audio->id, 'index' => $chunk['index']]);
     }
 
     /** Signed, short-lived URL for a ready file. */
@@ -124,9 +205,19 @@ class SpeechAudioService
         return $hit && Storage::disk($this->disk())->exists($hit->audio_path) ? $hit : null;
     }
 
-    /** Collapse clause timings into one {text, start, end} per sentence, for highlighting. */
+    /**
+     * One {text, section, item, start, end} per sentence, for highlighting.
+     * Without timings (audio still being made) start and end are null.
+     */
     private function sentenceTimes(array $script, array $segmentTimes): array
     {
+        if (!$segmentTimes) {
+            $out = [];
+            foreach ($script['sentences'] as $i => $text) {
+                $out[] = ['text' => $text] + ($script['sentence_meta'][$i] ?? []) + ['start' => null, 'end' => null];
+            }
+            return $out;
+        }
         $out = [];
         foreach ($segmentTimes as $t) {
             $i = $t['sentence'] ?? null;

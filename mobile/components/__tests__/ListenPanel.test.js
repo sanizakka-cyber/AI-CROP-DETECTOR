@@ -207,3 +207,108 @@ test('helpers: sentence timing, sections and file size', () => {
   expect(formatSize(1200)).toBe('1 KB');
   expect(formatSize(2.5 * 1048576)).toBe('2.5 MB');
 });
+
+// ── Sentence-by-sentence playback (Phase 13.1) ──────────────────────────────
+
+const PENDING_SENTENCES = SENTENCES.map(({ start, end, ...s }) => ({ ...s, start: null, end: null }));
+const chunk = (i) => ({ index: i, sentence: i, url: `https://x/c${i}.mp3`, durationSec: 2 });
+const streaming = (n, extra = {}) => ({ lang: 'ha', status: 'pending', message: 'Audio is being prepared…', chunksTotal: 4,
+  chunks: Array.from({ length: n }, (_, i) => chunk(i)), sentences: PENDING_SENTENCES, ...extra });
+const finishCurrent = async () => {
+  // A speed change is a state change, so the panel re-renders with the new player status.
+  mockStatus = { ...mockStatus, didJustFinish: true };
+  fireEvent.press(screen.getByTestId('listen-speed-0.8'));
+  await flush();
+  mockStatus = { ...mockStatus, didJustFinish: false };
+  fireEvent.press(screen.getByTestId('listen-speed-1'));
+  await flush();
+};
+
+test('the first sentence plays as soon as it exists, before the whole file is ready', async () => {
+  speechAPI.requestAudio.mockResolvedValue(streaming(1));
+  speechAPI.audio.mockResolvedValue(streaming(2));
+  render(<ListenPanel scanId={7} />);
+  await flush();
+  fireEvent.press(screen.getByTestId('listen-play'));
+  await flush(); await flush();
+
+  expect(mockPlayer.replace).toHaveBeenCalledWith({ uri: 'https://x/c0.mp3' });
+  expect(mockPlayer.play).toHaveBeenCalledTimes(1);
+  // The sentence being spoken is highlighted from the chunk, before timings exist.
+  expect([].concat(screen.getByTestId('listen-current').props.children).join('')).toContain('Ganyen sun yi ruwan ƙasa.');
+  expect(screen.queryByTestId('listen-download')).toBeNull(); // no whole file yet
+
+  await advance(2000); // poll: sentence 2 is ready
+  await finishCurrent();
+  expect(mockPlayer.replace).toHaveBeenLastCalledWith({ uri: 'https://x/c1.mp3' });
+});
+
+test('when playback catches up it says audio is being prepared, then continues by itself', async () => {
+  speechAPI.requestAudio.mockResolvedValue(streaming(1));
+  speechAPI.audio.mockResolvedValueOnce(streaming(1)).mockResolvedValue(streaming(2));
+  render(<ListenPanel scanId={7} />);
+  await flush();
+  fireEvent.press(screen.getByTestId('listen-play'));
+  await flush(); await flush();
+
+  await finishCurrent(); // sentence 1 done, sentence 2 not generated yet
+  expect(screen.getByTestId('listen-message').props.children).toBe('Audio is being prepared…');
+  expect(mockPlayer.replace).toHaveBeenCalledTimes(1);
+
+  await advance(2000); // still only 1
+  await advance(2000); // now 2: it plays without another tap
+  expect(mockPlayer.replace).toHaveBeenLastCalledWith({ uri: 'https://x/c1.mp3' });
+});
+
+test('after the last sentence the farmer is asked for feedback, and download appears once the whole file exists', async () => {
+  const ready = { ...READY, chunksTotal: 2, chunks: [chunk(0), chunk(1)] };
+  speechAPI.requestAudio.mockResolvedValue(streaming(1, { chunksTotal: 2 }));
+  speechAPI.audio.mockResolvedValue(ready);
+  render(<ListenPanel scanId={7} />);
+  await flush();
+  fireEvent.press(screen.getByTestId('listen-play'));
+  await flush(); await flush();
+  await advance(2000); // whole file done
+
+  await finishCurrent();
+  expect(mockPlayer.replace).toHaveBeenLastCalledWith({ uri: 'https://x/c1.mp3' });
+  await finishCurrent();
+  expect(screen.getByTestId('listen-feedback')).toBeTruthy();
+  expect(screen.getByText(/Download audio/)).toBeTruthy();
+
+  // Replay uses the whole file now that it exists.
+  fireEvent.press(screen.getByTestId('listen-replay'));
+  expect(mockPlayer.replace).toHaveBeenLastCalledWith({ uri: READY.url });
+});
+
+test('while audio is being prepared the text is shown, and Listen plays it when ready (no auto-play otherwise)', async () => {
+  speechAPI.requestAudio.mockResolvedValue({ lang: 'ha', status: 'pending', message: 'Audio is being prepared…' });
+  speechAPI.audio.mockResolvedValueOnce({ lang: 'ha', status: 'pending' }).mockResolvedValue(streaming(1));
+  render(<ListenPanel scanId={7} />);
+  await flush();
+  fireEvent.press(screen.getByTestId('listen-lang-ha')); // picking a language prepares, never plays
+  await flush(); await flush();
+  expect(screen.getByTestId('listen-message').props.children).toBe('Audio is being prepared…');
+  expect(screen.getByText('Wannan cutar ɓarna ce.', { exact: false })).toBeTruthy();
+
+  fireEvent.press(screen.getByTestId('listen-play')); // "play when ready"
+  expect(screen.getByTestId('listen-message').props.children).toMatch(/will play when ready/);
+  expect(mockPlayer.play).not.toHaveBeenCalled();
+  await advance(2000);
+  await advance(2000);
+  expect(mockPlayer.replace).toHaveBeenCalledWith({ uri: 'https://x/c0.mp3' });
+  expect(mockPlayer.play).toHaveBeenCalled();
+});
+
+test('picking a language while sentences stream in does not start playback', async () => {
+  speechAPI.requestAudio.mockResolvedValue(streaming(1));
+  speechAPI.audio.mockResolvedValue(streaming(2));
+  render(<ListenPanel scanId={7} />);
+  await flush();
+  fireEvent.press(screen.getByTestId('listen-lang-ha'));
+  await flush(); await flush();
+  await advance(2000);
+  expect(mockPlayer.play).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByTestId('listen-play'));
+  expect(mockPlayer.replace).toHaveBeenCalledWith({ uri: 'https://x/c0.mp3' });
+});

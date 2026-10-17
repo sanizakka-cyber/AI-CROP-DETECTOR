@@ -11,6 +11,7 @@ class ScanResultAudio extends Model
     protected $fillable = [
         'diagnosis_id', 'lang', 'voice', 'provider', 'rate', 'cache_key', 'audio_path', 'mime',
         'duration_sec', 'size_bytes', 'segments', 'status', 'attempts', 'latency_ms', 'error',
+        'chunks', 'chunks_total', 'first_chunk_ms',
     ];
 
     protected $casts = [
@@ -18,6 +19,9 @@ class ScanResultAudio extends Model
         'duration_sec' => 'float',
         'size_bytes'   => 'integer',
         'segments'     => 'array',
+        'chunks'       => 'array',
+        'chunks_total' => 'integer',
+        'first_chunk_ms' => 'integer',
         'attempts'     => 'integer',
     ];
 
@@ -29,5 +33,13 @@ class ScanResultAudio extends Model
     public function isReady(): bool
     {
         return $this->status === 'ready' && !empty($this->audio_path);
+    }
+
+    /** Sentence files finished so far, in reading order. */
+    public function readyChunks(): array
+    {
+        $chunks = array_values(array_filter($this->chunks ?? [], fn ($c) => !empty($c['path'])));
+        usort($chunks, fn ($a, $b) => $a['index'] <=> $b['index']);
+        return $chunks;
     }
 }

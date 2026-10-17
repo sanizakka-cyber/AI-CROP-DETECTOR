@@ -82,7 +82,8 @@
 @php
     $listenStrings = [
         'listen' => __('Listen'), 'pause' => __('Pause'), 'preparing' => __('Preparing your result in this language…'),
-        'preparingAudio' => __('Preparing audio…'), 'noVoice' => __('Audio is not available for this language yet. Read the result below.'),
+        'preparingAudio' => __('Audio is being prepared…'), 'playWhenReady' => __('Audio is being prepared… It will play when ready.'),
+        'noVoice' => __('Audio is not available for this language yet. Read the result below.'),
         'unavailable' => __('Audio is temporarily unavailable. Read the result below; we are still trying.'),
         'failed' => __('Audio is temporarily unavailable. Read the result below and try again later.'),
         'slow' => __('This is taking longer than usual. Read the result below; the audio will be ready soon.'),
@@ -125,7 +126,10 @@
 
         this.q('.listen-lang').addEventListener('change', function () { self.lang = this.value; self.audio.pause(); self.load(false); });
         this.q('.listen-play').addEventListener('click', function () { self.toggle(); });
-        this.q('.listen-replay').addEventListener('click', function () { self.audio.currentTime = 0; self.audio.play(); });
+        this.q('.listen-replay').addEventListener('click', function () {
+            if (self.mode === 'chunks') { if (!self.switchToFull(true)) self.playChunk(0); return; }
+            self.audio.currentTime = 0; self.audio.play();
+        });
         root.querySelectorAll('.listen-speed').forEach(function (b) {
             b.addEventListener('click', function () {
                 self.speed = parseFloat(b.dataset.speed);
@@ -134,14 +138,21 @@
             });
         });
         this.q('.listen-progress').addEventListener('click', function (e) {
-            if (!self.audio.duration) return;
+            if (!self.audio.duration || self.mode === 'chunks') return;
             var r = this.getBoundingClientRect();
             self.audio.currentTime = self.audio.duration * (e.clientX - r.left) / r.width;
         });
         this.audio.addEventListener('timeupdate', function () { self.tick(); });
         this.audio.addEventListener('play', function () { self.playing(true); });
         this.audio.addEventListener('pause', function () { self.playing(false); });
-        this.audio.addEventListener('ended', function () { self.playing(false); self.highlight(-1); self.q('.listen-feedback').classList.remove('hidden'); });
+        this.audio.addEventListener('ended', function () {
+            if (self.mode === 'chunks' && self.chunkIdx >= 0) {
+                var next = self.chunkIdx + 1;
+                if (next < self.chunksTotal) { self.playChunk(next); return; } // plays it, or waits for it
+                self.chunkIdx = -1;
+            }
+            self.playing(false); self.highlight(-1); self.q('.listen-feedback').classList.remove('hidden');
+        });
         root.querySelectorAll('.listen-fb').forEach(function (b) {
             b.addEventListener('click', function () {
                 self.fbClear = b.dataset.clear === '1';
@@ -166,6 +177,18 @@
     };
 
     Panel.prototype.toggle = function () {
+        if (this.loading && !this.data) {
+            // The text is on screen and the audio is being prepared: play it as soon as it exists.
+            this.playWhenReady = true;
+            this.status(T.playWhenReady);
+            return;
+        }
+        if (this.mode === 'chunks' && this.data) {
+            if (!this.audio.paused) { this.audio.pause(); return; }
+            if (this.chunkIdx < 0) { if (!this.switchToFull(true)) this.playChunk(0); }
+            else if (!this.waiting) { this.audio.playbackRate = this.speed; this.audio.play(); }
+            return;
+        }
         if (this.data && this.data.status === 'ready') {
             if (this.audio.paused) { this.audio.playbackRate = this.speed; this.audio.play(); } else { this.audio.pause(); }
             return;
@@ -173,11 +196,62 @@
         this.load(true);
     };
 
+    /** Play sentence file `i`, or wait for it while it is still being generated. */
+    Panel.prototype.playChunk = function (i) {
+        var c = (this.chunks || []).filter(function (x) { return x.index === i; })[0];
+        if (!c) { this.waiting = true; this.chunkIdx = i - 1; this.status(T.preparingAudio); return; }
+        this.waiting = false;
+        this.chunkIdx = i;
+        this.status('');
+        this.audio.src = c.url;
+        this.audio.playbackRate = this.speed;
+        this.audio.play().catch(function () {});
+        this.highlight(c.sentence);
+    };
+
+    /** A poll while streaming: more sentence files, or the whole file is done. */
+    Panel.prototype.updateChunks = function (a) {
+        if (a.chunks) this.chunks = a.chunks;
+        if (a.chunksTotal) this.chunksTotal = a.chunksTotal;
+        if (a.status === 'ready') { this.full = a; this.showDownload(a); }
+        if (this.waiting) this.playChunk(this.chunkIdx + 1);
+    };
+
+    /** Switch from sentence files to the whole file (seekable, exact timings). */
+    Panel.prototype.switchToFull = function (play) {
+        if (!this.full) return false;
+        var a = this.full;
+        this.full = null;
+        this.mode = 'file';
+        this.chunkIdx = -1;
+        this.data = a;
+        this.renderText(null, a.sentences);
+        this.audio.src = a.url;
+        this.audio.playbackRate = this.speed;
+        if (play) this.audio.play().catch(function () {});
+        return true;
+    };
+
+    Panel.prototype.showDownload = function (a) {
+        var dl = this.q('.listen-download');
+        dl.href = a.downloadUrl;
+        this.q('.listen-size').textContent = a.sizeBytes ? '(' + kb(a.sizeBytes) + ')' : '';
+        dl.classList.remove('hidden');
+    };
+
     /** Translate (once, cached on the server), show the text, then fetch audio. */
     Panel.prototype.load = async function (thenPlay) {
         var token = ++this.loadToken, root = this.root, lang = this.lang, self = this;
         var url = function (k) { return root.dataset[k].replace('__LANG__', encodeURIComponent(lang)); };
         this.data = null;
+        this.mode = 'file';
+        this.chunks = [];
+        this.chunksTotal = 0;
+        this.chunkIdx = -1;
+        this.waiting = false;
+        this.full = null;
+        this.loading = true;
+        this.playWhenReady = !!thenPlay;
         this.q('.listen-download').classList.add('hidden');
         this.q('.listen-progress').classList.add('hidden');
         this.q('.listen-replay').classList.add('hidden');
@@ -201,7 +275,9 @@
             this.status(T.preparingAudio);
             var a = await req('POST', root.dataset.audioUrl, { lang: lang });
             var started = Date.now();
-            while (token === this.loadToken && ['pending', 'retrying', 'translating', 'none'].indexOf(a.status) !== -1 && Date.now() - started < 240000) {
+            var streamable = function (x) { return x.status !== 'ready' && x.chunks && x.chunks.length > 0; };
+            // Wait for the first sentence file (or the whole file); the text is already on screen.
+            while (token === this.loadToken && ['pending', 'retrying', 'translating', 'none'].indexOf(a.status) !== -1 && !streamable(a) && Date.now() - started < 240000) {
                 if (a.status === 'retrying') this.status(a.message || T.unavailable);
                 else if (Date.now() - started > 20000) this.status(T.slow);
                 await wait(2000);
@@ -209,6 +285,29 @@
                 a = await req('GET', url('audioShowUrl'));
             }
             if (token !== this.loadToken) return;
+
+            if (streamable(a)) {
+                // Play sentence by sentence while the rest is generated.
+                this.mode = 'chunks';
+                this.data = a;
+                this.chunks = a.chunks;
+                this.chunksTotal = a.chunksTotal || a.chunks.length;
+                this.loading = false;
+                this.status('');
+                this.renderText(null, a.sentences);
+                this.q('.listen-progress').classList.remove('hidden');
+                this.q('.listen-replay').classList.remove('hidden');
+                if (this.playWhenReady) this.playChunk(0);
+                while (token === this.loadToken && a.status !== 'ready' && a.status !== 'failed' && Date.now() - started < 240000) {
+                    await wait(2000);
+                    if (token !== this.loadToken) return;
+                    a = await req('GET', url('audioShowUrl'));
+                    if (token !== this.loadToken) return;
+                    this.updateChunks(a);
+                }
+                return;
+            }
+            this.loading = false;
             if (a.status !== 'ready') { this.status(a.message || T.failed); return; }
 
             this.data = a;
@@ -216,15 +315,12 @@
             this.renderText(null, a.sentences);
             this.audio.src = a.url;
             this.audio.playbackRate = this.speed;
-            var dl = this.q('.listen-download');
-            dl.href = a.downloadUrl;
-            this.q('.listen-size').textContent = a.sizeBytes ? '(' + kb(a.sizeBytes) + ')' : '';
-            dl.classList.remove('hidden');
+            this.showDownload(a);
             this.q('.listen-progress').classList.remove('hidden');
             this.q('.listen-replay').classList.remove('hidden');
-            if (thenPlay) this.audio.play().catch(function () {});
+            if (this.playWhenReady) this.audio.play().catch(function () {});
         } catch (e) {
-            if (token === this.loadToken) this.status(T.error);
+            if (token === this.loadToken) { this.loading = false; this.status(T.error); }
         }
     };
 
@@ -263,6 +359,14 @@
     Panel.prototype.tick = function () {
         var a = this.audio, d = this.data;
         if (!d || !a.duration) return;
+        if (this.mode === 'chunks') {
+            // Progress over the whole result, estimating sentences not generated yet.
+            var list = this.chunks || [], idx = this.chunkIdx, known = 0, before = 0;
+            list.forEach(function (c) { known += c.durationSec || 0; if (c.index < idx) before += c.durationSec || 0; });
+            var whole = known + Math.max(0, this.chunksTotal - list.length) * (list.length ? known / list.length : 0);
+            if (whole) this.q('.listen-progress-bar').style.width = Math.min(100, 100 * (before + a.currentTime) / whole) + '%';
+            return; // the sentence was highlighted when its file started
+        }
         this.q('.listen-progress-bar').style.width = (100 * a.currentTime / a.duration) + '%';
         var t = a.currentTime, idx = -1;
         (d.sentences || []).forEach(function (s, i) { if (s.start != null && t >= s.start - 0.05 && t < s.end + 0.35) idx = i; });

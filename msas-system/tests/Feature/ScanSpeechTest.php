@@ -136,9 +136,11 @@ class ScanSpeechTest extends TestCase
         // Audio was generated right after the translation; GET returns it.
         $audio = $this->api($farmer)->getJson("/api/scans/{$d->id}/audio/ha")->assertOk();
         $this->assertSame('ready', $audio->json('status'));
-        $this->assertSame('hausa_feamle1', $audio->json('voice'));
+        $this->assertSame('hausa_female1', $audio->json('voice'));
         $this->assertEqualsWithDelta(0.9, $audio->json('rate'), 0.001);
-        $this->assertSame(103, $audio->json('sizeBytes'));
+        // One file per sentence, joined into the downloadable file.
+        $this->assertSame(103 * count($audio->json('chunks')), $audio->json('sizeBytes'));
+        $this->assertSame($this->ttsCalls(), $audio->json('chunksTotal'));
         $sentences = $audio->json('sentences');
         $this->assertNotEmpty($sentences);
         $this->assertSame(0.0, (float) $sentences[0]['start']);
@@ -152,13 +154,16 @@ class ScanSpeechTest extends TestCase
         $this->get(preg_replace('/signature=[^&]+/', 'signature=bad', $audio->json('url')))->assertForbidden();
 
         // What reached the voice: Hausa text, calm rate, sentence pauses, no segment > 200 chars.
-        $sent = Http::recorded(fn ($req) => str_starts_with($req->url(), self::TTS))->first()[0];
-        $this->assertSame('ha', $sent['lang']);
-        $this->assertEqualsWithDelta(0.9, $sent['rate'], 0.001);
-        foreach ($sent['segments'] as $seg) {
-            $this->assertLessThanOrEqual(200, mb_strlen($seg['text']));
+        $pauses = [];
+        foreach (Http::recorded(fn ($req) => str_starts_with($req->url(), self::TTS)) as [$sent]) {
+            $this->assertSame('ha', $sent['lang']);
+            $this->assertEqualsWithDelta(0.9, $sent['rate'], 0.001);
+            foreach ($sent['segments'] as $seg) {
+                $this->assertLessThanOrEqual(200, mb_strlen($seg['text']));
+                $pauses[] = $seg['pause_ms'];
+            }
         }
-        $this->assertContains(450, array_column($sent['segments'], 'pause_ms'));
+        $this->assertContains(450, $pauses);
     }
 
     public function test_translation_and_audio_are_cached(): void
@@ -168,19 +173,20 @@ class ScanSpeechTest extends TestCase
         $d = $this->scan($farmer);
         $this->api($farmer)->postJson("/api/scans/{$d->id}/translate", ['lang' => 'ha'])->assertOk();
         $this->assertSame(1, $this->translatorCalls());
-        $this->assertSame(1, $this->ttsCalls());
+        $sentences = $this->ttsCalls(); // one request per sentence
+        $this->assertGreaterThan(1, $sentences);
 
         // Replays and repeat requests: no new translation, no new synthesis.
         $this->api($farmer)->postJson("/api/scans/{$d->id}/translate", ['lang' => 'ha'])->assertOk();
         $this->api($farmer)->postJson("/api/scans/{$d->id}/audio", ['lang' => 'ha'])->assertOk()->assertJsonPath('status', 'ready');
         $this->assertSame(1, $this->translatorCalls());
-        $this->assertSame(1, $this->ttsCalls());
+        $this->assertSame($sentences, $this->ttsCalls());
 
         // A second scan with identical text reuses the stored audio file.
         $d2 = $this->scan($farmer);
         $this->api($farmer)->postJson("/api/scans/{$d2->id}/translate", ['lang' => 'ha'])->assertOk();
         $this->assertSame(2, $this->translatorCalls());
-        $this->assertSame(1, $this->ttsCalls());
+        $this->assertSame($sentences, $this->ttsCalls());
         $this->assertSame(
             ScanResultAudio::where('diagnosis_id', $d->id)->value('audio_path'),
             ScanResultAudio::where('diagnosis_id', $d2->id)->value('audio_path'),
@@ -337,7 +343,7 @@ class ScanSpeechTest extends TestCase
 
         $fb = TtsFeedback::sole();
         $this->assertTrue($fb->clear);
-        $this->assertSame('hausa_feamle1', $fb->voice);
+        $this->assertSame('hausa_female1', $fb->voice);
         $this->assertSame('yarngpt', $fb->provider);
 
         $other = User::factory()->create(['role' => 'farmer']);
@@ -455,5 +461,129 @@ class ScanSpeechTest extends TestCase
         $d = $this->scan($farmer);
         $this->actingAs($farmer)->postJson(route('speech.translate', $d), ['lang' => 'ha'])->assertOk()->assertJsonPath('status', 'ready');
         $this->actingAs($farmer)->getJson(route('speech.audio.show', [$d, 'ha']))->assertOk()->assertJsonPath('status', 'ready');
+    }
+
+    // ── Phase 13.1: sentence-by-sentence audio and pre-generation ───────────
+
+    public function test_sentences_become_playable_one_by_one_and_a_retry_keeps_them(): void
+    {
+        $farmer = User::factory()->create(['role' => 'farmer']);
+        $d = $this->scan($farmer);
+        $calls = 0;
+        $up = false;
+        Http::fake([
+            self::ENGINE . '/translate/scan-result' => fn (HttpRequest $r) => Http::response(['translated' => array_merge($r['content'], ['safety_note' => 'Wannan shawarar AI ce.'])]),
+            self::TTS . '/synthesize' => function (HttpRequest $r) use (&$calls, &$up) {
+                $calls++;
+                if (!$up && $calls === 3) {
+                    return Http::response(['detail' => 'out of memory'], 503); // the third sentence fails once
+                }
+                $n = count($r['segments']);
+                return Http::response([
+                    'format' => 'mp3', 'mime' => 'audio/mpeg', 'audio_base64' => base64_encode("S{$calls}|"),
+                    'duration_sec' => $n * 0.5,
+                    'segments' => array_map(fn ($i) => ['index' => $i, 'start' => $i * 0.5, 'end' => $i * 0.5 + 0.4], range(0, $n - 1)),
+                    'engine' => $r['engine'], 'voice' => $r['voice'], 'license' => 'Apache-2.0', 'latency_ms' => 10,
+                ]);
+            },
+        ]);
+
+        $this->api($farmer)->postJson("/api/scans/{$d->id}/translate", ['lang' => 'ha'])->assertOk();
+
+        // Two sentences were made before the failure: they are listed with
+        // playable URLs, the text is there, and the whole file is not.
+        $partial = $this->api($farmer)->getJson("/api/scans/{$d->id}/audio/ha")->assertOk();
+        $this->assertSame('failed', $partial->json('status'));
+        $this->assertCount(2, $partial->json('chunks'));
+        $total = $partial->json('chunksTotal');
+        $this->assertGreaterThan(2, $total);
+        $this->assertNull($partial->json('url'));
+        $this->assertNotEmpty($partial->json('sentences'));
+        $this->assertNull($partial->json('sentences.0.start')); // no timings until the whole file exists
+        $this->assertSame(0, $partial->json('chunks.0.sentence'));
+        $this->assertSame('S1|', $this->get($partial->json('chunks.0.url'))->assertOk()->streamedContent());
+        $this->assertSame('S2|', $this->get($partial->json('chunks.1.url'))->assertOk()->streamedContent());
+        $this->get(preg_replace('/signature=[^&]+/', 'signature=bad', $partial->json('chunks.0.url')))->assertForbidden();
+        $this->assertNotNull(ScanResultAudio::first()->first_chunk_ms);
+
+        // The retry makes only the missing sentences, then joins all of them in order.
+        $up = true;
+        $ready = $this->api($farmer)->postJson("/api/scans/{$d->id}/audio", ['lang' => 'ha'])->assertOk();
+        $this->assertSame('ready', $ready->json('status'));
+        $this->assertSame($total + 1, $calls); // every sentence once, plus the one failed attempt
+        $this->assertCount($total, $ready->json('chunks'));
+        $expected = 'S1|S2|' . implode('', array_map(fn ($n) => "S{$n}|", range(4, $total + 1)));
+        $this->assertSame($expected, $this->get($ready->json('url'))->assertOk()->streamedContent());
+        $this->assertSame(strlen($expected), $ready->json('sizeBytes'));
+
+        // Whole-file timings: each sentence starts after the ones before it.
+        $starts = array_column($ready->json('sentences'), 'start');
+        $this->assertSame(0.0, (float) $starts[0]);
+        for ($i = 1; $i < count($starts); $i++) {
+            $this->assertGreaterThan($starts[$i - 1], $starts[$i]);
+        }
+        $this->assertLessThanOrEqual($ready->json('durationSec'), (float) end($ready->json('sentences'))['end']);
+    }
+
+    public function test_while_audio_is_being_prepared_the_reply_says_so(): void
+    {
+        Queue::fake(); // the audio job is queued and has not run yet
+        $this->fakeTranslator();
+        $farmer = User::factory()->create(['role' => 'farmer']);
+        $d = $this->scan($farmer);
+        // A finished translation (same source hash, so prepare() keeps it).
+        app(\App\Services\Speech\ScanTranslator::class)->prepare($d, SpeechLanguage::findCode('ha'))->update(['status' => 'ready',
+            'translated_json' => ['observations' => ['Ƙ: a.'], 'explanation' => 'Ƙ: b.', 'recommendations' => ['Ƙ: c.'], 'safety_note' => 'Ƙ: d.']]);
+
+        $res = $this->api($farmer)->postJson("/api/scans/{$d->id}/audio", ['lang' => 'ha'])->assertStatus(202);
+        $this->assertSame('pending', $res->json('status'));
+        $this->assertSame('Audio is being prepared…', $res->json('message'));
+        $this->assertNull($res->json('url'));
+        Queue::assertPushed(GenerateScanAudio::class);
+    }
+
+    public function test_pregeneration_prepares_only_the_saved_language_and_never_runs_inside_the_scan(): void
+    {
+        $this->fakeTranslator();
+        config(['speech.pregenerate' => true]);
+        SpeechLanguage::whereIn('code', ['yo', 'ig'])->update(['status' => 'live']);
+
+        // Production queues it on the speech queue: the scan request does not wait for it.
+        config(['speech.queue_connection' => 'database']);
+        Queue::fake();
+        $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ha']);
+        $d = $this->scan($farmer);
+        Queue::assertPushed(\App\Jobs\TranslateScanResult::class, fn ($job) => $job->diagnosisId === $d->id && $job->lang === 'ha');
+        Queue::assertPushed(\App\Jobs\TranslateScanResult::class, 1);
+        $this->assertSame(0, ScanResultTranslation::count()); // nothing translated during the scan itself
+        $this->assertSame(0, $this->translatorCalls() + $this->ttsCalls());
+    }
+
+    public function test_pregeneration_runs_for_the_preferred_language_only(): void
+    {
+        $this->fakeTranslator();
+        config(['speech.pregenerate' => true]);
+        SpeechLanguage::whereIn('code', ['yo', 'ig'])->update(['status' => 'live']);
+        $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'yo', 'language' => 'ha']);
+
+        $d = $this->scan($farmer);
+        $this->assertSame(['yo'], ScanResultTranslation::where('diagnosis_id', $d->id)->pluck('lang')->all());
+        $this->assertSame(['yo'], ScanResultAudio::where('diagnosis_id', $d->id)->pluck('lang')->unique()->values()->all());
+
+        // A saved language that is not live (yet) is not prepared at all.
+        SpeechLanguage::where('code', 'ig')->update(['status' => 'in_review']);
+        $other = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ig']);
+        $d2 = $this->scan($other);
+        $this->assertSame(0, ScanResultTranslation::where('diagnosis_id', $d2->id)->count());
+    }
+
+    public function test_sentence_groups_follow_reading_order(): void
+    {
+        $groups = \App\Services\Speech\SpeechAudioService::sentenceGroups([
+            ['text' => 'a', 'sentence' => 0, 'pause_ms' => 250], ['text' => 'b', 'sentence' => 0, 'pause_ms' => 450],
+            ['text' => 'c', 'sentence' => 1, 'pause_ms' => 700], ['text' => 'd', 'sentence' => 2, 'pause_ms' => 0],
+        ]);
+        $this->assertSame([0, 1, 2], array_column($groups, 0));
+        $this->assertSame(['a', 'b'], array_column($groups[0][1], 'text'));
     }
 }

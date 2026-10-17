@@ -718,6 +718,9 @@ require __DIR__.'/auth.php';
 // (the URL itself is the credential, so the app can stream/download it).
 Route::get('/speech/file/{audio}', [ScanSpeechController::class, 'file'])
     ->middleware(['signed', 'throttle:120,1'])->name('speech.file');
+// One sentence of a result, playable while the rest is still being generated.
+Route::get('/speech/chunk/{audio}/{index}', [ScanSpeechController::class, 'chunk'])
+    ->whereNumber('index')->middleware(['signed', 'throttle:300,1'])->name('speech.chunk');
 
 // "Listen to your result" administration: languages, voices, glossary, review progress.
 Route::middleware(['auth', 'role:ceo,admin'])->prefix('admin/speech')->name('admin.speech.')->group(function () {

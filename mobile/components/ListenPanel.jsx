@@ -12,6 +12,7 @@ import {
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Directory, File, Paths } from 'expo-file-system';
 import { speechAPI } from '../lib/api';
+import { afterChunk, canStream, chunkAt, chunkProgress } from '../lib/chunkPlayback';
 import { VoiceService } from '../services/VoiceService';
 import { Colors, Radius, Spacing } from '../constants/Theme';
 
@@ -82,8 +83,10 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
   const [lang, setLang] = useState(null);
   const [remember, setRemember] = useState(false);
   const [content, setContent] = useState(null);       // text before audio is ready
-  const [audio, setAudio] = useState(null);           // ready audio payload
-  const [status, setStatus] = useState('idle');       // idle | loading | ready | text-only | error
+  const [audio, setAudio] = useState(null);           // audio payload (whole file, or sentence files so far)
+  const [status, setStatus] = useState('idle');       // idle | loading | streaming | ready | text-only | error
+  const [mode, setMode] = useState('file');           // file: one file with timings | chunks: sentence files in order
+  const [chunkIdx, setChunkIdx] = useState(-1);       // sentence file playing (chunks mode)
   const [message, setMessage] = useState('');
   const [speed, setSpeed] = useState(1);
   const [savedOffline, setSavedOffline] = useState(false);
@@ -95,6 +98,13 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
   const loadToken = useRef(0);
   const mounted = useRef(true);
   const playWhenReady = useRef(false);
+  // Sentence-file playback reads these from player callbacks, so they live in refs.
+  const chunksRef = useRef([]);
+  const totalRef = useRef(0);
+  const idxRef = useRef(-1);
+  const waitingRef = useRef(false);   // caught up with the generator
+  const fullRef = useRef(null);       // whole-file payload once generation finished
+  const speedRef = useRef(1);
 
   useEffect(() => {
     mounted.current = true;
@@ -111,27 +121,89 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (playerStatus.didJustFinish) setFeedback((f) => ({ ...f, shown: true }));
-  }, [playerStatus.didJustFinish]);
+  /** Play sentence file `index`, or wait for it if it is still being generated. */
+  const playChunk = useCallback((index) => {
+    const chunk = chunkAt(chunksRef.current, index);
+    if (!chunk) {
+      waitingRef.current = true;
+      setMessage(L('Ana shirya sauti…', 'Audio is being prepared…', uiHausa));
+      return;
+    }
+    waitingRef.current = false;
+    idxRef.current = index;
+    setChunkIdx(index);
+    setMessage('');
+    player.replace({ uri: chunk.url });
+    player.setPlaybackRate(speedRef.current);
+    player.play();
+  }, [player, uiHausa]);
 
-  const current = audio ? sentenceAt(audio.sentences, playerStatus.currentTime) : -1;
-  const progress = playerStatus.duration ? Math.min(1, playerStatus.currentTime / playerStatus.duration) : 0;
+  useEffect(() => {
+    if (!playerStatus.didJustFinish) return;
+    if (mode === 'chunks' && idxRef.current >= 0) {
+      const next = afterChunk(chunksRef.current, totalRef.current, idxRef.current);
+      if (next.action === 'play') { playChunk(next.chunk.index); return; }
+      if (next.action === 'wait') { playChunk(idxRef.current + 1); return; }
+      idxRef.current = -1;
+      setChunkIdx(-1);
+    }
+    setFeedback((f) => ({ ...f, shown: true }));
+  }, [playerStatus.didJustFinish, mode, playChunk]);
+
+  const chunkSentence = mode === 'chunks' ? chunkAt(audio?.chunks, chunkIdx)?.sentence : undefined;
+  const current = !audio ? -1 : (mode === 'chunks' ? (chunkSentence ?? -1) : sentenceAt(audio.sentences, playerStatus.currentTime));
+  const progress = mode === 'chunks'
+    ? chunkProgress(audio?.chunks, audio?.chunksTotal, chunkIdx, playerStatus.currentTime)
+    : (playerStatus.duration ? Math.min(1, playerStatus.currentTime / playerStatus.duration) : 0);
 
   const startAudio = useCallback((payload, uri) => {
     player.replace({ uri });
-    player.setPlaybackRate(speed);
+    player.setPlaybackRate(speedRef.current);
+    setMode('file');
     setAudio(payload);
     setStatus('ready');
     setMessage('');
     if (playWhenReady.current) player.play();
-  }, [player, speed]);
+  }, [player]);
+
+  /** Sentence files exist but the whole file does not: play them as they come. */
+  const startStreaming = useCallback((payload) => {
+    chunksRef.current = payload.chunks;
+    totalRef.current = payload.chunksTotal || payload.chunks.length;
+    idxRef.current = -1;
+    waitingRef.current = false;
+    fullRef.current = null;
+    setMode('chunks');
+    setAudio(payload);
+    setStatus('streaming');
+    setMessage('');
+    if (playWhenReady.current) playChunk(0);
+  }, [playChunk]);
+
+  /** A later poll: more sentence files, or the whole file is done. */
+  const updateStreaming = useCallback((payload) => {
+    if (payload.chunks) chunksRef.current = payload.chunks;
+    if (payload.chunksTotal) totalRef.current = payload.chunksTotal;
+    if (payload.status === 'ready') {
+      fullRef.current = payload;
+      setStatus('ready');
+    }
+    // Keep the sentence list from the first reply until playback switches to the whole file.
+    setAudio((prev) => ({ ...payload, sentences: prev?.sentences?.length ? prev.sentences : payload.sentences }));
+    if (waitingRef.current && idxRef.current + 1 < totalRef.current && chunkAt(chunksRef.current, idxRef.current + 1)) {
+      playChunk(idxRef.current + 1);
+    }
+  }, [playChunk]);
 
   const load = useCallback(async (code, thenPlay) => {
     const token = ++loadToken.current;
     const alive = () => mounted.current && token === loadToken.current;
     playWhenReady.current = thenPlay;
     player.pause();
+    idxRef.current = -1;
+    waitingRef.current = false;
+    setChunkIdx(-1);
+    setMode('file');
     setAudio(null);
     setContent(null);
     setSavedOffline(false);
@@ -162,10 +234,11 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
         return;
       }
 
-      setMessage(L('Ana shirya sauti…', 'Preparing audio…', uiHausa));
+      setMessage(L('Ana shirya sauti…', 'Audio is being prepared…', uiHausa));
       let a = await speechAPI.requestAudio(scanId, { lang: code });
       const started = Date.now();
-      while (alive() && BUSY.includes(a.status) && Date.now() - started < AUDIO_WAIT_MS) {
+      // Wait for the first sentence file (or the whole file); the text is already on screen.
+      while (alive() && BUSY.includes(a.status) && !canStream(a) && Date.now() - started < AUDIO_WAIT_MS) {
         if (a.status === 'retrying') setMessage(a.message);
         else if (Date.now() - started > 20000) setMessage(L('Yana ɗaukar lokaci. Karanta sakamakon da ke ƙasa.', 'This is taking longer than usual. Read the result below; the audio will be ready soon.', uiHausa));
         await wait(2000);
@@ -173,6 +246,18 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
         a = await speechAPI.audio(scanId, code);
       }
       if (!alive()) return;
+      if (canStream(a)) {
+        startStreaming(a);
+        // Keep fetching the rest while the first sentences play.
+        while (alive() && a.status !== 'ready' && a.status !== 'failed' && Date.now() - started < AUDIO_WAIT_MS) {
+          await wait(2000);
+          if (!alive()) return;
+          a = await speechAPI.audio(scanId, code);
+          if (!alive()) return;
+          updateStreaming(a);
+        }
+        return;
+      }
       if (a.status !== 'ready') {
         setStatus('text-only');
         setMessage(a.message || L('Sauti bai samu ba a yanzu.', 'Audio is temporarily unavailable. Read the result below.', uiHausa));
@@ -194,9 +279,34 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
       setStatus('error');
       setMessage(e?.message || L('Ba a iya kaiwa MSAS ba.', 'Could not reach MSAS. Check your connection and try again.', uiHausa));
     }
-  }, [scanId, remember, languages, player, startAudio, uiHausa]);
+  }, [scanId, remember, languages, player, startAudio, startStreaming, updateStreaming, uiHausa]);
+
+  /** After sentence-by-sentence playback, switch to the whole file once it exists. */
+  const switchToFullFile = () => {
+    const full = fullRef.current;
+    if (!full) return false;
+    fullRef.current = null;
+    idxRef.current = -1;
+    setChunkIdx(-1);
+    playWhenReady.current = true;
+    startAudio(full, full.url);
+    return true;
+  };
 
   const onListen = () => {
+    if (status === 'loading') {
+      // Text is on screen and audio is being prepared: play as soon as it is ready.
+      playWhenReady.current = true;
+      setMessage(L('Ana shirya sauti… Zai fara da zarar ya shirya.', 'Audio is being prepared… It will play when ready.', uiHausa));
+      return;
+    }
+    if (mode === 'chunks' && (status === 'streaming' || status === 'ready')) {
+      if (playerStatus.playing) { player.pause(); return; }
+      if (idxRef.current < 0) {
+        if (!switchToFullFile()) playChunk(0);
+      } else if (!waitingRef.current) player.play();
+      return;
+    }
     if (status === 'ready') {
       if (playerStatus.playing) player.pause();
       else {
@@ -208,6 +318,15 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
     if (lang) load(lang, true);
   };
 
+  const onReplay = () => {
+    if (mode === 'chunks') {
+      if (!switchToFullFile()) playChunk(0);
+      return;
+    }
+    player.seekTo(0);
+    player.play();
+  };
+
   const onPickLanguage = (code) => {
     setLang(code);
     load(code, false);
@@ -215,6 +334,7 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
 
   const onSpeed = (s) => {
     setSpeed(s);
+    speedRef.current = s;
     player.setPlaybackRate(s);
   };
 
@@ -281,14 +401,13 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
           accessibilityRole="button"
           style={[styles.listenBtn, playing && styles.listenBtnActive]}
           onPress={onListen}
-          disabled={status === 'loading'}
         >
           {status === 'loading'
             ? <ActivityIndicator color="#fff" />
             : <Text style={styles.listenText}>{playing ? `⏸  ${L('Dakata', 'Pause', uiHausa)}` : `▶  ${L('Saurara', 'Listen', uiHausa)}`}</Text>}
         </TouchableOpacity>
-        {status === 'ready' && (
-          <TouchableOpacity testID="listen-replay" style={styles.smallBtn} onPress={() => { player.seekTo(0); player.play(); }}>
+        {(status === 'ready' || status === 'streaming') && (
+          <TouchableOpacity testID="listen-replay" style={styles.smallBtn} onPress={onReplay}>
             <Text style={styles.smallText}>↺ {L('Sake', 'Replay', uiHausa)}</Text>
           </TouchableOpacity>
         )}
@@ -302,7 +421,7 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
         ))}
       </View>
 
-      {status === 'ready' && (
+      {(status === 'ready' || status === 'streaming') && (
         <View style={styles.progressTrack} testID="listen-progress">
           <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
         </View>

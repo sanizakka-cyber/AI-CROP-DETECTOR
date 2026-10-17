@@ -362,5 +362,7 @@
   "AI guidance can be wrong; confirm with an expert.": "AI guidance can be wrong; confirm with an expert.",
   "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP or HEIC, up to 10 MB",
   "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.",
-  "HEIC photo: it will be converted to JPEG when you analyse it.": "HEIC photo: it will be converted to JPEG when you analyse it."
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "HEIC photo: it will be converted to JPEG when you analyse it.",
+  "Audio is being prepared…": "Audio is being prepared…",
+  "Audio is being prepared… It will play when ready.": "Audio is being prepared… It will play when ready."
 }
