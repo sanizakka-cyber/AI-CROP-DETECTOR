@@ -175,6 +175,34 @@ class SpeechAudioService
         return $audio;
     }
 
+    /**
+     * Speak any content (same four-section shape as a translation) with one
+     * provider and voice, sentence by sentence, and return one joined file.
+     * Used by review packs, which compare voices on the same text.
+     *
+     * @return array{bytes: string, mime: string, extension: string, duration_sec: float}
+     * @throws TtsException
+     */
+    public function synthesizeJoined(string $provider, string $voice, array $content, string $lang, float $rate): array
+    {
+        $script = $this->pre->script($content, $lang, $this->lexicon($lang), $this->unitWords($lang));
+        if (!$script['segments']) {
+            throw TtsException::permanent('Nothing to read aloud.');
+        }
+        $tts = ProviderRegistry::make($provider);
+        $bytes = '';
+        $duration = 0.0;
+        $mime = 'audio/mpeg';
+        $ext = 'mp3';
+        foreach (self::sentenceGroups($script['segments']) as [, $segments]) {
+            $out = $tts->synthesize($segments, $lang, $voice, $rate);
+            $bytes .= $out->bytes;
+            $duration += $out->durationSec;
+            [$mime, $ext] = [$out->mime, $out->extension];
+        }
+        return ['bytes' => $bytes, 'mime' => $mime, 'extension' => $ext, 'duration_sec' => round($duration, 2)];
+    }
+
     /** Signed, short-lived URL for one finished sentence file. */
     public function chunkUrl(ScanResultAudio $audio, array $chunk): string
     {
@@ -231,14 +259,14 @@ class SpeechAudioService
         return array_values($out);
     }
 
-    private function lexicon(string $lang): array
+    public function lexicon(string $lang): array
     {
         return GlossaryTerm::where('kind', 'pronunciation')->whereIn('lang', ['*', $lang])
             ->orderByRaw("CASE WHEN lang = '*' THEN 0 ELSE 1 END")
             ->pluck('local_term', 'english_term')->all();
     }
 
-    private function unitWords(string $lang): array
+    public function unitWords(string $lang): array
     {
         return GlossaryTerm::where('kind', 'unit')->where('lang', $lang)->pluck('local_term', 'english_term')->all();
     }

@@ -48,3 +48,21 @@ jobs:
       # full image (torch + model code, several GB) is built at deploy time.
       - name: Check Dockerfile
         run: docker buildx build --check -f Dockerfile .
+      - name: Check Dockerfile.openbible
+        run: docker buildx build --check -f Dockerfile.openbible .
+
+      # The YarnGPT2 runtime as the image installs it, then the import the
+      # service makes (no weights). Catches unpinned or uninstallable
+      # dependencies (outetts, pesq) and a wrong PYTHONPATH, which the fake
+      # engine tests cannot.
+      - name: Check the YarnGPT2 runtime imports
+        run: |
+          python -m venv /tmp/models && . /tmp/models/bin/activate
+          pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -r requirements.txt -r requirements-models.txt
+          pip install -q --no-deps outetts==0.2.3
+          YARNGPT_REF=$(sed -n 's/^ARG YARNGPT_REF=//p' Dockerfile)
+          git clone -q https://github.com/saheedniyi02/yarngpt.git /tmp/opt/yarngpt
+          git -C /tmp/opt/yarngpt checkout -q "$YARNGPT_REF"
+          PYTHONPATH=/tmp/opt python -c "from yarngpt.audiotokenizer import AudioTokenizerV2; import app.engines as e; print('ok', e.YarnGptEngine._dtype('cpu'))"
+          ls /tmp/opt/yarngpt/default_speakers_local/hausa_female1.json /tmp/opt/yarngpt/default_speakers_local/yoruba_female1.json

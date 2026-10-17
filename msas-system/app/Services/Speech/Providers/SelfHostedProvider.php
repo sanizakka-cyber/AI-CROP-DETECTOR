@@ -10,13 +10,19 @@ use Illuminate\Support\Facades\Http;
  */
 class SelfHostedProvider implements TtsProvider
 {
-    public function __construct(private string $engine)
+    /**
+     * @param string|null $url  this engine's own service (e.g. the OpenBible image); default: speech.self_hosted.url
+     * @param string|null $key  its bearer key; default: speech.self_hosted.key
+     */
+    public function __construct(private string $engine, private ?string $url = null, private ?string $key = null)
     {
     }
 
     public function synthesize(array $segments, string $lang, string $voice, float $rate): SynthesizedAudio
     {
         $cfg = config('speech.self_hosted');
+        $cfg['url'] = $this->url ?: $cfg['url'];
+        $cfg['key'] = $this->url ? $this->key : $cfg['key'];
         try {
             $http = Http::timeout($cfg['timeout'])->connectTimeout(15)->acceptJson();
             if (!empty($cfg['key'])) {

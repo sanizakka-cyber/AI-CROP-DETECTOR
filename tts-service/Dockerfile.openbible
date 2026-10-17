@@ -1,0 +1,29 @@
+# MSAS FarmAI speech service, OpenBible VITS voices (Hausa, Yoruba, Igbo).
+# Same service code as Dockerfile; separate image because coqui-tts and
+# YarnGPT2 need incompatible transformers versions. CPU only: VITS ran at
+# 1.2-1.4x real time on a 2-thread laptop CPU (bench/).
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    MODELS_DIR=/models TTS_ENGINES=openbible
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg wget ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /srv
+COPY requirements.txt requirements-openbible.txt ./
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu \
+ && pip install --no-cache-dir -r requirements.txt -r requirements-openbible.txt
+
+COPY app ./app
+COPY fetch_models.sh /usr/local/bin/fetch_models.sh
+RUN chmod +x /usr/local/bin/fetch_models.sh \
+ && useradd --create-home tts && mkdir -p /models && chown tts /models
+USER tts
+
+VOLUME ["/models"]
+EXPOSE 8002
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8002/health')"
+ENTRYPOINT ["fetch_models.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "1"]

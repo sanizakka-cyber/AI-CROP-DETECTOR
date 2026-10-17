@@ -8,6 +8,9 @@ use App\Models\ScanResultAudio;
 use App\Models\ScanResultTranslation;
 use App\Models\SpeechLanguage;
 use App\Models\TtsFeedback;
+use App\Models\SpeechReviewer;
+use App\Models\User;
+use App\Services\Speech\GoLiveRule;
 use App\Services\Speech\Providers\ProviderRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +47,9 @@ class SpeechAdminController extends Controller
         return view('admin.speech.index', [
             'languages'   => $languages,
             'stats'       => $stats,
+            'goLive'      => $languages->mapWithKeys(fn ($l) => [$l->code => GoLiveRule::evaluate($l->code)])->all(),
+            'reviewers'   => SpeechReviewer::with('user:id,name,email')->orderBy('lang')->get(),
+            'packs'       => \App\Models\SpeechReviewPack::withCount('items')->latest()->get(),
             'providers'   => ProviderRegistry::selectable(),
             'threshold'   => (int) config('speech.review_threshold', 50),
             'recentComments' => TtsFeedback::whereNotNull('comment')->latest()->limit(20)->get(),
@@ -61,12 +67,33 @@ class SpeechAdminController extends Controller
     public function updateLanguage(Request $request, SpeechLanguage $language)
     {
         $data = $this->validated($request, $language);
-        $threshold = (int) config('speech.review_threshold', 50);
-        if ($data['status'] === 'live' && !$language->isLive() && $language->code !== 'en' && $language->reviewedCount() < $threshold) {
-            return back()->withErrors(['status' => "{$language->name_english} has {$language->reviewedCount()} of {$threshold} reviewed results. It can go live after native-speaker review."]);
+        if ($data['status'] === 'live' && !$language->isLive() && $language->code !== 'en') {
+            $rule = GoLiveRule::evaluate($language->code);
+            if (!$rule['passes']) {
+                return back()->withErrors(['status' => "{$language->name_english} cannot go live yet. " . GoLiveRule::failures($rule)]);
+            }
         }
         $language->update($data);
         return back()->with('success', "{$language->name_english} updated.");
+    }
+
+    /** Assign an existing account (created by the product owner) to review a language. */
+    public function storeReviewer(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'lang'  => 'required|string|exists:speech_languages,code',
+            'kind'  => ['required', Rule::in(array_keys(SpeechReviewer::KINDS))],
+        ]);
+        $user = User::where('email', $data['email'])->firstOrFail();
+        SpeechReviewer::updateOrCreate(['user_id' => $user->id, 'lang' => $data['lang']], ['kind' => $data['kind'], 'active' => true]);
+        return back()->with('success', "{$user->name} now reviews {$data['lang']} as " . strtolower(SpeechReviewer::KINDS[$data['kind']]) . '.');
+    }
+
+    public function destroyReviewer(SpeechReviewer $reviewer)
+    {
+        $reviewer->update(['active' => false]);
+        return back()->with('success', 'Reviewer removed. Their reviews are kept.');
     }
 
     public function glossary(string $lang)

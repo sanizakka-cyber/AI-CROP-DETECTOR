@@ -31,9 +31,27 @@ return [
     'audio_format'      => 'mp3',
     'bitrate_kbps'      => 40,    // 32-48 kbps mono for low-bandwidth users
 
-    // A language is shown to farmers only after this many results have been
-    // marked "reviewed" by native-speaker reviewers.
+    // Legacy quick check ("Mark translation reviewed" on a result). Shown for
+    // information only; going live is decided by go_live below.
     'review_threshold' => 50,
+
+    // Go-live rule per language (admin cannot set a language live until it
+    // passes). Reviews come from the review packs in /admin/speech/review.
+    'go_live' => [
+        // Scan results reviewed, across all scan types.
+        'min_reviewed_results' => (int) env('SPEECH_GO_LIVE_MIN_RESULTS', 50),
+        // Each of these scan types needs at least min_per_scan_type reviewed results.
+        'scan_types'           => ['crop', 'livestock', 'soil', 'pest'],
+        'min_per_scan_type'    => (int) env('SPEECH_GO_LIVE_MIN_PER_TYPE', 5),
+        // A result counts as reviewed once it has a review from each of these
+        // reviewer kinds (native speaker AND extension officer / vet).
+        'reviewer_kinds'       => array_filter(explode(',', env('SPEECH_GO_LIVE_REVIEWER_KINDS', 'native,expert'))),
+        // Average of every review of a scan result, 1-5.
+        'min_accuracy'         => (float) env('SPEECH_GO_LIVE_MIN_ACCURACY', 4.0),
+        'min_naturalness'      => (float) env('SPEECH_GO_LIVE_MIN_NATURALNESS', 4.0),
+        // Dose/amount/unit or chemical/medicine/product errors marked by any reviewer, on any item.
+        'max_dosage_errors'    => (int) env('SPEECH_GO_LIVE_MAX_DOSAGE_ERRORS', 0),
+    ],
 
     // Roles that may mark a translation reviewed (and read any scan's translation to do so).
     'reviewer_roles' => ['extension-officer', 'agronomist', 'admin', 'ceo'],
@@ -63,10 +81,25 @@ return [
         'farmerline' => [
             'label' => 'FarmerlineML Hausa (self-hosted)', 'driver' => 'self_hosted', 'engine' => 'farmerline',
             'license' => 'CC-BY-4.0', 'commercial_use' => true, 'credit' => 'Hausa voice: FarmerlineML',
+            // Off until Farmerline confirms in writing that the model is not derived
+            // from facebook/mms-tts-hau (CC-BY-NC) and that commercial use is allowed.
+            'enabled' => (bool) env('SPEECH_FARMERLINE_CONFIRMED', false),
             'source' => 'https://huggingface.co/FarmerlineML/main_hausa_TTS',
             'license_note' => 'Model card does not state the base model. Confirm it is not derived from a CC-BY-NC model (e.g. facebook/mms-tts-hau) before enabling.',
             'languages' => ['ha'],
             'voices' => ['ha' => ['farmerline_hausa']],
+        ],
+        'openbible' => [
+            'label' => 'OpenBible VITS (self-hosted)', 'driver' => 'self_hosted', 'engine' => 'openbible',
+            'license' => 'CC-BY-SA-4.0', 'commercial_use' => true,
+            'credit' => 'Voices: OpenBibleTTS (McGill-NLP, Mila), trained from scratch on Open Bible recordings (CC BY-SA 4.0)',
+            'source' => 'https://huggingface.co/multilingual-tts',
+            'license_note' => 'Trained from scratch on CC BY-SA Open Bible audio. Attribution required; changed model weights must be shared under CC BY-SA. One voice per language (no speaker embedding), Bible-reading style; weaker on non-Bible text per the OpenBibleTTS paper.',
+            'languages' => ['ha', 'yo', 'ig'],
+            'voices' => ['ha' => ['openbible_hausa'], 'yo' => ['openbible_yoruba'], 'ig' => ['openbible_igbo']],
+            // Its own container (tts-service/Dockerfile.openbible): coqui-tts and YarnGPT2 cannot share one.
+            'url' => env('TTS_OPENBIBLE_URL'),
+            'key' => env('TTS_OPENBIBLE_KEY'),
         ],
         'elevenlabs' => [
             'label' => 'ElevenLabs (cloud)', 'driver' => 'elevenlabs',

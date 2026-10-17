@@ -731,4 +731,18 @@ Route::middleware(['auth', 'role:ceo,admin'])->prefix('admin/speech')->name('adm
     Route::post('/glossary/{lang}', [SpeechAdminController::class, 'storeTerm'])->name('glossary.store');
     Route::post('/glossary/{lang}/import', [SpeechAdminController::class, 'importTerms'])->name('glossary.import');
     Route::delete('/glossary/term/{term}', [SpeechAdminController::class, 'destroyTerm'])->name('glossary.destroy');
+    Route::post('/reviewers', [SpeechAdminController::class, 'storeReviewer'])->name('reviewers.store');
+    Route::delete('/reviewers/{reviewer}', [SpeechAdminController::class, 'destroyReviewer'])->name('reviewers.destroy');
+    Route::get('/review-results/{lang}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'results'])->name('review.results');
+});
+
+// Native-speaker / expert review packs. Open to assigned reviewers (any role)
+// and admins; the controller checks the assignment per language.
+Route::middleware(['auth'])->prefix('admin/speech/review')->name('admin.speech.review.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'index'])->name('index');
+    Route::get('/pack/{pack}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'pack'])->name('pack');
+    Route::get('/item/{item}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'item'])->name('item');
+    Route::post('/item/{item}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'store'])->name('store');
+    Route::get('/item/{item}/audio/{label}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'audio'])
+        ->where('label', '[A-Z]')->name('audio');
 });

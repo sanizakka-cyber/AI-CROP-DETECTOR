@@ -4,10 +4,10 @@ namespace App\Services\Speech\Providers;
 
 class ProviderRegistry
 {
-    /** Providers an admin may choose: configured and licensed for commercial use. */
+    /** Providers an admin may choose: configured, licensed for commercial use, and not switched off. */
     public static function selectable(): array
     {
-        return array_filter(config('speech.providers', []), fn ($p) => !empty($p['commercial_use']));
+        return array_filter(config('speech.providers', []), fn ($p) => !empty($p['commercial_use']) && ($p['enabled'] ?? true));
     }
 
     public static function make(string $name): TtsProvider
@@ -19,9 +19,12 @@ class ProviderRegistry
         if (empty($cfg['commercial_use'])) {
             throw TtsException::permanent("{$name} is not licensed for commercial use ({$cfg['license']}).");
         }
+        if (!($cfg['enabled'] ?? true)) {
+            throw TtsException::permanent("{$name} is switched off until its licence is confirmed.");
+        }
 
         return match ($cfg['driver']) {
-            'self_hosted' => new SelfHostedProvider($cfg['engine']),
+            'self_hosted' => new SelfHostedProvider($cfg['engine'], $cfg['url'] ?? null, $cfg['key'] ?? null),
             'elevenlabs'  => new ElevenLabsProvider(),
             default       => throw TtsException::permanent("No driver for {$name}"),
         };

@@ -148,3 +148,18 @@ def test_sentence_files_join_into_one_playable_mp3():
     assert proc.returncode == 0
     seconds = len(proc.stdout) / 4 / 24000
     assert 3.8 < seconds < 4.4  # two 2 s sentences (plus encoder padding)
+
+
+def test_openbible_engine_is_licence_safe_and_checks_voices_before_loading(monkeypatch):
+    monkeypatch.setenv("TTS_ENGINES", "openbible")
+    enabled = engines.enabled_engines()
+    assert list(enabled) == ["openbible"]
+    assert engines.LICENSES["openbible"]["license"] == "CC-BY-SA-4.0"
+    e = enabled["openbible"]
+    assert e.voices() == {"ha": ["openbible_hausa"], "yo": ["openbible_yoruba"], "ig": ["openbible_igbo"]}
+    # Wrong language or voice is a 422 before any model is loaded (coqui-tts is not installed in CI).
+    with pytest.raises(engines.EngineError):
+        e.synth("Ina kwana", "en", "openbible_hausa")
+    with pytest.raises(engines.EngineError):
+        e.synth("Ina kwana", "ha", "openbible_igbo")
+    assert e._syn == {}

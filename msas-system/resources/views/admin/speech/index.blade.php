@@ -5,7 +5,7 @@
         <div class="bg-gradient-to-r from-slate-900 to-[#0F6B3E] rounded-2xl p-6 text-white">
             <p class="text-emerald-200 text-sm mb-1">Administration</p>
             <h1 class="text-2xl font-extrabold">Spoken results: languages and voices</h1>
-            <p class="text-emerald-100 text-sm mt-1">A language reaches farmers only when it is <strong>live</strong>. It can go live after {{ $threshold }} results are marked reviewed by native-speaker extension staff.</p>
+            <p class="text-emerald-100 text-sm mt-1">A language reaches farmers only when it is <strong>live</strong>. It can go live only when it meets the go-live rule below: enough results reviewed by a native speaker and an extension officer or vet, good ratings, and no dose or chemical errors.</p>
         </div>
 
         @if(session('success'))
@@ -44,6 +44,59 @@
                 @endforeach
                 </tbody>
             </table>
+        </div>
+
+
+        {{-- Native-speaker review: go-live rule, reviewers and packs --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5 text-sm">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-lg">Native-speaker review</h3>
+                <a href="{{ route('admin.speech.review.index') }}" class="text-emerald-700 font-semibold">Review packs &rarr;</a>
+            </div>
+            <table class="min-w-full">
+                <thead><tr class="text-left text-slate-500"><th class="py-2 pr-4">Language</th><th class="pr-4">Go-live rule</th><th class="pr-4">Still missing</th><th></th></tr></thead>
+                <tbody>
+                @foreach($languages as $l)
+                    @php $g = $goLive[$l->code]; @endphp
+                    <tr class="border-t border-slate-100">
+                        <td class="py-2 pr-4 font-semibold">{{ $l->name_english }}</td>
+                        <td class="pr-4">{!! $g['passes'] ? '<span class="text-emerald-700 font-semibold">meets it</span>' : '<span class="text-amber-700">not yet</span>' !!}</td>
+                        <td class="pr-4 text-slate-500">{{ $g['passes'] ? '—' : \App\Services\Speech\GoLiveRule::failures($g) }}</td>
+                        <td><a class="text-emerald-700" href="{{ route('admin.speech.review.results', $l->code) }}">Results &rarr;</a></td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+
+            <div>
+                <h4 class="font-semibold text-slate-700 mb-2">Reviewers</h4>
+                @forelse($reviewers as $r)
+                    <div class="flex items-center justify-between py-1 border-t border-slate-100 {{ $r->active ? '' : 'opacity-50' }}">
+                        <span>{{ $r->user?->name }} &lt;{{ $r->user?->email }}&gt; &middot; {{ $r->lang }} &middot; {{ \App\Models\SpeechReviewer::KINDS[$r->kind] ?? $r->kind }}{{ $r->active ? '' : ' (removed)' }}</span>
+                        @if($r->active)
+                        <form method="POST" action="{{ route('admin.speech.reviewers.destroy', $r) }}">@csrf @method('DELETE')<button class="text-red-700">Remove</button></form>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-slate-500">No reviewers yet. Create their accounts, then assign them here: one native speaker and one extension officer or vet per language.</p>
+                @endforelse
+                <form method="POST" action="{{ route('admin.speech.reviewers.store') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+                    @csrf
+                    <input name="email" type="email" placeholder="Account email" class="rounded-lg border-slate-300" required>
+                    <select name="lang" class="rounded-lg border-slate-300">@foreach($languages as $l)<option value="{{ $l->code }}">{{ $l->name_english }}</option>@endforeach</select>
+                    <select name="kind" class="rounded-lg border-slate-300">@foreach(\App\Models\SpeechReviewer::KINDS as $k => $label)<option value="{{ $k }}">{{ $label }}</option>@endforeach</select>
+                    <button class="bg-slate-800 text-white font-bold px-4 py-2 rounded-lg">Assign reviewer</button>
+                </form>
+            </div>
+
+            <div>
+                <h4 class="font-semibold text-slate-700 mb-2">Review packs</h4>
+                @forelse($packs as $p)
+                    <div class="py-1 border-t border-slate-100"><a class="text-emerald-700" href="{{ route('admin.speech.review.pack', $p) }}">{{ $p->title }}</a> &middot; {{ $p->lang }} &middot; {{ $p->items_count }} items &middot; {{ count($p->candidates) }} voices</div>
+                @empty
+                    <p class="text-slate-500">No packs yet. Build one with <code>php artisan speech:build-review-pack ha</code> (see docs/listen-to-result.md).</p>
+                @endforelse
+            </div>
         </div>
 
         {{-- Languages --}}
@@ -95,7 +148,7 @@
         <form method="POST" action="{{ route('admin.speech.languages.store') }}" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-3 text-sm">
             @csrf
             <h3 class="font-bold text-slate-800 text-lg">Add a language</h3>
-            <p class="text-slate-500">New languages start as <strong>draft</strong>: translate and review 50 sample results, add glossary terms, then set it to in review and live.</p>
+            <p class="text-slate-500">New languages start as <strong>draft</strong>: add glossary terms, build a review pack, and set it live once it meets the go-live rule.</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <label>Code (e.g. pcm, ff, kr, tiv)<input name="code" class="w-full rounded-lg border-slate-300" required></label>
                 <label>English name<input name="name_english" class="w-full rounded-lg border-slate-300" required></label>

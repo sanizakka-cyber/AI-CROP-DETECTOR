@@ -1,0 +1,8 @@
+# OpenBible VITS voices (TTS_ENGINES=openbible), in their own image:
+# coqui-tts needs transformers>=4.56, YarnGPT2 needs 4.47.1.
+# Versions benchmarked on 2026-10-17.
+coqui-tts==0.27.5
+torchcodec==0.17.0
+transformers>=4.56,<5
+soundfile
+psutil

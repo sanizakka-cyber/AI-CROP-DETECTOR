@@ -20,6 +20,10 @@ LICENSES = {
                    "credit": "Hausa voice: FarmerlineML",
                    "source": "https://huggingface.co/FarmerlineML/main_hausa_TTS",
                    "note": "Base model not stated on the model card; confirm it is not a fine-tune of a CC-BY-NC model before production use."},
+    "openbible":  {"license": "CC-BY-SA-4.0", "commercial_use": True,
+                   "credit": "Voices: OpenBibleTTS (McGill-NLP, Mila), trained on Open Bible recordings (CC BY-SA 4.0)",
+                   "source": "https://huggingface.co/multilingual-tts",
+                   "note": "Trained from scratch (no base model). Attribution required; modified weights must stay CC BY-SA."},
 }
 
 # Voice names in the YarnGPT2 model card's order (best first). The card spells
@@ -121,11 +125,55 @@ class FarmerlineHausaEngine:
         return np.asarray(wave.squeeze().cpu().numpy(), dtype=np.float32), int(self._model.config.sampling_rate)
 
 
+class OpenBibleVitsEngine:
+    """multilingual-tts/VITS-OpenBible-{Hausa,Yoruba,Igbo} (CC-BY-SA-4.0,
+    trained from scratch on Open Bible recordings), run with Coqui TTS.
+
+    The model cards say "multispeaker", but these checkpoints have no speaker
+    embedding (config use_speaker_embedding=false, no emb_g weights): one voice
+    per language, called without a speaker name. Needs coqui-tts, which
+    requires a newer transformers than YarnGPT2, so it runs in its own image
+    (Dockerfile.openbible) with TTS_ENGINES=openbible."""
+    name = "openbible"
+    FOLDERS = {"ha": "Hausa", "yo": "Yoruba", "ig": "Igbo"}
+    VOICES = {"ha": ["openbible_hausa"], "yo": ["openbible_yoruba"], "ig": ["openbible_igbo"]}
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._syn = {}
+
+    def voices(self) -> dict:
+        return self.VOICES
+
+    def _load(self, lang):
+        if lang in self._syn:
+            return self._syn[lang]
+        from TTS.utils.synthesizer import Synthesizer
+        folder = os.path.join(os.environ.get("MODELS_DIR", "/models"), "openbible", self.FOLDERS[lang])
+        syn = Synthesizer(tts_checkpoint=os.path.join(folder, "model_last.pth"),
+                          tts_config_path=os.path.join(folder, "config.json"),
+                          tts_speakers_file=os.path.join(folder, "speakers.pth"), use_cuda=False)
+        if not syn.tts_config.model_args.get("use_speaker_embedding", False):
+            syn.tts_model.speaker_manager = None
+        self._syn[lang] = syn
+        return syn
+
+    def synth(self, text: str, lang: str, voice: str):
+        if lang not in self.FOLDERS:
+            raise EngineError(f"openbible has no {lang} voice")
+        if voice not in self.VOICES[lang]:
+            raise EngineError(f"unknown openbible voice {voice} for {lang}")
+        with self._lock:
+            syn = self._load(lang)
+            wav = syn.tts(text=text, speaker_name=None, split_sentences=False)
+        return np.asarray(wav, dtype=np.float32), int(syn.output_sample_rate)
+
+
 def enabled_engines() -> dict:
     """Engines named in TTS_ENGINES (default: yarngpt), minus non-commercial ones."""
     allow_nc = os.environ.get("ALLOW_NON_COMMERCIAL_MODELS") == "1"
     wanted = [e.strip() for e in os.environ.get("TTS_ENGINES", "yarngpt").split(",") if e.strip()]
-    available = {"yarngpt": YarnGptEngine, "farmerline": FarmerlineHausaEngine}
+    available = {"yarngpt": YarnGptEngine, "farmerline": FarmerlineHausaEngine, "openbible": OpenBibleVitsEngine}
     out = {}
     for name in wanted:
         if name not in available:
