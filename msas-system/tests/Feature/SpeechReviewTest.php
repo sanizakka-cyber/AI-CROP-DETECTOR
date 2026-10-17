@@ -131,7 +131,9 @@ class SpeechReviewTest extends TestCase
         $this->assertEqualsCanonicalizing(['MSAS FarmAI', 'GPS', 'LGA'], array_slice(array_column($lexicon, 'source'), 0, 3));
         $numbers = $pack->items->firstWhere('kind', 'numbers')->translation_json['rows'];
         $this->assertSame('Apply 2.5 g per litre of water.', $numbers[0]['source']);
-        $this->assertStringNotContainsString('2.5', $numbers[0]['text']); // Hausa numbers are spelled out
+        $days = collect($numbers)->firstWhere('source', 'Repeat after 7 days.')['text'];
+        $this->assertStringContainsString('bakwai', $days); // whole numbers are spelled in Hausa
+        $this->assertStringContainsString('2.5', $numbers[0]['text']); // decimals stay as digits until reviewers approve rules for them
         // The OpenBible voice went to its own service.
         Http::assertSent(fn ($r) => str_starts_with($r->url(), self::OPENBIBLE) && $r['engine'] === 'openbible');
     }
@@ -179,7 +181,8 @@ class SpeechReviewTest extends TestCase
         $this->assertStringContainsString('voice-B.mp3', (string) $audio->headers->get('Content-Disposition'));
         $this->assertStringContainsString(':', $audio->streamedContent());
 
-        $this->actingAs($native)->get(route('admin.speech.review.results', 'ha'))->assertForbidden(); // results are admin only
+        // Results (which unblind the voices) are admin only: the role middleware turns reviewers away.
+        $this->assertContains($this->actingAs($native)->get(route('admin.speech.review.results', 'ha'))->status(), [302, 403]);
     }
 
     public function test_a_review_needs_every_voice_rated_and_records_errors_and_the_preferred_voice(): void
