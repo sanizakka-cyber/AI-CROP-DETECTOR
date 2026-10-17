@@ -327,5 +327,13 @@
   "or drag & drop here": "naa seɗɗa e warnde ɗoo",
   "Image Ready": "Jaaƴol Ŋaaraama",
   "Remove & try again": "Ittu & gostir",
-  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision na lelnoo isiim ngam haa kañgol doosruuji. Ɗuum jogori heɓtinde saniiye 15-30."
+  "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision na lelnoo isiim ngam haa kañgol doosruuji. Ɗuum jogori heɓtinde saniiye 15-30.",
+  "Not certain": "Alaa ko tabiti",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI heɓaay hoolaare yonnde ngam wiyde ñawu gooto. Ñabbuuji ɗi ina waawi wonde ko ɗii:",
+  "Possible conditions": "Ñabbuuji ɗi ina waawi wonde",
+  "Please confirm with a vet or extension officer before treating.": "Tiiɗno, ndaar e cafroowo kulle walla jaŋngingoowo remooɓe hade safrude.",
+  "AI guidance can be wrong; confirm with an expert.": "Kawgal AI ina waawi juumde; ndaar e gannduɗo.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP walla HEIC, haa 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "Fayil ngal jaɓaaka. Suɓo foto JPG, PNG, WebP walla HEIC.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "Foto HEIC: ma waylite JPEG so a ƴeewtii."
 }

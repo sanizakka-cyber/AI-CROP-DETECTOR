@@ -345,6 +345,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'is_qa' => 'boolean',
             'email_verified_at'    => 'datetime',
             'phone_verified_at'    => 'datetime',
             'force_password_reset'   => 'boolean',

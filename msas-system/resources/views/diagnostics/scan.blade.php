@@ -171,7 +171,7 @@
 
                     {{-- Hidden file input — capture attribute toggled by JS --}}
                     <input type="file" name="image" id="file-upload" class="hidden"
-                           accept="image/jpeg,image/png,image/webp" required onchange="previewImage(event)"
+                           accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" required onchange="previewImage(event)"
                            aria-describedby="upload-hint upload-error">
 
                     {{-- Drop zone for desktop drag-and-drop --}}
@@ -181,7 +181,7 @@
                             <div class="mb-2 flex justify-center"><svg width="40" height="40" fill="none" stroke="#cbd5e1" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4m0 0L8 10m4-4v12"/></svg></div>
                             <h4 class="font-bold text-slate-600 mb-1 text-sm">{{ __('or drag & drop here') }}</h4>
                             {{-- Previously stated an image type the server rejects and a 5 MB limit; the server allows 10 MB. --}}
-                            <p id="upload-hint" class="text-xs text-slate-400">{{ __('JPG, PNG or WebP, up to 10 MB') }}</p>
+                            <p id="upload-hint" class="text-xs text-slate-400">{{ __('JPG, PNG, WebP or HEIC, up to 10 MB') }}</p>
                         </div>
                         <div id="image-preview-container" class="hidden">
                             <img id="image-preview" src="#" alt="Preview" class="max-h-64 mx-auto rounded-lg shadow-md">
@@ -416,7 +416,9 @@
         });
     })();
 
-    var ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    var ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    // HEIC (iPhone) is converted to JPEG on the server; some browsers report it with no type.
+    function isHeic(file) { return /\.(heic|heif)$/i.test(file.name || '') || /^image\/hei[cf]/i.test(file.type || ''); }
     var MAX_BYTES = 10 * 1024 * 1024; // matches the server's max:10240 KB
     function showUploadError(msg) {
         var el = document.getElementById('upload-error');
@@ -425,7 +427,7 @@
     }
     function validateFile(file) {
         if (!file) return '{{ __("Please choose a photo.") }}';
-        if (ACCEPTED_TYPES.indexOf(file.type) === -1) return '{{ __("This file type is not supported. Choose a JPG, PNG or WebP photo.") }}';
+        if (ACCEPTED_TYPES.indexOf(file.type) === -1 && !isHeic(file)) return '{{ __("This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.") }}';
         if (file.size > MAX_BYTES) return '{{ __("This photo is larger than 10 MB. Choose a smaller photo.") }}';
         return null;
     }
@@ -438,6 +440,10 @@
             showUploadError(null);
             var f = input.files[0];
             document.getElementById('image-file-name').textContent = f.name + ' (' + (f.size / 1024 / 1024).toFixed(1) + ' MB)';
+            if (isHeic(f)) {
+                // Most browsers cannot draw HEIC; the server converts it to JPEG.
+                document.getElementById('image-file-name').textContent += ' — {{ __("HEIC photo: it will be converted to JPEG when you analyse it.") }}';
+            }
             var reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('image-preview').src = e.target.result;

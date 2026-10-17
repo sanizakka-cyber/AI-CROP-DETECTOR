@@ -41,6 +41,10 @@ export default function DiagnosisDetailScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const isHausa = i18n.language === 'ha';
+  // Shown on every result screen (assessed, not certain, rejected photo, AI outage).
+  const aiDisclaimer = (
+    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">⚠ {t('aiDisclaimer')}</Text>
+  );
 
   const [diag, setDiag] = useState(null);
   const [activeTab, setActiveTab] = useState('treatment');
@@ -205,6 +209,7 @@ export default function DiagnosisDetailScreen() {
         <Text style={styles.loadingTip}>
           {diag.treatmentPlan?.vetReferralAdvice || 'Our AI engine was temporarily unavailable. An expert will review your scan and respond shortly.'}
         </Text>
+        {aiDisclaimer}
         <Button title="Try Again" onPress={() => router.back()} />
       </View>
     );
@@ -246,6 +251,7 @@ export default function DiagnosisDetailScreen() {
         <Text style={styles.outcomeNote}>
           {isHausa ? 'Ba a bayar da magani ba saboda ba a iya tantance hoton ba.' : 'No treatment is suggested because the photo could not be assessed.'}
         </Text>
+        {aiDisclaimer}
         <Button title={isHausa ? 'Sake daukar hoto' : 'Retake photo'} onPress={() => router.push('/(tabs)/scan')} style={{ marginTop: Spacing.md }} />
         <Button title={isHausa ? 'Koma zuwa bayanai' : 'Back to records'} onPress={() => router.back()} variant="outline" style={{ marginTop: Spacing.sm }} />
       </ScrollView>
@@ -260,6 +266,16 @@ export default function DiagnosisDetailScreen() {
   const confidence = hasConfidence ? Number(result.confidence) : null;
   const imageQuality = assessment.imageQuality || validation.quality?.status || null;
   const isUncertain = outcome === 'uncertain';
+  // Low-confidence rule: below the threshold (server-configured, 65% by
+  // default) never present one diagnosis. The server decides (assessment.
+  // notCertain); an older server without it gets the same rule applied here.
+  const minConfidence = Number(assessment.minConfidence ?? 65);
+  const notCertain = assessment.notCertain ?? (!isUncertain && hasConfidence && confidence < minConfidence);
+  const possibleConditions = notCertain
+    ? (assessment.possibleConditions?.length
+      ? assessment.possibleConditions
+      : [...new Set([result.primaryDiagnosis, ...(assessment.alternativeFindings || []).map(a => a.name)].filter(Boolean))].slice(0, 3))
+    : [];
   const isEmergency = result.severity === 'emergency';
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
@@ -281,8 +297,8 @@ export default function DiagnosisDetailScreen() {
           <Text style={styles.backBtn}>Back to records</Text>
         </TouchableOpacity>
         <Text style={styles.resultTitle}>{t('result')}</Text>
-        <Text style={styles.diagnosisName}>
-          {isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis}
+        <Text style={styles.diagnosisName} testID="diagnosis-name">
+          {notCertain ? t('notCertain') : (isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis)}
         </Text>
         <View style={styles.metaRow}>
           <SeverityBadge severity={result.severity} />
@@ -414,6 +430,20 @@ export default function DiagnosisDetailScreen() {
         </View>
       </Card>
 
+      <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}>{aiDisclaimer}</View>
+
+      {notCertain && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="not-certain-card">
+          <Text style={styles.cardTitle}>{t('notCertain')}</Text>
+          <Text style={styles.treatBody}>{t('notCertainBody')}</Text>
+          <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{t('possibleConditions')}</Text>
+          {possibleConditions.map((name) => (
+            <Text key={name} style={styles.treatBody} testID="possible-condition">• {name}</Text>
+          ))}
+          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t('confirmWithExpert')}</Text>
+        </Card>
+      )}
+
       {isUncertain && (
         <Card style={[styles.card, styles.uncertainCard]} testID="uncertain-card">
           <Text style={styles.cardTitle}>{isHausa ? 'Sakamako bai tabbata ba' : 'Inconclusive result'}</Text>
@@ -438,7 +468,7 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
-      {!isUncertain && assessment.alternativeFindings?.length > 0 && (
+      {!isUncertain && !notCertain && assessment.alternativeFindings?.length > 0 && (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>{isHausa ? "Wasu yiwuwar da aka yi la'akari da su" : 'Other possibilities considered'}</Text>
           {assessment.alternativeFindings.map((alt, i) => (
@@ -632,6 +662,7 @@ const styles = StyleSheet.create({
   outcomeBody: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
   outcomeCard: { marginTop: Spacing.md },
   outcomeNote: { ...Typography.small, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md },
+  aiDisclaimer: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary || '#475569', marginVertical: 6 },
   uncertainCard: { borderLeftWidth: 4, borderLeftColor: Colors.warning },
   root: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 80 },

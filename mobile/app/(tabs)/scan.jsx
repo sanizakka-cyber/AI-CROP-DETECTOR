@@ -33,6 +33,7 @@ const SCAN_OPTIONS = [
     icon: 'shovel',
     titleEn: 'Soil Sample',
     titleHa: 'Samfurin Ƙasa',
+    descKey: 'soilScanDesc', // every app language, never "pH" (see __tests__/scanMenu.soil.test.js)
     descEn: 'Nutrients & recommendations',
     descHa: 'Abinci da shawarwari',
     color: '#E7E0D3',
@@ -78,7 +79,7 @@ export default function ScanMenuScreen() {
           </View>
           <View style={styles.cardBody}>
             <Text style={[styles.cardTitle, { color: opt.accent }]}>{isHausa ? opt.titleHa : opt.titleEn}</Text>
-            <Text style={styles.cardDesc}>{isHausa ? opt.descHa : opt.descEn}</Text>
+            <Text style={styles.cardDesc} testID={`scan-desc-${opt.id}`}>{opt.descKey ? t(opt.descKey) : (isHausa ? opt.descHa : opt.descEn)}</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={26} color={Colors.textMuted} />
         </TouchableOpacity>

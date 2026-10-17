@@ -354,5 +354,13 @@
   "Explanation": "Explanation",
   "Recommendations": "Recommendations",
   "Safety note": "Safety note",
-  "Marked reviewed": "Marked reviewed"
+  "Marked reviewed": "Marked reviewed",
+  "Not certain": "Not certain",
+  "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "The AI is not sure enough to give one diagnosis. These are the possible conditions:",
+  "Possible conditions": "Possible conditions",
+  "Please confirm with a vet or extension officer before treating.": "Please confirm with a vet or extension officer before treating.",
+  "AI guidance can be wrong; confirm with an expert.": "AI guidance can be wrong; confirm with an expert.",
+  "JPG, PNG, WebP or HEIC, up to 10 MB": "JPG, PNG, WebP or HEIC, up to 10 MB",
+  "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.": "This file type is not supported. Choose a JPG, PNG, WebP or HEIC photo.",
+  "HEIC photo: it will be converted to JPEG when you analyse it.": "HEIC photo: it will be converted to JPEG when you analyse it."
 }

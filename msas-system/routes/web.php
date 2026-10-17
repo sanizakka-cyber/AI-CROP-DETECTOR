@@ -64,7 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:farmer,admin,ceo,vet,agronomist'])->group(function () {
         Route::get('/diagnostics/scan', [DiagnosticController::class, 'scan'])->name('diagnostics.scan');
         Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])
-            ->middleware('throttle:10,1')
+            ->middleware(['throttle:10,1', 'heic'])
             ->name('diagnostics.analyze');
         Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
         Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
