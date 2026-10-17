@@ -74,7 +74,7 @@ class SpeechReviewTest extends TestCase
     private function scan(string $type, array $over = []): Diagnosis
     {
         $f = json_decode(file_get_contents(base_path('../shared-fixtures/canonical-diagnosis.json')), true);
-        $owner = User::factory()->create(['role' => 'farmer', 'name' => 'Aminu Bello', 'phone' => '+234803' . random_int(1000000, 9999999)]);
+        $owner = User::factory()->create(['role' => 'farmer', 'first_name' => 'Aminu', 'last_name' => 'Bello', 'phone' => '+234803' . random_int(1000000, 9999999)]);
         $d = Diagnosis::create(array_merge($f['record'], ['user_id' => $owner->id, 'language' => 'en', 'type' => $type], $over));
         CollectionLocation::create(['diagnosis_id' => $d->id, 'country' => 'Nigeria', 'state' => 'Katsina', 'lga' => 'Funtua', 'community' => 'Unguwar Rimi']);
         return $d;

@@ -365,7 +365,12 @@ class ScanSpeechTest extends TestCase
         Queue::assertPushed(\App\Jobs\TranslateScanResult::class, 1);
     }
 
-    public function test_a_language_goes_live_only_after_native_speaker_review(): void
+    /**
+     * Going live is decided by the go-live rule (native-speaker + expert
+     * review packs, scores, no dose errors; SpeechReviewTest). Fifty quick
+     * "mark translation reviewed" clicks are no longer enough on their own.
+     */
+    public function test_a_language_does_not_go_live_on_quick_review_marks_alone(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $yo = SpeechLanguage::where('code', 'yo')->first();
@@ -380,8 +385,8 @@ class ScanSpeechTest extends TestCase
             ScanResultTranslation::create(['diagnosis_id' => $d->id, 'lang' => 'yo', 'source_hash' => str_repeat('a', 64),
                 'status' => 'ready', 'translated_json' => [], 'reviewed_at' => now(), 'reviewed_by' => $admin->id]);
         }
-        $this->actingAs($admin)->patch(route('admin.speech.languages.update', $yo), $form)->assertSessionHasNoErrors();
-        $this->assertSame('live', $yo->fresh()->status);
+        $this->actingAs($admin)->patch(route('admin.speech.languages.update', $yo), $form)->assertSessionHasErrors('status');
+        $this->assertSame('in_review', $yo->fresh()->status);
     }
 
     public function test_admin_adds_a_language_and_glossary_without_code_changes(): void
@@ -522,7 +527,8 @@ class ScanSpeechTest extends TestCase
         for ($i = 1; $i < count($starts); $i++) {
             $this->assertGreaterThan($starts[$i - 1], $starts[$i]);
         }
-        $this->assertLessThanOrEqual($ready->json('durationSec'), (float) end($ready->json('sentences'))['end']);
+        $sentences = $ready->json('sentences');
+        $this->assertLessThanOrEqual($ready->json('durationSec'), (float) end($sentences)['end']);
     }
 
     public function test_while_audio_is_being_prepared_the_reply_says_so(): void

@@ -48,7 +48,7 @@ class SpeechAdminController extends Controller
             'languages'   => $languages,
             'stats'       => $stats,
             'goLive'      => $languages->mapWithKeys(fn ($l) => [$l->code => GoLiveRule::evaluate($l->code)])->all(),
-            'reviewers'   => SpeechReviewer::with('user:id,name,email')->orderBy('lang')->get(),
+            'reviewers'   => SpeechReviewer::with('user:id,first_name,middle_name,last_name,email')->orderBy('lang')->get(),
             'packs'       => \App\Models\SpeechReviewPack::withCount('items')->latest()->get(),
             'providers'   => ProviderRegistry::selectable(),
             'threshold'   => (int) config('speech.review_threshold', 50),

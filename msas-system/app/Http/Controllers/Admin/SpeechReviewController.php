@@ -144,7 +144,7 @@ class SpeechReviewController extends Controller
         $language = SpeechLanguage::where('code', $lang)->firstOrFail();
         $packs = SpeechReviewPack::where('lang', $lang)->get();
         $reviews = SpeechReview::whereHas('item.pack', fn ($q) => $q->where('lang', $lang))
-            ->with('item.pack', 'user:id,name')->get();
+            ->with('item.pack', 'user:id,first_name,middle_name,last_name')->get();
 
         $voices = [];
         foreach ($reviews as $r) {
