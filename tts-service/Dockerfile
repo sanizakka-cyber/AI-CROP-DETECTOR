@@ -13,14 +13,16 @@ RUN apt-get update \
 WORKDIR /srv
 COPY requirements.txt requirements-models.txt ./
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu \
- && pip install --no-cache-dir -r requirements.txt -r requirements-models.txt
+ && pip install --no-cache-dir -r requirements.txt -r requirements-models.txt \
+ && pip install --no-cache-dir --no-deps outetts==0.2.3
 
 # YarnGPT's AudioTokenizerV2 lives in its GitHub repo (model card: "git clone").
-# Pin YARNGPT_REF to a reviewed commit for reproducible builds.
-ARG YARNGPT_REF=main
+# The repo root IS the "yarngpt" package, so its parent (/opt) goes on the path.
+# Pinned to the commit benchmarked on 2026-10-17.
+ARG YARNGPT_REF=8bb0eb27d307f4b5903149e24ecc1bd3caa4af2d
 RUN git clone https://github.com/saheedniyi02/yarngpt.git /opt/yarngpt \
  && git -C /opt/yarngpt checkout "$YARNGPT_REF"
-ENV PYTHONPATH=/opt/yarngpt
+ENV PYTHONPATH=/opt
 
 COPY app ./app
 COPY fetch_models.sh /usr/local/bin/fetch_models.sh

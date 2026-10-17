@@ -55,9 +55,9 @@ return [
             'languages' => ['en', 'ha', 'yo', 'ig'],
             'voices' => [
                 'en' => ['idera', 'chinenye', 'jude', 'emma', 'umar', 'joke', 'zainab', 'osagie', 'remi', 'tayo'],
-                'yo' => ['yoruba_male2', 'yoruba_female2', 'yoruba_feamle1'],
+                'yo' => ['yoruba_male2', 'yoruba_female2', 'yoruba_female1'],
                 'ig' => ['igbo_female2', 'igbo_male2', 'igbo_female1'],
-                'ha' => ['hausa_feamle1', 'hausa_female2', 'hausa_male2', 'hausa_male1'],
+                'ha' => ['hausa_female1', 'hausa_female2', 'hausa_male2', 'hausa_male1'],
             ],
         ],
         'farmerline' => [
@@ -95,7 +95,7 @@ return [
         ['code' => 'en', 'name_english' => 'English', 'name_native' => 'English', 'status' => 'live',
          'provider' => 'yarngpt', 'voice' => 'idera', 'sort' => 1],
         ['code' => 'ha', 'name_english' => 'Hausa', 'name_native' => 'Hausa', 'status' => 'in_review',
-         'provider' => 'yarngpt', 'voice' => 'hausa_feamle1', 'sort' => 2],
+         'provider' => 'yarngpt', 'voice' => 'hausa_female1', 'sort' => 2],
         ['code' => 'yo', 'name_english' => 'Yoruba', 'name_native' => 'Yorùbá', 'status' => 'in_review',
          'provider' => 'yarngpt', 'voice' => 'yoruba_male2', 'sort' => 3],
         ['code' => 'ig', 'name_english' => 'Igbo', 'name_native' => 'Igbo', 'status' => 'in_review',

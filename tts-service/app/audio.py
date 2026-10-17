@@ -45,7 +45,11 @@ def encode(samples, sample_rate: int, rate: float = 1.0, fmt: str = "mp3", bitra
     `rate` < 1 slows speech (0.9 = calm) without changing pitch.
     """
     rate = min(2.0, max(0.5, float(rate)))
-    codec = {"mp3": ["-c:a", "libmp3lame", "-f", "mp3"],
+    # No ID3 tag and no Xing/LAME header frame: Laravel joins sentence files
+    # byte for byte into the downloadable file, and a header in the middle
+    # would make players misread its length. Constant bitrate keeps the
+    # duration exact without the header.
+    codec = {"mp3": ["-c:a", "libmp3lame", "-write_xing", "0", "-id3v2_version", "0", "-f", "mp3"],
              "opus": ["-c:a", "libopus", "-f", "ogg"]}[fmt]
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error",
            "-f", "f32le", "-ar", str(sample_rate), "-ac", "1", "-i", "pipe:0",

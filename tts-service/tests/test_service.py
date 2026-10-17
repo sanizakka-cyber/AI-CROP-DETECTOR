@@ -115,10 +115,12 @@ def test_non_commercial_engines_are_never_enabled(monkeypatch):
     assert list(engines.enabled_engines()) == ["yarngpt"]
 
 
-def test_voice_names_match_the_model_card():
-    # Spelling copied from the YarnGPT2 card; "fixing" it would break synthesis.
-    assert "hausa_feamle1" in engines.YARNGPT_VOICES["ha"]
-    assert "yoruba_feamle1" in engines.YARNGPT_VOICES["yo"]
+def test_voice_names_match_the_speaker_files():
+    # The model loads default_speakers_local/<voice>.json. The card's
+    # "hausa_feamle1" spelling has no file and failed every Hausa request.
+    assert "hausa_female1" in engines.YARNGPT_VOICES["ha"]
+    assert "yoruba_female1" in engines.YARNGPT_VOICES["yo"]
+    assert not any("feamle" in v for vs in engines.YARNGPT_VOICES.values() for v in vs)
 
 
 @pytest.mark.skipif(not audio.ffmpeg_available(), reason="ffmpeg not installed")
@@ -127,3 +129,22 @@ def test_real_encoding_is_small_mono_mp3():
     data = audio.encode(tone, 24000, rate=0.9, fmt="mp3", bitrate_kbps=40)
     assert data[:3] == b"ID3" or data[0] == 0xFF
     assert len(data) < 3.4 * 40_000 / 8 * 1.3  # ~40 kbps for ~3.3 s, with container overhead
+
+
+@pytest.mark.skipif(not audio.ffmpeg_available(), reason="ffmpeg not installed")
+def test_sentence_files_join_into_one_playable_mp3():
+    # Laravel concatenates sentence files byte for byte. Each must start with
+    # an MPEG frame (no ID3 tag) and carry no Xing/Info header, or players
+    # would read the joined file's length from the first sentence only.
+    import subprocess
+    one = (0.3 * np.sin(np.linspace(0, 2 * np.pi * 220 * 2, 24000 * 2))).astype(np.float32)
+    a = audio.encode(one, 24000, rate=1.0, fmt="mp3", bitrate_kbps=40)
+    b = audio.encode(one, 24000, rate=1.0, fmt="mp3", bitrate_kbps=40)
+    for chunk in (a, b):
+        assert chunk[0] == 0xFF and (chunk[1] & 0xE0) == 0xE0
+        assert b"Xing" not in chunk[:400] and b"Info" not in chunk[:400]
+    proc = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "mp3", "-i", "pipe:0",
+                           "-f", "f32le", "-ac", "1", "-ar", "24000", "pipe:1"], input=a + b, capture_output=True, timeout=60)
+    assert proc.returncode == 0
+    seconds = len(proc.stdout) / 4 / 24000
+    assert 3.8 < seconds < 4.4  # two 2 s sentences (plus encoder padding)

@@ -11,7 +11,7 @@ The feature as a whole is described in [`docs/listen-to-result.md`](../docs/list
 | `yarngpt` (default) | English (Nigerian accent), Hausa, Yoruba, Igbo | Apache-2.0 | [saheedniyi/YarnGPT2](https://huggingface.co/saheedniyi/YarnGPT2) |
 | `farmerline` (off) | Hausa | CC-BY-4.0, credit "Hausa voice: FarmerlineML" | [FarmerlineML/main_hausa_TTS](https://huggingface.co/FarmerlineML/main_hausa_TTS) |
 
-Voice names are copied exactly from the YarnGPT2 model card, including its spelling (`hausa_feamle1`, `yoruba_feamle1`). The card lists them in order of quality, best first.
+Voices follow the YarnGPT2 model card's order, best first. The card spells two of them `hausa_feamle1` and `yoruba_feamle1`, but the speaker files the model loads are `hausa_female1` and `yoruba_female1`, so the file names are used.
 
 - `farmerline` is not enabled by default. Its model card does not say which model it was fine-tuned from. It has the size and architecture of Meta's MMS Hausa model, which is CC-BY-NC (non-commercial). Confirm its provenance before enabling it.
 - Non-commercial models are refused unless `ALLOW_NON_COMMERCIAL_MODELS=1`. Never set that in production.
@@ -42,7 +42,7 @@ All endpoints except `/health` require `Authorization: Bearer $TTS_SERVICE_KEY` 
 - `POST /synthesize`:
 
   ```json
-  {"engine": "yarngpt", "lang": "ha", "voice": "hausa_feamle1", "rate": 0.9,
+  {"engine": "yarngpt", "lang": "ha", "voice": "hausa_female1", "rate": 0.9,
    "format": "mp3", "bitrate_kbps": 40,
    "segments": [{"text": "Ganyen sun yi ruwan ƙasa,", "pause_ms": 250}, {"text": "kuma suna bushewa.", "pause_ms": 450}]}
   ```

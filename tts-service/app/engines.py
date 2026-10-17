@@ -22,13 +22,15 @@ LICENSES = {
                    "note": "Base model not stated on the model card; confirm it is not a fine-tune of a CC-BY-NC model before production use."},
 }
 
-# Voice names exactly as listed on the YarnGPT2 model card, including its
-# spelling ("feamle"). They are passed to the model as-is.
+# Voice names in the YarnGPT2 model card's order (best first). The card spells
+# two of them "hausa_feamle1" / "yoruba_feamle1", but the speaker files in the
+# yarngpt repo (default_speakers_local/) are "..._female1"; the file name is
+# what the model loads, so the file spelling is used here.
 YARNGPT_VOICES = {
     "en": ["idera", "chinenye", "jude", "emma", "umar", "joke", "zainab", "osagie", "remi", "tayo"],
-    "yo": ["yoruba_male2", "yoruba_female2", "yoruba_feamle1"],
+    "yo": ["yoruba_male2", "yoruba_female2", "yoruba_female1"],
     "ig": ["igbo_female2", "igbo_male2", "igbo_female1"],
-    "ha": ["hausa_feamle1", "hausa_female2", "hausa_male2", "hausa_male1"],
+    "ha": ["hausa_female1", "hausa_female2", "hausa_male2", "hausa_male1"],
 }
 YARNGPT_LANG = {"en": "english", "yo": "yoruba", "ig": "igbo", "ha": "hausa"}
 
@@ -60,7 +62,18 @@ class YarnGptEngine:
             os.path.join(models, "wavtokenizer_large_speech_320_24k.ckpt"),
             os.path.join(models, "wavtokenizer_mediumdata_frame75_3s_nq1_code4096_dim512_kmeans200_attn.yaml"),
         )
-        self._model = AutoModelForCausalLM.from_pretrained("saheedniyi/YarnGPT2", torch_dtype="auto").to(self._tok.device)
+        self._model = AutoModelForCausalLM.from_pretrained("saheedniyi/YarnGPT2", torch_dtype=self._dtype(self._tok.device)).to(self._tok.device)
+
+    @staticmethod
+    def _dtype(device):
+        """The weights are stored in bfloat16. CPUs without native bfloat16
+        (AVX2-only servers and laptops) run it many times slower than float32,
+        so CPU uses float32 unless YARNGPT_DTYPE says otherwise."""
+        import torch
+        wanted = os.environ.get("YARNGPT_DTYPE", "").strip().lower()
+        if wanted in ("float32", "bfloat16", "float16"):
+            return getattr(torch, wanted)
+        return torch.bfloat16 if getattr(device, "type", str(device)) == "cuda" else torch.float32
 
     def synth(self, text: str, lang: str, voice: str):
         if lang not in YARNGPT_LANG:
@@ -69,6 +82,9 @@ class YarnGptEngine:
             raise EngineError(f"unknown yarngpt voice {voice} for {lang}")
         with self._lock:  # one generation at a time: the model is not shared-state safe
             self._load()
+            speaker_dir = self._tok.DEFAULT_SPEAKERS_ENG if lang == "en" else self._tok.DEFAULT_SPEAKERS_DIR_LOCAL
+            if not os.path.exists(os.path.join(speaker_dir, f"{voice}.json")):
+                raise EngineError(f"yarngpt has no speaker file for {voice}")
             prompt = self._tok.create_prompt(text, lang=YARNGPT_LANG[lang], speaker_name=voice)
             input_ids = self._tok.tokenize_prompt(prompt)
             kwargs = dict(input_ids=input_ids, temperature=0.1, repetition_penalty=1.1, max_length=4000)

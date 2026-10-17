@@ -1,0 +1,196 @@
+{
+ "threads": 2,
+ "torch": "2.14.1+cpu",
+ "cpu": "Intel i5-8365U laptop, on battery, 2 threads",
+ "results": [
+  {
+   "id": "crop-en",
+   "lang": "en",
+   "voice": "idera",
+   "words": 39,
+   "sentences": 4,
+   "per_sentence": [
+    {
+     "chars": 43,
+     "sec": 64.6,
+     "audio_sec": 2.5,
+     "ok": true
+    },
+    {
+     "chars": 60,
+     "sec": 77.9,
+     "audio_sec": 3.1,
+     "ok": true
+    },
+    {
+     "chars": 44,
+     "sec": 60.5,
+     "audio_sec": 2.4,
+     "ok": true
+    },
+    {
+     "chars": 81,
+     "sec": 143.0,
+     "audio_sec": 4.4,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 64.6,
+   "total_sec": 346.0,
+   "audio_sec": 12.5,
+   "rtf": 27.67,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-ha",
+   "lang": "ha",
+   "voice": "hausa_female1",
+   "words": 53,
+   "sentences": 4,
+   "per_sentence": [
+    {
+     "chars": 60,
+     "sec": 366.5,
+     "audio_sec": 3.7,
+     "ok": true
+    },
+    {
+     "chars": 56,
+     "sec": 209.4,
+     "audio_sec": 3.2,
+     "ok": true
+    },
+    {
+     "chars": 80,
+     "sec": 299.3,
+     "audio_sec": 5.3,
+     "ok": true
+    },
+    {
+     "chars": 95,
+     "sec": 374.1,
+     "audio_sec": 6.3,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 366.5,
+   "total_sec": 1249.3,
+   "audio_sec": 18.6,
+   "rtf": 67.25,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-yo",
+   "lang": "yo",
+   "voice": "yoruba_male2",
+   "words": 50,
+   "sentences": 4,
+   "per_sentence": [
+    {
+     "chars": 60,
+     "sec": 176.0,
+     "audio_sec": 3.0,
+     "ok": true
+    },
+    {
+     "chars": 46,
+     "sec": 391.6,
+     "audio_sec": 2.3,
+     "ok": true
+    },
+    {
+     "chars": 46,
+     "sec": 167.8,
+     "audio_sec": 2.5,
+     "ok": true
+    },
+    {
+     "chars": 72,
+     "sec": 298.3,
+     "audio_sec": 3.9,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 176.0,
+   "total_sec": 1033.7,
+   "audio_sec": 11.7,
+   "rtf": 88.21,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-ig",
+   "lang": "ig",
+   "voice": "igbo_female2",
+   "words": 48,
+   "sentences": 4,
+   "per_sentence": [
+    {
+     "chars": 73,
+     "sec": 12660.2,
+     "audio_sec": 4.2,
+     "ok": true
+    },
+    {
+     "chars": 49,
+     "sec": 217.7,
+     "audio_sec": 2.7,
+     "ok": true
+    },
+    {
+     "chars": 49,
+     "sec": 218.2,
+     "audio_sec": 3.1,
+     "ok": true
+    },
+    {
+     "chars": 80,
+     "sec": 411.6,
+     "audio_sec": 4.8,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 12660.2,
+   "total_sec": 13507.7,
+   "audio_sec": 14.8,
+   "rtf": 913.6,
+   "failure_rate": 0.0
+  }
+ ],
+ "load_sec": 40.4,
+ "rss_after_load_mb": 2238,
+ "peak_rss_mb": 2861,
+ "summary": {
+  "en": {
+   "results": 1,
+   "first_audio_sec_median": 64.6,
+   "total_sec_median": 346.0,
+   "rtf_median": 27.67,
+   "failure_rate": 0.0
+  },
+  "ha": {
+   "results": 1,
+   "first_audio_sec_median": 366.5,
+   "total_sec_median": 1249.3,
+   "rtf_median": 67.25,
+   "failure_rate": 0.0
+  },
+  "yo": {
+   "results": 1,
+   "first_audio_sec_median": 176.0,
+   "total_sec_median": 1033.7,
+   "rtf_median": 88.21,
+   "failure_rate": 0.0
+  },
+  "ig": {
+   "results": 1,
+   "first_audio_sec_median": 12660.2,
+   "total_sec_median": 13507.7,
+   "rtf_median": 913.6,
+   "failure_rate": 0.0
+  }
+ }
+}
