@@ -11,6 +11,7 @@ import DiagnosisDetailScreen from '../[id].jsx';
 
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../../shared-fixtures/severity-diagnosis.json'), 'utf8'));
 
+jest.mock('../../../components/ListenPanel', () => () => null);
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn(), push: jest.fn() }), useLocalSearchParams: () => ({ id: '1' }) }));
 jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
