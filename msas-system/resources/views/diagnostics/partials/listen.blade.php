@@ -30,7 +30,7 @@
             <span class="sr-only">{{ __('Language') }}</span>
             <select class="listen-lang bg-slate-700 border border-slate-600 text-white text-sm rounded-lg px-2 py-1.5" aria-label="{{ __('Language') }}">
                 @foreach($speechLangs as $l)
-                    <option value="{{ $l->code }}" @selected($l->code === $speechDefault) data-voice="{{ $l->provider ? 1 : 0 }}">{{ $l->name_native }}{{ $l->status !== 'live' ? ' (review)' : '' }}</option>
+                    <option value="{{ $l->code }}" @selected($l->code === $speechDefault) data-voice="{{ $l->hasAudio() ? 1 : 0 }}">{{ $l->name_native }}{{ $l->status !== 'live' ? ' (review)' : '' }}</option>
                 @endforeach
             </select>
         </label>
@@ -41,11 +41,15 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
+        {{-- Text-only language (audio off): Listen is hidden and this shows the text instead. --}}
+        <button type="button" class="listen-show hidden flex items-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 rounded-xl text-base font-extrabold" data-listen-show="1">
+            <i class="fa-solid fa-language"></i> {{ __('Show the result') }}
+        </button>
         <button type="button" class="listen-play flex items-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 rounded-xl text-base font-extrabold" aria-live="polite">
             <i class="fa-solid fa-play"></i> <span class="listen-play-label">{{ __('Listen') }}</span>
         </button>
         <button type="button" class="listen-replay hidden px-3 py-3 bg-slate-600 hover:bg-slate-500 rounded-xl text-sm" title="{{ __('Replay') }}"><i class="fa-solid fa-rotate-left"></i> {{ __('Replay') }}</button>
-        <div class="flex items-center gap-1 text-xs" role="group" aria-label="{{ __('Speed') }}">
+        <div class="listen-speeds flex items-center gap-1 text-xs" role="group" aria-label="{{ __('Speed') }}">
             @foreach(['0.8', '1', '1.2'] as $s)
                 <button type="button" class="listen-speed px-2.5 py-2 rounded-lg {{ $s === '1' ? 'bg-emerald-600' : 'bg-slate-600' }}" data-speed="{{ $s }}">{{ $s }}×</button>
             @endforeach
@@ -83,7 +87,7 @@
     $listenStrings = [
         'listen' => __('Listen'), 'pause' => __('Pause'), 'preparing' => __('Preparing your result in this language…'),
         'preparingAudio' => __('Audio is being prepared…'), 'playWhenReady' => __('Audio is being prepared… It will play when ready.'),
-        'noVoice' => __('Audio is not available for this language yet. Read the result below.'),
+        'noVoice' => __('Text only in this language for now.'),
         'unavailable' => __('Audio is temporarily unavailable. Read the result below; we are still trying.'),
         'failed' => __('Audio is temporarily unavailable. Read the result below and try again later.'),
         'slow' => __('This is taking longer than usual. Read the result below; the audio will be ready soon.'),
@@ -124,7 +128,19 @@
         this.loadToken = 0;
         var self = this;
 
-        this.q('.listen-lang').addEventListener('change', function () { self.lang = this.value; self.audio.pause(); self.load(false); });
+        // Audio is switched on per language: for a text-only one, hide the
+        // player controls (not shown broken) and offer the text instead.
+        this.syncVoice = function () {
+            var opt = self.q('.listen-lang').selectedOptions[0];
+            var voice = !opt || opt.dataset.voice !== '0';
+            self.q('.listen-play').classList.toggle('hidden', !voice);
+            self.q('.listen-speeds').classList.toggle('hidden', !voice);
+            self.q('.listen-show').classList.toggle('hidden', voice);
+            if (!voice) self.q('.listen-replay').classList.add('hidden');
+        };
+        this.syncVoice();
+        this.q('.listen-lang').addEventListener('change', function () { self.lang = this.value; self.audio.pause(); self.syncVoice(); self.load(false); });
+        this.q('.listen-show').addEventListener('click', function () { self.load(false); });
         this.q('.listen-play').addEventListener('click', function () { self.toggle(); });
         this.q('.listen-replay').addEventListener('click', function () {
             if (self.mode === 'chunks') { if (!self.switchToFull(true)) self.playChunk(0); return; }

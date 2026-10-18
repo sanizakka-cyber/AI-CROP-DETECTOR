@@ -134,14 +134,22 @@ test('when audio is unavailable the translated text stays and the phone voice ca
   expect(VoiceService.speak).toHaveBeenCalledWith(expect.stringContaining('Wannan shawarar AI ce.'), 'ha', { rate: 1 });
 });
 
-test('a language without a voice shows the text only', async () => {
+test('a text-only language (Yoruba, Igbo at launch) hides Listen and shows the text, never a broken player', async () => {
   speechAPI.translate.mockResolvedValue({ lang: 'pcm', status: 'ready', content: CONTENT });
   render(<ListenPanel scanId={7} />);
   await flush();
+  // A language with a voice shows Listen.
+  expect(screen.getByTestId('listen-play')).toBeTruthy();
   fireEvent.press(screen.getByTestId('listen-lang-pcm'));
   await flush(); await flush();
   expect(speechAPI.requestAudio).not.toHaveBeenCalled();
-  expect(screen.getByTestId('listen-message').props.children).toMatch(/not available for this language/);
+  expect(screen.queryByTestId('listen-play')).toBeNull();
+  expect(screen.queryByTestId('listen-replay')).toBeNull();
+  expect(screen.queryByTestId('listen-speed-1')).toBeNull();
+  expect(screen.queryByTestId('listen-phone-voice')).toBeNull(); // phone TTS has no voice for these either
+  expect(screen.getByTestId('listen-show-text')).toBeTruthy();
+  expect(screen.getByTestId('listen-message').props.children).toBe('Text only in this language for now.');
+  expect(screen.getByTestId('listen-text')).toBeTruthy();
 });
 
 test('download saves the audio for offline listening, and it plays later without a connection', async () => {

@@ -229,8 +229,9 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
 
       const chosen = languages.find((l) => l.code === code);
       if (chosen && !chosen.hasVoice) {
+        // Text-only language (audio switched off for it): no audio request at all.
         setStatus('text-only');
-        setMessage(L('Babu sauti a wannan harshe tukuna.', 'Audio is not available for this language yet. Read the result below.', uiHausa));
+        setMessage(L('Rubutu kawai a wannan harshe a yanzu.', 'Text only in this language for now.', uiHausa));
         return;
       }
 
@@ -368,12 +369,16 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
   if (!languages.length) return null;
 
   const headings = HEADINGS[lang] || HEADINGS.en;
+  // Audio is switched on per language (server: speech_languages.audio_enabled).
+  // For a text-only language the Listen controls are hidden, not shown broken.
+  const chosen = languages.find((l) => l.code === lang);
+  const hasVoice = !chosen || chosen.hasVoice !== false;
   const sections = sectionsFrom(audio ? null : content, audio?.sentences);
   const playing = playerStatus.playing;
 
   return (
     <View style={styles.panel} testID="listen-panel">
-      <Text style={styles.title}>🔊 {L('Saurari sakamakonka', 'Listen to your result', uiHausa)}</Text>
+      <Text style={styles.title}>{hasVoice ? `🔊 ${L('Saurari sakamakonka', 'Listen to your result', uiHausa)}` : `📝 ${L('Sakamakonka a wani harshe', 'Your result in another language', uiHausa)}`}</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langRow}>
         {languages.map((l) => (
@@ -395,6 +400,17 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
         <Text style={styles.rememberText}>{L('Ka tuna zaɓina', 'Remember my choice', uiHausa)}</Text>
       </View>
 
+      {!hasVoice && (
+        <View style={styles.controls}>
+          <TouchableOpacity testID="listen-show-text" accessibilityRole="button" style={styles.listenBtn} onPress={() => lang && load(lang, false)}>
+            {status === 'loading'
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.listenText}>{L('Nuna sakamakon', 'Show the result', uiHausa)} ({chosen?.name})</Text>}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {hasVoice && (<>
       <View style={styles.controls}>
         <TouchableOpacity
           testID="listen-play"
@@ -420,6 +436,7 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
           </TouchableOpacity>
         ))}
       </View>
+      </>)}
 
       {(status === 'ready' || status === 'streaming') && (
         <View style={styles.progressTrack} testID="listen-progress">
@@ -429,7 +446,7 @@ export default function ListenPanel({ scanId, uiHausa = false }) {
 
       {!!message && <Text style={styles.message} testID="listen-message">{message}</Text>}
 
-      {status === 'text-only' && !!content && (
+      {hasVoice && status === 'text-only' && !!content && (
         <TouchableOpacity testID="listen-phone-voice" style={styles.smallBtn} onPress={onPhoneVoice}>
           <Text style={styles.smallText}>{L('Karanta da muryar waya', 'Read with phone voice', uiHausa)}</Text>
         </TouchableOpacity>

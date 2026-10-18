@@ -60,3 +60,11 @@ test('the voices used for spoken results are credited', async () => {
   expect(text).toContain('Hausa voice: FarmerlineML');
   expect(text).toContain('YarnGPT2 (self-hosted) (Apache-2.0)');
 });
+
+test('Credits and licences opens the credits screen, from the menu and from About', () => {
+  render(<ProfileScreen />);
+  fireEvent.press(screen.getByText('Credits and licences'));
+  fireEvent.press(screen.getByText('About FarmAI'));
+  Alert.alert.mock.calls[0][2].find((b) => b.text === 'Credits and licences').onPress();
+  expect(mockPush.mock.calls.map((c) => c[0])).toEqual(['/profile/credits', '/profile/credits']);
+});

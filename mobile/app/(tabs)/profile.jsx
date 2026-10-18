@@ -94,8 +94,19 @@ export default function ProfileScreen() {
       action: () =>
         Alert.alert(
           appVersion ? `MSAS FarmAI v${appVersion}` : 'MSAS FarmAI',
-          'AI-Powered Agricultural Health Platform for Katsina State, Nigeria.\n\nBuilt for smallholder farmers.'
+          'AI-Powered Agricultural Health Platform for Katsina State, Nigeria.\n\nBuilt for smallholder farmers.',
+          [
+            { text: isHa ? 'Yabo da lasisi' : 'Credits and licences', onPress: () => router.push('/profile/credits') },
+            { text: 'OK' },
+          ],
         ),
+    },
+    {
+      icon: '📜',
+      labelEn: 'Credits and licences',
+      labelHa: 'Yabo da lasisi',
+      // Voice credits: OpenBible's CC BY-SA 4.0 licence requires attribution.
+      action: () => router.push('/profile/credits'),
     },
   ];
 

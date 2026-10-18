@@ -136,7 +136,7 @@ class ScanSpeechTest extends TestCase
         // Audio was generated right after the translation; GET returns it.
         $audio = $this->api($farmer)->getJson("/api/scans/{$d->id}/audio/ha")->assertOk();
         $this->assertSame('ready', $audio->json('status'));
-        $this->assertSame('hausa_female1', $audio->json('voice'));
+        $this->assertSame('openbible_hausa', $audio->json('voice')); // launch voice for Hausa (decision 2026-10-18)
         $this->assertEqualsWithDelta(0.9, $audio->json('rate'), 0.001);
         // One file per sentence, joined into the downloadable file.
         $this->assertSame(103 * count($audio->json('chunks')), $audio->json('sizeBytes'));
@@ -293,7 +293,7 @@ class ScanSpeechTest extends TestCase
         $this->assertSame('ready', $res->json('status'));
         $this->assertSame(config('speech.safety_note_en'), $res->json('content.safety_note'));
         $this->assertSame(0, $this->translatorCalls());
-        $this->assertSame('idera', $this->api($farmer)->getJson("/api/scans/{$d->id}/audio/en")->json('voice'));
+        $this->assertSame('af_heart', $this->api($farmer)->getJson("/api/scans/{$d->id}/audio/en")->json('voice')); // Kokoro
     }
 
     public function test_a_reviewed_safety_note_replaces_the_machine_translation(): void
@@ -343,8 +343,8 @@ class ScanSpeechTest extends TestCase
 
         $fb = TtsFeedback::sole();
         $this->assertTrue($fb->clear);
-        $this->assertSame('hausa_female1', $fb->voice);
-        $this->assertSame('yarngpt', $fb->provider);
+        $this->assertSame('openbible_hausa', $fb->voice);
+        $this->assertSame('openbible', $fb->provider);
 
         $other = User::factory()->create(['role' => 'farmer']);
         $this->api($other)->postJson('/api/tts-feedback', ['scan_id' => $d->id, 'lang' => 'ha', 'clear' => true])->assertForbidden();
@@ -374,7 +374,7 @@ class ScanSpeechTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $yo = SpeechLanguage::where('code', 'yo')->first();
-        $form = ['name_english' => 'Yoruba', 'name_native' => 'Yorùbá', 'status' => 'live', 'provider' => 'yarngpt', 'voice' => 'yoruba_male2', 'rate' => 0.9];
+        $form = ['name_english' => 'Yoruba', 'name_native' => 'Yorùbá', 'status' => 'live', 'provider' => 'openbible', 'voice' => 'openbible_yoruba', 'rate' => 0.9];
 
         $this->actingAs($admin)->patch(route('admin.speech.languages.update', $yo), $form)->assertSessionHasErrors('status');
         $this->assertSame('in_review', $yo->fresh()->status);
@@ -445,7 +445,8 @@ class ScanSpeechTest extends TestCase
         $this->fakeTranslator();
         $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ha']);
 
-        $this->scan($farmer); // off by default
+        config(['speech.pregenerate' => false]); // switch (on by default since 2026-10-18)
+        $this->scan($farmer);
         $this->assertSame(0, ScanResultTranslation::count());
 
         config(['speech.pregenerate' => true]);
@@ -565,22 +566,28 @@ class ScanSpeechTest extends TestCase
         $this->assertSame(0, $this->translatorCalls() + $this->ttsCalls());
     }
 
-    public function test_pregeneration_runs_for_the_preferred_language_only(): void
+    public function test_pregeneration_runs_for_the_preferred_language_only_and_only_where_it_has_audio(): void
     {
         $this->fakeTranslator();
         config(['speech.pregenerate' => true]);
         SpeechLanguage::whereIn('code', ['yo', 'ig'])->update(['status' => 'live']);
-        $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'yo', 'language' => 'ha']);
 
+        // Preferred Hausa (audio on), app language Yoruba: only Hausa is prepared, text and audio.
+        $farmer = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ha', 'language' => 'yo']);
         $d = $this->scan($farmer);
-        $this->assertSame(['yo'], ScanResultTranslation::where('diagnosis_id', $d->id)->pluck('lang')->all());
-        $this->assertSame(['yo'], ScanResultAudio::where('diagnosis_id', $d->id)->pluck('lang')->unique()->values()->all());
+        $this->assertSame(['ha'], ScanResultTranslation::where('diagnosis_id', $d->id)->pluck('lang')->all());
+        $this->assertSame(['ha'], ScanResultAudio::where('diagnosis_id', $d->id)->pluck('lang')->unique()->values()->all());
+
+        // Preferred Yoruba: live but text only at launch, so nothing is prepared ahead (translated on request).
+        $yo = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'yo']);
+        $d2 = $this->scan($yo);
+        $this->assertSame(0, ScanResultTranslation::where('diagnosis_id', $d2->id)->count());
+        $this->assertSame(0, ScanResultAudio::where('diagnosis_id', $d2->id)->count());
 
         // A saved language that is not live (yet) is not prepared at all.
-        SpeechLanguage::where('code', 'ig')->update(['status' => 'in_review']);
-        $other = User::factory()->create(['role' => 'farmer', 'preferred_language' => 'ig']);
-        $d2 = $this->scan($other);
-        $this->assertSame(0, ScanResultTranslation::where('diagnosis_id', $d2->id)->count());
+        SpeechLanguage::where('code', 'ha')->update(['status' => 'in_review']);
+        $d3 = $this->scan($farmer);
+        $this->assertSame(0, ScanResultTranslation::where('diagnosis_id', $d3->id)->count());
     }
 
     public function test_sentence_groups_follow_reading_order(): void

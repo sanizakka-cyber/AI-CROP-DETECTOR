@@ -42,7 +42,8 @@ class ScanSpeechController extends Controller
             'languages' => $langs->map->toPicker()->values(),
             'preferred' => $user->preferred_language,
             'default'   => $default,
-            'credits'   => ProviderRegistry::credits($langs->pluck('provider')->merge($langs->pluck('fallback_provider'))->all()),
+            // Credits for the voices actually spoken (languages with audio on).
+            'credits'   => ProviderRegistry::credits($langs->filter->hasAudio()->flatMap(fn ($l) => [$l->provider, $l->fallback_provider])->all()),
         ]);
     }
 
@@ -80,7 +81,7 @@ class ScanSpeechController extends Controller
             'voice' => 'sometimes|nullable|string|max:60',
             'rate'  => 'sometimes|nullable|numeric|min:0.5|max:1.5',
         ]);
-        if (!$lang->provider) {
+        if (!$lang->hasAudio()) {
             return response()->json($this->unavailable($lang), 200);
         }
         $voice = $data['voice'] ?? null;
@@ -117,7 +118,7 @@ class ScanSpeechController extends Controller
     public function showAudio(Request $request, Diagnosis $diagnosis, string $lang): JsonResponse
     {
         $language = $this->authorizeLanguage($request, $diagnosis, $lang);
-        if (!$language->provider) {
+        if (!$language->hasAudio()) {
             return response()->json($this->unavailable($language));
         }
         [$voice, $rate] = $this->audio->voiceAndRate($language, $request->query('voice'), $request->query('rate') ? (float) $request->query('rate') : null);
@@ -294,7 +295,7 @@ class ScanSpeechController extends Controller
 
     private function unavailable(SpeechLanguage $lang): array
     {
-        return ['lang' => $lang->code, 'status' => 'unavailable', 'message' => 'Audio is not available for this language yet. The text is shown.'];
+        return ['lang' => $lang->code, 'status' => 'unavailable', 'textOnly' => true, 'message' => 'Text only in this language for now.'];
     }
 
     /**

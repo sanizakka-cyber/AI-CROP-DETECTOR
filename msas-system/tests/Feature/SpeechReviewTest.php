@@ -40,6 +40,9 @@ class SpeechReviewTest extends TestCase
             'speech.self_hosted.url' => self::TTS,
             'speech.providers.openbible.url' => self::OPENBIBLE,
             'speech.disk' => 'local',
+            // YarnGPT2 is off in production on CPU (2026-10-18); these tests compare
+            // it against OpenBible as the Yoruba/Igbo GPU test will.
+            'speech.providers.yarngpt.enabled' => true,
         ]);
         Storage::fake('local');
     }
@@ -233,7 +236,7 @@ class SpeechReviewTest extends TestCase
     public function test_go_live_needs_enough_results_of_every_type_reviewed_by_both_kinds_good_scores_and_no_dose_errors(): void
     {
         $this->fakeServices();
-        config(['speech.go_live.min_reviewed_results' => 8, 'speech.go_live.min_per_scan_type' => 2]);
+        config(['speech.go_live.min_reviewed_results' => 8, 'speech.go_live.min_per_scan_type' => 2, 'speech.go_live.min_approved_packs' => 1]);
         $pack = $this->buildPack(2);
         SpeechLanguage::where('code', 'ha')->update(['provider' => 'openbible', 'voice' => 'openbible_hausa']);
         $native = $this->reviewer('native');
@@ -267,7 +270,7 @@ class SpeechReviewTest extends TestCase
     public function test_naturalness_counts_only_the_voice_the_language_will_use(): void
     {
         $this->fakeServices();
-        config(['speech.go_live.min_reviewed_results' => 1, 'speech.go_live.min_per_scan_type' => 0]);
+        config(['speech.go_live.min_reviewed_results' => 1, 'speech.go_live.min_per_scan_type' => 0, 'speech.go_live.min_approved_packs' => 1]);
         $pack = $this->buildPack(1);
         $this->reviewAll($pack, [$this->reviewer('native'), $this->reviewer('expert')], 5, 5);
 
@@ -283,7 +286,7 @@ class SpeechReviewTest extends TestCase
     public function test_admin_cannot_set_a_language_live_until_the_rule_passes_and_sees_unblinded_results(): void
     {
         $this->fakeServices();
-        config(['speech.go_live.min_reviewed_results' => 4, 'speech.go_live.min_per_scan_type' => 1]);
+        config(['speech.go_live.min_reviewed_results' => 4, 'speech.go_live.min_per_scan_type' => 1, 'speech.go_live.min_approved_packs' => 1]);
         $pack = $this->buildPack(1);
         $admin = User::factory()->create(['role' => 'admin']);
         $ha = SpeechLanguage::findCode('ha');

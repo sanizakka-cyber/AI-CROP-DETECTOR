@@ -20,9 +20,12 @@ return [
     // a signed Laravel route.
     'disk' => env('SPEECH_DISK', env('R2_BUCKET') ? 'r2' : 'local'),
 
-    // Prepare text + audio in the farmer's saved language right after each scan,
-    // so Listen plays at once. Off by default: one translation + one synthesis per scan.
-    'pregenerate' => (bool) env('SPEECH_PREGENERATE', false),
+    // Prepare text + audio in the farmer's saved (preferred) language right
+    // after each scan, so Listen plays at once. Decision 2026-10-18: on, but
+    // only for a live language with audio switched on (English and Hausa at
+    // launch). Queued after the scan is saved, so it never slows the result;
+    // until the audio exists the app shows the text and "Audio is being prepared".
+    'pregenerate' => (bool) env('SPEECH_PREGENERATE', true),
 
     'default_rate'      => 0.9,   // calm, not rushed
     'max_segment_chars' => 200,
@@ -38,7 +41,14 @@ return [
     // Go-live rule per language (admin cannot set a language live until it
     // passes). Reviews come from the review packs in /admin/speech/review.
     'go_live' => [
-        // Scan results reviewed, across all scan types.
+        // Decision 2026-10-18: review packs of 25 scan results; a language
+        // needs 2 approved packs. A pack is approved when every scan result in
+        // it has been reviewed by each required reviewer kind, its average
+        // accuracy (and naturalness, if the language has audio) is at least
+        // the minimum, and it has no dose/chemical error.
+        'pack_size'            => (int) env('SPEECH_REVIEW_PACK_SIZE', 25),
+        'min_approved_packs'   => (int) env('SPEECH_GO_LIVE_MIN_PACKS', 2),
+        // Scan results reviewed, across all scan types (2 packs x 25).
         'min_reviewed_results' => (int) env('SPEECH_GO_LIVE_MIN_RESULTS', 50),
         // Each of these scan types needs at least min_per_scan_type reviewed results.
         'scan_types'           => ['crop', 'livestock', 'soil', 'pest'],
@@ -46,7 +56,9 @@ return [
         // A result counts as reviewed once it has a review from each of these
         // reviewer kinds (native speaker AND extension officer / vet).
         'reviewer_kinds'       => array_filter(explode(',', env('SPEECH_GO_LIVE_REVIEWER_KINDS', 'native,expert'))),
-        // Average of every review of a scan result, 1-5.
+        // Average of every review of a scan result, 1-5. Naturalness applies
+        // only to a language with audio switched on: a text-only language
+        // goes live on its translation alone.
         'min_accuracy'         => (float) env('SPEECH_GO_LIVE_MIN_ACCURACY', 4.0),
         'min_naturalness'      => (float) env('SPEECH_GO_LIVE_MIN_NATURALNESS', 4.0),
         // Dose/amount/unit or chemical/medicine/product errors marked by any reviewer, on any item.
@@ -69,6 +81,10 @@ return [
         'yarngpt' => [
             'label' => 'YarnGPT2 (self-hosted)', 'driver' => 'self_hosted', 'engine' => 'yarngpt',
             'license' => 'Apache-2.0', 'commercial_use' => true,
+            // Not used in production on CPU (about 5 minutes to the first
+            // sentence, about an hour per Hausa result; tts-service/bench/).
+            // Switch on only where its service runs on a GPU (the Yoruba/Igbo GPU test).
+            'enabled' => (bool) env('SPEECH_YARNGPT_ENABLED', false),
             'source' => 'https://huggingface.co/saheedniyi/YarnGPT2',
             'languages' => ['en', 'ha', 'yo', 'ig'],
             'voices' => [
@@ -97,9 +113,21 @@ return [
             'license_note' => 'Trained from scratch on CC BY-SA Open Bible audio. Attribution required; changed model weights must be shared under CC BY-SA. One voice per language (no speaker embedding), Bible-reading style; weaker on non-Bible text per the OpenBibleTTS paper.',
             'languages' => ['ha', 'yo', 'ig'],
             'voices' => ['ha' => ['openbible_hausa'], 'yo' => ['openbible_yoruba'], 'ig' => ['openbible_igbo']],
-            // Its own container (tts-service/Dockerfile.openbible): coqui-tts and YarnGPT2 cannot share one.
-            'url' => env('TTS_OPENBIBLE_URL'),
-            'key' => env('TTS_OPENBIBLE_KEY'),
+            // The CPU speech container (tts-service/Dockerfile.openbible), shared with Kokoro.
+            'url' => env('TTS_CPU_URL', env('TTS_OPENBIBLE_URL')),
+            'key' => env('TTS_CPU_KEY', env('TTS_OPENBIBLE_KEY')),
+        ],
+        'kokoro' => [
+            'label' => 'Kokoro-82M English (self-hosted)', 'driver' => 'self_hosted', 'engine' => 'kokoro',
+            'license' => 'Apache-2.0', 'commercial_use' => true,
+            'credit' => 'English voice: Kokoro-82M by hexgrad (Apache License 2.0)',
+            'source' => 'https://huggingface.co/hexgrad/Kokoro-82M',
+            'license_note' => 'Trained on permissive/non-copyrighted audio per the model card. American and British accents only (no Nigerian English voice).',
+            'languages' => ['en'],
+            // The best-graded English voices in the model card's VOICES.md.
+            'voices' => ['en' => ['af_heart', 'af_bella', 'bf_emma']],
+            'url' => env('TTS_CPU_URL', env('TTS_OPENBIBLE_URL')),
+            'key' => env('TTS_CPU_KEY', env('TTS_OPENBIBLE_KEY')),
         ],
         'elevenlabs' => [
             'label' => 'ElevenLabs (cloud)', 'driver' => 'elevenlabs',
@@ -121,17 +149,18 @@ return [
         'output_format' => env('ELEVENLABS_OUTPUT_FORMAT', 'mp3_22050_32'),
     ],
 
-    // Seed for speech_languages (first migration only). Default voices are the
-    // first listed per language on the YarnGPT2 card ("in order of performance
-    // and stability").
+    // Seed for speech_languages (first migration only). Launch voices
+    // (decision 2026-10-18): English Kokoro, Hausa OpenBible; Yoruba and Igbo
+    // keep their OpenBible voices as review candidates, with audio off
+    // (audio_enabled is set by migration 2026_10_18_100001).
     'languages' => [
         ['code' => 'en', 'name_english' => 'English', 'name_native' => 'English', 'status' => 'live',
-         'provider' => 'yarngpt', 'voice' => 'idera', 'sort' => 1],
+         'provider' => 'kokoro', 'voice' => 'af_heart', 'sort' => 1],
         ['code' => 'ha', 'name_english' => 'Hausa', 'name_native' => 'Hausa', 'status' => 'in_review',
-         'provider' => 'yarngpt', 'voice' => 'hausa_female1', 'sort' => 2],
+         'provider' => 'openbible', 'voice' => 'openbible_hausa', 'sort' => 2],
         ['code' => 'yo', 'name_english' => 'Yoruba', 'name_native' => 'Yorùbá', 'status' => 'in_review',
-         'provider' => 'yarngpt', 'voice' => 'yoruba_male2', 'sort' => 3],
+         'provider' => 'openbible', 'voice' => 'openbible_yoruba', 'sort' => 3],
         ['code' => 'ig', 'name_english' => 'Igbo', 'name_native' => 'Igbo', 'status' => 'in_review',
-         'provider' => 'yarngpt', 'voice' => 'igbo_female2', 'sort' => 4],
+         'provider' => 'openbible', 'voice' => 'openbible_igbo', 'sort' => 4],
     ],
 ];

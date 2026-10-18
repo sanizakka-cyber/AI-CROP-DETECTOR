@@ -18,7 +18,8 @@ class BuildSpeechReviewPack extends Command
     protected $signature = 'speech:build-review-pack
         {lang : Language code (ha, yo, ig)}
         {--candidate=* : provider:voice to compare (repeat; 1-6)}
-        {--per-type=5 : Scan results per scan type (Plant/Crop, Livestock, Soil Sample, Pest ID)}
+        {--size= : Scan results in the pack, spread over the 4 scan types (default speech.go_live.pack_size, 25)}
+        {--per-type= : Scan results per scan type instead of --size}
         {--scans= : Comma-separated diagnosis ids to use instead of choosing}
         {--title= : Pack title}';
 
@@ -30,7 +31,11 @@ class BuildSpeechReviewPack extends Command
         $scanIds = $this->option('scans') ? array_map('intval', explode(',', $this->option('scans'))) : null;
         try {
             $pack = $builder->build(
-                $this->argument('lang'), $candidates, max(1, (int) $this->option('per-type')), null,
+                $this->argument('lang'), $candidates,
+                $this->option('per-type') !== null
+                    ? max(1, (int) $this->option('per-type'))
+                    : ReviewPackBuilder::quotasFor((int) ($this->option('size') ?: config('speech.go_live.pack_size', 25))),
+                null,
                 $this->option('title'), $scanIds, fn ($line) => $this->line("  {$line}"),
             );
         } catch (\InvalidArgumentException $e) {
@@ -42,9 +47,23 @@ class BuildSpeechReviewPack extends Command
         return self::SUCCESS;
     }
 
-    /** Every YarnGPT2 voice listed for the language, if no candidates were given. */
+    /**
+     * If no candidates were given: the language's configured voice first, then
+     * every other voice of a selectable (licensed, switched-on) provider for
+     * the language, up to 6. YarnGPT2 counts only when SPEECH_YARNGPT_ENABLED.
+     */
     private function defaults(string $lang): array
     {
-        return array_map(fn ($v) => "yarngpt:{$v}", config("speech.providers.yarngpt.voices.{$lang}", []));
+        $out = [];
+        $language = \App\Models\SpeechLanguage::findCode($lang);
+        if ($language?->provider && $language->voice) {
+            $out[] = "{$language->provider}:{$language->voice}";
+        }
+        foreach (\App\Services\Speech\Providers\ProviderRegistry::selectable() as $name => $p) {
+            foreach ($p['voices'][$lang] ?? [] as $v) {
+                $out[] = "{$name}:{$v}";
+            }
+        }
+        return array_slice(array_values(array_unique($out)), 0, 6);
     }
 }

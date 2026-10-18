@@ -45,7 +45,7 @@ class TranslateScanResult implements ShouldQueue
 
         $row = $translator->run($translator->prepare($d, $lang), $d, $lang);
 
-        if ($row->isReady() && $this->withAudio && $lang->provider) {
+        if ($row->isReady() && $this->withAudio && $lang->hasAudio()) {
             GenerateScanAudio::dispatch($this->diagnosisId, $this->lang, $this->voice, $this->rate);
         }
     }

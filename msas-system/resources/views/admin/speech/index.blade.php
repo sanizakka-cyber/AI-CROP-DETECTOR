@@ -117,6 +117,11 @@
                         </select>
                     </label>
                     <label>Speaking rate<input name="rate" type="number" step="0.05" min="0.5" max="1.5" value="{{ $l->rate }}" class="w-full rounded-lg border-slate-300" required></label>
+                    <label class="flex items-center gap-2" data-audio-toggle="{{ $l->code }}">
+                        <input type="hidden" name="audio_enabled" value="0">
+                        <input type="checkbox" name="audio_enabled" value="1" @checked($l->audio_enabled)>
+                        Audio on (off = text only, Listen hidden)
+                    </label>
                     <label>Voice provider
                         <select name="provider" class="w-full rounded-lg border-slate-300">
                             <option value="">None (text only)</option>

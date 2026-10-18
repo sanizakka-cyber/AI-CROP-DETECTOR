@@ -167,6 +167,8 @@ class SpeechAdminController extends Controller
             'rate'              => 'required|numeric|min:0.5|max:1.5',
             'safety_note'       => 'nullable|string|max:500',
             'sort'              => 'nullable|integer|min:0|max:1000',
+            // Audio on/off per language; off = text only, Listen hidden.
+            'audio_enabled'     => 'sometimes|boolean',
         ]);
     }
 }

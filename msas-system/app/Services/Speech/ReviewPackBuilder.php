@@ -67,11 +67,31 @@ class ReviewPackBuilder
     }
 
     /**
-     * @param string[] $candidates "provider:voice" (2-6)
+     * Scan results per scan type for a pack of $size (decision 2026-10-18:
+     * packs of 25), spread as evenly as possible, extra ones to the first types.
+     *
+     * @return array<string, int> scan type => count
+     */
+    public static function quotasFor(int $size): array
+    {
+        $types = array_keys(self::SCAN_TYPES);
+        $base = intdiv(max(0, $size), count($types));
+        $extra = max(0, $size) % count($types);
+        $out = [];
+        foreach ($types as $i => $t) {
+            $out[$t] = $base + ($i < $extra ? 1 : 0);
+        }
+        return $out;
+    }
+
+    /**
+     * @param string[] $candidates "provider:voice" (1-6)
+     * @param int|array<string,int> $perType scans per type, or a quota per type (quotasFor())
      * @param int[]|null $scanIds use exactly these scans instead of choosing
      */
-    public function build(string $lang, array $candidates, int $perType = 5, ?int $createdBy = null, ?string $title = null, ?array $scanIds = null, ?callable $progress = null): SpeechReviewPack
+    public function build(string $lang, array $candidates, int|array $perType = 5, ?int $createdBy = null, ?string $title = null, ?array $scanIds = null, ?callable $progress = null): SpeechReviewPack
     {
+        $quota = is_array($perType) ? $perType : array_fill_keys(array_keys(self::SCAN_TYPES), $perType);
         $language = SpeechLanguage::findCode($lang) ?? throw new InvalidArgumentException("Unknown language {$lang}.");
         $parsed = $this->parseCandidates($candidates, $lang);
         $say = $progress ?? fn () => null;
@@ -83,10 +103,11 @@ class ReviewPackBuilder
 
         $position = 0;
         $safetyNote = null;
-        foreach ($this->chooseScans($lang, $perType, $scanIds) as $type => $scans) {
+        foreach ($this->chooseScans($lang, max($quota), $scanIds) as $type => $scans) {
+            $want = (int) ($quota[$type] ?? 0);
             $added = 0;
             foreach ($scans as $d) {
-                if (!$scanIds && $added >= $perType) {
+                if (!$scanIds && $added >= $want) {
                     break;
                 }
                 $row = $this->translator->prepare($d, $language);
@@ -104,8 +125,8 @@ class ReviewPackBuilder
                 $safetyNote ??= $row->translated_json['safety_note'] ?? null;
                 $say("item {$position}: {$type} scan, " . count($item->playableLabels()) . ' voices');
             }
-            if ($added < $perType && !$scanIds) {
-                $say("only {$added} usable {$type} scans (wanted {$perType})");
+            if ($added < $want && !$scanIds) {
+                $say("only {$added} usable {$type} scans (wanted {$want})");
             }
         }
 
