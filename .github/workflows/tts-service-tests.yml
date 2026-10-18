@@ -1,0 +1,68 @@
+name: Speech Service Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tts-service/**'
+      - '.github/workflows/tts-service-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tts-service/**'
+      - '.github/workflows/tts-service-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tts-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ffmpeg so the real MP3 encoding test runs (it is skipped without it).
+      # Model weights are NOT installed: the tests use a fake engine.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        shell: bash
+        run: |
+          pytest tests/ -v -rs 2>&1 | tee /tmp/pytest.log
+          exit ${PIPESTATUS[0]}
+
+      # Lint the Dockerfile (syntax and build checks) without building it; the
+      # full image (torch + model code, several GB) is built at deploy time.
+      - name: Check Dockerfile
+        run: docker buildx build --check -f Dockerfile .
+      - name: Check Dockerfile.openbible
+        run: docker buildx build --check -f Dockerfile.openbible .
+
+      # The YarnGPT2 runtime as the image installs it, then the import the
+      # service makes (no weights). Catches unpinned or uninstallable
+      # dependencies (outetts, pesq) and a wrong PYTHONPATH, which the fake
+      # engine tests cannot.
+      - name: Check the YarnGPT2 runtime imports
+        run: |
+          python -m venv /tmp/models && . /tmp/models/bin/activate
+          pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -r requirements.txt -r requirements-models.txt
+          pip install -q --no-deps outetts==0.2.3
+          YARNGPT_REF=$(sed -n 's/^ARG YARNGPT_REF=//p' Dockerfile)
+          git clone -q https://github.com/saheedniyi02/yarngpt.git /tmp/opt/yarngpt
+          git -C /tmp/opt/yarngpt checkout -q "$YARNGPT_REF"
+          PYTHONPATH=/tmp/opt python -c "from yarngpt.audiotokenizer import AudioTokenizerV2; import app.engines as e; print('ok', e.YarnGptEngine._dtype('cpu'))"
+          ls /tmp/opt/yarngpt/default_speakers_local/hausa_female1.json /tmp/opt/yarngpt/default_speakers_local/yoruba_female1.json

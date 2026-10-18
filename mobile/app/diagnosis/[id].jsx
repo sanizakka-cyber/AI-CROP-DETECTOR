@@ -14,8 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { diagnoseAPI, marketplaceAPI, cartAPI } from '../../lib/api';
 import { Colors, Radius, Spacing, Typography, Shadows } from '../../constants/Theme';
 import { Button, Card, SeverityBadge } from '../../components/UI';
-import { useLanguage, LANGUAGES } from '../../context/LanguageContext';
-import { VoiceService } from '../../services/VoiceService';
+import ListenPanel from '../../components/ListenPanel';
 
 // A scan normally leaves 'pending' within seconds. If it hasn't after this
 // long, stop polling and tell the farmer instead of spinning forever.
@@ -28,11 +27,11 @@ const DEFAULT_WHATSAPP = 'https://wa.me/2348129582957';
 /** Renders a labeled field, or an explicit "Not applicable" note instead of
  * leaving the section blank — per the platform-parity requirement that
  * every diagnosis-result category always show something. */
-function InfoField({ label, value }) {
+function InfoField({ label, value, testID }) {
   return (
     <View style={{ marginBottom: Spacing.sm }}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || 'Not applicable for this diagnosis.'}</Text>
+      <Text style={styles.infoValue} testID={testID}>{value || 'Not applicable for this diagnosis.'}</Text>
     </View>
   );
 }
@@ -41,8 +40,11 @@ export default function DiagnosisDetailScreen() {
   const { id } = useLocalSearchParams();
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { language, voiceEnabled } = useLanguage();
   const isHausa = i18n.language === 'ha';
+  // Shown on every result screen (assessed, not certain, rejected photo, AI outage).
+  const aiDisclaimer = (
+    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">⚠ {t('aiDisclaimer')}</Text>
+  );
 
   const [diag, setDiag] = useState(null);
   const [activeTab, setActiveTab] = useState('treatment');
@@ -56,10 +58,6 @@ export default function DiagnosisDetailScreen() {
   const [loadError, setLoadError] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
 
-  // Voice state
-  const [voicePlaying, setVoicePlaying] = useState(false);
-  const [voiceSpeed, setVoiceSpeed] = useState(1.0);
-  const voiceNarration = useRef(null);
 
   // Polling is a chain of setTimeouts, not a setInterval: the next request
   // is only scheduled after the previous one settles, so slow responses
@@ -67,9 +65,8 @@ export default function DiagnosisDetailScreen() {
   // which makes any still-in-flight response from an older run a no-op.
   const pollRun = useRef(0);
   const pollTimer = useRef(null);
-  const voiceTimer = useRef(null);
   // Latest-render handler for a finished result, so the poll loop (created
-  // once per id) never calls a stale playVoice/voiceEnabled/language.
+  // once per id) never calls a stale handler.
   const onFinishedRef = useRef(null);
 
   const stopPolling = useCallback(() => {
@@ -129,47 +126,9 @@ export default function DiagnosisDetailScreen() {
     } catch {}
   };
 
-  const buildNarration = (diagnosis) => {
-    const result = diagnosis.aiResult    || {};
-    const plan   = diagnosis.treatmentPlan || {};
-    switch (diagnosis.type) {
-      case 'livestock': return VoiceService.buildLivestockNarration(result, plan, language);
-      case 'soil':       return VoiceService.buildSoilNarration(result, plan, language);
-      case 'pest':       return VoiceService.buildPestNarration(result, plan, language);
-      default:           return VoiceService.buildCropNarration(result, plan, language);
-    }
-  };
-
-  const playVoice = (diagnosis, speed = voiceSpeed) => {
-    const text = voiceNarration.current || buildNarration(diagnosis);
-    voiceNarration.current = text;
-    setVoicePlaying(true);
-    VoiceService.speak(text, language, {
-      rate: speed,
-      onDone: () => setVoicePlaying(false),
-      onError: () => setVoicePlaying(false),
-      onUnavailableVoice: (langCode) => {
-        const langName = LANGUAGES.find(l => l.code === langCode)?.name || langCode;
-        Alert.alert(
-          'Voice Not Available',
-          `This device doesn't have a ${langName} voice installed, so narration will play in a different language instead.`
-        );
-      },
-    });
-  };
-
-  const stopVoice = () => {
-    VoiceService.stop();
-    setVoicePlaying(false);
-  };
-
   onFinishedRef.current = (diagnosis) => {
     if (diagnosis.status === 'processed' || diagnosis.status === 'reviewed') {
       fetchRecommendations(diagnosis);
-      if (voiceEnabled && !voiceNarration.current) {
-        clearTimeout(voiceTimer.current);
-        voiceTimer.current = setTimeout(() => playVoice(diagnosis), 600);
-      }
     }
   };
 
@@ -188,10 +147,8 @@ export default function DiagnosisDetailScreen() {
   useEffect(() => {
     startPolling();
     return () => {
-      // Leaving the screen: no further requests, no late voice playback.
+      // Leaving the screen: no further requests.
       stopPolling();
-      clearTimeout(voiceTimer.current);
-      VoiceService.stop();
     };
   }, [startPolling, stopPolling]);
 
@@ -252,6 +209,7 @@ export default function DiagnosisDetailScreen() {
         <Text style={styles.loadingTip}>
           {diag.treatmentPlan?.vetReferralAdvice || 'Our AI engine was temporarily unavailable. An expert will review your scan and respond shortly.'}
         </Text>
+        {aiDisclaimer}
         <Button title="Try Again" onPress={() => router.back()} />
       </View>
     );
@@ -293,6 +251,7 @@ export default function DiagnosisDetailScreen() {
         <Text style={styles.outcomeNote}>
           {isHausa ? 'Ba a bayar da magani ba saboda ba a iya tantance hoton ba.' : 'No treatment is suggested because the photo could not be assessed.'}
         </Text>
+        {aiDisclaimer}
         <Button title={isHausa ? 'Sake daukar hoto' : 'Retake photo'} onPress={() => router.push('/(tabs)/scan')} style={{ marginTop: Spacing.md }} />
         <Button title={isHausa ? 'Koma zuwa bayanai' : 'Back to records'} onPress={() => router.back()} variant="outline" style={{ marginTop: Spacing.sm }} />
       </ScrollView>
@@ -307,7 +266,26 @@ export default function DiagnosisDetailScreen() {
   const confidence = hasConfidence ? Number(result.confidence) : null;
   const imageQuality = assessment.imageQuality || validation.quality?.status || null;
   const isUncertain = outcome === 'uncertain';
-  const isEmergency = result.severity === 'emergency';
+  // Low-confidence rule: below the threshold (server-configured, 65% by
+  // default) never present one diagnosis. The server decides (assessment.
+  // notCertain); an older server without it gets the same rule applied here.
+  const minConfidence = Number(assessment.minConfidence ?? 65);
+  const notCertain = assessment.notCertain ?? (!isUncertain && hasConfidence && confidence < minConfidence);
+  const possibleConditions = notCertain
+    ? (assessment.possibleConditions?.length
+      ? assessment.possibleConditions
+      : [...new Set([result.primaryDiagnosis, ...(assessment.alternativeFindings || []).map(a => a.name)].filter(Boolean))].slice(0, 3))
+    : [];
+  // One severity value (server: severity_level). `severity` is how bad the
+  // condition is; `urgency` is how soon to act, and is shown separately.
+  // Before the server fix, `severity` carried the urgency; an old server
+  // without `urgency` still has it there, so fall back to it only then.
+  const severity = result.urgency !== undefined ? result.severity : (result.severityLevel ? String(result.severityLevel).toLowerCase() : null);
+  const urgency = result.urgency !== undefined ? result.urgency : result.severity;
+  const isEmergency = urgency === 'emergency' || severity === 'critical';
+  // Buffer zone: between the Not-certain line and confirmBelow the result is
+  // "Likely X", with a request to confirm (server decides; older servers: never).
+  const needsConfirmation = !notCertain && assessment.needsConfirmation === true;
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
@@ -319,7 +297,9 @@ export default function DiagnosisDetailScreen() {
     result.needsVetVisit ||
     isUncertain ||
     (hasConfidence && confidence < 70) ||
-    ['severe', 'emergency'].includes(result.severity);
+    needsConfirmation ||
+    ['severe', 'critical'].includes(severity) ||
+    ['high', 'emergency'].includes(urgency);
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -328,11 +308,12 @@ export default function DiagnosisDetailScreen() {
           <Text style={styles.backBtn}>Back to records</Text>
         </TouchableOpacity>
         <Text style={styles.resultTitle}>{t('result')}</Text>
-        <Text style={styles.diagnosisName}>
-          {isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis}
+        <Text style={styles.diagnosisName} testID="diagnosis-name">
+          {notCertain ? t('notCertain') : `${needsConfirmation ? `${t('likely')}: ` : ''}${isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis}`}
         </Text>
         <View style={styles.metaRow}>
-          <SeverityBadge severity={result.severity} />
+          {severity && <SeverityBadge severity={severity} label={t('severity')} testID="header-severity" />}
+          {urgency && <SeverityBadge severity={urgency} label={t('urgency')} testID="header-urgency" />}
           <View style={styles.confBadge}>
             <Text style={styles.confText}>{hasConfidence ? `${confidence}% ${isHausa ? 'tabbaci' : 'confidence'}` : (isHausa ? 'Babu maki' : 'No score')}</Text>
           </View>
@@ -349,45 +330,8 @@ export default function DiagnosisDetailScreen() {
         )}
       </View>
 
-      {/* Voice Control Bar */}
-      <View style={styles.voiceBar}>
-        <TouchableOpacity
-          style={[styles.voiceBtn, voicePlaying && styles.voiceBtnActive]}
-          onPress={() => voicePlaying ? stopVoice() : playVoice(diag)}
-        >
-          <Text style={styles.voiceBtnIcon}>{voicePlaying ? '⏸' : '▶'}</Text>
-          <Text style={styles.voiceBtnLabel}>{voicePlaying ? (isHausa ? 'Tsaya' : 'Pause') : (isHausa ? 'Kara' : 'Play')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.voiceBtn}
-          onPress={() => { stopVoice(); setTimeout(() => playVoice(diag), 100); }}
-        >
-          <Text style={styles.voiceBtnIcon}>↩</Text>
-          <Text style={styles.voiceBtnLabel}>{isHausa ? 'Sake' : 'Replay'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.voiceBtn} onPress={stopVoice}>
-          <Text style={styles.voiceBtnIcon}>■</Text>
-          <Text style={styles.voiceBtnLabel}>{isHausa ? 'Daina' : 'Stop'}</Text>
-        </TouchableOpacity>
-
-        {/* Speed selector */}
-        <View style={styles.speedRow}>
-          {[0.75, 1.0, 1.25, 1.5].map((sp) => (
-            <TouchableOpacity
-              key={sp}
-              style={[styles.speedPill, voiceSpeed === sp && styles.speedPillActive]}
-              onPress={() => {
-                setVoiceSpeed(sp);
-                if (voicePlaying) { stopVoice(); setTimeout(() => playVoice(diag, sp), 100); }
-              }}
-            >
-              <Text style={[styles.speedText, voiceSpeed === sp && styles.speedTextActive]}>{sp}x</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+      {/* Listen to your result: chosen language, read aloud, sentence highlighting */}
+      <ListenPanel scanId={diag.id ?? id} uiHausa={isHausa} />
 
       {consultationRecommended && (
         <Card style={styles.consultCard}>
@@ -426,7 +370,7 @@ export default function DiagnosisDetailScreen() {
         <InfoField label="Scientific Name" value={diag.scientificName} />
         <InfoField label="Plant/Body Part" value={diag.detectedPart} />
         <InfoField label="Health Status" value={result.healthStatus} />
-        <InfoField label="Severity" value={result.severityLevel} />
+        <InfoField label="Severity" value={result.severityLevel} testID="details-severity" />
         <InfoField label="Confidence" value={result.confidenceLabel} />
         <InfoField label="Symptoms Identified" value={result.symptomsIdentified} />
         <InfoField label="Environmental Factors" value={result.environmentalFactors} />
@@ -498,6 +442,26 @@ export default function DiagnosisDetailScreen() {
         </View>
       </Card>
 
+      <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}>{aiDisclaimer}</View>
+
+      {needsConfirmation && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="likely-confirm-card">
+          <Text style={[styles.treatBody, { fontWeight: '700' }]}>{t('likelyConfirm')}</Text>
+        </Card>
+      )}
+
+      {notCertain && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="not-certain-card">
+          <Text style={styles.cardTitle}>{t('notCertain')}</Text>
+          <Text style={styles.treatBody}>{t('notCertainBody')}</Text>
+          <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{t('possibleConditions')}</Text>
+          {possibleConditions.map((name) => (
+            <Text key={name} style={styles.treatBody} testID="possible-condition">• {name}</Text>
+          ))}
+          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t('confirmWithExpert')}</Text>
+        </Card>
+      )}
+
       {isUncertain && (
         <Card style={[styles.card, styles.uncertainCard]} testID="uncertain-card">
           <Text style={styles.cardTitle}>{isHausa ? 'Sakamako bai tabbata ba' : 'Inconclusive result'}</Text>
@@ -522,7 +486,7 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
-      {!isUncertain && assessment.alternativeFindings?.length > 0 && (
+      {!isUncertain && !notCertain && assessment.alternativeFindings?.length > 0 && (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>{isHausa ? "Wasu yiwuwar da aka yi la'akari da su" : 'Other possibilities considered'}</Text>
           {assessment.alternativeFindings.map((alt, i) => (
@@ -716,6 +680,7 @@ const styles = StyleSheet.create({
   outcomeBody: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
   outcomeCard: { marginTop: Spacing.md },
   outcomeNote: { ...Typography.small, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md },
+  aiDisclaimer: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary || '#475569', marginVertical: 6 },
   uncertainCard: { borderLeftWidth: 4, borderLeftColor: Colors.warning },
   root: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 80 },
@@ -800,37 +765,4 @@ const styles = StyleSheet.create({
   recAddBtn: { backgroundColor: Colors.primary, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, minWidth: 60, alignItems: 'center' },
   recAddBtnDisabled: { backgroundColor: '#CBD5E1' },
   recAddBtnText: { color: Colors.white, fontWeight: '700', fontSize: 12 },
-
-  // Voice bar
-  voiceBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0B2447',
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  voiceBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-  },
-  voiceBtnActive: { backgroundColor: Colors.primary },
-  voiceBtnIcon: { fontSize: 14, color: '#fff' },
-  voiceBtnLabel: { fontSize: 12, color: '#fff', fontWeight: '600' },
-  speedRow: { flexDirection: 'row', gap: 4, marginLeft: 'auto' },
-  speedPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  speedPillActive:   { backgroundColor: Colors.accent },
-  speedText:         { color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700' },
-  speedTextActive:   { color: '#fff' },
 });

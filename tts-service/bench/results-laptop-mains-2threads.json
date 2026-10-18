@@ -1,0 +1,80 @@
+{
+ "threads": 2,
+ "torch": "2.14.1+cpu",
+ "cpu": "Intel i5-8365U laptop, mains power, 2 threads",
+ "results": [
+  {
+   "id": "crop-en",
+   "lang": "en",
+   "voice": "idera",
+   "words": 17,
+   "sentences": 2,
+   "per_sentence": [
+    {
+     "chars": 43,
+     "sec": 54.8,
+     "audio_sec": 2.5,
+     "ok": true
+    },
+    {
+     "chars": 60,
+     "sec": 73.4,
+     "audio_sec": 3.1,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 54.8,
+   "total_sec": 128.2,
+   "audio_sec": 5.7,
+   "rtf": 22.66,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-ha",
+   "lang": "ha",
+   "voice": "hausa_female1",
+   "words": 21,
+   "sentences": 2,
+   "per_sentence": [
+    {
+     "chars": 60,
+     "sec": 302.2,
+     "audio_sec": 3.7,
+     "ok": true
+    },
+    {
+     "chars": 56,
+     "sec": 255.8,
+     "audio_sec": 3.2,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "first_audio_sec": 302.2,
+   "total_sec": 558.0,
+   "audio_sec": 7.0,
+   "rtf": 79.97,
+   "failure_rate": 0.0
+  }
+ ],
+ "load_sec": 29.2,
+ "rss_after_load_mb": 2237,
+ "peak_rss_mb": 2898,
+ "summary": {
+  "en": {
+   "results": 1,
+   "first_audio_sec_median": 54.8,
+   "total_sec_median": 128.2,
+   "rtf_median": 22.66,
+   "failure_rate": 0.0
+  },
+  "ha": {
+   "results": 1,
+   "first_audio_sec_median": 302.2,
+   "total_sec_median": 558.0,
+   "rtf_median": 79.97,
+   "failure_rate": 0.0
+  }
+ }
+}

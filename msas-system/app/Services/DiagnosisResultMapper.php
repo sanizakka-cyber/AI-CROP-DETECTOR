@@ -32,6 +32,16 @@ class DiagnosisResultMapper
     /** Automated-acceptance line — mirrors Diagnosis::getConfidenceLabelAttribute()'s own band. Kept in one place so a future change to the threshold can't update one and miss the other. */
     public const CONFIDENCE_DECISION_THRESHOLD = 65.0;
 
+    /** The configured threshold (config/diagnosis.php), defaulting to the constant above. */
+    public static function threshold(): float
+    {
+        // Plain unit tests use the mapper without a booted app (no config).
+        if (!app()->bound('config')) {
+            return self::CONFIDENCE_DECISION_THRESHOLD;
+        }
+        return (float) config('diagnosis.min_confidence', self::CONFIDENCE_DECISION_THRESHOLD);
+    }
+
     /** varchar(255) columns filled from AI text; capped so an over-long value can never fail the insert. */
     private const SHORT_COLUMNS = ['subject_name', 'scientific_name', 'detected_part', 'health_status', 'severity_level', 'urgency_level', 'image_quality'];
 
@@ -112,7 +122,7 @@ class DiagnosisResultMapper
             $outcome === 'poor_image'                                       => 'poor_image',
             $outcome === 'uncertain'                                        => 'uncertain',
             $isAmbiguous                                                    => 'ambiguous',
-            $confidenceScore !== null && $confidenceScore < self::CONFIDENCE_DECISION_THRESHOLD => 'low_confidence_review',
+            $confidenceScore !== null && $confidenceScore < self::threshold() => 'low_confidence_review',
             default                                                         => 'sufficient',
         };
 
@@ -122,7 +132,8 @@ class DiagnosisResultMapper
             'scientific_name'           => $aiResult['scientific_name'] ?? $aiResult['latin_name']  ?? null,
             'detected_part'             => $aiResult['detected_part']   ?? $aiResult['body_part']   ?? null,
             'health_status'             => $healthStatus,
-            'severity_level'            => $aiResult['severity']        ?? $aiResult['severity_level'] ?? null,
+            // The one severity value (App\Support\Severity); urgency stays separate.
+            'severity_level'            => \App\Support\Severity::normalize($aiResult['severity'] ?? $aiResult['severity_level'] ?? null),
             // Core
             'disease_name'              => $aiResult['disease'] ?? $aiResult['pest_name'] ?? $aiResult['condition'] ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? self::outcomeHeadline($outcome),
             'confidence_score'          => $confidenceScore,
@@ -158,7 +169,7 @@ class DiagnosisResultMapper
             'raw_model_output'          => $aiResult['raw_model_output'] ?? null,
             'confidence_interpretation' => $aiResult['confidence_interpretation'] ?? null,
             'confidence_decision'       => $confidenceDecision,
-            'decision_threshold'        => self::CONFIDENCE_DECISION_THRESHOLD,
+            'decision_threshold'        => self::threshold(),
             'validation_status'         => $aiResult['validation_status'] ?? 'unvalidated',
             'generated_by'              => 'primary_model',
 
@@ -172,6 +183,8 @@ class DiagnosisResultMapper
             'contract_version'          => $aiResult['contract_version'] ?? null,
             // Kept in best_practices too (above) so older app builds still show it.
             'organic_options'           => self::organicOptions($aiResult),
+            // Phase 12.2: how the engine's repeat analyses agreed; absent from older engines.
+            'ai_consensus'              => is_array($aiResult['consensus'] ?? null) ? $aiResult['consensus'] : null,
         ];
     }
 
@@ -260,7 +273,7 @@ class DiagnosisResultMapper
             'raw_model_output'          => null,
             'confidence_interpretation' => null,
             'confidence_decision'       => 'ai_unavailable',
-            'decision_threshold'        => self::CONFIDENCE_DECISION_THRESHOLD,
+            'decision_threshold'        => self::threshold(),
             'validation_status'         => 'unvalidated',
             'generated_by'              => null,
             'assessment_outcome'        => 'provider_error',
@@ -270,6 +283,7 @@ class DiagnosisResultMapper
             'alternative_findings'      => null,
             'what_cannot_be_confirmed'  => null,
             'contract_version'          => null,
+            'ai_consensus'              => null,
         ];
     }
 }

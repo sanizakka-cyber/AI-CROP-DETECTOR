@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Th
 import { Card, Button } from '../../components/UI';
 import LanguagePicker from '../../components/LanguagePicker';
 import { VoiceService } from '../../services/VoiceService';
+import { speechAPI } from '../../lib/api';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -22,6 +23,16 @@ export default function ProfileScreen() {
   } = useLanguage();
 
   const [pickerVisible, setPickerVisible] = useState(false);
+  // Credits for the voices used by "Listen to your result" (licence terms,
+  // e.g. CC-BY "Hausa voice: FarmerlineML"), from the server's provider list.
+  const [voiceCredits, setVoiceCredits] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    speechAPI.languages()
+      .then((res) => { if (alive) setVoiceCredits(res.credits || []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const isHa = language === 'ha';
 
@@ -83,8 +94,19 @@ export default function ProfileScreen() {
       action: () =>
         Alert.alert(
           appVersion ? `MSAS FarmAI v${appVersion}` : 'MSAS FarmAI',
-          'AI-Powered Agricultural Health Platform for Katsina State, Nigeria.\n\nBuilt for smallholder farmers.'
+          'AI-Powered Agricultural Health Platform for Katsina State, Nigeria.\n\nBuilt for smallholder farmers.',
+          [
+            { text: isHa ? 'Yabo da lasisi' : 'Credits and licences', onPress: () => router.push('/profile/credits') },
+            { text: 'OK' },
+          ],
         ),
+    },
+    {
+      icon: '📜',
+      labelEn: 'Credits and licences',
+      labelHa: 'Yabo da lasisi',
+      // Voice credits: OpenBible's CC BY-SA 4.0 licence requires attribution.
+      action: () => router.push('/profile/credits'),
     },
   ];
 
@@ -296,8 +318,13 @@ export default function ProfileScreen() {
       />
 
       <Text style={[styles.version, { fontSize: fs(11) }]}>
-        FarmAI v1.0 · {currentLang.nativeName} · Made for Katsina Farmers
+        FarmAI v{appVersion || '—'} · {currentLang.nativeName} · Made for Katsina Farmers
       </Text>
+      {voiceCredits.length > 0 && (
+        <Text style={[styles.version, { fontSize: fs(10) }]} testID="voice-credits">
+          {isHa ? 'Muryoyi' : 'Voices'}: {voiceCredits.map((c) => c.credit || `${c.label} (${c.license})`).join(' · ')}
+        </Text>
+      )}
 
       <LanguagePicker visible={pickerVisible} onClose={() => setPickerVisible(false)} />
     </ScrollView>

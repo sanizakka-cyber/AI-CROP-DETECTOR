@@ -1,0 +1,272 @@
+{
+ "engine": "VITS-OpenBible (Coqui TTS)",
+ "threads": 2,
+ "cpu": "Intel i5-8365U laptop, on battery, 2 threads",
+ "results": [
+  {
+   "id": "crop-ha",
+   "lang": "ha",
+   "load_sec": 21.5,
+   "speakers": [],
+   "voice": null,
+   "per_sentence": [
+    {
+     "chars": 60,
+     "sec": 6.9,
+     "audio_sec": 5.48,
+     "ok": true
+    },
+    {
+     "chars": 56,
+     "sec": 6.74,
+     "audio_sec": 5.83,
+     "ok": true
+    },
+    {
+     "chars": 80,
+     "sec": 11.04,
+     "audio_sec": 9.59,
+     "ok": true
+    },
+    {
+     "chars": 95,
+     "sec": 12.47,
+     "audio_sec": 10.59,
+     "ok": true
+    },
+    {
+     "chars": 76,
+     "sec": 9.29,
+     "audio_sec": 8.0,
+     "ok": true
+    },
+    {
+     "chars": 50,
+     "sec": 7.49,
+     "audio_sec": 5.72,
+     "ok": true
+    },
+    {
+     "chars": 63,
+     "sec": 8.92,
+     "audio_sec": 6.92,
+     "ok": true
+    },
+    {
+     "chars": 53,
+     "sec": 7.92,
+     "audio_sec": 6.25,
+     "ok": true
+    },
+    {
+     "chars": 88,
+     "sec": 8.64,
+     "audio_sec": 6.7,
+     "ok": true
+    },
+    {
+     "chars": 74,
+     "sec": 10.76,
+     "audio_sec": 8.36,
+     "ok": true
+    },
+    {
+     "chars": 52,
+     "sec": 13.44,
+     "audio_sec": 6.51,
+     "ok": true
+    },
+    {
+     "chars": 99,
+     "sec": 14.53,
+     "audio_sec": 10.24,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "sentences": 12,
+   "first_audio_sec": 6.9,
+   "total_sec": 118.19,
+   "audio_sec": 90.2,
+   "rtf": 1.31,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-yo",
+   "lang": "yo",
+   "load_sec": 3.5,
+   "speakers": [],
+   "voice": null,
+   "per_sentence": [
+    {
+     "chars": 60,
+     "sec": 5.81,
+     "audio_sec": 4.74,
+     "ok": true
+    },
+    {
+     "chars": 46,
+     "sec": 4.9,
+     "audio_sec": 4.17,
+     "ok": true
+    },
+    {
+     "chars": 46,
+     "sec": 4.77,
+     "audio_sec": 4.09,
+     "ok": true
+    },
+    {
+     "chars": 72,
+     "sec": 10.96,
+     "audio_sec": 8.44,
+     "ok": true
+    },
+    {
+     "chars": 63,
+     "sec": 6.73,
+     "audio_sec": 5.52,
+     "ok": true
+    },
+    {
+     "chars": 54,
+     "sec": 9.2,
+     "audio_sec": 6.08,
+     "ok": true
+    },
+    {
+     "chars": 67,
+     "sec": 11.79,
+     "audio_sec": 5.78,
+     "ok": true
+    },
+    {
+     "chars": 63,
+     "sec": 11.81,
+     "audio_sec": 5.43,
+     "ok": true
+    },
+    {
+     "chars": 58,
+     "sec": 8.4,
+     "audio_sec": 6.05,
+     "ok": true
+    },
+    {
+     "chars": 60,
+     "sec": 7.52,
+     "audio_sec": 6.35,
+     "ok": true
+    },
+    {
+     "chars": 34,
+     "sec": 5.23,
+     "audio_sec": 4.35,
+     "ok": true
+    },
+    {
+     "chars": 81,
+     "sec": 9.59,
+     "audio_sec": 7.97,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "sentences": 12,
+   "first_audio_sec": 5.81,
+   "total_sec": 96.77,
+   "audio_sec": 68.97,
+   "rtf": 1.402,
+   "failure_rate": 0.0
+  },
+  {
+   "id": "crop-ig",
+   "lang": "ig",
+   "load_sec": 2.9,
+   "speakers": [],
+   "voice": null,
+   "per_sentence": [
+    {
+     "chars": 73,
+     "sec": 6.72,
+     "audio_sec": 5.57,
+     "ok": true
+    },
+    {
+     "chars": 49,
+     "sec": 3.64,
+     "audio_sec": 3.22,
+     "ok": true
+    },
+    {
+     "chars": 49,
+     "sec": 4.15,
+     "audio_sec": 3.83,
+     "ok": true
+    },
+    {
+     "chars": 80,
+     "sec": 10.01,
+     "audio_sec": 7.85,
+     "ok": true
+    },
+    {
+     "chars": 81,
+     "sec": 8.17,
+     "audio_sec": 6.94,
+     "ok": true
+    },
+    {
+     "chars": 48,
+     "sec": 5.14,
+     "audio_sec": 4.18,
+     "ok": true
+    },
+    {
+     "chars": 48,
+     "sec": 4.45,
+     "audio_sec": 3.83,
+     "ok": true
+    },
+    {
+     "chars": 43,
+     "sec": 4.78,
+     "audio_sec": 3.81,
+     "ok": true
+    },
+    {
+     "chars": 61,
+     "sec": 7.18,
+     "audio_sec": 6.13,
+     "ok": true
+    },
+    {
+     "chars": 49,
+     "sec": 6.11,
+     "audio_sec": 5.03,
+     "ok": true
+    },
+    {
+     "chars": 41,
+     "sec": 5.85,
+     "audio_sec": 4.83,
+     "ok": true
+    },
+    {
+     "chars": 83,
+     "sec": 9.48,
+     "audio_sec": 7.59,
+     "ok": true
+    }
+   ],
+   "failures": 0,
+   "sentences": 12,
+   "first_audio_sec": 6.72,
+   "total_sec": 75.82,
+   "audio_sec": 62.82,
+   "rtf": 1.205,
+   "failure_rate": 0.0
+  }
+ ],
+ "peak_rss_mb": 2165
+}

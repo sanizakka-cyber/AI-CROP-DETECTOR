@@ -9,6 +9,11 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(), launchImageLibraryAsync: jest.fn(),
 }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
+const mockSave = jest.fn();
+jest.mock('expo-image-manipulator', () => ({
+  SaveFormat: { JPEG: 'jpeg' },
+  ImageManipulator: { manipulate: jest.fn(() => ({ renderAsync: async () => ({ saveAsync: mockSave }) })) },
+}));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -21,7 +26,7 @@ test('Browse Files returns assets with dimensions, size and the real file name',
   });
   const r = await acquireScanImages('files');
   expect(DocumentPicker.getDocumentAsync).toHaveBeenCalledWith(expect.objectContaining({
-    type: ['image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true,
+    type: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'], copyToCacheDirectory: true,
   }));
   expect(r.assets[0]).toEqual(expect.objectContaining({
     uri: 'file:///leaf.png', width: 1600, height: 1200, fileSize: 900000, fileName: 'leaf.png', mimeType: 'image/png', _source: 'files',
@@ -56,6 +61,34 @@ test('Select Picture uses the photo picker and tags the source', async () => {
   const r = await acquireScanImages('gallery', { multiple: true });
   expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ allowsMultipleSelection: true }));
   expect(r.assets[0]._source).toBe('gallery');
+});
+
+test('a HEIC picked with Browse Files is converted to JPEG on the phone', async () => {
+  DocumentPicker.getDocumentAsync.mockResolvedValue({
+    canceled: false, assets: [{ uri: 'file:///IMG_0042.HEIC', name: 'IMG_0042.HEIC', mimeType: 'image/heic', size: 2500000 }],
+  });
+  mockSave.mockResolvedValue({ uri: 'file:///cache/converted.jpg', width: 4032, height: 3024 });
+  const r = await acquireScanImages('files');
+  expect(mockSave).toHaveBeenCalledWith({ format: 'jpeg', compress: 0.9 });
+  expect(r.assets[0]).toEqual(expect.objectContaining({
+    uri: 'file:///cache/converted.jpg', width: 4032, height: 3024, mimeType: 'image/jpeg', fileName: 'IMG_0042.jpg', _convertedFrom: 'heic',
+  }));
+});
+
+test('a HEIC that cannot be decoded gives a clear error', async () => {
+  DocumentPicker.getDocumentAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///x.heif', name: 'x.heif', mimeType: 'image/heif' }] });
+  mockSave.mockRejectedValue(new Error('decode failed'));
+  expect((await acquireScanImages('files')).error).toMatch(/could not be converted/);
+});
+
+test('a gallery HEIC that the picker re-encoded is labelled as the JPEG it now is', async () => {
+  ImagePicker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
+  ImagePicker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{
+    uri: 'file:///cache/ImagePicker/abc.jpeg', fileName: 'IMG_7.HEIC', mimeType: 'image/heic', width: 4000, height: 3000,
+  }] });
+  const r = await acquireScanImages('gallery');
+  expect(r.assets[0].mimeType).toBe('image/jpeg');
+  expect(r.assets[0].fileName).toBe('IMG_7.jpg');
 });
 
 test('client scan ids are unique', () => {

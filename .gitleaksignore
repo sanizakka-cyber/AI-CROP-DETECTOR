@@ -1,0 +1,30 @@
+# Secrets already in git history before Phase 12.2 (2026-10-18). All are treated as
+# compromised: see docs/security/secret-exposure-2026-10.md for what each was and its
+# rotation status. Listed by fingerprint (commit:file:rule:line) so the scan fails only
+# on NEW leaks. Never add a fingerprint here for a new finding: remove the secret instead.
+2504e18856b04cbb5d9196114c523e6e6d0acccd:mobile/KEYSTORE_CREDENTIALS.txt:credentials-file:1
+2504e18856b04cbb5d9196114c523e6e6d0acccd:mobile/KEYSTORE_CREDENTIALS.txt:plaintext-password-line:8
+2504e18856b04cbb5d9196114c523e6e6d0acccd:mobile/KEYSTORE_CREDENTIALS.txt:plaintext-password-line:9
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:credentials-file:1
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:17
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:28
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:39
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:51
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:6
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:62
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260616-125622.txt:plaintext-password-line:73
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:credentials-file:1
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:17
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:28
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:39
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:51
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:6
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:62
+2504e18856b04cbb5d9196114c523e6e6d0acccd:msas-system/storage/qa-credentials-20260617-075931.txt:plaintext-password-line:73
+2504e18856b04cbb5d9196114c523e6e6d0acccd:render.yaml:yaml-secret-value:29
+2504e18856b04cbb5d9196114c523e6e6d0acccd:server/.env:env-secret-assignment:3
+592f28473b3c5b821477f950de2c5e76ce340764:render.yaml:laravel-app-key:27
+592f28473b3c5b821477f950de2c5e76ce340764:render.yaml:yaml-secret-value:26
+b1e7493ff424d17c713394fcf0273320006d8147:render.yaml:yaml-secret-value:132
+b91c152eafb2fe3bd563d04381762297940a273d:render.yaml:yaml-secret-value:26
+facddb3be7b129e050adc79e3da38c6c1003345c:render.yaml:yaml-secret-value:132

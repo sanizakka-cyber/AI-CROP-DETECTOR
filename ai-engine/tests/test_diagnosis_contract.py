@@ -81,6 +81,9 @@ def fake(monkeypatch):
         monkeypatch.setattr(main, "_get_client", lambda: SimpleNamespace(messages=msgs))
         monkeypatch.setattr(main, "ANTHROPIC_KEY", "test-key")
         monkeypatch.setattr(main, "API_KEY", "")
+        # One pass, so each scripted reply maps to one request; repeat-pass
+        # consensus has its own tests (test_consensus.py).
+        monkeypatch.setenv("SCAN_PASSES", "1")
         holder["msgs"] = msgs
         return msgs
     return install

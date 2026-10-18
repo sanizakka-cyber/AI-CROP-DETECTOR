@@ -340,7 +340,7 @@ class DiagnoseApiController extends Controller
     /** One place building the cache payload mobile's show() serves immediately after a scan — kept in sync with the full field set both success and fallback paths now populate. */
     private function cacheScanPayload(Diagnosis $diagnosis, ?string $imagePath): void
     {
-        cache()->put("diagnosis:{$diagnosis->id}", $this->shapeDiagnosis($diagnosis, $imagePath), now()->addHours(24));
+        cache()->put("diagnosis:v2:{$diagnosis->id}", $this->shapeDiagnosis($diagnosis, $imagePath), now()->addHours(24));
     }
 
     /** Shared response shape for show()/history()/the post-scan cache — one mapping from a Diagnosis row to the JSON mobile actually renders. */
@@ -375,8 +375,13 @@ class DiagnoseApiController extends Controller
                 'primaryDiagnosis'    => $d->disease_name,
                 'confidence'          => $d->confidence_score,
                 'confidenceLabel'     => $d->confidenceLabel,
-                'severity'            => $d->urgency_level ? strtolower($d->urgency_level) : null,
+                // One severity value (App\Support\Severity): `severity` is the
+                // lowercase key of severity_level, never urgency (that was the
+                // HIGH-badge vs Moderate-details bug). Urgency has its own keys.
+                'severity'            => $d->severity_key,
                 'severityLevel'       => $d->severity_level,
+                'urgency'             => $d->urgency_key,
+                'urgencyLevel'        => $d->urgency_level,
                 'healthStatus'        => $d->health_status,
                 'likelyCauses'        => $d->cause ? [$d->cause] : [],
                 'symptomsIdentified'  => $d->symptoms_identified,
@@ -425,6 +430,16 @@ class DiagnoseApiController extends Controller
                 'alternativeFindings'   => $d->alternative_findings ?? [],
                 'whatCannotBeConfirmed' => $d->what_cannot_be_confirmed,
                 'contractVersion'       => $d->contract_version,
+                // Low-confidence rule: below minConfidence the app shows "Not certain"
+                // with these possible conditions instead of one diagnosis.
+                'notCertain'            => $d->is_not_certain,
+                'minConfidence'         => Diagnosis::minConfidence(),
+                'possibleConditions'    => $d->is_not_certain ? $d->possible_conditions : [],
+                // Buffer zone: "Likely X, please confirm with a vet or extension officer".
+                'needsConfirmation'     => $d->needs_confirmation,
+                'confirmBelow'          => Diagnosis::confirmBelow(),
+                // How the engine's repeat analyses agreed (null for older scans).
+                'consensus'             => $d->ai_consensus,
             ],
             'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [
@@ -444,7 +459,7 @@ class DiagnoseApiController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         // 1. Try hot cache first (populated immediately after scan)
-        $result = cache()->get("diagnosis:{$id}");
+        $result = cache()->get("diagnosis:v2:{$id}");
 
         if ($result) {
             if ((int) $result['userId'] !== $request->user()->id) {
@@ -486,6 +501,7 @@ class DiagnoseApiController extends Controller
             'confidence_label'      => $d->confidenceLabel,
             'urgency_level'         => $d->urgency_level,
             'severity_level'        => $d->severity_level,
+            'severity'              => $d->severity_key,
             'cause'                 => $d->cause,
             'first_aid_steps'       => $d->first_aid_steps,
             'recommended_medication'=> $d->recommended_medication,

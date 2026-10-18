@@ -1,0 +1,93 @@
+[
+ {
+  "engine": "YarnGPT2",
+  "lang": "en",
+  "voice": "idera",
+  "sentences_run": 4,
+  "excluded": 0,
+  "first_audio_sec": 71.2,
+  "rtf": 27.9,
+  "full_result_audio_sec": 38,
+  "full_result_synth_sec": 1058,
+  "failures": 0,
+  "peak_rss_mb": 2861
+ },
+ {
+  "engine": "YarnGPT2",
+  "lang": "ha",
+  "voice": "hausa_female1",
+  "sentences_run": 4,
+  "excluded": 0,
+  "first_audio_sec": 332.9,
+  "rtf": 67.53,
+  "full_result_audio_sec": 54,
+  "full_result_synth_sec": 3679,
+  "failures": 0,
+  "peak_rss_mb": 2861
+ },
+ {
+  "engine": "YarnGPT2",
+  "lang": "yo",
+  "voice": "yoruba_male2",
+  "sentences_run": 4,
+  "excluded": 0,
+  "first_audio_sec": 237.2,
+  "rtf": 88.35,
+  "full_result_audio_sec": 37,
+  "full_result_synth_sec": 3300,
+  "failures": 0,
+  "peak_rss_mb": 2861
+ },
+ {
+  "engine": "YarnGPT2",
+  "lang": "ig",
+  "voice": "igbo_female2",
+  "sentences_run": 4,
+  "excluded": 1,
+  "first_audio_sec": 218.2,
+  "rtf": 79.95,
+  "full_result_audio_sec": 43,
+  "full_result_synth_sec": 3409,
+  "failures": 0,
+  "peak_rss_mb": 2861
+ },
+ {
+  "engine": "VITS-OpenBible (Coqui TTS)",
+  "lang": "ha",
+  "voice": null,
+  "sentences_run": 12,
+  "excluded": 0,
+  "first_audio_sec": 9.1,
+  "rtf": 1.31,
+  "full_result_audio_sec": 91,
+  "full_result_synth_sec": 120,
+  "failures": 0,
+  "peak_rss_mb": 2165
+ },
+ {
+  "engine": "VITS-OpenBible (Coqui TTS)",
+  "lang": "yo",
+  "voice": null,
+  "sentences_run": 12,
+  "excluded": 0,
+  "first_audio_sec": 8.0,
+  "rtf": 1.4,
+  "full_result_audio_sec": 70,
+  "full_result_synth_sec": 98,
+  "failures": 0,
+  "peak_rss_mb": 2165
+ },
+ {
+  "engine": "VITS-OpenBible (Coqui TTS)",
+  "lang": "ig",
+  "voice": null,
+  "sentences_run": 12,
+  "excluded": 0,
+  "first_audio_sec": 6.0,
+  "rtf": 1.2,
+  "full_result_audio_sec": 64,
+  "full_result_synth_sec": 77,
+  "failures": 0,
+  "peak_rss_mb": 2165
+ }
+]

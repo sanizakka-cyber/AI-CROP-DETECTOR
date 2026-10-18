@@ -1,0 +1,15 @@
+# The CPU speech image (Dockerfile.openbible): OpenBible VITS for Hausa
+# (Yoruba, Igbo available) and Kokoro-82M for English, one container.
+# coqui-tts needs transformers>=4.56; YarnGPT2 needs 4.47.1, so YarnGPT2
+# stays in its own image (Dockerfile) and is not used in production on CPU.
+# Versions benchmarked on 2026-10-17 (OpenBible) and 2026-10-18 (Kokoro),
+# installed together in one Python 3.11 environment.
+coqui-tts==0.27.5
+torchcodec==0.17.0
+transformers>=4.56,<5
+kokoro==0.9.4
+# misaki (Kokoro's G2P) downloads spaCy's English model on first use, which
+# fails for the non-root user; install the pinned wheel at build time instead.
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+soundfile
+psutil

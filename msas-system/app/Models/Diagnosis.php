@@ -63,6 +63,8 @@ class Diagnosis extends Model
         'contract_version',
         'client_scan_id',
         'organic_options',
+        // Phase 12.2: how the repeat analyses agreed (passes, per-pass findings and confidences)
+        'ai_consensus',
         // Optional research metadata (spec 6D / 7)
         'research_metadata',
         'consent_research_use',
@@ -76,6 +78,7 @@ class Diagnosis extends Model
         'image_issues'          => 'array',
         'photo_tips'            => 'array',
         'alternative_findings'  => 'array',
+        'ai_consensus'          => 'array',
     ];
 
     /**
@@ -121,12 +124,93 @@ class Diagnosis extends Model
         $pct = (int) round($this->confidence_score);
         $tier = match (true) {
             $pct >= 85 => 'High Confidence',
-            $pct >= 70 => 'Good Confidence',
-            $pct >= 65 => 'Acceptable / Review if necessary',
+            $pct >= self::confirmBelow() => 'Good Confidence',
+            $pct >= self::minConfidence() => 'Likely, please confirm',
             default    => 'Low Confidence / Expert Review Required',
         };
 
         return "{$pct}% — {$tier}";
+    }
+
+    /** The confidence (percent) below which a result is never shown as a single diagnosis. */
+    public static function minConfidence(): float
+    {
+        return \App\Services\DiagnosisResultMapper::threshold();
+    }
+
+    /**
+     * Low-confidence rule: an assessed result whose confidence is below the
+     * threshold is shown as "Not certain" with its possible conditions,
+     * never as one diagnosis. Rejected photos, inconclusive results and AI
+     * outages have their own screens and are not affected.
+     */
+    public function getIsNotCertainAttribute(): bool
+    {
+        return $this->confidence_score !== null
+            && (float) $this->confidence_score < self::minConfidence()
+            && in_array($this->assessment_outcome, [null, 'assessed'], true)
+            && !in_array($this->status, ['pending', 'needs_review'], true);
+    }
+
+    /** Upper edge of the "Likely X, please confirm" band (config/diagnosis.php). */
+    public static function confirmBelow(): float
+    {
+        return max(self::minConfidence(), (float) config('diagnosis.confirm_below', 75));
+    }
+
+    /**
+     * Buffer zone (Phase 12.2): an assessed result at or above the
+     * Not-certain line but below confirm_below is shown as "Likely X" with a
+     * request to confirm with a vet or extension officer, instead of a
+     * plain diagnosis. Run-to-run variation of a few points then moves a
+     * photo between "Likely X" and "X", never between "X" and "Not certain".
+     */
+    public function getNeedsConfirmationAttribute(): bool
+    {
+        return $this->confidence_score !== null
+            && (float) $this->confidence_score >= self::minConfidence()
+            && (float) $this->confidence_score < self::confirmBelow()
+            && in_array($this->assessment_outcome, [null, 'assessed'], true)
+            && !in_array($this->status, ['pending', 'needs_review'], true);
+    }
+
+    /** severity_level is the only stored severity; normalised on every write (App\Support\Severity). */
+    public function setSeverityLevelAttribute($value): void
+    {
+        $this->attributes['severity_level'] = \App\Support\Severity::normalize($value);
+    }
+
+    /** none|mild|moderate|severe|critical or null: the one severity value every client shows. */
+    public function getSeverityKeyAttribute(): ?string
+    {
+        return \App\Support\Severity::key($this->severity_level);
+    }
+
+    /** low|medium|high|emergency or null. Urgency (how soon to act) is not severity. */
+    public function getUrgencyKeyAttribute(): ?string
+    {
+        return $this->urgency_level ? strtolower(trim($this->urgency_level)) : null;
+    }
+
+    /** The top possible conditions: the AI's leading finding, then the alternatives it considered. */
+    public function getPossibleConditionsAttribute(): array
+    {
+        $names = [];
+        if ($this->disease_name && !in_array(mb_strtolower(trim($this->disease_name)), ['unknown', 'none', 'n/a'], true)) {
+            $names[] = trim($this->disease_name);
+        }
+        foreach ($this->alternative_findings ?? [] as $alt) {
+            if (!empty($alt['name'])) {
+                $names[] = trim($alt['name']);
+            }
+        }
+        $unique = [];
+        foreach ($names as $n) {
+            if (!in_array(mb_strtolower($n), array_map('mb_strtolower', $unique), true)) {
+                $unique[] = $n;
+            }
+        }
+        return array_slice($unique, 0, (int) config('diagnosis.possible_conditions', 3));
     }
 
     /** Plain "87%" (or null) — for spots that only need the number, one format everywhere. */
@@ -160,12 +244,21 @@ class Diagnosis extends Model
             return $outcomeLabel;
         }
         if (in_array($this->status, ['reviewed', 'confirmed'], true)) {
-            return ($this->confidence_score !== null && $this->confidence_score < 65)
+            // Same rule as the "Not certain" result screen; the label text is
+            // what the CEO analytics group on (HasCeoScanFilters).
+            return $this->is_not_certain
                 ? 'Low Confidence'
                 : 'Completed';
         }
 
         return ucfirst(str_replace('_', ' ', $this->status));
+    }
+
+    protected static function booted(): void
+    {
+        // "Listen to your result": optionally prepare the farmer's language
+        // in the background right after a scan (off unless SPEECH_PREGENERATE).
+        static::created(fn (Diagnosis $d) => \App\Services\Speech\Pregenerate::afterScan($d));
     }
 
     public function user()

@@ -6,6 +6,8 @@ use App\Http\Controllers\CEOController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DiagnosticController;
 use App\Http\Controllers\NarrationController;
+use App\Http\Controllers\ScanSpeechController;
+use App\Http\Controllers\Admin\SpeechAdminController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DealerProductController;
 use App\Http\Controllers\SubscriptionController;
@@ -62,7 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:farmer,admin,ceo,vet,agronomist'])->group(function () {
         Route::get('/diagnostics/scan', [DiagnosticController::class, 'scan'])->name('diagnostics.scan');
         Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])
-            ->middleware('throttle:10,1')
+            ->middleware(['throttle:10,1', 'heic'])
             ->name('diagnostics.analyze');
         Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
         Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
@@ -72,6 +74,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/diagnostics/{diagnosis}/narration', [NarrationController::class, 'show'])
             ->middleware('throttle:20,1')
             ->name('diagnostics.narration');
+    });
+
+    // "Listen to your result" (same controller as the app API). Not limited to
+    // the scanning roles above: extension staff open results to review translations.
+    Route::prefix('speech')->name('speech.')->group(function () {
+        Route::get('/languages', [ScanSpeechController::class, 'languages'])->name('languages');
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::post('/scans/{diagnosis}/translate', [ScanSpeechController::class, 'translate'])->name('translate');
+            Route::post('/scans/{diagnosis}/audio', [ScanSpeechController::class, 'requestAudio'])->name('audio');
+            Route::post('/feedback', [ScanSpeechController::class, 'feedback'])->name('feedback');
+            Route::post('/scans/{diagnosis}/translation/{lang}/review', [ScanSpeechController::class, 'review'])->name('review');
+        });
+        Route::get('/scans/{diagnosis}/translation/{lang}', [ScanSpeechController::class, 'showTranslation'])->name('translation');
+        Route::get('/scans/{diagnosis}/audio/{lang}', [ScanSpeechController::class, 'showAudio'])->name('audio.show');
     });
 });
 
@@ -697,3 +713,37 @@ Route::get('/sitemap.xml', function () {
 })->name('sitemap');
 
 require __DIR__.'/auth.php';
+
+// "Listen to your result": generated audio behind short-lived signed URLs
+// (the URL itself is the credential, so the app can stream/download it).
+Route::get('/speech/file/{audio}', [ScanSpeechController::class, 'file'])
+    ->middleware(['signed', 'throttle:120,1'])->name('speech.file');
+// One sentence of a result, playable while the rest is still being generated.
+Route::get('/speech/chunk/{audio}/{index}', [ScanSpeechController::class, 'chunk'])
+    ->whereNumber('index')->middleware(['signed', 'throttle:300,1'])->name('speech.chunk');
+
+// "Listen to your result" administration: languages, voices, glossary, review progress.
+Route::middleware(['auth', 'role:ceo,admin'])->prefix('admin/speech')->name('admin.speech.')->group(function () {
+    Route::get('/', [SpeechAdminController::class, 'index'])->name('index');
+    Route::post('/languages', [SpeechAdminController::class, 'storeLanguage'])->name('languages.store');
+    Route::patch('/languages/{language}', [SpeechAdminController::class, 'updateLanguage'])->name('languages.update');
+    Route::get('/glossary/{lang}', [SpeechAdminController::class, 'glossary'])->name('glossary');
+    Route::post('/glossary/{lang}', [SpeechAdminController::class, 'storeTerm'])->name('glossary.store');
+    Route::post('/glossary/{lang}/import', [SpeechAdminController::class, 'importTerms'])->name('glossary.import');
+    Route::delete('/glossary/term/{term}', [SpeechAdminController::class, 'destroyTerm'])->name('glossary.destroy');
+    Route::post('/reviewers', [SpeechAdminController::class, 'storeReviewer'])->name('reviewers.store');
+    Route::post('/reviewers/invite', [SpeechAdminController::class, 'inviteReviewer'])->middleware('throttle:20,1')->name('reviewers.invite');
+    Route::delete('/reviewers/{reviewer}', [SpeechAdminController::class, 'destroyReviewer'])->name('reviewers.destroy');
+    Route::get('/review-results/{lang}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'results'])->name('review.results');
+});
+
+// Native-speaker / expert review packs. Open to assigned reviewers (any role)
+// and admins; the controller checks the assignment per language.
+Route::middleware(['auth'])->prefix('admin/speech/review')->name('admin.speech.review.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'index'])->name('index');
+    Route::get('/pack/{pack}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'pack'])->name('pack');
+    Route::get('/item/{item}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'item'])->name('item');
+    Route::post('/item/{item}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'store'])->name('store');
+    Route::get('/item/{item}/audio/{label}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'audio'])
+        ->where('label', '[A-Z]')->name('audio');
+});

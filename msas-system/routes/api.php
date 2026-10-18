@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AiWidgetController;
+use App\Http\Controllers\ScanSpeechController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\DiagnoseApiController;
 use App\Http\Controllers\Api\ProductApiController;
@@ -136,7 +137,7 @@ Route::middleware('auth.api')->group(function () {
     Route::delete('/notifications/{id}',        [NotificationApiController::class, 'destroy']);
 
     // AI Diagnosis (rate-limited: 20 scans per minute per user)
-    Route::middleware('throttle:20,1')->group(function () {
+    Route::middleware(['throttle:20,1', 'heic'])->group(function () {
         Route::post('/diagnose/crop',      [DiagnoseApiController::class, 'crop']);
         Route::post('/diagnose/livestock', [DiagnoseApiController::class, 'livestock']);
         Route::post('/diagnose/soil',      [DiagnoseApiController::class, 'soil']);
@@ -145,6 +146,18 @@ Route::middleware('auth.api')->group(function () {
     Route::get('/diagnose',            [DiagnoseApiController::class, 'history']);
     Route::get('/diagnose/{id}',       [DiagnoseApiController::class, 'show']);
     Route::patch('/diagnose/{id}/feedback', [DiagnoseApiController::class, 'feedback']);
+
+    // "Listen to your result": translated + spoken scan results. Translation
+    // and audio are generated once in the background and cached; poll the GETs.
+    Route::get('/speech/languages', [ScanSpeechController::class, 'languages']);
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::post('/scans/{diagnosis}/translate', [ScanSpeechController::class, 'translate']);
+        Route::post('/scans/{diagnosis}/audio',     [ScanSpeechController::class, 'requestAudio']);
+        Route::post('/tts-feedback',                [ScanSpeechController::class, 'feedback']);
+        Route::post('/scans/{diagnosis}/translation/{lang}/review', [ScanSpeechController::class, 'review']);
+    });
+    Route::get('/scans/{diagnosis}/translation/{lang}', [ScanSpeechController::class, 'showTranslation']);
+    Route::get('/scans/{diagnosis}/audio/{lang}',       [ScanSpeechController::class, 'showAudio']);
 
     // AI Farm Assistant chat — same controller method the web widget calls
     // (routes/web.php '/ai/chat'), just reached over Bearer-token auth

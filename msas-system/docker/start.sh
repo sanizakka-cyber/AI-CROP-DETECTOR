@@ -70,6 +70,18 @@ chmod 600 /etc/crontabs/www-data
 echo "==> Starting cron..."
 crond -b -l 2
 
+# "Listen to your result": translation and speech jobs run on their own
+# database queue ("speech"), because QUEUE_CONNECTION stays sync for the rest
+# of the app. Only this queue is worked, so no other job changes behaviour.
+# The loop restarts the worker after --max-time or a crash. Runs as www-data
+# like php-fpm so files it writes under storage/ stay writable.
+echo "==> Starting speech queue worker..."
+( while true; do
+    su -s /bin/sh www-data -c "cd /var/www/html && php artisan queue:work database --queue=speech --sleep=3 --timeout=210 --max-time=3600 --memory=192" \
+      >> /proc/1/fd/1 2>> /proc/1/fd/2
+    sleep 5
+  done ) &
+
 echo "==> Starting PHP-FPM..."
 php-fpm --nodaemonize &
 

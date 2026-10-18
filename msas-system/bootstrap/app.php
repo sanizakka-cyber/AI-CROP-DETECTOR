@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription'        => \App\Http\Middleware\RequireSubscription::class,
             'force.password.reset'=> \App\Http\Middleware\ForcePasswordReset::class,
             '2fa'                 => \App\Http\Middleware\RequireTwoFactor::class,
+            'heic'                => \App\Http\Middleware\ConvertHeicUploads::class,
         ]);
 
         // Add security headers to all web responses

@@ -21,6 +21,9 @@ jest.mock('../../../lib/api', () => ({
 }));
 let mockVoiceEnabled = false;
 jest.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', voiceEnabled: mockVoiceEnabled }), LANGUAGES: [] }));
+// The Listen panel has its own tests (components/__tests__/ListenPanel.test.js).
+const mockListenPanel = jest.fn(() => null);
+jest.mock('../../../components/ListenPanel', () => (props) => mockListenPanel(props));
 jest.mock('../../../services/VoiceService', () => ({ VoiceService: {
   speak: jest.fn(), stop: jest.fn(), buildCropNarration: jest.fn(() => 'narration'),
 } }));
@@ -122,7 +125,7 @@ test('repeated retries never leave more than one polling loop running', async ()
   expect(diagnoseAPI.get.mock.calls.length - afterRetry).toBe(5);
 });
 
-test('leaving the screen stops polling and voice', async () => {
+test('leaving the screen stops polling', async () => {
   diagnoseAPI.get.mockResolvedValue({ diagnosis: PENDING });
   const { unmount } = render(<DiagnosisDetailScreen />);
   await flush();
@@ -130,26 +133,19 @@ test('leaving the screen stops polling and voice', async () => {
   const calls = diagnoseAPI.get.mock.calls.length;
   await advance(30000);
   expect(diagnoseAPI.get).toHaveBeenCalledTimes(calls);
-  expect(VoiceService.stop).toHaveBeenCalled();
 });
 
-test('auto-narration fires on a finished result when the user stays', async () => {
+// "Listen to your result": auto-play is OFF by default. A finished result
+// shows the Listen panel for this scan and nothing is spoken until the
+// farmer presses Listen, even with the old voice setting switched on.
+test('a finished result shows the Listen panel and never auto-plays', async () => {
   mockVoiceEnabled = true;
   diagnoseAPI.get.mockResolvedValue({ diagnosis: DONE });
   render(<DiagnosisDetailScreen />);
   await flush();
-  await advance(1000);
-  expect(VoiceService.speak).toHaveBeenCalledTimes(1);
-});
-
-test('auto-narration scheduled before leaving never fires after leaving', async () => {
-  mockVoiceEnabled = true;
-  diagnoseAPI.get.mockResolvedValue({ diagnosis: DONE });
-  const { unmount } = render(<DiagnosisDetailScreen />);
-  await flush(); // result arrives; narration is scheduled 600ms out
-  unmount();
-  await advance(1000);
+  await advance(5000);
   expect(VoiceService.speak).not.toHaveBeenCalled();
+  expect(mockListenPanel).toHaveBeenCalledWith(expect.objectContaining({ scanId: DONE.id }));
 });
 
 test('feedback success shows the thank-you card', async () => {

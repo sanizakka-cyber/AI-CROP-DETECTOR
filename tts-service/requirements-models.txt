@@ -1,0 +1,36 @@
+# Model runtime, installed in the Docker image only.
+# torch/torchaudio come from the CPU wheel index (see Dockerfile).
+#
+# Pinned to the yarngpt repo's requirements.txt: newer outetts releases
+# removed outetts.wav_tokenizer, which AudioTokenizerV2 imports.
+#
+# outetts==0.2.3 itself is installed with --no-deps (see Dockerfile): it
+# requires pesq, an audio-quality metric that is only published as source,
+# needs a C compiler, and is never used for synthesis. Its other runtime
+# dependencies are listed here instead (outetts/__init__ imports them).
+transformers==4.47.1
+scipy
+einops
+pyyaml
+huggingface-hub
+encodec
+matplotlib
+pytorch-lightning
+tensorboardX
+soundfile
+jsonargparse
+torchcrepe
+librosa
+loguru
+polars
+natsort
+tqdm
+requests
+sounddevice
+mecab-python3
+unidic-lite
+openai-whisper>=20240930
+uroman
+inflect
+gdown
+psutil
