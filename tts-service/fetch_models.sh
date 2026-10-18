@@ -23,4 +23,10 @@ case ",${TTS_ENGINES:-yarngpt}," in *,openbible,*)
   done
   ;;
 esac
+case ",${TTS_ENGINES:-yarngpt}," in *,kokoro,*)
+  # Kokoro-82M weights and the English voices the service offers, into
+  # $HF_HOME (on the /models volume), so no request waits on a download.
+  python -c "from huggingface_hub import hf_hub_download as d; r='hexgrad/Kokoro-82M'; [d(r, f) for f in ['config.json', 'kokoro-v1_0.pth', 'voices/af_heart.pt', 'voices/af_bella.pt', 'voices/bf_emma.pt']]"
+  ;;
+esac
 exec "$@"

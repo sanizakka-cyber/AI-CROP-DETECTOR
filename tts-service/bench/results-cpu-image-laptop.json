@@ -1,0 +1,68 @@
+{
+ "cpu": "Intel i5-8365U laptop (4 cores/8 threads), mains power",
+ "sentences_per_run": 6,
+ "runs": [
+  {
+   "threads": 1,
+   "lang": "ha",
+   "engine": "openbible",
+   "first_sentence_sec": 20.51,
+   "median_sentence_sec": 20.12,
+   "synth_sec": 115.6,
+   "audio_sec": 49.5,
+   "rtf": 2.33
+  },
+  {
+   "threads": 1,
+   "lang": "en",
+   "engine": "kokoro",
+   "first_sentence_sec": 7.2,
+   "median_sentence_sec": 8.07,
+   "synth_sec": 50.8,
+   "audio_sec": 22.1,
+   "rtf": 2.29
+  },
+  {
+   "threads": 2,
+   "lang": "ha",
+   "engine": "openbible",
+   "first_sentence_sec": 10.28,
+   "median_sentence_sec": 11.95,
+   "synth_sec": 77.2,
+   "audio_sec": 51.9,
+   "rtf": 1.49
+  },
+  {
+   "threads": 2,
+   "lang": "en",
+   "engine": "kokoro",
+   "first_sentence_sec": 4.66,
+   "median_sentence_sec": 5.73,
+   "synth_sec": 42.2,
+   "audio_sec": 22.1,
+   "rtf": 1.91
+  },
+  {
+   "threads": 4,
+   "lang": "ha",
+   "engine": "openbible",
+   "first_sentence_sec": 7.31,
+   "median_sentence_sec": 7.91,
+   "synth_sec": 52.4,
+   "audio_sec": 47.3,
+   "rtf": 1.11
+  },
+  {
+   "threads": 4,
+   "lang": "en",
+   "engine": "kokoro",
+   "first_sentence_sec": 3.58,
+   "median_sentence_sec": 4.82,
+   "synth_sec": 30.2,
+   "audio_sec": 22.1,
+   "rtf": 1.36
+  }
+ ],
+ "load_both_sec": 30.1,
+ "peak_rss_mb_both_loaded": 2050
+}

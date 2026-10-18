@@ -24,6 +24,10 @@ LICENSES = {
                    "credit": "Voices: OpenBibleTTS (McGill-NLP, Mila), trained on Open Bible recordings (CC BY-SA 4.0)",
                    "source": "https://huggingface.co/multilingual-tts",
                    "note": "Trained from scratch (no base model). Attribution required; modified weights must stay CC BY-SA."},
+    "kokoro":     {"license": "Apache-2.0", "commercial_use": True,
+                   "credit": "English voice: Kokoro-82M (hexgrad, Apache-2.0)",
+                   "source": "https://huggingface.co/hexgrad/Kokoro-82M",
+                   "note": "Trained on permissive/non-copyrighted audio per the model card. American and British accents only."},
 }
 
 # Voice names in the YarnGPT2 model card's order (best first). The card spells
@@ -169,11 +173,53 @@ class OpenBibleVitsEngine:
         return np.asarray(wav, dtype=np.float32), int(syn.output_sample_rate)
 
 
+class KokoroEngine:
+    """hexgrad/Kokoro-82M (Apache-2.0), English only, fast on CPU.
+
+    Usage follows the model card: KPipeline(lang_code) then pipeline(text,
+    voice) yielding audio at 24 kHz. lang_code is the voice's first letter
+    (a = American English, b = British English). The service already sends
+    one sentence per call, so Kokoro's own sentence splitting is turned off.
+    Voices are the best-graded English ones in the card's VOICES.md
+    (af_heart A*, af_bella A-, bf_emma B-). Weights, voices and the spaCy
+    English model are fetched at image build time (Dockerfile.openbible)."""
+    name = "kokoro"
+    VOICES = {"en": ["af_heart", "af_bella", "bf_emma"]}
+    REPO = "hexgrad/Kokoro-82M"
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._pipes = {}
+
+    def voices(self) -> dict:
+        return self.VOICES
+
+    def _pipe(self, lang_code):
+        if lang_code not in self._pipes:
+            from kokoro import KPipeline
+            self._pipes[lang_code] = KPipeline(lang_code=lang_code, repo_id=self.REPO)
+        return self._pipes[lang_code]
+
+    def synth(self, text: str, lang: str, voice: str):
+        if lang != "en":
+            raise EngineError("kokoro is English only here")
+        if voice not in self.VOICES["en"]:
+            raise EngineError(f"unknown kokoro voice {voice}")
+        with self._lock:
+            pipe = self._pipe(voice[0])
+            chunks = [np.asarray(r.audio, dtype=np.float32) for r in pipe(text, voice=voice, speed=1.0, split_pattern=None)
+                      if r.audio is not None]
+        if not chunks:
+            raise EngineError("kokoro produced no audio")
+        return np.concatenate(chunks), 24000
+
+
 def enabled_engines() -> dict:
     """Engines named in TTS_ENGINES (default: yarngpt), minus non-commercial ones."""
     allow_nc = os.environ.get("ALLOW_NON_COMMERCIAL_MODELS") == "1"
     wanted = [e.strip() for e in os.environ.get("TTS_ENGINES", "yarngpt").split(",") if e.strip()]
-    available = {"yarngpt": YarnGptEngine, "farmerline": FarmerlineHausaEngine, "openbible": OpenBibleVitsEngine}
+    available = {"yarngpt": YarnGptEngine, "farmerline": FarmerlineHausaEngine, "openbible": OpenBibleVitsEngine,
+                 "kokoro": KokoroEngine}
     out = {}
     for name in wanted:
         if name not in available:

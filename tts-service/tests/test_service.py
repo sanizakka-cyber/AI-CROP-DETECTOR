@@ -163,3 +163,40 @@ def test_openbible_engine_is_licence_safe_and_checks_voices_before_loading(monke
     with pytest.raises(engines.EngineError):
         e.synth("Ina kwana", "ha", "openbible_igbo")
     assert e._syn == {}
+
+
+def test_kokoro_engine_english_only_licence_safe_and_follows_the_model_card(monkeypatch):
+    """Kokoro-82M (Apache-2.0): English only, best-graded voices only, one
+    sentence per call (split_pattern=None), 24 kHz. A fake `kokoro` module
+    stands in for the weights."""
+    import types
+    calls = []
+
+    class FakePipeline:
+        def __init__(self, lang_code, repo_id):
+            calls.append(("init", lang_code, repo_id))
+
+        def __call__(self, text, voice, speed, split_pattern):
+            calls.append(("call", text, voice, split_pattern))
+            yield types.SimpleNamespace(audio=np.ones(2400, dtype=np.float32))
+            yield types.SimpleNamespace(audio=np.ones(1200, dtype=np.float32))
+
+    monkeypatch.setitem(sys.modules, "kokoro", types.SimpleNamespace(KPipeline=FakePipeline))
+    monkeypatch.setenv("TTS_ENGINES", "openbible,kokoro")
+    enabled = engines.enabled_engines()
+    assert set(enabled) == {"openbible", "kokoro"}
+    assert engines.LICENSES["kokoro"]["license"] == "Apache-2.0" and engines.LICENSES["kokoro"]["commercial_use"]
+
+    k = enabled["kokoro"]
+    assert k.voices() == {"en": ["af_heart", "af_bella", "bf_emma"]}
+    with pytest.raises(engines.EngineError):
+        k.synth("Sannu", "ha", "af_heart")
+    with pytest.raises(engines.EngineError):
+        k.synth("Hello", "en", "am_adam")      # low-graded voice, not offered
+    wav, sr = k.synth("The leaves show dark patches.", "en", "af_heart")
+    assert sr == 24000 and wav.shape == (3600,)
+    k.synth("Second sentence.", "en", "af_bella")
+    k.synth("British voice.", "en", "bf_emma")
+    inits = [c for c in calls if c[0] == "init"]
+    assert inits == [("init", "a", "hexgrad/Kokoro-82M"), ("init", "b", "hexgrad/Kokoro-82M")]  # one pipeline per accent
+    assert all(c[3] is None for c in calls if c[0] == "call")

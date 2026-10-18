@@ -1,14 +1,15 @@
-# MSAS FarmAI speech service, OpenBible VITS voices (Hausa, Yoruba, Igbo).
-# Same service code as Dockerfile; separate image because coqui-tts and
-# YarnGPT2 need incompatible transformers versions. CPU only: VITS ran at
-# 1.2-1.4x real time on a 2-thread laptop CPU (bench/).
+# MSAS FarmAI speech service, CPU image: OpenBible VITS (Hausa; Yoruba and
+# Igbo available) and Kokoro-82M (English). Same service code as Dockerfile;
+# separate image because coqui-tts and YarnGPT2 need incompatible
+# transformers versions. On a 2-thread laptop CPU (bench/): OpenBible first
+# Hausa sentence 6-9 s, Kokoro first English sentence about 6 s.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    MODELS_DIR=/models TTS_ENGINES=openbible
+    MODELS_DIR=/models TTS_ENGINES=openbible,kokoro HF_HOME=/models/hf
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg wget ca-certificates \
+ && apt-get install -y --no-install-recommends ffmpeg wget ca-certificates espeak-ng \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /srv
