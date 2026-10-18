@@ -109,11 +109,21 @@ services:
       - key: QA_ADMIN_PASSWORD
         generateValue: true
 
-      # Speech ("Listen to your result") off on staging until Phase 13.1.
+      # Speech ("Listen to your result", PR #157). The CPU speech service
+      # (English Kokoro + Hausa OpenBible) is its own Blueprint,
+      # render.staging-speech.yaml, because it needs a paid instance (4 GB).
+      # Until it exists, translated text works and audio says it is unavailable.
       - key: SPEECH_PREGENERATE
+        value: "true"
+      - key: TTS_CPU_URL
+        value: https://msas-tts-cpu-staging.onrender.com
+      # Copy the speech service's TTS_SERVICE_KEY here (Render -> msas-tts-cpu-staging -> Environment).
+      - key: TTS_CPU_KEY
+        sync: false
+      - key: SPEECH_YARNGPT_ENABLED
         value: "false"
-      - key: TTS_SERVICE_URL
-        value: ""
+      - key: SPEECH_FARMERLINE_CONFIRMED
+        value: "false"
 
       - key: DIAGNOSIS_MIN_CONFIDENCE
         value: "65"
