@@ -22,16 +22,27 @@ class StagingSetupTest extends TestCase
 
     private array $env = [];
 
+    /** Sets a variable everywhere Laravel's env() and getenv() look ($_ENV and $_SERVER win over getenv). */
     private function setEnv(string $k, ?string $v): void
     {
-        $this->env[$k] ??= getenv($k);
-        $v === null ? putenv($k) : putenv("{$k}={$v}");
+        if (!array_key_exists($k, $this->env)) {
+            $this->env[$k] = [getenv($k), $_ENV[$k] ?? null, $_SERVER[$k] ?? null];
+        }
+        if ($v === null) {
+            putenv($k);
+            unset($_ENV[$k], $_SERVER[$k]);
+        } else {
+            putenv("{$k}={$v}");
+            $_ENV[$k] = $_SERVER[$k] = $v;
+        }
     }
 
     protected function tearDown(): void
     {
-        foreach ($this->env as $k => $v) {
-            $v === false ? putenv($k) : putenv("{$k}={$v}");
+        foreach ($this->env as $k => [$get, $env, $server]) {
+            $get === false ? putenv($k) : putenv("{$k}={$get}");
+            if ($env === null) { unset($_ENV[$k]); } else { $_ENV[$k] = $env; }
+            if ($server === null) { unset($_SERVER[$k]); } else { $_SERVER[$k] = $server; }
         }
         parent::tearDown();
     }
