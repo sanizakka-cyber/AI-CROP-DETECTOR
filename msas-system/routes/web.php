@@ -732,6 +732,7 @@ Route::middleware(['auth', 'role:ceo,admin'])->prefix('admin/speech')->name('adm
     Route::post('/glossary/{lang}/import', [SpeechAdminController::class, 'importTerms'])->name('glossary.import');
     Route::delete('/glossary/term/{term}', [SpeechAdminController::class, 'destroyTerm'])->name('glossary.destroy');
     Route::post('/reviewers', [SpeechAdminController::class, 'storeReviewer'])->name('reviewers.store');
+    Route::post('/reviewers/invite', [SpeechAdminController::class, 'inviteReviewer'])->middleware('throttle:20,1')->name('reviewers.invite');
     Route::delete('/reviewers/{reviewer}', [SpeechAdminController::class, 'destroyReviewer'])->name('reviewers.destroy');
     Route::get('/review-results/{lang}', [\App\Http\Controllers\Admin\SpeechReviewController::class, 'results'])->name('review.results');
 });

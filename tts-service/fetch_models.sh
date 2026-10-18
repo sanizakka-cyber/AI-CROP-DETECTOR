@@ -14,7 +14,9 @@ case ",${TTS_ENGINES:-yarngpt}," in *,yarngpt,*)
   ;;
 esac
 case ",${TTS_ENGINES:-yarngpt}," in *,openbible,*)
-  for LANG_DIR in Hausa Yoruba Igbo; do
+  # Each checkpoint is about 950 MB; at launch only Hausa has audio.
+  # Set OPENBIBLE_LANGS="Hausa Yoruba Igbo" for review packs in all three.
+  for LANG_DIR in ${OPENBIBLE_LANGS:-Hausa}; do
     DIR="$MODELS_DIR/openbible/$LANG_DIR"
     mkdir -p "$DIR"
     for F in config.json speakers.pth model_last.pth; do

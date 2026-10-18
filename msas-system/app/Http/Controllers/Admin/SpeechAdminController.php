@@ -12,8 +12,14 @@ use App\Models\SpeechReviewer;
 use App\Models\User;
 use App\Services\Speech\GoLiveRule;
 use App\Services\Speech\Providers\ProviderRegistry;
+use App\Mail\ReviewerInvitationMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
@@ -88,6 +94,49 @@ class SpeechAdminController extends Controller
         $user = User::where('email', $data['email'])->firstOrFail();
         SpeechReviewer::updateOrCreate(['user_id' => $user->id, 'lang' => $data['lang']], ['kind' => $data['kind'], 'active' => true]);
         return back()->with('success', "{$user->name} now reviews {$data['lang']} as " . strtolower(SpeechReviewer::KINDS[$data['kind']]) . '.');
+    }
+
+    /**
+     * Invite a reviewer by name and email. Decision 2026-10-18: accounts are
+     * created only when the product owner sends names and emails, and invites
+     * go through the app. A new account gets a random password nobody sees
+     * and a signed 7-day link to choose their own (staff.first-login, as for
+     * staff). An existing account is assigned and told. No password is shown or sent.
+     */
+    public function inviteReviewer(Request $request)
+    {
+        $data = $request->validate([
+            'first_name' => 'required|string|max:60',
+            'last_name'  => 'required|string|max:60',
+            'email'      => 'required|email|max:255',
+            'lang'       => 'required|string|exists:speech_languages,code',
+            'kind'       => ['required', Rule::in(array_keys(SpeechReviewer::KINDS))],
+        ]);
+        $email = strtolower(trim($data['email']));
+        $user = User::where('email', $email)->first();
+        $link = null;
+        if (!$user) {
+            $user = User::create([
+                'first_name' => $data['first_name'], 'last_name' => $data['last_name'], 'email' => $email,
+                'role' => 'general-user', 'password' => Hash::make(Str::random(48)),
+                'is_active' => true, 'is_verified' => true,
+            ]);
+            $user->forceFill(['force_password_reset' => true, 'email_verified_at' => now()])->save();
+            $link = URL::temporarySignedRoute('staff.first-login', now()->addDays(7), ['user' => $user->id]);
+        }
+        SpeechReviewer::updateOrCreate(['user_id' => $user->id, 'lang' => $data['lang']], ['kind' => $data['kind'], 'active' => true]);
+
+        try {
+            Mail::to($user->email)->send(new ReviewerInvitationMail(
+                $user, SpeechLanguage::findCode($data['lang']), SpeechReviewer::KINDS[$data['kind']], $link));
+            $sent = true;
+        } catch (\Throwable $e) {
+            Log::warning('Reviewer invitation not sent', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+            $sent = false;
+        }
+        return back()->with($sent ? 'success' : 'error', $sent
+            ? "Invitation sent to {$user->email} ({$data['lang']}, " . strtolower(SpeechReviewer::KINDS[$data['kind']]) . ').'
+            : "{$user->email} was assigned, but the invitation email could not be sent. Check the mail settings and invite again.");
     }
 
     public function destroyReviewer(SpeechReviewer $reviewer)

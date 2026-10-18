@@ -176,6 +176,42 @@ class SpeechLaunchDecisionsTest extends TestCase
         Http::assertNothingSent(); // nothing translated or synthesised inside the scan
     }
 
+    public function test_reviewers_are_invited_through_the_app_and_no_password_is_ever_shown(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $admin = User::factory()->create(['role' => 'admin']);
+        $res = $this->actingAs($admin)->post(route('admin.speech.reviewers.invite'), [
+            'first_name' => 'Hauwa', 'last_name' => 'Sani', 'email' => 'Hauwa.Reviewer@example.org', 'lang' => 'ha', 'kind' => 'native',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $u = User::where('email', 'hauwa.reviewer@example.org')->firstOrFail();
+        $this->assertSame('general-user', $u->role);
+        $this->assertTrue((bool) $u->force_password_reset);
+        $this->assertSame('native', SpeechReviewer::where('user_id', $u->id)->where('lang', 'ha')->value('kind'));
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ReviewerInvitationMail::class, function ($m) use ($u) {
+            $html = $m->render();
+            return $m->hasTo($u->email) && $m->setPasswordLink !== null
+                && str_contains($m->setPasswordLink, 'signature=') && str_contains($html, 'Set my password')
+                && !preg_match('/password\s*[:=]/i', strip_tags($html));
+        });
+        $this->assertStringNotContainsString('password:', strtolower((string) session('success')));
+
+        // An existing account is assigned and told; its password is untouched.
+        $existing = User::factory()->create(['role' => 'extension-officer', 'password' => \Illuminate\Support\Facades\Hash::make('their-own-password-1')]);
+        $this->actingAs($admin)->post(route('admin.speech.reviewers.invite'), [
+            'first_name' => 'A', 'last_name' => 'B', 'email' => $existing->email, 'lang' => 'ha', 'kind' => 'expert',
+        ])->assertSessionHas('success');
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('their-own-password-1', $existing->fresh()->password));
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ReviewerInvitationMail::class, fn ($m) => $m->hasTo($existing->email) && $m->setPasswordLink === null);
+
+        // Only admins can invite.
+        $this->actingAs(User::factory()->create(['role' => 'farmer']))->post(route('admin.speech.reviewers.invite'), [
+            'first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.org', 'lang' => 'ha', 'kind' => 'native',
+        ]);
+        $this->assertNull(User::where('email', 'x@example.org')->first());
+    }
+
     // ── go-live: packs of 25, two approved packs ─────────────────────────────
 
     public function test_packs_are_25_results_spread_over_the_four_scan_types(): void

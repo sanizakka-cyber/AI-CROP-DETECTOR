@@ -87,6 +87,16 @@
                     <select name="kind" class="rounded-lg border-slate-300">@foreach(\App\Models\SpeechReviewer::KINDS as $k => $label)<option value="{{ $k }}">{{ $label }}</option>@endforeach</select>
                     <button class="bg-slate-800 text-white font-bold px-4 py-2 rounded-lg">Assign reviewer</button>
                 </form>
+                <form method="POST" action="{{ route('admin.speech.reviewers.invite') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3 mt-3" data-reviewer-invite="1">
+                    @csrf
+                    <input name="first_name" placeholder="First name" class="rounded-lg border-slate-300" required>
+                    <input name="last_name" placeholder="Last name" class="rounded-lg border-slate-300" required>
+                    <input name="email" type="email" placeholder="Email" class="rounded-lg border-slate-300" required>
+                    <select name="lang" class="rounded-lg border-slate-300">@foreach($languages as $l)<option value="{{ $l->code }}">{{ $l->name_english }}</option>@endforeach</select>
+                    <select name="kind" class="rounded-lg border-slate-300">@foreach(\App\Models\SpeechReviewer::KINDS as $k => $label)<option value="{{ $k }}">{{ $label }}</option>@endforeach</select>
+                    <button class="bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg">Invite by email</button>
+                </form>
+                <p class="text-xs text-slate-500 mt-1">Invite creates the account if needed and emails a link to choose a password. No password is shown or sent.</p>
             </div>
 
             <div>
