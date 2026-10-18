@@ -28,11 +28,11 @@ const DEFAULT_WHATSAPP = 'https://wa.me/2348129582957';
 /** Renders a labeled field, or an explicit "Not applicable" note instead of
  * leaving the section blank — per the platform-parity requirement that
  * every diagnosis-result category always show something. */
-function InfoField({ label, value }) {
+function InfoField({ label, value, testID }) {
   return (
     <View style={{ marginBottom: Spacing.sm }}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || 'Not applicable for this diagnosis.'}</Text>
+      <Text style={styles.infoValue} testID={testID}>{value || 'Not applicable for this diagnosis.'}</Text>
     </View>
   );
 }
@@ -323,7 +323,16 @@ export default function DiagnosisDetailScreen() {
       ? assessment.possibleConditions
       : [...new Set([result.primaryDiagnosis, ...(assessment.alternativeFindings || []).map(a => a.name)].filter(Boolean))].slice(0, 3))
     : [];
-  const isEmergency = result.severity === 'emergency';
+  // One severity value (server: severity_level). `severity` is how bad the
+  // condition is; `urgency` is how soon to act, and is shown separately.
+  // Before the server fix, `severity` carried the urgency; an old server
+  // without `urgency` still has it there, so fall back to it only then.
+  const severity = result.urgency !== undefined ? result.severity : (result.severityLevel ? String(result.severityLevel).toLowerCase() : null);
+  const urgency = result.urgency !== undefined ? result.urgency : result.severity;
+  const isEmergency = urgency === 'emergency' || severity === 'critical';
+  // Buffer zone: between the Not-certain line and confirmBelow the result is
+  // "Likely X", with a request to confirm (server decides; older servers: never).
+  const needsConfirmation = !notCertain && assessment.needsConfirmation === true;
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
@@ -335,7 +344,9 @@ export default function DiagnosisDetailScreen() {
     result.needsVetVisit ||
     isUncertain ||
     (hasConfidence && confidence < 70) ||
-    ['severe', 'emergency'].includes(result.severity);
+    needsConfirmation ||
+    ['severe', 'critical'].includes(severity) ||
+    ['high', 'emergency'].includes(urgency);
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -345,10 +356,11 @@ export default function DiagnosisDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.resultTitle}>{t('result')}</Text>
         <Text style={styles.diagnosisName} testID="diagnosis-name">
-          {notCertain ? t('notCertain') : (isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis)}
+          {notCertain ? t('notCertain') : `${needsConfirmation ? `${t('likely')}: ` : ''}${isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis}`}
         </Text>
         <View style={styles.metaRow}>
-          <SeverityBadge severity={result.severity} />
+          {severity && <SeverityBadge severity={severity} label={t('severity')} testID="header-severity" />}
+          {urgency && <SeverityBadge severity={urgency} label={t('urgency')} testID="header-urgency" />}
           <View style={styles.confBadge}>
             <Text style={styles.confText}>{hasConfidence ? `${confidence}% ${isHausa ? 'tabbaci' : 'confidence'}` : (isHausa ? 'Babu maki' : 'No score')}</Text>
           </View>
@@ -442,7 +454,7 @@ export default function DiagnosisDetailScreen() {
         <InfoField label="Scientific Name" value={diag.scientificName} />
         <InfoField label="Plant/Body Part" value={diag.detectedPart} />
         <InfoField label="Health Status" value={result.healthStatus} />
-        <InfoField label="Severity" value={result.severityLevel} />
+        <InfoField label="Severity" value={result.severityLevel} testID="details-severity" />
         <InfoField label="Confidence" value={result.confidenceLabel} />
         <InfoField label="Symptoms Identified" value={result.symptomsIdentified} />
         <InfoField label="Environmental Factors" value={result.environmentalFactors} />
@@ -515,6 +527,12 @@ export default function DiagnosisDetailScreen() {
       </Card>
 
       <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}>{aiDisclaimer}</View>
+
+      {needsConfirmation && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="likely-confirm-card">
+          <Text style={[styles.treatBody, { fontWeight: '700' }]}>{t('likelyConfirm')}</Text>
+        </Card>
+      )}
 
       {notCertain && (
         <Card style={[styles.card, styles.uncertainCard]} testID="not-certain-card">

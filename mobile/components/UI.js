@@ -29,24 +29,32 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-export function Card({ children, style }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function Card({ children, style, testID }) {
+  return <View style={[styles.card, style]} testID={testID}>{children}</View>;
 }
 
 // ── SeverityBadge ─────────────────────────────────────────────────────────────
+// Severity keys (none..critical) and urgency keys (low..emergency) share
+// one colour scale. Pass `label` ("Severity" / "Urgency") so the two are
+// never shown as the same unlabelled badge.
 const SEVERITY_COLORS = {
+  none:      { bg: '#D1FAE5', text: '#065F46' },
   mild:      { bg: '#D1FAE5', text: '#065F46' },
+  low:       { bg: '#D1FAE5', text: '#065F46' },
   moderate:  { bg: '#FEF3C7', text: '#92400E' },
+  medium:    { bg: '#FEF3C7', text: '#92400E' },
   severe:    { bg: '#FEE2E2', text: '#991B1B' },
+  high:      { bg: '#FEE2E2', text: '#991B1B' },
+  critical:  { bg: '#991B1B', text: '#FFFFFF' },
   emergency: { bg: '#991B1B', text: '#FFFFFF' },
 };
 
-export function SeverityBadge({ severity }) {
+export function SeverityBadge({ severity, label, testID }) {
   const colors = SEVERITY_COLORS[severity] || SEVERITY_COLORS.mild;
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }]}>
+    <View style={[styles.badge, { backgroundColor: colors.bg }]} testID={testID}>
       <Text style={[styles.badgeText, { color: colors.text }]}>
-        {severity?.toUpperCase()}
+        {label ? `${label}: ` : ''}{severity?.toUpperCase()}
       </Text>
     </View>
   );

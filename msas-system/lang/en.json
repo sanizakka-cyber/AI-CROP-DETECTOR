@@ -331,6 +331,8 @@
   "Remove & try again": "Remove & try again",
   "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.": "Claude Vision is identifying the subject and examining for diseases. This may take 15–30 seconds.",
   "Not certain": "Not certain",
+  "Likely": "Likely",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.": "The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.",
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "The AI is not sure enough to give one diagnosis. These are the possible conditions:",
   "Possible conditions": "Possible conditions",
   "Please confirm with a vet or extension officer before treating.": "Please confirm with a vet or extension officer before treating.",

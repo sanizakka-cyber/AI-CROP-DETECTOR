@@ -63,6 +63,8 @@ class Diagnosis extends Model
         'contract_version',
         'client_scan_id',
         'organic_options',
+        // Phase 12.2: how the repeat analyses agreed (passes, per-pass findings and confidences)
+        'ai_consensus',
         // Optional research metadata (spec 6D / 7)
         'research_metadata',
         'consent_research_use',
@@ -76,6 +78,7 @@ class Diagnosis extends Model
         'image_issues'          => 'array',
         'photo_tips'            => 'array',
         'alternative_findings'  => 'array',
+        'ai_consensus'          => 'array',
     ];
 
     /**
@@ -121,8 +124,8 @@ class Diagnosis extends Model
         $pct = (int) round($this->confidence_score);
         $tier = match (true) {
             $pct >= 85 => 'High Confidence',
-            $pct >= 70 => 'Good Confidence',
-            $pct >= self::minConfidence() => 'Acceptable / Review if necessary',
+            $pct >= self::confirmBelow() => 'Good Confidence',
+            $pct >= self::minConfidence() => 'Likely, please confirm',
             default    => 'Low Confidence / Expert Review Required',
         };
 
@@ -147,6 +150,46 @@ class Diagnosis extends Model
             && (float) $this->confidence_score < self::minConfidence()
             && in_array($this->assessment_outcome, [null, 'assessed'], true)
             && !in_array($this->status, ['pending', 'needs_review'], true);
+    }
+
+    /** Upper edge of the "Likely X, please confirm" band (config/diagnosis.php). */
+    public static function confirmBelow(): float
+    {
+        return max(self::minConfidence(), (float) config('diagnosis.confirm_below', 75));
+    }
+
+    /**
+     * Buffer zone (Phase 12.2): an assessed result at or above the
+     * Not-certain line but below confirm_below is shown as "Likely X" with a
+     * request to confirm with a vet or extension officer, instead of a
+     * plain diagnosis. Run-to-run variation of a few points then moves a
+     * photo between "Likely X" and "X", never between "X" and "Not certain".
+     */
+    public function getNeedsConfirmationAttribute(): bool
+    {
+        return $this->confidence_score !== null
+            && (float) $this->confidence_score >= self::minConfidence()
+            && (float) $this->confidence_score < self::confirmBelow()
+            && in_array($this->assessment_outcome, [null, 'assessed'], true)
+            && !in_array($this->status, ['pending', 'needs_review'], true);
+    }
+
+    /** severity_level is the only stored severity; normalised on every write (App\Support\Severity). */
+    public function setSeverityLevelAttribute($value): void
+    {
+        $this->attributes['severity_level'] = \App\Support\Severity::normalize($value);
+    }
+
+    /** none|mild|moderate|severe|critical or null: the one severity value every client shows. */
+    public function getSeverityKeyAttribute(): ?string
+    {
+        return \App\Support\Severity::key($this->severity_level);
+    }
+
+    /** low|medium|high|emergency or null. Urgency (how soon to act) is not severity. */
+    public function getUrgencyKeyAttribute(): ?string
+    {
+        return $this->urgency_level ? strtolower(trim($this->urgency_level)) : null;
     }
 
     /** The top possible conditions: the AI's leading finding, then the alternatives it considered. */

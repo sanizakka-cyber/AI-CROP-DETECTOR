@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import base64
@@ -20,6 +21,7 @@ import anthropic
 import uvicorn
 import logging
 
+from consensus import combine
 from diagnosis_contract import build_prompt, finalize, schema_for
 
 app = FastAPI(title="MSAS FarmAI Inference Engine", version="5.0.0")
@@ -779,10 +781,22 @@ async def _run_structured(mode: str, image_blocks: List[dict], prompt: str) -> t
     return data, text
 
 
-async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict], prompt: str, legacy):
+def _scan_passes() -> int:
+    """Repeat analyses per scan (consensus.py). 1 turns consensus off."""
     try:
-        data, text = await _run_structured(mode, image_blocks, prompt)
-    except _SchemaRejected as e:
+        return max(1, min(5, int(os.environ.get("SCAN_PASSES", "3"))))
+    except ValueError:
+        return 3
+
+
+async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict], prompt: str, legacy):
+    # The same request N times in parallel, so wall time stays close to one
+    # call; the results are combined by vote and median (consensus.py).
+    passes = _scan_passes()
+    outcomes = await asyncio.gather(*(_run_structured(mode, image_blocks, prompt) for _ in range(passes)),
+                                    return_exceptions=True)
+    if any(isinstance(o, _SchemaRejected) for o in outcomes):
+        e = next(o for o in outcomes if isinstance(o, _SchemaRejected))
         _log.warning("structured %s request rejected, using legacy prompt: %s", mode, e)
         for img in images:
             await img.seek(0)
@@ -790,7 +804,17 @@ async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict
         if isinstance(result, dict):
             result["contract_version"] = "legacy-fallback"
         return result
-    return {**_model_meta(AI_MODEL, text), **finalize(mode, data)}
+    done = [o for o in outcomes if not isinstance(o, BaseException)]
+    if not done:
+        # Every pass failed: report the first failure as before.
+        raise next(o for o in outcomes if isinstance(o, BaseException))
+    finalized = []
+    for data, text in done:
+        r = {**_model_meta(AI_MODEL, text), **finalize(mode, data)}
+        finalized.append(r)
+    if len(done) < passes:
+        _log.warning("%s scan: %d of %d passes failed, combining the rest", mode, passes - len(done), passes)
+    return combine(finalized, attempted=passes)
 
 
 def _hint(**pairs) -> str:

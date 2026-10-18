@@ -398,6 +398,8 @@
   "Your browser does not support location capture. Please select your state/LGA manually.": "Burauzarka ba ya goyon bayan ɗaukar wuri. Da fatan ka zaɓi jiharka/ƙaramar hukumarka.",
   "e.g., Funtua town": "misali, garin Funtua",
   "Not certain": "Ba a tabbata ba",
+  "Likely": "Wataƙila",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.": "AI na ganin hakan ne mai yiwuwa, amma bai tabbata sosai ba. Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "AI ba ta da isasshen tabbaci don ba da cuta ɗaya. Ga cututtukan da za su iya kasancewa:",
   "Possible conditions": "Cututtukan da za su iya kasancewa",
   "Please confirm with a vet or extension officer before treating.": "Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
