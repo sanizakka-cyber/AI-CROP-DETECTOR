@@ -27,6 +27,7 @@ GenerateScanAudio job
   │                      pauses 250 ms (comma) / 450 ms (full stop) / 700 ms (between sections)
   │  TtsProvider::synthesize(segments, lang, voice, rate)
   │     ├─ yarngpt / farmerline → tts-service (self-hosted, FastAPI, Docker)
+  │     ├─ openbible → tts-service built from Dockerfile.openbible (its own container, TTS_OPENBIBLE_URL)
   │     └─ elevenlabs (optional cloud fallback per language)
   ▼
 scan_result_audio: mono MP3 ~40 kbps on the speech disk, keyed by hash(text+lang+voice+provider+rate)
@@ -65,6 +66,9 @@ Access: the scan's owner (farmer, dealer or anyone who scanned), or a reviewer (
    | `TTS_SERVICE_URL` | e.g. `http://msas-tts:8002` |
    | `TTS_SERVICE_KEY` | a long random string, the same value as in the speech service |
    | `SPEECH_DISK` | defaults to `r2` when `R2_BUCKET` is set (served by 30-minute signed URLs), otherwise `local` (served by a signed Laravel route) |
+   | `TTS_OPENBIBLE_URL`, `TTS_OPENBIBLE_KEY` | optional, the OpenBible VITS container (Hausa, Yoruba, Igbo) |
+   | `SPEECH_FARMERLINE_CONFIRMED` | leave `false` until Farmerline confirms the licence in writing (Decision 3) |
+   | `SPEECH_GO_LIVE_*` | optional overrides of the go-live rule (step 7) |
    | `SPEECH_PREGENERATE` | optional, see Decisions |
    | `ELEVENLABS_API_KEY`, `ELEVENLABS_MODEL` | optional cloud fallback |
 
@@ -73,9 +77,21 @@ Access: the scan's owner (farmer, dealer or anyone who scanned), or a reviewer (
    - Add glossary terms.
    - Add protected product names to the "*" list.
 7. **Native-speaker review.** For each of Hausa, Yoruba and Igbo:
-   - Extension staff open 50 real results in the language on the web history page, listen, and press "Mark translation reviewed".
+   - The product owner creates reviewer accounts. An admin assigns each one to a language as a native speaker or an expert (extension officer or vet) at `/admin/speech/review`.
+   - Build a review pack: `php artisan speech:build-review-pack ha --candidate=yarngpt:hausa_female1 --candidate=openbible:openbible_hausa`.
+     - The pack holds real scans of every type (crop, livestock, soil, pest), anonymised: no farmer name, phone or location.
+     - It takes `--per-type` scans of each type, 5 by default, so 20 per pack. Use `--per-type=13` or several packs to reach 50.
+     - Each scan is translated by the production translator. Translations that fail the integrity checks are skipped, never fixed by hand.
+     - Every candidate voice speaks each item. The pack also covers numbers and units as they will be spoken, screen labels, the safety note and the pronunciation lexicon.
+   - Reviewers hear voices as A/B/C in a different order per item. Nothing on the page names the provider or voice.
+   - They rate translation accuracy, and each voice's naturalness, pronunciation and speed. They mark errors by selecting text, and choose a voice.
    - Glossary and pronunciation fixes go into `/admin/speech`.
-   - At 50 reviewed results, the admin can set the language to **live**. Until then farmers do not see it.
+   - **Go-live rule** (`config/speech.php` → `go_live`; overridable with `SPEECH_GO_LIVE_*`):
+     - at least 50 scan results reviewed by both a native speaker and an expert, with at least 5 of each scan type;
+     - average accuracy of 4 or more, and average naturalness of the chosen voice of 4 or more;
+     - no dose or chemical errors.
+
+     Setting a language **live** is refused until it passes, and farmers do not see it until then. The results page shows each check, the unblinded voices and every marked error.
    - English is live from the start.
 
 ## Adding a language (no code change)
@@ -91,10 +107,23 @@ Access: the scan's owner (farmer, dealer or anyone who scanned), or a reviewer (
   - **PHP (CI):** the preprocessor, integrity checks, the full translate-then-audio job flow, caching, the integrity rejection, voice-service failure and fallback, access rules, feedback, the review gate, admin, the web panel and pre-generation.
   - **Python:** the AI-engine endpoint, and the speech service with a fake engine plus real ffmpeg encoding.
   - **Jest:** the app panel (picker, no auto-play, polling, highlighting, speed, download and offline play, fallback, feedback).
+- **Run for real (2026-10-17, laptop CPU, results in `tts-service/bench/`):**
+  - YarnGPT2 and OpenBible VITS both produced speech in every launch language with no failed sentences. One Igbo test sentence was excluded from the YarnGPT2 run.
+  - That first run found four start-up bugs: wrong speaker file names, the import path, an unpinned `outetts`, and a build failure from `pesq`. All four are fixed, and CI now imports the YarnGPT2 runtime.
+  - **Speed, 2 CPU threads (i5-8365U):**
+
+    | Engine | Language | First sentence ready | Full test result | Compute per second of speech |
+    |---|---|---|---|---|
+    | YarnGPT2 | en | 71 s (55 s on mains power) | 18 min | 28× |
+    | YarnGPT2 | ha | 5.5 min | 61 min | 68× |
+    | YarnGPT2 | yo | 4 min | 55 min | 88× |
+    | YarnGPT2 | ig | 3.6 min | 57 min | 80× |
+    | OpenBible VITS | ha / yo / ig | 6–9 s | 1.3–2 min | 1.2–1.4× |
+
 - **Not verified:**
-  - Real YarnGPT2 synthesis. The model was not run in this environment, so speech quality, speed and pronunciation are untested.
-  - Real translation quality in Hausa, Yoruba and Igbo. That is what the native-speaker review is for.
-  - The "~10 seconds on 3G" target (see Decisions).
+  - How the speech sounds: quality and pronunciation in every language. Only native speakers can judge this, in the review packs.
+  - Real translation quality in Hausa, Yoruba and Igbo. That is also what the native-speaker review is for.
+  - Speed on the production host or on a GPU. The "~10 seconds on 3G" target is out of reach for YarnGPT2 on CPU (see Decisions).
 - **Unreviewed wording.** These are written in the target language but not reviewed by native speakers:
   - the Hausa and Igbo number words and unit words;
   - the UI strings and section headings in Hausa, Yoruba and Igbo.
@@ -106,8 +135,10 @@ Access: the scan's owner (farmer, dealer or anyone who scanned), or a reviewer (
 1. **Where the speech service runs, and the 10-second target.**
    - YarnGPT2 is a 0.4B-parameter model that generates audio step by step. The model card recommends 5 beams for Hausa, Yoruba and Igbo, which multiplies the work.
    - On a CPU server, a full result will take well over 10 seconds; expect minutes for long results. Render has no GPUs.
+   - Measured: on a laptop CPU, YarnGPT2 took 4 to 5.5 minutes for the first Hausa, Yoruba or Igbo sentence. OpenBible VITS took 6 to 9 seconds (see the table above).
    - Options:
      - **(a)** a GPU host for `tts-service`, e.g. a GPU cloud VM or a serverless GPU platform;
+     - **(a2)** OpenBible VITS on CPU for Hausa, Yoruba and Igbo, if reviewers accept its voices. It has a Bible-reading style, one voice per language, and a CC-BY-SA licence that requires attribution;
      - **(b)** `SPEECH_PREGENERATE=true`, which prepares text and audio in the farmer's saved language right after every scan, so it is ready when they open the result;
      - **(c)** both.
    - Text appears within seconds either way, and cached replays are instant.
@@ -116,6 +147,6 @@ Access: the scan's owner (farmer, dealer or anyone who scanned), or a reviewer (
 4. **YarnGPT2 model card inconsistency.** The card lists Yoruba, Igbo and Hausa voices but says in its "out of scope" section that it is unsuitable for languages other than English. Native-speaker review must decide whether its Hausa, Yoruba and Igbo voices are good enough. If not, choose a cloud provider for those languages, which costs money per use.
 5. **Default voices.** The first-listed (most stable) voice per language: en `idera`, ha `hausa_female1`, yo `yoruba_male2`, ig `igbo_female2`. Choose male or female per language after listening.
 6. **English as the single source.** The spec asks for English as the source of truth. Today the AI writes each result in the language the farmer scanned in, and that is kept: switching every scan to English first would change what Hausa-speaking farmers see on the full report today. Translation works from either. Decide whether to switch scans to English-only. That is a one-line change to the scan request, but it changes the full report screen.
-7. **Reviewers.** Who are the native-speaker reviewers for each language, and is 50 reviewed results the right bar?
+7. **Reviewers.** Who are the native-speaker and expert reviewers for each language? Are the go-live thresholds right: 50 results, 5 per scan type, average scores of 4 out of 5, and no dose errors?
 8. **Old narration endpoints.** `/diagnostics/{id}/narration` (Spitch, whose base URL was never verified) and `/diagnostics/translate` are no longer used by the web page, which used to send result text to a free third-party translation service. Remove them after this ships.
 9. **Retention.** How long to keep generated audio files. Database rows are deleted with the scan, but the files are not: they are shared between scans by content hash, so they stay until a cleanup job removes files no row points to. That job is not built yet.
