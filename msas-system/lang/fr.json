@@ -423,6 +423,8 @@
   "Safety note": "Note de sécurité",
   "Marked reviewed": "Marquée comme vérifiée",
   "Not certain": "Pas certain",
+  "Likely": "Probable",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.": "L'IA pense que c'est probable, mais n'en est pas tout à fait sûre. Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",
   "The AI is not sure enough to give one diagnosis. These are the possible conditions:": "L'IA n'est pas assez sûre pour donner un seul diagnostic. Voici les problèmes possibles :",
   "Possible conditions": "Problèmes possibles",
   "Please confirm with a vet or extension officer before treating.": "Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",

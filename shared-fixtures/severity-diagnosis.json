@@ -1,0 +1,41 @@
+{
+  "_about": "Phase 12.2: the scan from the bug report, severity Moderate with urgency High. Read by BOTH suites: msas-system/tests/Feature/SeverityConsistencyTest.php checks the API returns exactly api.aiResult's severity and urgency fields for this record; mobile/app/diagnosis/__tests__/severity.test.js renders api and checks the header badge, the details row and the records list all say Moderate, and urgency is shown separately, labelled.",
+  "record": {
+    "type": "plant",
+    "status": "reviewed",
+    "language": "en",
+    "subject_name": "Tomato",
+    "disease_name": "Late blight",
+    "confidence_score": 82,
+    "severity_level": "Moderate",
+    "urgency_level": "High",
+    "assessment_outcome": "assessed",
+    "image_quality": "good",
+    "image_issues": [],
+    "photo_tips": [],
+    "alternative_findings": []
+  },
+  "api": {
+    "type": "crop",
+    "status": "reviewed",
+    "subjectName": "Tomato",
+    "aiResult": {
+      "primaryDiagnosis": "Late blight",
+      "confidence": 82,
+      "severity": "moderate",
+      "severityLevel": "Moderate",
+      "urgency": "high",
+      "urgencyLevel": "High"
+    },
+    "assessment": {
+      "outcome": "assessed",
+      "imageIssues": [],
+      "photoTips": [],
+      "alternativeFindings": [],
+      "notCertain": false,
+      "needsConfirmation": false,
+      "possibleConditions": []
+    }
+  },
+  "historyRow": { "id": 7, "status": "reviewed", "type": "plant", "subject_name": "Tomato", "severity_level": "Moderate", "severity": "moderate", "urgency_level": "High", "created_at": "2026-10-18T10:00:00Z" }
+}

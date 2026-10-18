@@ -47,8 +47,10 @@
     "aiResult": {
       "primaryDiagnosis": "Late blight (Phytophthora infestans)",
       "confidence": 78,
-      "severity": "high",
+      "severity": "moderate",
       "severityLevel": "Moderate",
+      "urgency": "high",
+      "urgencyLevel": "High",
       "healthStatus": "Diseased",
       "symptomsIdentified": "dark water-soaked lesions, white growth on leaf underside",
       "explanation": "Water-soaked lesions with white sporulation are typical of late blight"

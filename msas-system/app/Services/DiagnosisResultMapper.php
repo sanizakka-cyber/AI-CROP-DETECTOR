@@ -132,7 +132,8 @@ class DiagnosisResultMapper
             'scientific_name'           => $aiResult['scientific_name'] ?? $aiResult['latin_name']  ?? null,
             'detected_part'             => $aiResult['detected_part']   ?? $aiResult['body_part']   ?? null,
             'health_status'             => $healthStatus,
-            'severity_level'            => $aiResult['severity']        ?? $aiResult['severity_level'] ?? null,
+            // The one severity value (App\Support\Severity); urgency stays separate.
+            'severity_level'            => \App\Support\Severity::normalize($aiResult['severity'] ?? $aiResult['severity_level'] ?? null),
             // Core
             'disease_name'              => $aiResult['disease'] ?? $aiResult['pest_name'] ?? $aiResult['condition'] ?? $aiResult['diagnosis'] ?? $aiResult['disease_name'] ?? $aiResult['label'] ?? self::outcomeHeadline($outcome),
             'confidence_score'          => $confidenceScore,
@@ -182,6 +183,8 @@ class DiagnosisResultMapper
             'contract_version'          => $aiResult['contract_version'] ?? null,
             // Kept in best_practices too (above) so older app builds still show it.
             'organic_options'           => self::organicOptions($aiResult),
+            // Phase 12.2: how the engine's repeat analyses agreed; absent from older engines.
+            'ai_consensus'              => is_array($aiResult['consensus'] ?? null) ? $aiResult['consensus'] : null,
         ];
     }
 
@@ -280,6 +283,7 @@ class DiagnosisResultMapper
             'alternative_findings'      => null,
             'what_cannot_be_confirmed'  => null,
             'contract_version'          => null,
+            'ai_consensus'              => null,
         ];
     }
 }

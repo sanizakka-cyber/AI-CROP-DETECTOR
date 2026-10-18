@@ -122,3 +122,16 @@ test('the Add Animal button opens the add-animal route', async () => {
   fireEvent.press(await screen.findByText('+ addAnimal'));
   expect(mockPush).toHaveBeenCalledWith('/animals/add');
 });
+
+// Phase 12.2: the list badge is the severity (severity_level), the same value
+// as the result screen's header and details, never the urgency.
+test('the records badge shows the severity, not the urgency', async () => {
+  const row = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../../../shared-fixtures/severity-diagnosis.json'), 'utf8')).historyRow;
+  diagnoseAPI.history.mockResolvedValue({ data: [row] });
+  animalsAPI.list.mockResolvedValue({ data: [] });
+  render(<RecordsScreen />);
+  const badge = await screen.findByTestId('records-severity');
+  const text = badge.findAll(n => n.props && typeof n.props.children !== 'undefined').map(n => [].concat(n.props.children).filter(c => typeof c === 'string').join('')).join(' ');
+  expect(text).toContain('MODERATE');
+  expect(text).not.toContain('HIGH');
+});

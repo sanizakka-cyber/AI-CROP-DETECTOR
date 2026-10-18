@@ -26,6 +26,9 @@ const en = {
     notCertainBody: "The AI is not sure enough to give one diagnosis. These are the possible conditions:",
     possibleConditions: "Possible conditions",
     confirmWithExpert: "Please confirm with a vet or extension officer before treating.",
+    urgency: "Urgency",
+    likely: "Likely",
+    likelyConfirm: "The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.",
     aiDisclaimer: "AI guidance can be wrong; confirm with an expert."
   }
 };
@@ -55,6 +58,9 @@ const ha = {
     notCertainBody: "AI ba ta da isasshen tabbaci don ba da cuta ɗaya. Ga cututtukan da za su iya kasancewa:",
     possibleConditions: "Cututtukan da za su iya kasancewa",
     confirmWithExpert: "Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
+    urgency: "Gaggawa",
+    likely: "Wataƙila",
+    likelyConfirm: "AI na ganin hakan ne mai yiwuwa, amma bai tabbata sosai ba. Don Allah ka tabbatar da likitan dabbobi ko jami'in faɗakarwa kafin ka yi magani.",
     aiDisclaimer: "Shawarar AI na iya yin kuskure; ka tabbatar da ƙwararre."
   }
 };
@@ -171,6 +177,9 @@ const fr = {
     notCertainBody: "L'IA n'est pas assez sûre pour donner un seul diagnostic. Voici les problèmes possibles :",
     possibleConditions: "Problèmes possibles",
     confirmWithExpert: "Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",
+    urgency: "Urgence",
+    likely: "Probable",
+    likelyConfirm: "L'IA pense que c'est probable, mais n'en est pas tout à fait sûre. Veuillez confirmer avec un vétérinaire ou un agent de vulgarisation avant de traiter.",
     aiDisclaimer: "Les conseils de l'IA peuvent être erronés ; confirmez auprès d'un expert."
   }
 };

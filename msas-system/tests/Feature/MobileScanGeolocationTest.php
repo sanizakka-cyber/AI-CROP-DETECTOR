@@ -122,7 +122,7 @@ class MobileScanGeolocationTest extends TestCase
         $diagnosis = Diagnosis::first();
 
         // Bypass the 24h cache (which keys only on ID, not owner) to force the DB-fallback ownership check.
-        cache()->forget("diagnosis:{$diagnosis->id}");
+        cache()->forget("diagnosis:v2:{$diagnosis->id}");
 
         $response = $this->withHeaders($this->apiHeaders($other))->getJson("/api/diagnose/{$diagnosis->id}");
         $response->assertStatus(404);

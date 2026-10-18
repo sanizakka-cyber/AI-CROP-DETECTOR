@@ -101,3 +101,33 @@ def test_compare_prints_per_condition_change():
     after = {"livestock": {"conditions": {"Lumpy skin disease": {"accuracy": 0.65}}}}
     out = compare(before, after)
     assert "livestock/Lumpy skin disease" in out and "+0.250" in out
+
+
+# ── Phase 12.2: per-photo spread, the farmer's screen, before/after ──────────
+from run_eval import compare_photos, per_photo, photo_table  # noqa: E402
+
+
+def test_per_photo_reports_spread_and_whether_the_farmer_saw_the_same_screen():
+    rows = [_row(expected="Late blight")]
+    runs = [[_res(disease="Late blight", conf=c)] for c in (65, 78, 70, 64, 72)]
+    p = per_photo(rows, runs, min_confidence=65, confirm_below=75)[0]
+    assert p["same_top_finding"] is True
+    assert p["spread"] == 14
+    assert p["shown_as"] == ["likely_confirm", "diagnosis", "likely_confirm", "not_certain", "likely_confirm"]
+    assert p["same_screen"] is False
+    assert "FAIL" in photo_table([p]) and "0/1 photos meet the target" in photo_table([p])
+
+
+def test_compare_photos_shows_before_and_after_per_photo():
+    before = [{"image": "a.jpg", "same_top_finding": True, "spread": 13.0}]
+    after = [{"image": "a.jpg", "same_top_finding": True, "spread": 2.0}]
+    out = compare_photos(before, after)
+    assert "True / 13.0" in out and "True / 2.0" in out
+    assert "after: 1/1 photos meet the target" in out and "before: 0/1" in out
+
+
+def test_unlabelled_photos_are_allowed_for_consistency_runs(tmp_path):
+    (tmp_path / "a.jpg").write_bytes(b"x")
+    (tmp_path / "m.csv").write_text("image,mode,expected,synonyms,expected_outcome\na.jpg,crop,,,\n", encoding="utf-8")
+    _, errors = load_manifest(str(tmp_path / "m.csv"), labels_required=False)
+    assert errors == []

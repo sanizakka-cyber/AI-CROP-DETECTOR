@@ -1,0 +1,39 @@
+#!/bin/sh
+# Blocks a commit that adds a secret (Phase 12.2, after the 14 July 2026
+# keystore-password leak). Install once per clone:
+#     git config core.hooksPath .githooks
+# Uses gitleaks with the repo rules (.gitleaks.toml) when it is installed
+# (on PATH, or at $GITLEAKS); otherwise a smaller built-in check still blocks
+# keystores, credential dumps and the secret shapes that leaked here before.
+# CI (.github/workflows/secret-scan.yml) runs the full scan on every push.
+
+GL="${GITLEAKS:-$(command -v gitleaks 2>/dev/null)}"
+if [ -n "$GL" ] && [ -x "$GL" ]; then
+  if ! "$GL" git --pre-commit --staged --config .gitleaks.toml --redact --no-banner --log-level warn; then
+    echo ""
+    echo "Commit blocked: a secret is staged (see above; values are redacted)."
+    echo "Remove it from the file and keep it in Render / EAS / a password manager instead."
+    exit 1
+  fi
+  exit 0
+fi
+
+fail=0
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+for f in $files; do
+  case "$f" in
+    *debug.keystore) ;;
+    *.keystore|*.jks|*.p12|*.pfx|*.pem|*.key|*KEYSTORE_CREDENTIALS*|*qa-credentials*|.env|*/.env|*.env.production|*.env.local)
+      echo "Blocked: $f looks like a key, keystore, credentials or env file."; fail=1 ;;
+  esac
+done
+if git diff --cached -U0 --diff-filter=ACMR | grep -E '^\+' | grep -v '^+++' \
+   | grep -E -i -q 'base64:[A-Za-z0-9+/]{43}=|^\+\s*(store |key )?password\s*[:=|]\s*[^ <]{6,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|sk-ant-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{20,}'; then
+  echo "Blocked: a staged line looks like an APP_KEY, password, private key or API key."
+  fail=1
+fi
+if [ "$fail" -ne 0 ]; then
+  echo "Commit blocked. Install gitleaks for exact findings: https://github.com/gitleaks/gitleaks"
+  exit 1
+fi
+exit 0

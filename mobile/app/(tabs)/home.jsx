@@ -128,9 +128,10 @@ function FarmerDashboard({ summary, outbreaks, credit, router, isHausa }) {
               <Text style={styles.dxTitle}>{d.subject_name || d.disease_name || d.aiResult?.primaryDiagnosis || (isHausa ? 'Ana sarrafa...' : 'Processing...')}</Text>
               <Text style={styles.dxMeta}>{typeLabel(d.type)} · {new Date(d.created_at || d.createdAt).toLocaleDateString()}</Text>
             </View>
-            {d.urgency_level && (
+            {/* Severity (severity_level), the one value every screen shows. */}
+            {d.severity_level && (
               <View style={[styles.sevBadge, { backgroundColor: '#FEF3C7' }]}>
-                <Text style={[styles.sevText, { color: '#D97706' }]}>{d.urgency_level}</Text>
+                <Text style={[styles.sevText, { color: '#D97706' }]} testID="home-severity">{d.severity_level}</Text>
               </View>
             )}
             <Text style={styles.dxArrow}>›</Text>

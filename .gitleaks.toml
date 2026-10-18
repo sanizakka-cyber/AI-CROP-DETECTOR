@@ -1,0 +1,65 @@
+# Secret scanning for MSAS FarmAI (Phase 12.2). Used by the pre-commit hook
+# (.githooks/pre-commit) and CI (.github/workflows/secret-scan.yml).
+#
+# gitleaks' default rules found only 2 of the secrets this public repo has
+# leaked. The rules below cover the shapes that actually leaked here:
+# Android keystore passwords in a text file, Laravel APP_KEY and engine keys
+# as render.yaml values, QA account passwords in .txt files, and keystore
+# files themselves (binary, so matched by path).
+#
+# Historical findings (already in history, already treated as compromised)
+# are listed by fingerprint in .gitleaksignore so only NEW leaks fail.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Third-party code (not ours, and full of example keys in READMEs and tests)"
+paths = ['''(^|[/\\])(node_modules|vendor|\.next)([/\\]|$)''']
+
+[[rules]]
+id = "laravel-app-key"
+description = "Laravel APP_KEY (base64:, 32 bytes)"
+regex = '''base64:[A-Za-z0-9+/]{43}='''
+keywords = ["base64:"]
+
+[[rules]]
+id = "yaml-secret-value"
+description = "A *_KEY / *SECRET* / *PASSWORD* / *TOKEN* env var given a literal value in YAML (render.yaml, workflows)"
+regex = '''(?i)key:\s*["']?[A-Z0-9_]*(?:KEY|SECRET|PASSWORD|TOKEN)[A-Z0-9_]*["']?\s*\n\s*value:\s*["']?([^\s"'#]{8,})'''
+secretGroup = 1
+keywords = ["value:"]
+[rules.allowlist]
+regexes = ['''(?i)^(REPLACE|CHANGE|your|example|placeholder|xxx)''']
+
+[[rules]]
+id = "env-secret-assignment"
+description = "A *_KEY / *SECRET* / *PASSWORD* / *TOKEN* assignment in an env file"
+path = '''(?i)(^|/)\.env(\.[a-z0-9_-]+)?$'''
+regex = '''(?im)^\s*[A-Z0-9_]*(?:KEY|SECRET|PASSWORD|TOKEN)[A-Z0-9_]*\s*=\s*["']?([^\s"'#]{8,})'''
+secretGroup = 1
+keywords = ["key", "secret", "password", "token"]
+[rules.allowlist]
+paths = ['''(?i)\.env\.(example|sample|template|testing)$''']
+regexes = ['''(?i)^(REPLACE|CHANGE|your|example|placeholder|xxx|null|false|true)''', '''^\$\{''']
+
+[[rules]]
+id = "plaintext-password-line"
+description = "A 'Password: value' line in a text or credentials file"
+path = '''(?i)\.(txt|cred|credentials)$'''
+regex = '''(?im)^\s*(?:store |key |keystore )?password\s*[:=|]\s*(\S{6,})'''
+secretGroup = 1
+keywords = ["password"]
+
+[[rules]]
+id = "keystore-or-key-file"
+description = "Android keystore, PKCS#12 or private key file committed"
+path = '''(?i)\.(keystore|jks|p12|pfx|pem|key)$'''
+[rules.allowlist]
+# The Android SDK's public, well-known debug keystore is not a secret.
+paths = ['''(?i)debug\.keystore$''']
+
+[[rules]]
+id = "credentials-file"
+description = "A file named like a credentials dump"
+path = '''(?i)(KEYSTORE_CREDENTIALS|qa-credentials[^/]*)\.txt$'''

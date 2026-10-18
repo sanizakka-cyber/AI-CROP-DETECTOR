@@ -1,0 +1,4 @@
+
+# Shell scripts and git hooks must keep LF line endings or sh fails on them.
+.githooks/* text eol=lf
+*.sh text eol=lf
