@@ -234,7 +234,7 @@
                             </div>
                             @else
                             <div class="text-white font-extrabold text-sm leading-none">N/A</div>
-                            <div class="text-white/70 text-[10px] mt-0.5">AI Analysis Unavailable</div>
+                            <div class="text-white/70 text-[10px] mt-0.5">{{ $diagnosis->has_no_single_finding ? __('No single finding') : __('AI Analysis Unavailable') }}</div>
                             @endif
                         </div>
 

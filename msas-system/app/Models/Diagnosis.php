@@ -118,7 +118,12 @@ class Diagnosis extends Model
     public function getConfidenceLabelAttribute(): string
     {
         if ($this->confidence_score === null) {
-            return 'N/A — AI Analysis Unavailable';
+            // The AI judged the photo but gave no single score (unclear, healthy,
+            // several possibilities). Only a failed scan, or an old one with no
+            // recorded outcome, is "unavailable".
+            return $this->has_no_single_finding
+                ? 'N/A — ' . __('No single finding')
+                : 'N/A — ' . __('AI Analysis Unavailable');
         }
 
         $pct = (int) round($this->confidence_score);
@@ -201,6 +206,12 @@ class Diagnosis extends Model
     {
         return $this->assessment_outcome === 'provider_error'
             || $this->confidence_decision === 'ai_unavailable';
+    }
+
+    /** The AI judged this scan but gave no confidence score, so there is no single finding to rate. */
+    public function getHasNoSingleFindingAttribute(): bool
+    {
+        return $this->confidence_score === null && $this->assessment_outcome !== null && !$this->is_failed_scan;
     }
 
     /** The top possible conditions: the AI's leading finding, then the alternatives it considered. */

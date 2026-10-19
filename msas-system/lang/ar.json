@@ -80,6 +80,8 @@
   "New Scan": "فحص جديد",
   "Voice Narration": "السرد الصوتي",
   "AI Confidence": "ثقة الذكاء الاصطناعي",
+  "No single finding": "لا توجد نتيجة واحدة",
+  "AI Analysis Unavailable": "تحليل الذكاء الاصطناعي غير متاح",
   "Severity": "الشدة",
   "Urgency": "الإلحاح",
   "Detected Part": "الجزء المكتشف",
