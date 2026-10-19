@@ -126,7 +126,8 @@ export default function RecordsScreen() {
                           {sm.icon} {sm.label}
                         </Text>
                       </View>
-                      {d.urgency_level && <SeverityBadge severity={d.urgency_level?.toLowerCase()} />}
+                      {/* Severity, not urgency: the same value as the result screen and the web. */}
+                      {d.severity_level && <SeverityBadge severity={d.severity_level.toLowerCase()} testID="records-severity" />}
                     </View>
                   </Card>
                 </TouchableOpacity>

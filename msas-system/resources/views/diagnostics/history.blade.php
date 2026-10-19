@@ -223,7 +223,7 @@
                                 <span class="text-white/70 text-xs font-bold">%</span>
                             </div>
                             <div class="w-full bg-white/20 rounded-full h-1.5 mt-1.5">
-                                <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= 65 ? 'bg-emerald-400' : 'bg-red-400' }}"
+                                <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= \App\Models\Diagnosis::minConfidence() ? 'bg-emerald-400' : 'bg-red-400' }}"
                                      style="width:{{ min((float)$diagnosis->confidence_score,100) }}%"></div>
                             </div>
                             @else
@@ -232,7 +232,7 @@
                             @endif
                         </div>
 
-                        @if($diagnosis->confidence_score !== null && $diagnosis->confidence_score < 65)
+                        @if($diagnosis->is_not_certain)
                         <div class="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW CONF.</div>
                         @endif
                     </div>
@@ -240,13 +240,13 @@
                     {{-- Badges --}}
                     <div class="space-y-1.5">
                         @if($sev)
-                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}">
+                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}" data-severity="{{ $diagnosis->severity_key }}">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Severity">{{ __('Severity') }}</span>
                             <span class="font-extrabold inline-flex items-center gap-1">{!! $theme['icon'] !!} {{ $sev }}</span>
                         </div>
                         @endif
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border
-                            {{ $urgency === 'Emergency' || $urgency === 'High' ? 'bg-red-100 text-red-800 border-red-200' : ($urgency === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}">
+                            {{ $urgency === 'Emergency' || $urgency === 'High' ? 'bg-red-100 text-red-800 border-red-200' : ($urgency === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}" data-urgency="{{ $diagnosis->urgency_key }}">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Urgency">{{ __('Urgency') }}</span>
                             <span class="font-extrabold">{{ $urgency }}</span>
                         </div>
@@ -275,11 +275,17 @@
                 <div class="md:col-span-3 space-y-4">
 
                     {{-- Disease headline --}}
+                    @if($diagnosis->is_not_certain)
+                    @include('diagnostics.partials.not-certain')
+                    @else
                     <div class="{{ $theme['ibg'] }} border border-opacity-30 rounded-xl px-4 py-3 flex items-start justify-between gap-3 flex-wrap"
                          style="border-color: inherit">
                         <div>
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5" data-i18n="Diagnosis">{{ __('Diagnosis') }}</div>
-                            <h3 class="text-lg font-extrabold text-slate-800 leading-tight">{{ $diagnosis->disease_name }}</h3>
+                            <h3 class="text-lg font-extrabold text-slate-800 leading-tight">@if($diagnosis->needs_confirmation){{ __('Likely') }}: @endif{{ $diagnosis->disease_name }}</h3>
+                            @if($diagnosis->needs_confirmation)
+                            @include('diagnostics.partials.likely-confirm')
+                            @endif
                             @if($diagnosis->recovery_period)
                             <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                                 <i class="fa-regular fa-clock"></i> Recovery: {{ $diagnosis->recovery_period }}
@@ -293,6 +299,9 @@
                         </div>
                         @endif
                     </div>
+                    @endif
+
+                    @include('diagnostics.partials.ai-disclaimer')
 
                     @include('diagnostics.partials.outcome-history')
 

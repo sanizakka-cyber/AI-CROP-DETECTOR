@@ -52,6 +52,12 @@ return [
         'key' => env('AI_ENGINE_KEY'),
     ],
 
+    // HEIC/HEIF scan uploads -> JPEG (App\Services\HeicConverter): 'auto' uses
+    // Imagick when it has HEIC support, else the AI engine's /convert/image.
+    'heic' => [
+        'driver' => env('HEIC_DRIVER', 'auto'),
+    ],
+
     'anthropic' => [
         'key'   => env('ANTHROPIC_API_KEY'),
         'model' => env('AI_MODEL', 'claude-sonnet-5'),

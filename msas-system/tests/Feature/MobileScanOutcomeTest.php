@@ -64,7 +64,7 @@ class MobileScanOutcomeTest extends TestCase
         $this->assertNotNull($d->image_path, 'The farmer\'s photo is kept.');
         $this->assertSame('Wrong Subject', $d->statusLabel);
 
-        cache()->forget("diagnosis:{$d->id}");
+        cache()->forget("diagnosis:v2:{$d->id}");
         $show = $this->withHeaders($this->apiHeaders($user))->getJson("/api/diagnose/{$d->id}");
         $show->assertJsonPath('diagnosis.assessment.outcome', 'unsupported_subject');
         $show->assertJsonPath('diagnosis.assessment.photoTips.0', 'Photograph the affected leaf up close');

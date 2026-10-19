@@ -25,6 +25,13 @@ Usage:
     set ENGINE_API_KEY=<the engine's API_KEY from Render>
     python eval/run_eval.py path/to/manifest.csv --out results.json
     python eval/run_eval.py path/to/manifest.csv --dry-run   # check the manifest only
+
+Consistency (Phase 12.2): run every photo 5 times and print each photo's
+findings, confidences and spread; the target is the same top finding every
+run and a spread of 3 points or less. Unlabelled photos are allowed with
+--consistency-only. Compare two saved runs (e.g. SCAN_PASSES=1 vs 3):
+    python eval/run_eval.py manifest.csv --repeats 5 --consistency-only --out before.json
+    python eval/run_eval.py --compare before.json after.json
 """
 import argparse
 import csv
@@ -35,14 +42,14 @@ import time
 import urllib.error
 import urllib.request
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 MODES = {"crop", "livestock", "soil", "pest"}
 OUTCOMES = {"assessed", "uncertain", "poor_image", "unsupported_subject"}
 BANDS = [(0, 50), (50, 65), (65, 80), (80, 90), (90, 101)]
 
 
-def load_manifest(path):
+def load_manifest(path, labels_required=True):
     base = os.path.dirname(os.path.abspath(path))
     rows, errors = [], []
     with open(path, encoding="utf-8-sig", newline="") as f:
@@ -55,7 +62,7 @@ def load_manifest(path):
                 errors.append(f"line {n}: mode must be one of {sorted(MODES)}")
             if not os.path.isfile(img):
                 errors.append(f"line {n}: image not found: {img}")
-            if not expected and not outcome:
+            if labels_required and not expected and not outcome:
                 errors.append(f"line {n}: give expected (a label) or expected_outcome")
             if outcome and outcome not in OUTCOMES:
                 errors.append(f"line {n}: expected_outcome must be one of {sorted(OUTCOMES)}")
@@ -92,13 +99,16 @@ def call_engine(url, key, mode, image_path, timeout=180):
         return e.code, payload, time.time() - t0
 
 
-def score(rows, results):
+def score(rows, results, min_confidence=65):
     """Pure function: rows + engine results -> report dict (unit-tested)."""
     per_mode = defaultdict(lambda: {"images": 0, "errors": 0, "label_items": 0, "answered": 0, "correct": 0,
                                     "outcome_items": 0, "outcome_correct": 0, "bands": defaultdict(lambda: [0, 0]),
-                                    "mistakes": []})
+                                    "mistakes": [], "conditions": defaultdict(lambda: {
+                                        "n": 0, "answered": 0, "correct": 0, "not_certain": 0, "confusions": Counter()})})
     for row, res in zip(rows, results):
         m = per_mode[row["mode"]]
+        c = m["conditions"][row["expected"] or f"outcome:{row['expected_outcome']}"]
+        c["n"] += 1
         m["images"] += 1
         status, body = res["status"], res["body"] or {}
         if status != 200:
@@ -116,10 +126,16 @@ def score(rows, results):
         if outcome != "assessed":
             continue  # declined to answer: counted against coverage, not accuracy
         m["answered"] += 1
+        c["answered"] += 1
         finding = body.get("disease") or body.get("pest_name")
         ok = label_matches(finding, row["names"])
         m["correct"] += ok
+        c["correct"] += ok
         conf = body.get("confidence")
+        if isinstance(conf, (int, float)) and conf < min_confidence:
+            c["not_certain"] += 1  # the app/web would show "Not certain", not this finding
+        if not ok:
+            c["confusions"][(finding or "(none)").strip()] += 1
         if isinstance(conf, (int, float)):
             for lo, hi in BANDS:
                 if lo <= conf < hi:
@@ -138,18 +154,140 @@ def score(rows, results):
             "rejection_accuracy": round(m["outcome_correct"] / m["outcome_items"], 3) if m["outcome_items"] else None,
             "confidence_bands": {b: {"n": n, "accuracy": round(c / n, 3)} for b, (n, c) in sorted(m["bands"].items())},
             "mistakes": m["mistakes"],
+            "conditions": {
+                name: {
+                    "n": c["n"],
+                    "accuracy": round(c["correct"] / c["n"], 3) if c["n"] else None,
+                    "accuracy_when_answered": round(c["correct"] / c["answered"], 3) if c["answered"] else None,
+                    "shown_as_not_certain": c["not_certain"],
+                    "top_confusions": c["confusions"].most_common(3),
+                } for name, c in sorted(m["conditions"].items())
+            },
         }
     return report
 
 
+def consistency(rows, runs):
+    """Same photo, several runs: how often does the finding stay the same? (pure, unit-tested)"""
+    out = defaultdict(lambda: {"images": 0, "same_finding": 0, "confidence_spread": []})
+    for i, row in enumerate(rows):
+        bodies = [r[i]["body"] or {} for r in runs if r[i]["status"] == 200]
+        if len(bodies) < 2:
+            continue
+        o = out[row["expected"] or row["mode"]]
+        o["images"] += 1
+        findings = {(b.get("disease") or b.get("pest_name") or b.get("assessment_outcome") or "").strip().lower() for b in bodies}
+        o["same_finding"] += len(findings) == 1
+        confs = [b.get("confidence") for b in bodies if isinstance(b.get("confidence"), (int, float))]
+        if len(confs) >= 2:
+            o["confidence_spread"].append(max(confs) - min(confs))
+    return {k: {"images": v["images"], "same_finding_rate": round(v["same_finding"] / v["images"], 3) if v["images"] else None,
+                "mean_confidence_spread": round(sum(v["confidence_spread"]) / len(v["confidence_spread"]), 1) if v["confidence_spread"] else None}
+            for k, v in sorted(out.items())}
+
+
+def _top(body):
+    return (body.get("disease") or body.get("pest_name") or body.get("assessment_outcome") or "").strip()
+
+
+def _shown_as(body, min_confidence, confirm_below):
+    """What the farmer sees for this result (same bands as Laravel's Diagnosis model)."""
+    conf = body.get("confidence")
+    if body.get("assessment_outcome") != "assessed" or not isinstance(conf, (int, float)):
+        return body.get("assessment_outcome") or "error"
+    if conf < min_confidence:
+        return "not_certain"
+    return "likely_confirm" if conf < confirm_below else "diagnosis"
+
+
+def per_photo(rows, runs, min_confidence=65, confirm_below=75):
+    """Pure: one line per photo with every run's finding and confidence, the
+    spread, and whether the farmer would have seen the same thing each time."""
+    out = []
+    for i, row in enumerate(rows):
+        bodies = [r[i]["body"] or {} for r in runs if r[i]["status"] == 200]
+        tops = [_top(b) for b in bodies]
+        confs = [b.get("confidence") for b in bodies]
+        nums = [c for c in confs if isinstance(c, (int, float))]
+        shown = [_shown_as(b, min_confidence, confirm_below) for b in bodies]
+        out.append({
+            "image": os.path.basename(row["image"]), "mode": row["mode"], "expected": row["expected"] or None,
+            "runs": len(bodies), "errors": len(runs) - len(bodies),
+            "findings": tops, "confidences": confs,
+            "same_top_finding": len({t.lower() for t in tops}) == 1 if tops else None,
+            "spread": round(max(nums) - min(nums), 1) if len(nums) >= 2 else (0.0 if nums else None),
+            "shown_as": shown, "same_screen": len(set(shown)) == 1 if shown else None,
+        })
+    return out
+
+
+def photo_table(photos, target_spread=3):
+    lines = [f"{'photo':34} {'runs':>4} {'same top':>8} {'spread':>6} {'same screen':>11}  findings / confidences"]
+    for p in photos:
+        ok = p["same_top_finding"] and p["spread"] is not None and p["spread"] <= target_spread
+        lines.append(f"{p['image'][:34]:34} {p['runs']:>4} {str(p['same_top_finding']):>8} {str(p['spread']):>6} "
+                     f"{str(p['same_screen']):>11}  {'PASS' if ok else 'FAIL'}  "
+                     + "; ".join(f"{f} {c}" for f, c in zip(p["findings"], p["confidences"])))
+    n = len(photos)
+    passed = sum(1 for p in photos if p["same_top_finding"] and p["spread"] is not None and p["spread"] <= target_spread)
+    lines.append(f"{passed}/{n} photos meet the target (same top finding every run, spread <= {target_spread} points)")
+    return "\n".join(lines)
+
+
+def compare_photos(before, after, target_spread=3):
+    """Per-photo spread before vs after (two saved runs' per_photo lists)."""
+    a_by = {p["image"]: p for p in after}
+    lines = [f"{'photo':34} {'before same/spread':>19} {'after same/spread':>18}"]
+    for b in before:
+        a = a_by.get(b["image"], {})
+        lines.append(f"{b['image'][:34]:34} {str(b['same_top_finding']) + ' / ' + str(b['spread']):>19} "
+                     f"{str(a.get('same_top_finding')) + ' / ' + str(a.get('spread')):>18}")
+    for label, ps in (("before", before), ("after", after)):
+        spreads = [p["spread"] for p in ps if p["spread"] is not None]
+        passed = sum(1 for p in ps if p["same_top_finding"] and p["spread"] is not None and p["spread"] <= target_spread)
+        lines.append(f"{label}: {passed}/{len(ps)} photos meet the target; max spread "
+                     f"{max(spreads) if spreads else '-'}, mean {round(sum(spreads) / len(spreads), 1) if spreads else '-'}")
+    return "\n".join(lines)
+
+
+def compare(before, after):
+    """Per-condition accuracy before vs after a change (two saved reports)."""
+    lines = [f"{'mode/condition':45} {'before':>8} {'after':>8} {'change':>8}"]
+    for mode in sorted(set(before) | set(after)):
+        conds = set(before.get(mode, {}).get("conditions", {})) | set(after.get(mode, {}).get("conditions", {}))
+        for c in sorted(conds):
+            b = before.get(mode, {}).get("conditions", {}).get(c, {}).get("accuracy")
+            a = after.get(mode, {}).get("conditions", {}).get(c, {}).get("accuracy")
+            d = f"{a - b:+.3f}" if a is not None and b is not None else "n/a"
+            lines.append(f"{(mode + '/' + c)[:45]:45} {b if b is not None else '-':>8} {a if a is not None else '-':>8} {d:>8}")
+    return "\n".join(lines)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("manifest")
+    ap.add_argument("manifest", nargs="?")
     ap.add_argument("--out", default="eval_results.json")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--repeats", type=int, default=1, help="run each image N times and report consistency")
+    ap.add_argument("--min-confidence", type=float, default=65, help="the app's Not-certain threshold")
+    ap.add_argument("--confirm-below", type=float, default=75, help="the app's 'Likely, please confirm' band upper edge")
+    ap.add_argument("--target-spread", type=float, default=3, help="consistency target, in confidence points")
+    ap.add_argument("--consistency-only", action="store_true",
+                    help="allow photos without a label (consistency needs no label; accuracy is skipped for them)")
+    ap.add_argument("--compare", nargs=2, metavar=("BEFORE_JSON", "AFTER_JSON"), help="compare two saved runs and exit")
     a = ap.parse_args(argv)
 
-    rows, errors = load_manifest(a.manifest)
+    if a.compare:
+        before, after = (json.load(open(f, encoding="utf-8")) for f in a.compare)
+        print(compare(before["report"], after["report"]))
+        if before.get("per_photo") and after.get("per_photo"):
+            print()
+            print(compare_photos(before["per_photo"], after["per_photo"], a.target_spread))
+        return 0
+    if not a.manifest:
+        ap.error("manifest is required (except with --compare)")
+
+    rows, errors = load_manifest(a.manifest, labels_required=not a.consistency_only)
     if errors:
         print("Manifest problems:\n  " + "\n  ".join(errors))
         return 2
@@ -162,17 +300,26 @@ def main(argv=None):
         print("Set ENGINE_URL (and ENGINE_API_KEY if the engine requires one).")
         return 2
 
-    results = []
-    for i, r in enumerate(rows, 1):
-        status, body, secs = call_engine(url, key, r["mode"], r["image"])
-        results.append({"status": status, "body": body, "seconds": round(secs, 1)})
-        print(f"[{i}/{len(rows)}] {r['mode']:9} {status} {secs:5.1f}s {os.path.basename(r['image'])}: "
-              f"{body.get('assessment_outcome')} / {body.get('disease') or body.get('pest_name')} / {body.get('confidence')}")
+    runs = []
+    for rep in range(max(1, a.repeats)):
+        results = []
+        for i, r in enumerate(rows, 1):
+            status, body, secs = call_engine(url, key, r["mode"], r["image"])
+            results.append({"status": status, "body": body, "seconds": round(secs, 1)})
+            print(f"[run {rep + 1}, {i}/{len(rows)}] {r['mode']:9} {status} {secs:5.1f}s {os.path.basename(r['image'])}: "
+                  f"{body.get('assessment_outcome')} / {body.get('disease') or body.get('pest_name')} / {body.get('confidence')}")
+        runs.append(results)
 
-    report = score(rows, results)
-    json.dump({"report": report, "raw": [{**r, **res} for r, res in zip(rows, results)]},
+    labelled = [i for i, r in enumerate(rows) if r["expected"] or r["expected_outcome"]]
+    report = score([rows[i] for i in labelled], [runs[0][i] for i in labelled], a.min_confidence)
+    cons = consistency(rows, runs) if len(runs) > 1 else None
+    photos = per_photo(rows, runs, a.min_confidence, a.confirm_below) if len(runs) > 1 else None
+    json.dump({"report": report, "consistency": cons, "per_photo": photos,
+               "raw": [[{**r, **res} for r, res in zip(rows, run)] for run in runs]},
               open(a.out, "w", encoding="utf-8"), indent=1, default=str)
-    print(json.dumps(report, indent=1, default=str))
+    print(json.dumps({"report": report, "consistency": cons}, indent=1, default=str))
+    if photos:
+        print(photo_table(photos, a.target_spread))
     print(f"Saved {a.out}")
     return 0
 

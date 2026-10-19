@@ -1,0 +1,5 @@
+image,mode,expected,synonyms,expected_outcome
+livestock/lsd/lsd_001.jpg,livestock,Lumpy skin disease,LSD|lumpy skin|Neethling,
+livestock/ringworm/rw_001.jpg,livestock,Ringworm,dermatophytosis|Trichophyton verrucosum|ring worm,
+livestock/mange/mange_001.jpg,livestock,Mange,sarcoptic mange|psoroptic mange|chorioptic mange|scabies,
+livestock/healthy/healthy_001.jpg,livestock,Healthy,healthy|no disease|normal skin,

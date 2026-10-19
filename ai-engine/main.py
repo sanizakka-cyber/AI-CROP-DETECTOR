@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import base64
@@ -5,11 +6,22 @@ import io
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageCms, ImageOps, UnidentifiedImageError
+from fastapi.responses import Response
+
+# HEIC/HEIF (iPhone and some Android cameras): pillow-heif bundles libheif and
+# registers the format with Pillow, so every image path below can decode it.
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+    HEIF_SUPPORTED = True
+except ImportError:  # pragma: no cover - the engine still serves JPEG/PNG/WebP
+    HEIF_SUPPORTED = False
 import anthropic
 import uvicorn
 import logging
 
+from consensus import combine
 from diagnosis_contract import build_prompt, finalize, schema_for
 
 app = FastAPI(title="MSAS FarmAI Inference Engine", version="5.0.0")
@@ -124,6 +136,31 @@ _MAX_LONG_EDGE = 2000          # px -- Anthropic's own stated safe ceiling
 _TARGET_JPEG_QUALITY = 85
 _MAX_FORWARD_BYTES = 4 * 1024 * 1024   # 4MB raw -> ~5.3MB base64, safely under Anthropic's 10MB cap
 
+_SRGB = ImageCms.createProfile("sRGB")
+
+
+def _to_srgb(im: Image.Image) -> Image.Image:
+    """RGB in the sRGB colour space.
+
+    Phone photos are often tagged Display P3 (iPhones, newer Androids). The
+    JPEG re-encode below drops the profile, so without converting first the
+    model saw P3 numbers read as sRGB: duller, shifted colours, and a
+    difference between the same photo taken as HEIC or as JPEG. Images with
+    no profile are treated as sRGB already, as browsers do.
+    """
+    icc = im.info.get("icc_profile")
+    if im.mode not in ("RGB", "L", "RGBA", "CMYK", "P", "LA"):
+        im = im.convert("RGB")
+    if icc:
+        try:
+            src = ImageCms.ImageCmsProfile(io.BytesIO(icc))
+            base = im.convert("RGB") if im.mode != "RGB" else im
+            return ImageCms.profileToProfile(base, src, _SRGB, outputMode="RGB")
+        except Exception:  # broken or unsupported profile: keep the pixels as they are
+            pass
+    return im.convert("RGB") if im.mode != "RGB" else im
+
+
 def _normalize_image_bytes(data: bytes) -> bytes:
     """Resize/recompress raw image bytes to a Claude-safe JPEG. Raises
     HTTPException(422) if the bytes can't be decoded as an image at all --
@@ -139,8 +176,7 @@ def _normalize_image_bytes(data: bytes) -> bytes:
             # have told a viewer to rotate it is then dropped on re-save,
             # so Claude would see a sideways image with no orientation hint.
             im = ImageOps.exif_transpose(im)
-            if im.mode not in ("RGB", "L"):
-                im = im.convert("RGB")
+            im = _to_srgb(im)
 
             long_edge = max(im.size)
             if long_edge > _MAX_LONG_EDGE:
@@ -745,10 +781,22 @@ async def _run_structured(mode: str, image_blocks: List[dict], prompt: str) -> t
     return data, text
 
 
-async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict], prompt: str, legacy):
+def _scan_passes() -> int:
+    """Repeat analyses per scan (consensus.py). 1 turns consensus off."""
     try:
-        data, text = await _run_structured(mode, image_blocks, prompt)
-    except _SchemaRejected as e:
+        return max(1, min(5, int(os.environ.get("SCAN_PASSES", "3"))))
+    except ValueError:
+        return 3
+
+
+async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict], prompt: str, legacy):
+    # The same request N times in parallel, so wall time stays close to one
+    # call; the results are combined by vote and median (consensus.py).
+    passes = _scan_passes()
+    outcomes = await asyncio.gather(*(_run_structured(mode, image_blocks, prompt) for _ in range(passes)),
+                                    return_exceptions=True)
+    if any(isinstance(o, _SchemaRejected) for o in outcomes):
+        e = next(o for o in outcomes if isinstance(o, _SchemaRejected))
         _log.warning("structured %s request rejected, using legacy prompt: %s", mode, e)
         for img in images:
             await img.seek(0)
@@ -756,7 +804,17 @@ async def _diagnose(mode: str, images: List[UploadFile], image_blocks: List[dict
         if isinstance(result, dict):
             result["contract_version"] = "legacy-fallback"
         return result
-    return {**_model_meta(AI_MODEL, text), **finalize(mode, data)}
+    done = [o for o in outcomes if not isinstance(o, BaseException)]
+    if not done:
+        # Every pass failed: report the first failure as before.
+        raise next(o for o in outcomes if isinstance(o, BaseException))
+    finalized = []
+    for data, text in done:
+        r = {**_model_meta(AI_MODEL, text), **finalize(mode, data)}
+        finalized.append(r)
+    if len(done) < passes:
+        _log.warning("%s scan: %d of %d passes failed, combining the rest", mode, passes - len(done), passes)
+    return combine(finalized, attempted=passes)
 
 
 def _hint(**pairs) -> str:
@@ -1224,6 +1282,46 @@ Provide ONLY the translated text, no explanations or meta-commentary."""
         raise HTTPException(status_code=503, detail=f"Translation error: {str(e)}")
 
     return {"translated_text": translated, "language": lang_name}
+
+
+# ─── /convert/image (server-side HEIC fallback) ───────────────────────────────
+# Laravel converts HEIC/HEIF uploads (e.g. from iPhone Safari, which may send
+# HEIC as-is) to JPEG through this endpoint before validation and storage, so
+# a scan never depends on the browser converting. Same orientation and colour
+# handling as the scan pipeline; full resolution up to a 4096 px long edge.
+
+_CONVERT_MAX_LONG_EDGE = 4096
+_CONVERT_QUALITY = 92
+
+
+def convert_to_jpeg(data: bytes) -> bytes:
+    with Image.open(io.BytesIO(data)) as im:
+        im.load()
+        im = _to_srgb(ImageOps.exif_transpose(im))
+        if max(im.size) > _CONVERT_MAX_LONG_EDGE:
+            scale = _CONVERT_MAX_LONG_EDGE / max(im.size)
+            im = im.resize((max(1, round(im.width * scale)), max(1, round(im.height * scale))), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=_CONVERT_QUALITY, optimize=True)
+        return buf.getvalue()
+
+
+@app.post("/convert/image")
+async def convert_image(request: Request, file: UploadFile = File(...)):
+    _check_auth(request)
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=422, detail={"error": "empty_file", "message": "The photo file is empty."})
+    if len(data) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail={"error": "too_large", "message": "The photo is larger than 25 MB."})
+    try:
+        jpeg = convert_to_jpeg(data)
+    except Exception:
+        raise HTTPException(status_code=422, detail={
+            "error": "unreadable_image",
+            "message": "This photo could not be converted. Please choose a JPEG or PNG photo.",
+        })
+    return Response(content=jpeg, media_type="image/jpeg")
 
 
 if __name__ == "__main__":
