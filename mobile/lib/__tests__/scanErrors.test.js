@@ -56,7 +56,7 @@ test('engine and provider codes never show the raw server text', () => {
   expect(formatScanError(raw, 'en').message).toBe(SCAN_ERROR_TEXT.en.codes.AI_PROVIDER_AUTH_FAILED);
 });
 
-test('staff get technical details they can copy or share', () => {
+test('staff get technical details they can copy or share', async () => {
   jest.spyOn(Share, 'share').mockResolvedValue({});
   const technical = { code: 'AI_PROVIDER_NO_CREDIT', http_status: 503, service: 'claude_api', service_label: 'Claude API (Anthropic)',
     message: 'Claude API error (BadRequestError, HTTP 400): credit balance too low', timestamp: '2026-10-19T08:00:00Z', reference: 'SCN-7F3K2' };
@@ -68,8 +68,15 @@ test('staff get technical details they can copy or share', () => {
   for (const part of ['SCN-7F3K2', 'AI_PROVIDER_NO_CREDIT', '503', 'Claude API (Anthropic)', 'credit balance too low', '2026-10-19T08:00:00Z']) {
     expect(details).toContain(part);
   }
-  inner.find((b) => b.text === 'Copy / share details').onPress();
-  expect(Share.share).toHaveBeenCalledWith({ message: technicalText(err('AI_PROVIDER_NO_CREDIT', { technical })) });
+  const text = technicalText(err('AI_PROVIDER_NO_CREDIT', { technical }));
+  // A real Copy button (expo-clipboard), then a "Copied" confirmation.
+  const Clipboard = require('expo-clipboard');
+  await inner.find((b) => b.text === 'Copy details').onPress();
+  expect(Clipboard.setStringAsync).toHaveBeenCalledWith(text);
+  expect(Alert.alert).toHaveBeenLastCalledWith('Copied');
+  // Share is still offered, for sending the details to support.
+  inner.find((b) => b.text === 'Share details').onPress();
+  expect(Share.share).toHaveBeenCalledWith({ message: text });
 });
 
 test('a lost connection (no server answer) is UPLOAD_INTERRUPTED with a retry and no reference', () => {

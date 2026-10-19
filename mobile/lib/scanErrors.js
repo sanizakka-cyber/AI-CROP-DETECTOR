@@ -8,6 +8,7 @@
 // in English until a native translation exists). The quota and
 // field-validation messages come from the server, which knows the numbers.
 import { Alert, Share } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 const UNAVAILABLE = {
   en: 'Our analysis service is temporarily unavailable. Your scan was NOT counted. Please try again in a few minutes.',
@@ -22,7 +23,7 @@ export const SCAN_ERROR_TEXT = {
     title: 'Scan not completed',
     reference: 'Reference',
     retry: 'Try again', signIn: 'Sign in', upgrade: 'Upgrade plan', choosePhoto: 'Choose another photo', close: 'Close',
-    technical: 'Technical details', share: 'Copy / share details',
+    technical: 'Technical details', copy: 'Copy details', copied: 'Copied', share: 'Share details',
     codes: {
       SESSION_EXPIRED: 'Your login has expired. Please sign in again.',
       UPLOAD_TOO_LARGE: 'This photo is too large (over 10 MB). Choose a smaller photo or take a new one.',
@@ -36,7 +37,7 @@ export const SCAN_ERROR_TEXT = {
     title: 'Binciken bai kammala ba',
     reference: 'Lambar shaida',
     retry: 'Sake gwadawa', signIn: 'Shiga', upgrade: 'Haɓaka tsari', choosePhoto: 'Zaɓi wani hoto', close: 'Rufe',
-    technical: 'Bayanan fasaha', share: 'Kwafa / raba bayanai',
+    technical: 'Bayanan fasaha', copy: 'Kwafa bayanai', copied: 'An kwafa', share: 'Raba bayanai',
     codes: {
       SESSION_EXPIRED: 'Lokacin shigarka ya ƙare. Don Allah ka sake shiga.',
       UPLOAD_TOO_LARGE: 'Wannan hoton ya yi girma da yawa (sama da 10 MB). Zaɓi ƙaramin hoto ko ka ɗauki sabo.',
@@ -50,7 +51,7 @@ export const SCAN_ERROR_TEXT = {
     title: 'Analyse non terminée',
     reference: 'Référence',
     retry: 'Réessayer', signIn: 'Se connecter', upgrade: "Changer d'offre", choosePhoto: 'Choisir une autre photo', close: 'Fermer',
-    technical: 'Détails techniques', share: 'Copier / partager les détails',
+    technical: 'Détails techniques', copy: 'Copier les détails', copied: 'Copié', share: 'Partager les détails',
     codes: {
       SESSION_EXPIRED: 'Votre session a expiré. Veuillez vous reconnecter.',
       UPLOAD_TOO_LARGE: 'Cette photo est trop lourde (plus de 10 Mo). Choisissez une photo plus petite ou prenez-en une nouvelle.',
@@ -64,7 +65,7 @@ export const SCAN_ERROR_TEXT = {
     title: 'Àyẹ̀wò kò parí',
     reference: 'Ìtọ́kasí',
     retry: 'Gbìyànjú lẹ́ẹ̀kan sí i', signIn: 'Wọlé', upgrade: 'Ṣe àfikún ètò', choosePhoto: 'Yan fọ́tò mìíràn', close: 'Pa á dé',
-    technical: 'Àlàyé ìmọ̀ ẹ̀rọ', share: 'Daakọ / pín àlàyé',
+    technical: 'Àlàyé ìmọ̀ ẹ̀rọ', copy: 'Daakọ àlàyé', copied: 'A ti daakọ', share: 'Pín àlàyé',
     codes: {
       SESSION_EXPIRED: 'Ìwọlé rẹ ti parí. Jọ̀wọ́ wọlé lẹ́ẹ̀kan sí i.',
       UPLOAD_TOO_LARGE: 'Fọ́tò yìí ti tóbi jù (ju 10 MB lọ). Yan fọ́tò kékeré tàbí ya tuntun.',
@@ -78,7 +79,7 @@ export const SCAN_ERROR_TEXT = {
     title: 'Nyocha emechaghị',
     reference: 'Ntụaka',
     retry: 'Nwaa ọzọ', signIn: 'Banye', upgrade: 'Kwalite atụmatụ', choosePhoto: 'Họrọ foto ọzọ', close: 'Mechie',
-    technical: 'Nkọwa nka', share: 'Detuo / kesaa nkọwa',
+    technical: 'Nkọwa nka', copy: 'Detuo nkọwa', copied: 'Edetuola', share: 'Kesaa nkọwa',
     codes: {
       SESSION_EXPIRED: 'Ntinye gị agwụla. Biko banye ọzọ.',
       UPLOAD_TOO_LARGE: 'Foto a buru oke ibu (karịa 10 MB). Họrọ foto pere mpe ma ọ bụ see nke ọhụrụ.',
@@ -146,6 +147,8 @@ export function showScanError(err, { lang = 'en', onRetry, onSignIn, onUpgrade, 
     buttons.push({
       text: t.technical,
       onPress: () => Alert.alert(t.technical, tech, [
+        // A real copy (expo-clipboard, build 25+); Share is still offered for sending to support.
+        { text: t.copy, onPress: () => Clipboard.setStringAsync(tech).then(() => Alert.alert(t.copied)).catch(() => Share.share({ message: tech }).catch(() => {})) },
         { text: t.share, onPress: () => Share.share({ message: tech }).catch(() => {}) },
         { text: t.close, style: 'cancel' },
       ]),
