@@ -32,3 +32,6 @@ beforeAll(() => {
   );
   tree.unmount();
 }, 60000);
+
+// expo-clipboard (build 25): native module, faked for tests.
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(() => Promise.resolve(true)), getStringAsync: jest.fn(() => Promise.resolve('')) }));

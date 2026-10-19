@@ -74,3 +74,17 @@ test.each([
   await show({ ...fixture.api, ...over });
   expect(flatText(screen.getByTestId('ai-disclaimer').props.children)).toContain(DISCLAIMER);
 });
+
+// Scan error codes: an older record of a scan the AI never completed
+// (relabelled, status still 'reviewed') shows no diagnosis, badge or narration.
+test('a failed scan record shows no diagnosis, urgency, severity or narration', async () => {
+  await show({ ...fixture.api, status: 'reviewed',
+    aiResult: { ...fixture.api.aiResult, primaryDiagnosis: 'Scan did not complete', severity: null, urgency: null },
+    assessment: { ...fixture.api.assessment, outcome: 'provider_error', failedScan: true } });
+  expect(screen.getByTestId('failed-scan')).toBeTruthy();
+  expect(screen.getByText('This scan did not complete')).toBeTruthy();
+  expect(screen.queryByTestId('diagnosis-name')).toBeNull();
+  expect(screen.queryByTestId('header-severity')).toBeNull();
+  expect(screen.queryByText('▶')).toBeNull();
+  expect(screen.queryByText('Play')).toBeNull();
+});

@@ -45,10 +45,37 @@ _async_client: Optional[anthropic.AsyncAnthropic] = None
 def _get_client() -> anthropic.AsyncAnthropic:
     global _async_client
     if not ANTHROPIC_KEY:
-        raise HTTPException(status_code=503, detail="AI engine not configured (missing ANTHROPIC_API_KEY).")
+        raise HTTPException(status_code=503, detail={"error": "provider_not_configured",
+                                                     "message": "AI engine not configured (missing ANTHROPIC_API_KEY)."})
     if _async_client is None:
         _async_client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_KEY)
     return _async_client
+
+def _is_no_credit(e: Exception) -> bool:
+    """Anthropic reports an empty credit balance or a reached spend limit as a 400."""
+    text = str(e).lower()
+    return any(k in text for k in ("credit balance", "usage limit", "spend limit", "billing"))
+
+
+def _provider_error(e: Exception) -> HTTPException:
+    """One labelled 503 for every Claude API failure, so the website can tell
+    the farmer the right thing and staff the real cause (scan error codes):
+    provider_auth_failed (401/403), provider_no_credit, provider_rate_limit
+    (429), provider_error (5xx, overloaded, connection, timeout)."""
+    status = getattr(e, "status_code", None)
+    if isinstance(e, (anthropic.AuthenticationError, anthropic.PermissionDeniedError)):
+        code = "provider_auth_failed"
+    elif _is_no_credit(e):
+        code = "provider_no_credit"
+    elif isinstance(e, anthropic.RateLimitError):
+        code = "provider_rate_limit"
+    else:
+        code = "provider_error"
+    return HTTPException(status_code=503, detail={
+        "error": code, "provider_status": status,
+        "message": f"Claude API error ({type(e).__name__}{', HTTP ' + str(status) if status else ''}): {str(e)[:500]}",
+    })
+
 
 def _pick_model(quality: str = "standard") -> str:
     return AI_MODEL_PRO if quality == "high" else AI_MODEL
@@ -194,7 +221,7 @@ def _normalize_image_bytes(data: bytes) -> bytes:
                 quality -= 15  # still too large after resizing (dense/noisy photo) -- step quality down and retry
     except UnidentifiedImageError:
         raise HTTPException(status_code=422, detail={
-            "accepted": False,
+            "accepted": False, "error": "unreadable_image",
             "message": "This file could not be read as an image. Please upload a clear JPEG, PNG, or WebP photo.",
         })
     except HTTPException:
@@ -204,7 +231,7 @@ def _normalize_image_bytes(data: bytes) -> bytes:
         # is still an honest "can't process this" -- never fall through to
         # forwarding the raw, possibly-broken bytes to Claude.
         raise HTTPException(status_code=422, detail={
-            "accepted": False,
+            "accepted": False, "error": "unreadable_image",
             "message": "This image could not be processed. Please try a different photo.",
         }) from e
 
@@ -396,7 +423,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -510,7 +537,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -605,7 +632,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -701,7 +728,7 @@ Write every field's value in plain text only: no Markdown symbols (#, **, *, bac
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -763,9 +790,11 @@ async def _run_structured(mode: str, image_blocks: List[dict], prompt: str) -> t
             output_config={"format": {"type": "json_schema", "schema": schema_for(mode)}},
         )
     except anthropic.BadRequestError as e:
+        if _is_no_credit(e):
+            raise _provider_error(e)  # not a schema problem: retrying the legacy prompt would fail the same way
         raise _SchemaRejected(str(e)) from e
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail={"error": "provider_unavailable", "message": f"AI service error: {str(e)}"})
+        raise _provider_error(e)
 
     # A refusal or a reply cut off at max_tokens is a technical failure, never
     # a diagnosis: report it instead of parsing a partial answer.
@@ -956,7 +985,7 @@ answer | <direct answer to the farmer's specific question, if one was asked>{lan
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -1041,7 +1070,7 @@ answer | <specific advice directly addressing the farmer's situation>{lang_note}
         )
         text = _extract_text(message)
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     fields = _parse_pipe(text)
 
@@ -1142,7 +1171,7 @@ COMMUNICATION RULES:
         )
         reply = _extract_text(response).strip()
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     # Build updated history for client to store and send back next turn
     messages_list.append({"role": "assistant", "content": reply})
@@ -1204,7 +1233,7 @@ no em-dashes or en-dashes (use a comma, "or", or a colon instead).{lang_note}"""
         )
         reply = _extract_text(response).strip()
     except anthropic.APIError as e:
-        raise HTTPException(status_code=503, detail=f"AI service error: {str(e)}")
+        raise _provider_error(e)
 
     # Detect likely scan type from input text for client routing
     text_lower = text.lower()

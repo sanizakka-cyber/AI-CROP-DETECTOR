@@ -248,16 +248,20 @@ export default function DiagnosisDetailScreen() {
     );
   }
 
-  if (diag.status === 'needs_review') {
+  // A scan the AI never completed (older records; new failures create no
+  // record): no diagnosis, urgency, severity or narration, and not counted.
+  if (diag.status === 'needs_review' || diag.assessment?.failedScan || diag.assessment?.outcome === 'provider_error') {
     return (
-      <View style={styles.loadingScreen}>
+      <View style={styles.loadingScreen} testID="failed-scan">
         <Text style={styles.failedIcon}>!</Text>
-        <Text style={styles.loadingText}>AI Analysis Unavailable</Text>
+        <Text style={styles.loadingText}>{isHausa ? 'Wannan binciken bai kammala ba' : 'This scan did not complete'}</Text>
         <Text style={styles.loadingTip}>
-          {diag.treatmentPlan?.vetReferralAdvice || 'Our AI engine was temporarily unavailable. An expert will review your scan and respond shortly.'}
+          {isHausa
+            ? 'Sabis ɗin bincikenmu ba ya aiki, don haka babu sakamako kuma ba a ƙirga wannan binciken ba. Don Allah ka sake bincike.'
+            : 'Our analysis service was unavailable, so there is no result and this scan was not counted. Please scan again.'}
         </Text>
         {aiDisclaimer}
-        <Button title="Try Again" onPress={() => router.back()} />
+        <Button title={isHausa ? 'Sake gwadawa' : 'Try again'} onPress={() => router.back()} />
       </View>
     );
   }

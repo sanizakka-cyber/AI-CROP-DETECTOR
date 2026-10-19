@@ -697,3 +697,8 @@ Route::get('/sitemap.xml', function () {
 })->name('sitemap');
 
 require __DIR__.'/auth.php';
+
+// ── Admin: failed scans with their reference and technical detail (scan error codes) ──
+Route::middleware(['auth', 'role:admin,ceo,customer-support'])->prefix('admin/scan-errors')->name('admin.scan-errors.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ScanErrorController::class, 'index'])->name('index');
+});

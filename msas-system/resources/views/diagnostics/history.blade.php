@@ -23,7 +23,9 @@
         @php
             // ── Severity → colour tokens ──────────────────────────────────────
             $sev = $diagnosis->severity_level ?? '';
-            $urgency = $diagnosis->urgency_level ?? 'Medium';
+            // A failed scan has no urgency; a missing urgency is never shown as "Medium".
+            $failed  = $diagnosis->is_failed_scan;
+            $urgency = $failed ? null : $diagnosis->urgency_level;
 
             $theme = match(true) {
                 $sev === 'Critical'                => ['border'=>'border-red-500',    'hbg'=>'bg-red-600',    'htext'=>'text-white',   'ibg'=>'bg-red-50',    'badge'=>'bg-red-100 text-red-800 border-red-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#dc2626"><circle cx="5" cy="5" r="5"/></svg>'],
@@ -70,21 +72,23 @@
                 </div>
             </div>
 
-            {{-- ── AI Unavailable Banner (only for failed scans) ───────────────── --}}
-            @if($diagnosis->status === 'needs_review')
+            {{-- ── Failed scan banner (the AI never completed this scan) ───────── --}}
+            @if($failed)
             <div class="bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-start gap-3">
                 <svg width="22" height="22" fill="none" stroke="#b45309" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a9 9 0 0115-6.7M20 15a9 9 0 01-15 6.7"/></svg>
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold text-amber-800 text-sm">AI Engine was unavailable during this scan</p>
-                    <p class="text-xs text-amber-700 mt-0.5">Your image was saved. Please run a new scan — if this keeps happening, the AI service may be temporarily offline.</p>
+                    <p class="font-bold text-amber-800 text-sm" data-failed-scan="1">{{ __('This scan did not complete') }}</p>
+                    <p class="text-xs text-amber-700 mt-0.5">{{ __('Our analysis service was unavailable, so there is no result and this scan was not counted. Please scan again.') }}</p>
                 </div>
                 <a href="{{ route('diagnostics.scan') }}"
                    class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
-                    Try Again
+                    {{ __('Try again') }}
                 </a>
             </div>
             @endif
 
+            {{-- No narration for a failed scan: there is no result to read out. --}}
+            @unless($failed)
             {{-- ── Voice Narration Bar ───────────────────────────────────────── --}}
             @php $sessionLang = session('locale', 'en'); $validTtsLangs = ['en','ha','fr','yo','ig','ff','ar','sw']; $defaultTtsLang = in_array($sessionLang, $validTtsLangs) ? $sessionLang : 'en'; @endphp
             <div class="bg-slate-800 text-white px-5 py-2.5 flex flex-wrap items-center gap-3">
@@ -201,6 +205,8 @@
                 </div>
             </div>
 
+            @endunless
+
             {{-- ── Main Report Grid ──────────────────────────────────────────── --}}
             <div class="p-5 grid grid-cols-1 md:grid-cols-4 gap-5">
 
@@ -228,7 +234,7 @@
                             </div>
                             @else
                             <div class="text-white font-extrabold text-sm leading-none">N/A</div>
-                            <div class="text-white/70 text-[10px] mt-0.5">AI Analysis Unavailable</div>
+                            <div class="text-white/70 text-[10px] mt-0.5">{{ $diagnosis->has_no_single_finding ? __('No single finding') : __('AI Analysis Unavailable') }}</div>
                             @endif
                         </div>
 
@@ -239,17 +245,19 @@
 
                     {{-- Badges --}}
                     <div class="space-y-1.5">
-                        @if($sev)
+                        @if($sev && !$failed)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}" data-severity="{{ $diagnosis->severity_key }}">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Severity">{{ __('Severity') }}</span>
                             <span class="font-extrabold inline-flex items-center gap-1">{!! $theme['icon'] !!} {{ $sev }}</span>
                         </div>
                         @endif
+                        @if($urgency)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border
                             {{ $urgency === 'Emergency' || $urgency === 'High' ? 'bg-red-100 text-red-800 border-red-200' : ($urgency === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}" data-urgency="{{ $diagnosis->urgency_key }}">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Urgency">{{ __('Urgency') }}</span>
                             <span class="font-extrabold">{{ $urgency }}</span>
                         </div>
+                        @endif
                         @if($diagnosis->detected_part)
                         <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-700">
                             <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Detected Part">{{ __('Detected Part') }}</span>
@@ -275,7 +283,11 @@
                 <div class="md:col-span-3 space-y-4">
 
                     {{-- Disease headline --}}
-                    @if($diagnosis->is_not_certain)
+                    @if($failed)
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" data-no-diagnosis="1">
+                        <h3 class="text-base font-extrabold text-slate-700">{{ __('No result: this scan did not complete') }}</h3>
+                    </div>
+                    @elseif($diagnosis->is_not_certain)
                     @include('diagnostics.partials.not-certain')
                     @else
                     <div class="{{ $theme['ibg'] }} border border-opacity-30 rounded-xl px-4 py-3 flex items-start justify-between gap-3 flex-wrap"

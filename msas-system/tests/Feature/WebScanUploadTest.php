@@ -17,12 +17,13 @@ use Tests\TestCase;
 class WebScanUploadTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\FakesAiEngine;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('local');
-        config(['services.ai_engine.url' => '']); // no engine: stored as provider_error
+        $this->fakeAiEngine();
     }
 
     private function jpeg(): UploadedFile
@@ -86,8 +87,8 @@ class WebScanUploadTest extends TestCase
             'scan_type' => 'plant', 'image' => $this->jpeg(),
         ]);
 
-        $res->assertStatus(403);
-        $this->assertStringContainsString('used all 5 AI scans', $res->json('errors.image.0'));
-        $this->assertStringNotContainsString('<a', $res->json('errors.image.0'));
+        $res->assertStatus(403)->assertJsonPath('error_code', 'SCAN_QUOTA_EXCEEDED')->assertJsonPath('action', 'upgrade');
+        $this->assertStringContainsString('used all 5 scans this month', $res->json('error'));
+        $this->assertStringNotContainsString('<a', $res->json('error'));
     }
 }

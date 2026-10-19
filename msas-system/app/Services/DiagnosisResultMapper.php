@@ -211,28 +211,33 @@ class DiagnosisResultMapper
     }
 
     /**
-     * The engine answered with a 4xx: it read the request and rejected the
-     * image itself (undecodable or unusable file). That is a photo problem
-     * the farmer can fix, not an AI outage, so it must not be stored as
-     * "AI engine temporarily unavailable, an expert will review".
+     * The AI ran and rejected the photo itself (older engines answer 422
+     * {accepted: false, message} for "not a plant" and similar). Only that
+     * case is a "retake the photo" result (IMAGE_UNUSABLE). Every other
+     * engine 4xx/5xx (key mismatch, provider down, undecodable upload) is a
+     * coded failure (App\Services\Scan\ScanFailureClassifier) and never
+     * shows "Photo too unclear".
      */
     public static function fromEngineRejection(int $httpStatus, ?array $body): ?array
     {
-        if ($httpStatus < 400 || $httpStatus >= 500) {
+        $detail = $body['detail'] ?? null;
+        if ($httpStatus !== 422 || !is_array($detail) || ($detail['accepted'] ?? null) !== false) {
             return null;
         }
-        $detail  = $body['detail'] ?? null;
-        $message = is_array($detail) ? ($detail['message'] ?? null) : (is_string($detail) ? $detail : null);
+        $message = $detail['message'] ?? null;
+        $outcome = is_string($message) && preg_match('/does not appear to show|not a (plant|crop|animal|pest|soil)/i', $message)
+            ? 'unsupported_subject' : 'poor_image';
 
         return array_merge(self::aiUnavailableFallback(), [
-            'disease_name'             => self::outcomeHeadline('poor_image'),
+            'disease_name'             => self::outcomeHeadline($outcome),
             'status'                   => 'reviewed',
             'urgency_level'            => null,
             'vet_referral_advice'      => null,
-            'explanation'              => $message ?: 'The photo could not be read. Please retake it.',
-            'confidence_decision'      => 'poor_image',
-            'assessment_outcome'       => 'poor_image',
+            'explanation'              => $message ?: 'The photo could not be assessed. Please retake it.',
+            'confidence_decision'      => $outcome,
+            'assessment_outcome'       => $outcome,
             'image_quality'            => 'poor',
+            'generated_by'             => 'primary_model',
             'photo_tips'               => ['Use a clear JPEG or PNG photo taken with the camera.', 'Hold the phone steady and fill the frame with the subject.'],
         ]);
     }
