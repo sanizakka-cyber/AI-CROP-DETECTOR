@@ -92,7 +92,33 @@ describe.each(MODES)('$mode scan', ({ mode, screen: Screen, submit, before }) =>
     await flush();
     fireEvent.press(screen.getByText(submit));
     await flush();
-    expect(Alert.alert).toHaveBeenCalledWith(expect.any(String), 'MSAS could not be reached.');
+    // showScanError: title, the message (no code from the server here), and the buttons.
+    expect(Alert.alert).toHaveBeenCalledWith(expect.any(String), 'MSAS could not be reached.', expect.any(Array));
     expect(screen.getByText(submit)).toBeTruthy();
+  });
+
+  test('a coded failure shows the plain message and reference, and Try again resubmits the same scan', async () => {
+    const e = Object.assign(new Error('raw provider text that must not be shown'), {
+      code: 'AI_PROVIDER_NO_CREDIT', reference: 'SCN-7F3K2', action: 'retry', technical: null,
+    });
+    diagnoseAPI[mode].mockRejectedValueOnce(e).mockResolvedValueOnce({ diagnosisId: 7 });
+    const Comp = Screen();
+    render(<Comp />);
+    if (before) fireEvent.press(screen.getByText(before));
+    fireEvent.press(screen.getByText('Browse Files'));
+    await flush();
+    fireEvent.press(screen.getByText(submit));
+    await flush();
+
+    const [, body, buttons] = Alert.alert.mock.calls[0];
+    expect(body).toContain('Your scan was NOT counted');
+    expect(body).toContain('Reference: SCN-7F3K2');
+    expect(body).not.toContain('raw provider text');
+    expect(buttons.map((b) => b.text)).not.toContain('Technical details'); // farmers never see them
+    await act(async () => buttons.find((b) => b.text === 'Try again').onPress());
+    await flush();
+    expect(diagnoseAPI[mode]).toHaveBeenCalledTimes(2);
+    expect(diagnoseAPI[mode].mock.calls[1][0].clientScanId).toBe('scan-id-1');
+    expect(mockReplace).toHaveBeenCalledWith('/diagnosis/7');
   });
 });

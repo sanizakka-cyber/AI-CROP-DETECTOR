@@ -48,9 +48,11 @@ class ScanErrorReporter
             if ($failure->code === C::SESSION_EXPIRED) {
                 return redirect()->guest(route('login'))->with('status', $payload['error']);
             }
-            return back()->withInput($request->except('image'))
-                ->withErrors(['image' => $payload['error'] . ' ' . $payload['reference_label']])
-                ->with('scan_error', $payload);
+            // Field problems stay on their own fields; everything else is shown at the photo.
+            $errors = $failure->code === C::VALIDATION_FAILED && !empty($payload['details'])
+                ? $payload['details']
+                : ['image' => $payload['error'] . ' ' . $payload['reference_label']];
+            return back()->withInput($request->except('image'))->withErrors($errors)->with('scan_error', $payload);
         }
 
         $response = response()->json($payload, $status);

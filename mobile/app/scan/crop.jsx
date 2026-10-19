@@ -13,6 +13,7 @@ import { useLocationCapture } from '../../lib/locationCapture';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
 import LocationCaptureSection from '../../components/LocationCaptureSection';
+import { showScanError } from '../../lib/scanErrors';
 
 const CROPS = [
   { id: 'maize',    icon: '🌽', name: 'Maize / Masara' },
@@ -131,7 +132,15 @@ export default function CropScanScreen() {
       });
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
-      Alert.alert('Scan Failed', e.message);
+      // Coded failure from the server (or a lost connection): plain message,
+      // reference, next step; staff also get technical details.
+      showScanError(e, {
+        lang: i18n.language,
+        onRetry: () => handleSubmit(),
+        onSignIn: () => router.replace('/(auth)/login'),
+        onUpgrade: () => router.push('/(tabs)/subscription'),
+        onChoosePhoto: () => setImages([]),
+      });
     } finally {
       setLoading(false);
       setUploadPct(null);

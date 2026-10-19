@@ -23,12 +23,30 @@ const getToken = async () => AsyncStorage.getItem('token');
  * "the network/server failed", which a bare Error can't distinguish.
  */
 export class ApiError extends Error {
-  constructor(message, { kind = 'server', status = null, fieldErrors = null } = {}) {
+  constructor(message, { kind = 'server', status = null, fieldErrors = null, code = null, reference = null,
+    action = null, actionUrl = null, technical = null, scanCounted = null } = {}) {
     super(message);
     this.kind = kind;               // 'network' | 'timeout' | 'validation' | 'auth' | 'server'
     this.status = status;
     this.fieldErrors = fieldErrors; // Laravel's { field: [messages] } from a 422, or null
+    // Scan error codes (server ScanErrorReporter): what failed, the reference
+    // to quote to support, the next step, and for staff roles only, details.
+    this.code = code;               // e.g. 'AI_PROVIDER_NO_CREDIT'; client-side: 'UPLOAD_INTERRUPTED'
+    this.reference = reference;     // 'SCN-7F3K2'
+    this.action = action;           // retry | sign_in | upgrade | choose_photo | fix_fields | wait | retake
+    this.actionUrl = actionUrl;
+    this.technical = technical;     // { code, http_status, service_label, message, timestamp, reference } or null
+    this.scanCounted = scanCounted;
   }
+}
+
+/** The coded fields of a scan error response (or nothing for older servers). */
+function scanErrorFields(data) {
+  if (!data || !data.error_code) return {};
+  return {
+    code: data.error_code, reference: data.reference || null, action: data.action || null,
+    actionUrl: data.action_url || null, technical: data.technical || null, scanCounted: data.scan_counted ?? null,
+  };
 }
 
 /**
@@ -91,7 +109,7 @@ async function handleExpiredSession(path, method) {
   console.log(`[AUTH DEBUG] 401 on ${method} ${path} with a token present -> clearing session`);
   await AsyncStorage.removeItem('token');
   if (typeof globalThis.__onAuthExpired === 'function') globalThis.__onAuthExpired();
-  return new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401 });
+  return new ApiError('Session expired. Please log in again.', { kind: 'auth', status: 401, code: 'SESSION_EXPIRED', action: 'sign_in' });
 }
 
 /** Central request helper with automatic 401 interception */
@@ -208,11 +226,12 @@ async function multipartRequest(path, form, { onProgress } = {}) {
     const headers = { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
     res = await xhrUpload(`${BASE_URL}${path}`, form, headers, UPLOAD_TIMEOUT_MS, onProgress);
   } catch (e) {
+    // Never reached MSAS (or the answer never came back): nothing was recorded.
     if (e?.name === 'TimeoutError' || e?.name === 'AbortError') {
-      throw new ApiError('The upload took too long. Please check your connection and try again.', { kind: 'timeout' });
+      throw new ApiError('The upload took too long. Please check your connection and try again.', { kind: 'timeout', code: 'UPLOAD_INTERRUPTED', action: 'retry' });
     }
     if (e?.message === 'Network request failed' || e?.name === 'TypeError') {
-      throw new ApiError('MSAS could not be reached. Please check your internet connection and try again.', { kind: 'network' });
+      throw new ApiError('MSAS could not be reached. Please check your internet connection and try again.', { kind: 'network', code: 'UPLOAD_INTERRUPTED', action: 'retry' });
     }
     throw new ApiError(`Unexpected error before reaching MSAS: ${e?.message || String(e)}`, { kind: 'client' });
   }
@@ -236,9 +255,11 @@ async function multipartRequest(path, form, { onProgress } = {}) {
   }
 
   if (!res.ok) {
-    const fieldMessage = firstFieldError(data);
-    const message = fieldMessage || data.error || data.message || STATUS_FALLBACKS[res.status] || `Upload failed (${res.status}).`;
-    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.details || data.errors || null });
+    // A coded scan error carries its own plain message; older servers: the first field error.
+    const message = (data.error_code && data.error) || firstFieldError(data) || data.error || data.message
+      || STATUS_FALLBACKS[res.status] || `Upload failed (${res.status}).`;
+    throw new ApiError(message, { kind: kindForStatus(res.status), status: res.status, fieldErrors: data.details || data.errors || null,
+      ...scanErrorFields(data) });
   }
 
   return data;
