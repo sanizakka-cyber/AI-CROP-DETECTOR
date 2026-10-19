@@ -192,6 +192,17 @@ class Diagnosis extends Model
         return $this->urgency_level ? strtolower(trim($this->urgency_level)) : null;
     }
 
+    /**
+     * A scan the AI never completed (older records; new failures create no
+     * record at all, see App\Services\Scan). It has no diagnosis, urgency,
+     * severity or narration, and is not counted against the quota.
+     */
+    public function getIsFailedScanAttribute(): bool
+    {
+        return $this->assessment_outcome === 'provider_error'
+            || $this->confidence_decision === 'ai_unavailable';
+    }
+
     /** The top possible conditions: the AI's leading finding, then the alternatives it considered. */
     public function getPossibleConditionsAttribute(): array
     {
@@ -317,6 +328,10 @@ class Diagnosis extends Model
      */
     public function narrationText(): string
     {
+        // Nothing to read out for a scan the AI never completed.
+        if ($this->is_failed_scan) {
+            return '';
+        }
         $typeLbl  = match($this->type) { 'plant' => 'Crop / Plant', 'soil' => 'Soil Assessment', 'pest' => 'Pest Identification', default => 'Livestock' };
         $severity = $this->severity_level ?? '';
         $urgency  = $this->urgency_level ?? 'Medium';

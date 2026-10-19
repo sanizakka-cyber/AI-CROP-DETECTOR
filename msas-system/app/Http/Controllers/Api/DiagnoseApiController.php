@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\CollectionLocation;
 use App\Models\Diagnosis;
 use App\Models\MobileNotification;
+use App\Exceptions\ScanFailedException;
 use App\Rules\NotEmptyFile;
 use App\Services\DiagnosisResultMapper;
+use App\Services\Scan\ScanFailureClassifier;
 use App\Services\SubscriptionLimitService;
+use App\Support\Scan\ScanErrorCode;
+use App\Support\Scan\ScanFailure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -168,10 +172,11 @@ class DiagnoseApiController extends Controller
 
         $scanCheck = app(SubscriptionLimitService::class)->canScan($request->user());
         if (! $scanCheck['allowed']) {
-            return response()->json([
-                'error' => "You have used all {$scanCheck['limit']} AI scans for this month. Upgrade your plan to continue.",
-                'scan_limit' => $scanCheck,
-            ], 403);
+            throw new ScanFailedException(new ScanFailure(
+                ScanErrorCode::SCAN_QUOTA_EXCEEDED, null,
+                "Monthly scan limit reached ({$scanCheck['used']}/{$scanCheck['limit']}, plan " . ($scanCheck['plan'] ?? 'free') . ')',
+                null, ['limit' => $scanCheck['limit'], 'scan_limit' => $scanCheck],
+            ));
         }
 
         $files     = $request->file('images', []);
@@ -181,40 +186,58 @@ class DiagnoseApiController extends Controller
             $imagePath = $files[0]->store('diagnoses', 'public');
             $fullPath  = Storage::disk('public')->path($imagePath);
         }
-
-        $this->warmAiEngine();
-
+        // A scan that cannot complete is answered with a coded error and
+        // creates no record (nothing counted, no diagnosis, no urgency).
+        $fail = function (ScanFailure $failure) use ($imagePath) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            throw new ScanFailedException($failure);
+        };
+        // Anything unexpected (INTERNAL_ERROR) must not leave the photo behind.
         try {
-            $pending = $this->aiHttp()->attach('language', app()->getLocale());
-            foreach ($textFields as $field => $value) {
-                if ($value !== null && $value !== '') {
-                    $pending = $pending->attach($field, (string) $value);
-                }
-            }
-            foreach ($files as $i => $file) {
-                $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
-            }
-            $response = $pending->post($this->aiBase() . $endpoint);
-        } catch (\Exception $e) {
-            Log::error("Mobile {$type} scan: AI engine exception", ['error' => $e->getMessage()]);
-            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
-        }
+            $classifier = app(ScanFailureClassifier::class);
 
-        if (! $response->successful()) {
-            Log::warning("Mobile {$type} scan: AI engine non-2xx", ['status' => $response->status()]);
-            $rejection = DiagnosisResultMapper::fromEngineRejection($response->status(), $response->json());
-            if ($rejection !== null) {
+            $this->warmAiEngine();
+
+            try {
+                $pending = $this->aiHttp()->attach('language', app()->getLocale());
+                foreach ($textFields as $field => $value) {
+                    if ($value !== null && $value !== '') {
+                        $pending = $pending->attach($field, (string) $value);
+                    }
+                }
+                foreach ($files as $i => $file) {
+                    $pending = $pending->attach('images', file_get_contents($file->getRealPath()), "img_{$i}.jpg");
+                }
+                $response = $pending->post($this->aiBase() . $endpoint);
+            } catch (\Throwable $e) {
+                $fail($classifier->fromException($e));
+            }
+
+            if (! $response->successful()) {
+                $failure = $classifier->fromEngineResponse($response->status(), $response->json(), substr($response->body(), 0, 500));
+                if ($failure) {
+                    $fail($failure);
+                }
+                // The AI ran and judged the photo itself: a "retake" result (IMAGE_UNUSABLE).
+                $rejection = DiagnosisResultMapper::fromEngineRejection($response->status(), $response->json());
                 return $this->finishScan($request, $type, null, $imagePath, $fullPath, $notif['ready'], $rejection);
             }
-            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
-        }
 
-        $aiResult = $response->json();
-        if (! is_array($aiResult)) {
-            return $this->storeUnavailable($request, $type, $imagePath, $fullPath, $notif['failed']);
-        }
+            $aiResult = $response->json();
+            if (! is_array($aiResult)) {
+                $fail(new ScanFailure(ScanErrorCode::INTERNAL_ERROR, $response->status(),
+                    'AI engine answered 2xx without JSON: ' . substr($response->body(), 0, 200), ScanErrorCode::SERVICE_ENGINE));
+            }
 
-        return $this->finishScan($request, $type, $aiResult, $imagePath, $fullPath, $notif['ready']);
+            return $this->finishScan($request, $type, $aiResult, $imagePath, $fullPath, $notif['ready']);
+        } catch (\Throwable $e) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            throw $e;
+        }
     }
 
     private function imageRules(bool $required = true): array
@@ -282,19 +305,21 @@ class DiagnoseApiController extends Controller
         $data = $mapped ?? DiagnosisResultMapper::fromAiResult($aiResult ?? []);
         $thumbnail = $fullPath ? $this->makeThumbnail($fullPath) : null;
 
-        $diagnosis = Diagnosis::create(array_merge($data, [
-            'user_id'         => $request->user()->id,
-            'scan_ref'        => Diagnosis::generateScanRef(),
-            'type'            => $type,
-            'image_path'      => $imagePath,
-            'image_thumbnail' => $thumbnail,
-            'language'        => app()->getLocale(),
-            'client_scan_id'  => $request->input('client_scan_id') ?: null,
-        ]));
-
-        CollectionLocation::createFromRequest($request, $diagnosis);
-
-        \App\Models\SubscriptionUsage::track($request->user()->id, 'ai_scans_per_month');
+        // One transaction: a scan is either fully recorded and counted, or not at all.
+        $diagnosis = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $request, $type, $imagePath, $thumbnail) {
+            $diagnosis = Diagnosis::create(array_merge($data, [
+                'user_id'         => $request->user()->id,
+                'scan_ref'        => Diagnosis::generateScanRef(),
+                'type'            => $type,
+                'image_path'      => $imagePath,
+                'image_thumbnail' => $thumbnail,
+                'language'        => app()->getLocale(),
+                'client_scan_id'  => $request->input('client_scan_id') ?: null,
+            ]));
+            CollectionLocation::createFromRequest($request, $diagnosis);
+            \App\Models\SubscriptionUsage::track($request->user()->id, 'ai_scans_per_month');
+            return $diagnosis;
+        });
 
         $this->cacheScanPayload($diagnosis, $imagePath);
 
@@ -307,34 +332,6 @@ class DiagnoseApiController extends Controller
         );
 
         return response()->json(['diagnosisId' => $diagnosis->id, 'scan_ref' => $diagnosis->scan_ref]);
-    }
-
-    /** The AI genuinely didn't respond — still creates a real, honestly-labeled record instead of silently failing the request with no trace of the attempted scan. */
-    private function storeUnavailable(Request $request, string $type, ?string $imagePath, ?string $fullPath, string $notifTitle): JsonResponse
-    {
-        $diagnosis = Diagnosis::create(array_merge(DiagnosisResultMapper::aiUnavailableFallback(), [
-            'user_id'         => $request->user()->id,
-            'scan_ref'        => Diagnosis::generateScanRef(),
-            'type'            => $type,
-            'image_path'      => $imagePath,
-            'image_thumbnail' => $fullPath ? $this->makeThumbnail($fullPath) : null,
-            'language'        => app()->getLocale(),
-            'client_scan_id'  => $request->input('client_scan_id') ?: null,
-        ]));
-
-        CollectionLocation::createFromRequest($request, $diagnosis);
-
-        $this->cacheScanPayload($diagnosis, $imagePath);
-
-        MobileNotification::send(
-            $request->user()->id,
-            $notifTitle,
-            'Our AI engine was temporarily unavailable — an expert will review your scan shortly.',
-            'scan',
-            ['diagnosis_id' => $diagnosis->id]
-        );
-
-        return response()->json(['diagnosisId' => $diagnosis->id, 'scan_ref' => $diagnosis->scan_ref], 202);
     }
 
     /** One place building the cache payload mobile's show() serves immediately after a scan — kept in sync with the full field set both success and fallback paths now populate. */
@@ -378,10 +375,11 @@ class DiagnoseApiController extends Controller
                 // One severity value (App\Support\Severity): `severity` is the
                 // lowercase key of severity_level, never urgency (that was the
                 // HIGH-badge vs Moderate-details bug). Urgency has its own keys.
-                'severity'            => $d->severity_key,
-                'severityLevel'       => $d->severity_level,
-                'urgency'             => $d->urgency_key,
-                'urgencyLevel'        => $d->urgency_level,
+                // A failed scan (older records) has no severity or urgency at all.
+                'severity'            => $d->is_failed_scan ? null : $d->severity_key,
+                'severityLevel'       => $d->is_failed_scan ? null : $d->severity_level,
+                'urgency'             => $d->is_failed_scan ? null : $d->urgency_key,
+                'urgencyLevel'        => $d->is_failed_scan ? null : $d->urgency_level,
                 'healthStatus'        => $d->health_status,
                 'likelyCauses'        => $d->cause ? [$d->cause] : [],
                 'symptomsIdentified'  => $d->symptoms_identified,
@@ -437,6 +435,8 @@ class DiagnoseApiController extends Controller
                 'possibleConditions'    => $d->is_not_certain ? $d->possible_conditions : [],
                 // Buffer zone: "Likely X, please confirm with a vet or extension officer".
                 'needsConfirmation'     => $d->needs_confirmation,
+                // The AI never completed this scan: no diagnosis, urgency or narration.
+                'failedScan'            => $d->is_failed_scan,
                 'confirmBelow'          => Diagnosis::confirmBelow(),
                 // How the engine's repeat analyses agreed (null for older scans).
                 'consensus'             => $d->ai_consensus,
@@ -499,7 +499,8 @@ class DiagnoseApiController extends Controller
             'disease_name'          => $d->disease_name,
             'confidence_score'      => $d->confidence_score,
             'confidence_label'      => $d->confidenceLabel,
-            'urgency_level'         => $d->urgency_level,
+            'urgency_level'         => $d->is_failed_scan ? null : $d->urgency_level,
+            'failed_scan'           => $d->is_failed_scan,
             'severity_level'        => $d->severity_level,
             'severity'              => $d->severity_key,
             'cause'                 => $d->cause,

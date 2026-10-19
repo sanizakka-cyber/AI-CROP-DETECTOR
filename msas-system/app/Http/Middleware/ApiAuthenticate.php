@@ -16,7 +16,7 @@ class ApiAuthenticate
         $bearerToken = $request->bearerToken();
 
         if (! $bearerToken) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return $this->unauthenticated($request, 'No bearer token');
         }
 
         $hash  = hash('sha256', $bearerToken);
@@ -29,7 +29,7 @@ class ApiAuthenticate
             : User::where('api_token', $hash)->where('is_active', true)->first();
 
         if (! $user) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
+            return $this->unauthenticated($request, 'Unknown, revoked or inactive-account token');
         }
 
         if ($token && (! $token->last_used_at || $token->last_used_at->lt(now()->subMinutes(5)))) {
@@ -41,5 +41,15 @@ class ApiAuthenticate
         $request->setUserResolver(fn() => $user);
 
         return $next($request);
+    }
+
+    /** A scan gets the coded SESSION_EXPIRED answer (with a reference); other routes keep the plain 401. */
+    private function unauthenticated(Request $request, string $why): Response
+    {
+        if (\App\Services\Scan\ScanErrorReporter::isScanRequest($request)) {
+            return app(\App\Services\Scan\ScanErrorReporter::class)->respond($request,
+                new \App\Support\Scan\ScanFailure(\App\Support\Scan\ScanErrorCode::SESSION_EXPIRED, 401, $why));
+        }
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
 }

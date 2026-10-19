@@ -9,6 +9,7 @@ use App\Rules\NotEmptyFile;
 use App\Services\DiagnosisResultMapper;
 use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -89,12 +90,11 @@ class DiagnosticController extends Controller
         // ── Subscription scan limit check ─────────────────────────────────────
         $scanCheck = app(\App\Services\SubscriptionLimitService::class)->canScan(auth()->user());
         if (!$scanCheck['allowed']) {
-            $limit = $scanCheck['limit'];
-            if ($request->expectsJson()) {
-                $msg = "You have used all {$limit} AI scans for this month. Upgrade your plan to continue.";
-                return response()->json(['message' => $msg, 'errors' => ['image' => [$msg]], 'upgrade_url' => route('subscription.plans')], 403);
-            }
-            return back()->withErrors(['image' => "You have used all {$limit} AI scans for this month. <a href=\"" . route('subscription.plans') . "\" class=\"underline font-semibold\">Upgrade your plan to continue →</a>"]);
+            throw new \App\Exceptions\ScanFailedException(new \App\Support\Scan\ScanFailure(
+                \App\Support\Scan\ScanErrorCode::SCAN_QUOTA_EXCEEDED, null,
+                "Monthly scan limit reached ({$scanCheck['used']}/{$scanCheck['limit']}, plan " . ($scanCheck['plan'] ?? 'free') . ')',
+                null, ['limit' => $scanCheck['limit'], 'scan_limit' => $scanCheck],
+            ));
         }
 
         // ── 1. Store image ────────────────────────────────────────────────────
@@ -106,6 +106,18 @@ class DiagnosticController extends Controller
         $fullPath     = Storage::disk('local')->path($path);
         $mimeType     = $uploadedFile->getMimeType() ?? 'image/jpeg';
 
+        // Anything unexpected after this point (INTERNAL_ERROR) must not leave
+        // the photo behind or half a record: the scan simply did not happen.
+        try {
+            return $this->analyzeStoredPhoto($request, $path, $fullPath, $mimeType);
+        } catch (\Throwable $e) {
+            Storage::disk('local')->delete($path);
+            throw $e;
+        }
+    }
+
+    private function analyzeStoredPhoto(Request $request, string $path, string $fullPath, string $mimeType)
+    {
         // ── 2. Resolve AI engine connection ───────────────────────────────────
         $baseUrl    = rtrim(config('services.ai_engine.url', ''), '/');
         $aiKey      = config('services.ai_engine.key', '');
@@ -117,15 +129,20 @@ class DiagnosticController extends Controller
         };
 
         $aiResult        = null;
-        $failureReason   = null;
         $engineRejection = null;
+        $classifier      = app(\App\Services\Scan\ScanFailureClassifier::class);
+        // A scan that cannot complete is answered with a coded error and
+        // creates no record: no diagnosis, no urgency, nothing counted
+        // (App\Services\Scan\ScanErrorReporter). The stored photo is removed.
+        $fail = function (\App\Support\Scan\ScanFailure $failure) use ($path) {
+            Storage::disk('local')->delete($path);
+            throw new \App\Exceptions\ScanFailedException($failure);
+        };
 
         if (!file_exists($fullPath) || !is_readable($fullPath)) {
-            $failureReason = "File unreadable: {$fullPath}";
-            Log::error('AI scan: file unreadable', ['path' => $fullPath]);
+            $fail(new \App\Support\Scan\ScanFailure(\App\Support\Scan\ScanErrorCode::INTERNAL_ERROR, null, 'Stored upload unreadable on the server', 'website'));
         } elseif (!$baseUrl) {
-            $failureReason = 'AI_ENGINE_URL not configured';
-            Log::error('AI scan: missing AI_ENGINE_URL');
+            $fail(new \App\Support\Scan\ScanFailure(\App\Support\Scan\ScanErrorCode::ENGINE_UNREACHABLE, null, 'AI_ENGINE_URL is not configured'));
         } else {
             // ── 3. Build raw RFC 2046 multipart body ──────────────────────────
             $imageData = file_get_contents($fullPath);
@@ -171,52 +188,46 @@ class DiagnosticController extends Controller
             $body .= "--{$boundary}--\r\n";
 
             // ── 4. POST to AI engine ──────────────────────────────────────────
+            // Laravel's HTTP client (same as the app's scan flow), so both
+            // flows classify failures the same way and can be faked in tests.
             try {
-                $headers = [
-                    'Content-Type'   => "multipart/form-data; boundary={$boundary}",
-                    'Content-Length' => strlen($body),
-                ];
-                if ($aiKey) {
-                    $headers['Authorization'] = "Bearer {$aiKey}";
-                }
-
                 Log::info('AI scan request', ['url' => $aiEndpoint, 'scan_type' => $request->scan_type]);
 
                 // Pre-warm: ping /health first so Render.com starts waking up the
                 // service while we finish building the request. On a cold start this
                 // buys ~30 s of spin-up time before the heavy prediction POST fires.
-                $guzzle = new GuzzleClient([
-                    'connect_timeout' => 90,
-                    'timeout'         => 180,
-                    'http_errors'     => false,
-                ]);
-
                 try {
-                    $warmHeaders = $aiKey ? ['Authorization' => "Bearer {$aiKey}"] : [];
-                    $guzzle->get("{$baseUrl}/health", ['headers' => $warmHeaders, 'timeout' => 5]);
+                    Http::timeout(5)->withToken((string) $aiKey)->get("{$baseUrl}/health");
                 } catch (\Throwable) {
                     // Non-fatal — proceed even if warm-up ping fails
                 }
 
-                $resp   = $guzzle->post($aiEndpoint, ['body' => $body, 'headers' => $headers]);
-                $status = $resp->getStatusCode();
-                $rbody  = (string) $resp->getBody();
-
-                Log::info('AI scan response', ['status' => $status]);
-
-                if ($status >= 200 && $status < 300) {
-                    $aiResult = json_decode($rbody, true);
-                    if (!$aiResult) {
-                        $failureReason = "200 OK but non-JSON: " . substr($rbody, 0, 200);
-                    }
-                } else {
-                    $engineRejection = DiagnosisResultMapper::fromEngineRejection($status, json_decode($rbody, true));
-                    $failureReason = "HTTP {$status}: " . substr($rbody, 0, 300);
-                    Log::warning('[AI] non-200 response', ['status' => $status, 'body' => substr($rbody, 0, 300)]);
+                $http = Http::timeout(180)->connectTimeout(90);
+                if ($aiKey) {
+                    $http = $http->withToken($aiKey);
                 }
+                $resp   = $http->withBody($body, "multipart/form-data; boundary={$boundary}")->post($aiEndpoint);
+                $status = $resp->status();
+                $rbody  = $resp->body();
             } catch (\Throwable $e) {
-                $failureReason = get_class($e) . ': ' . $e->getMessage();
-                Log::error('[AI] exception', ['error' => $e->getMessage()]);
+                $fail($classifier->fromException($e));
+            }
+
+            Log::info('AI scan response', ['status' => $status]);
+
+            if ($status >= 200 && $status < 300) {
+                $aiResult = json_decode($rbody, true);
+                if (!is_array($aiResult)) {
+                    $fail(new \App\Support\Scan\ScanFailure(\App\Support\Scan\ScanErrorCode::INTERNAL_ERROR, $status,
+                        'AI engine answered 2xx without JSON: ' . substr($rbody, 0, 200), 'ai_engine'));
+                }
+            } else {
+                $failure = $classifier->fromEngineResponse($status, json_decode($rbody, true), substr($rbody, 0, 500));
+                if ($failure) {
+                    $fail($failure);
+                }
+                // The AI ran and judged the photo itself (not a plant, unusable): a "retake" result.
+                $engineRejection = DiagnosisResultMapper::fromEngineRejection($status, json_decode($rbody, true));
             }
         }
 
@@ -253,27 +264,28 @@ class DiagnosticController extends Controller
         if ($aiResult) {
             $diagnosisData = DiagnosisResultMapper::fromAiResult($aiResult);
         } elseif (!empty($engineRejection)) {
-            // The engine read the upload and rejected the image itself: a
-            // "retake photo" result, not an AI outage (Phase 11).
+            // The AI read the photo and judged it unusable: a "retake photo"
+            // result (IMAGE_UNUSABLE), not an outage.
             $diagnosisData = $engineRejection;
             $aiResult = $engineRejection;
         } else {
-            Log::warning('AI scan failed, falling back to expert review', ['reason' => $failureReason]);
-            $diagnosisData = DiagnosisResultMapper::aiUnavailableFallback();
+            $fail(new \App\Support\Scan\ScanFailure(\App\Support\Scan\ScanErrorCode::INTERNAL_ERROR, null, 'No AI result and no classified failure', 'website'));
         }
 
-        $diagnosis = Diagnosis::create(array_merge($diagnosisData, [
-            'user_id'         => auth()->id(),
-            'scan_ref'        => Diagnosis::generateScanRef(),
-            'type'            => $request->scan_type,
-            'image_path'      => $path,
-            'image_thumbnail' => $thumbnail,
-            'language'        => app()->getLocale(),
-        ]));
-
-        CollectionLocation::createFromRequest($request, $diagnosis);
-
-        \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
+        // One transaction: a scan is either fully recorded and counted, or not at all.
+        $diagnosis = \Illuminate\Support\Facades\DB::transaction(function () use ($diagnosisData, $request, $path, $thumbnail) {
+            $diagnosis = Diagnosis::create(array_merge($diagnosisData, [
+                'user_id'         => auth()->id(),
+                'scan_ref'        => Diagnosis::generateScanRef(),
+                'type'            => $request->scan_type,
+                'image_path'      => $path,
+                'image_thumbnail' => $thumbnail,
+                'language'        => app()->getLocale(),
+            ]));
+            CollectionLocation::createFromRequest($request, $diagnosis);
+            \App\Models\SubscriptionUsage::track(auth()->id(), 'ai_scans_per_month');
+            return $diagnosis;
+        });
 
         $message = match ($diagnosis->assessment_outcome) {
             'poor_image'          => 'We could not assess this photo. See the tips below and retake it.',

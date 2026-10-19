@@ -70,24 +70,23 @@ class MobileScanOutcomeTest extends TestCase
         $show->assertJsonPath('diagnosis.assessment.photoTips.0', 'Photograph the affected leaf up close');
     }
 
-    public function test_engine_422_is_a_retake_photo_result_not_an_outage(): void
+    public function test_an_ai_rejection_of_the_photo_is_a_retake_result_not_an_outage(): void
     {
         Http::fake([
             '*/health' => Http::response(['status' => 'ok']),
-            '*/predict/crop' => Http::response(['detail' => ['accepted' => false, 'message' => 'This file could not be read as an image.']], 422),
+            '*/predict/crop' => Http::response(['detail' => ['accepted' => false, 'message' => 'Image does not appear to show a plant or crop.']], 422),
         ]);
         $user = $this->farmer();
 
         $this->scan($user)->assertOk();
 
         $d = Diagnosis::first();
-        $this->assertSame('poor_image', $d->assessment_outcome);
-        $this->assertSame('poor_image', $d->confidence_decision);
+        $this->assertSame('unsupported_subject', $d->assessment_outcome);
         $this->assertNotSame('ai_unavailable', $d->confidence_decision);
         $this->assertNotNull($d->image_path);
     }
 
-    public function test_engine_outage_keeps_the_image_and_is_marked_provider_error(): void
+    public function test_an_engine_outage_is_a_coded_error_with_no_record_and_no_photo_kept(): void
     {
         Http::fake([
             '*/health' => Http::response(['status' => 'ok']),
@@ -95,13 +94,11 @@ class MobileScanOutcomeTest extends TestCase
         ]);
         $user = $this->farmer();
 
-        $this->scan($user)->assertStatus(202);
+        $this->scan($user)->assertStatus(503)->assertJsonPath('error_code', 'AI_PROVIDER_ERROR')->assertJsonPath('scan_counted', false);
 
-        $d = Diagnosis::first();
-        $this->assertSame('provider_error', $d->assessment_outcome);
-        $this->assertSame('needs_review', $d->status);
-        $this->assertNull($d->confidence_score);
-        $this->assertNotNull($d->image_path, 'Previously the image was discarded on this path.');
+        // Phase 12.2+: no diagnosis, urgency or "expert will review" record for a scan that did not run.
+        $this->assertSame(0, Diagnosis::count());
+        $this->assertSame([], Storage::disk('public')->allFiles('diagnoses'));
     }
 
     public function test_retry_with_same_client_scan_id_returns_the_existing_scan(): void
@@ -195,9 +192,9 @@ class MobileScanOutcomeTest extends TestCase
         $user = $this->farmer();
         $svc = app(\App\Services\SubscriptionLimitService::class);
 
-        $this->scan($user)->assertStatus(202);
-        $this->scan($user)->assertStatus(202);
-        $this->assertSame(0, $svc->canScan($user)['used'], 'Outage records are not counted.');
+        $this->scan($user)->assertStatus(503);
+        $this->scan($user)->assertStatus(503);
+        $this->assertSame(0, $svc->canScan($user)['used'], 'Failed scans are not counted.');
 
         $this->scan($user)->assertOk();
         $this->assertSame(1, $svc->canScan($user)['used']);

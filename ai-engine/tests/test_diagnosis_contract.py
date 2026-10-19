@@ -303,7 +303,7 @@ def test_provider_error_is_503(fake):
     fake(raise_exc=err)
     r = _post("crop")
     assert r.status_code == 503
-    assert r.json()["detail"]["error"] == "provider_unavailable"
+    assert r.json()["detail"]["error"] == "provider_error"  # labelled per cause since scan error codes
 
 
 def test_livestock_without_a_photo_does_not_call_the_model(fake):

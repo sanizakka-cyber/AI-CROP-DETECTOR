@@ -192,6 +192,17 @@
                         </div>
                     </div>
                     <p id="upload-error" class="text-red-600 text-xs mt-2 font-semibold hidden" role="alert"></p>
+                    {{-- A failed scan: plain message, reference, next step; staff also get technical details. --}}
+                    <div id="scan-error-box" class="hidden mt-3 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800" role="alert" aria-live="assertive">
+                        <p class="scan-error-message font-semibold"></p>
+                        <p class="scan-error-reference text-xs mt-1 font-mono text-red-700"></p>
+                        <div class="scan-error-actions flex flex-wrap gap-2 mt-3"></div>
+                        <details class="scan-error-technical hidden mt-3 bg-white border border-red-100 rounded-lg p-3 text-xs text-slate-700">
+                            <summary class="cursor-pointer font-bold">{{ __('Technical details') }}</summary>
+                            <dl class="scan-error-technical-list grid grid-cols-3 gap-x-2 gap-y-1 mt-2"></dl>
+                            <button type="button" class="scan-error-copy mt-2 px-3 py-1 bg-slate-700 text-white rounded-lg">{{ __('Copy details') }}</button>
+                        </details>
+                    </div>
                     @error('image')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -287,6 +298,29 @@
         </div>
     </div>
 
+    @php
+        // Built here, not inline in @json: Blade's @json splits a literal array on commas.
+        $scanErrorText = [
+            'unavailable' => __('Our analysis service is temporarily unavailable. Your scan was NOT counted. Please try again in a few minutes.'),
+            'interrupted' => __('The photo did not finish uploading. Check your connection and try again.'),
+            'tooLarge'    => __('This photo is too large (over 10 MB). Choose a smaller photo or take a new one.'),
+            'session'     => __('Your login has expired. Please sign in again.'),
+            'reference'   => __('Reference:'),
+            'retry'       => __('Try again'),
+            'signIn'      => __('Sign in'),
+            'upgrade'     => __('Upgrade plan'),
+            'choosePhoto' => __('Choose another photo'),
+            'copyDetails' => __('Copy details'),
+            'copied'      => __('Copied'),
+            'tCode'       => __('Error code'),
+            'tStatus'     => __('HTTP status'),
+            'tService'    => __('Failed service'),
+            'tMessage'    => __('Error message'),
+            'tTime'       => __('Time'),
+            'loginUrl'    => route('login'),
+            'upgradeUrl'  => route('subscription.plans'),
+        ];
+    @endphp
     <script>
     // Nigeria states + LGAs — same server-side dataset the backend
     // validates against (App\Data\NigeriaLocations), so client and server
@@ -420,6 +454,57 @@
     // HEIC (iPhone) is converted to JPEG on the server; some browsers report it with no type.
     function isHeic(file) { return /\.(heic|heif)$/i.test(file.name || '') || /^image\/hei[cf]/i.test(file.type || ''); }
     var MAX_BYTES = 10 * 1024 * 1024; // matches the server's max:10240 KB
+    var SCAN_TEXT = @json($scanErrorText);
+    /**
+     * Shows a failed scan: the server's plain message (never raw errors),
+     * "Reference: SCN-XXXXX", the next step as a button, and for staff
+     * roles only (the server decides) a Technical details box to copy.
+     */
+    function showScanError(e) {
+        var box = document.getElementById('scan-error-box');
+        if (!e) { box.classList.add('hidden'); return; }
+        box.querySelector('.scan-error-message').textContent = e.error || e.message || SCAN_TEXT.unavailable;
+        box.querySelector('.scan-error-reference').textContent = e.reference ? (e.reference_label || (SCAN_TEXT.reference + ' ' + e.reference)) : '';
+        var actions = box.querySelector('.scan-error-actions');
+        actions.textContent = '';
+        function addButton(label, onClick, href) {
+            var el = document.createElement(href ? 'a' : 'button');
+            if (href) { el.href = href; } else { el.type = 'button'; el.addEventListener('click', onClick); }
+            el.className = 'px-4 py-2 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700';
+            el.textContent = label;
+            el.setAttribute('data-scan-action', e.action || '');
+            actions.appendChild(el);
+        }
+        if (e.action === 'retry') addButton(SCAN_TEXT.retry, function () { box.classList.add('hidden'); document.getElementById('submitBtn').click(); });
+        if (e.action === 'sign_in') addButton(SCAN_TEXT.signIn, null, e.action_url || SCAN_TEXT.loginUrl);
+        if (e.action === 'upgrade') addButton(SCAN_TEXT.upgrade, null, e.action_url || SCAN_TEXT.upgradeUrl);
+        if (e.action === 'choose_photo') addButton(SCAN_TEXT.choosePhoto, function () { resetUpload(); document.getElementById('file-upload').click(); });
+
+        var tech = box.querySelector('.scan-error-technical');
+        var list = box.querySelector('.scan-error-technical-list');
+        list.textContent = '';
+        if (e.technical) {
+            var rows = [[SCAN_TEXT.tCode, e.technical.code], [SCAN_TEXT.tStatus, e.technical.http_status], [SCAN_TEXT.tService, e.technical.service_label],
+                        [SCAN_TEXT.tMessage, e.technical.message], [SCAN_TEXT.tTime, e.technical.timestamp], [SCAN_TEXT.reference, e.technical.reference]];
+            rows.forEach(function (r) {
+                var dt = document.createElement('dt'); dt.className = 'font-bold'; dt.textContent = r[0];
+                var dd = document.createElement('dd'); dd.className = 'col-span-2 break-words font-mono'; dd.textContent = r[1] == null ? '' : String(r[1]);
+                list.appendChild(dt); list.appendChild(dd);
+            });
+            var copy = box.querySelector('.scan-error-copy');
+            copy.onclick = function () {
+                var text = rows.map(function (r) { return r[0] + ': ' + (r[1] == null ? '' : r[1]); }).join('\n');
+                (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+                    copy.textContent = SCAN_TEXT.copied;
+                }, function () { window.prompt(SCAN_TEXT.copyDetails, text); });
+            };
+            tech.classList.remove('hidden');
+        } else {
+            tech.classList.add('hidden');
+        }
+        box.classList.remove('hidden');
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     function showUploadError(msg) {
         var el = document.getElementById('upload-error');
         el.textContent = msg || '';
@@ -507,21 +592,19 @@
                     window.location.href = body.redirect;   // result message was flashed server-side
                     return;
                 }
-                var msg = '{{ __("The scan could not be submitted. Please try again.") }}';
-                if (body) {
-                    // This app renders validation as {error, details}; Laravel's default is {message, errors}.
-                    var errs = body.details || body.errors || {};
-                    var first = Object.keys(errs)[0];
-                    if (first && errs[first][0]) msg = errs[first][0];
-                    else if (body.message || body.error) msg = body.message || body.error;
-                }
                 setBusy(false);
-                showUploadError(msg);
+                if (body && body.error_code) { showScanError(body); return; }
+                // No coded answer from MSAS (e.g. a proxy page): explain what the status means.
+                var local = xhr.status === 413 ? SCAN_TEXT.tooLarge : (xhr.status === 419 || xhr.status === 401 ? SCAN_TEXT.session : SCAN_TEXT.unavailable);
+                showScanError({ error: local, action: xhr.status === 413 ? 'choose_photo' : (xhr.status === 419 || xhr.status === 401 ? 'sign_in' : 'retry'),
+                    action_url: xhr.status === 419 || xhr.status === 401 ? SCAN_TEXT.loginUrl : null });
             };
             xhr.onerror = function() {
                 setBusy(false);
-                showUploadError('{{ __("Connection lost while uploading. Check your internet and try again.") }}');
+                // Never reached MSAS: nothing was recorded or counted.
+                showScanError({ error: SCAN_TEXT.interrupted, action: 'retry' });
             };
+            showScanError(null);
             xhr.send(new FormData(form));
         });
     })();

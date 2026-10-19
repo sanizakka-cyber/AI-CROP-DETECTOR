@@ -159,6 +159,26 @@ return Application::configure(basePath: dirname(__DIR__))
           }
         });
 
+        // Classified scan failures are recorded in scan_errors by the reporter;
+        // unexpected exceptions (INTERNAL_ERROR) are still reported as usual.
+        $exceptions->dontReport(\App\Exceptions\ScanFailedException::class);
+
+        // Scan requests (web form and app): every failure gets a code, a
+        // reference and a role-aware answer (App\Services\Scan). Registered
+        // first so it wins over the generic JSON answers below for these routes only.
+        $exceptions->render(function (\Throwable $e, $request) {
+            try {
+                if (! \App\Services\Scan\ScanErrorReporter::isScanRequest($request)) {
+                    return null;
+                }
+                $failure = app(\App\Services\Scan\ScanFailureClassifier::class)->forRequestException($e, $request);
+                return $failure ? app(\App\Services\Scan\ScanErrorReporter::class)->respond($request, $failure) : null;
+            } catch (\Throwable $reporting) {
+                error_log('[scan error reporting failed] ' . $reporting->getMessage());
+                return null; // fall back to Laravel's own answer rather than mask the original error
+            }
+        });
+
         // Return standard JSON for all API errors (request path starts with /api)
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
             if ($request->is('api/*') || $request->expectsJson()) {

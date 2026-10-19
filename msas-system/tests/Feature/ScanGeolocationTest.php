@@ -26,12 +26,13 @@ use Tests\TestCase;
 class ScanGeolocationTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\FakesAiEngine;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('local');
-        config(['services.ai_engine.url' => '']);
+        $this->fakeAiEngine();
     }
 
     private function fakeJpeg(string $name = 'leaf.jpg'): UploadedFile
@@ -143,21 +144,19 @@ class ScanGeolocationTest extends TestCase
         $this->assertTrue($location->differs_from_scan_location);
     }
 
-    public function test_ai_unavailable_scan_still_has_honest_confidence_provenance(): void
+    public function test_a_scan_the_ai_never_answered_creates_no_record_and_no_fabricated_result(): void
     {
+        config(['services.ai_engine.url' => '']); // engine not configured
         $user = User::factory()->create(['role' => 'farmer']);
 
-        $this->actingAs($user)->post(route('diagnostics.analyze'), [
+        $this->actingAs($user)->postJson(route('diagnostics.analyze'), [
             'scan_type' => 'plant',
             'image'     => $this->fakeJpeg(),
-        ]);
+        ])->assertStatus(503)->assertJsonPath('error_code', 'ENGINE_UNREACHABLE');
 
-        $diagnosis = Diagnosis::first();
-        $this->assertNull($diagnosis->confidence_score);
-        $this->assertSame('needs_review', $diagnosis->status);
-        $this->assertSame('ai_unavailable', $diagnosis->confidence_decision);
-        $this->assertSame('unvalidated', $diagnosis->validation_status);
-        $this->assertNull($diagnosis->generated_by);
+        // Scan error codes: no diagnosis, confidence or location row for a scan that did not run.
+        $this->assertSame(0, Diagnosis::count());
+        $this->assertSame(0, \App\Models\CollectionLocation::count());
     }
 
     /**

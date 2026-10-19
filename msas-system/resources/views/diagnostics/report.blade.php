@@ -314,14 +314,14 @@ a { color: inherit; text-decoration: none; }
             @endif
         </div>
         <div class="subject-right">
-            @if($diagnosis->severity_level)
+            @if($diagnosis->severity_level && !$diagnosis->is_failed_scan)
             {{-- Badge color logic matches the stored English enum value directly —
                  only the trailing label word is translated, never severity_level itself. --}}
             <span class="badge badge-{{ match($diagnosis->severity_level) { 'Critical','Severe'=>'red', 'Moderate'=>'orange', 'Mild'=>'amber', default=>'green' } }}" data-severity="{{ $diagnosis->severity_key }}">
                 {{ $diagnosis->severity_level }} {{ __('Severity') }}
             </span>
             @endif
-            @if($diagnosis->urgency_level)
+            @if($diagnosis->urgency_level && !$diagnosis->is_failed_scan)
             <span class="badge badge-{{ match($diagnosis->urgency_level) { 'Emergency','High'=>'red', 'Medium'=>'amber', default=>'green' } }}" data-urgency="{{ $diagnosis->urgency_key }}">
                 {{ $diagnosis->urgency_level }} {{ __('Urgency') }}
             </span>
@@ -347,7 +347,7 @@ a { color: inherit; text-decoration: none; }
         <div>
             <div class="diag-headline">
                 <div class="diag-label">{{ __('Diagnosis') }}</div>
-                <div class="diag-name">{{ $diagnosis->is_not_certain ? __('Not certain') : ($diagnosis->needs_confirmation ? __('Likely') . ': ' : '') . $t('disease_name') }}</div>
+                <div class="diag-name">{{ $diagnosis->is_failed_scan ? __('No result: this scan did not complete') : ($diagnosis->is_not_certain ? __('Not certain') : ($diagnosis->needs_confirmation ? __('Likely') . ': ' : '') . $t('disease_name')) }}</div>
                 <div class="meta-row">
                     @if($diagnosis->detected_part)
                     <span class="meta-pill">Part: {{ $t('detected_part') }}</span>

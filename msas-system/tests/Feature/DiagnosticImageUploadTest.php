@@ -26,12 +26,13 @@ use Tests\TestCase;
 class DiagnosticImageUploadTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\FakesAiEngine;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('local');
-        config(['services.ai_engine.url' => '']);
+        $this->fakeAiEngine();
     }
 
     public function test_an_image_near_the_documented_10mb_limit_is_accepted(): void
