@@ -15,8 +15,11 @@ const results = [];
 for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]]) {
   const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(`${base}/login`);
-  await page.fill('input[name="login"]', 'umar.demo@example.test');
-  await page.fill('input[name="password"]', 'screenshot-only');
+  // The login fields are readonly until focused (an autofill guard).
+  for (const [sel, val] of [['input[name="login"]', 'umar.demo@example.test'], ['input[name="password"]', 'screenshot-only']]) {
+    await page.focus(sel);
+    await page.fill(sel, val);
+  }
   await Promise.all([page.waitForNavigation(), page.click('button[type="submit"]')]);
   await page.goto(`${base}/diagnostics/history`, { waitUntil: 'networkidle' });
 

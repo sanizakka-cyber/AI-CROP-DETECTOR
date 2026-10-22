@@ -12,6 +12,9 @@
     </ul>
     @endif
     <p style="font-weight:700">{{ __('Please confirm with a vet or extension officer before treating.') }}</p>
+    @if($rv['retake']['show'])
+    <p style="margin-top:4px"><strong>{{ __('Photo tips') }}:</strong> {{ collect($rv['retake']['tips'])->pluck('text')->implode(' ') }}</p>
+    @endif
 </div>
 @else
 <div class="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3" data-inconclusive="1">

@@ -41,7 +41,8 @@ const show = async (api) => {
 beforeEach(() => { jest.clearAllMocks(); mockLang = 'en'; });
 
 describe('inconclusive (the scan as the old wording vote stored it)', () => {
-  const { api, mustDisplay } = fixture.inconclusive;
+  const { api } = fixture.inconclusive;
+  const mustDisplay = [...fixture.inconclusive.mustDisplay, ...(fixture.inconclusive.mustDisplayOnScreen || [])];
 
   test('headline is never a candidate; no severity or urgency; health "Needs checking"', async () => {
     await show(api);

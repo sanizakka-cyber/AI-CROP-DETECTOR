@@ -111,6 +111,10 @@ class ConsensusResultScreenTest extends TestCase
             $this->assertStringContainsString($text, $this->visibleText($history), "Web page is missing: {$text}");
             $this->assertStringContainsString($text, $this->visibleText($report), "PDF is missing: {$text}");
         }
+        // Buttons (retake) are on the screens only; a PDF has none.
+        foreach ($this->fixture()[$which]['mustDisplayOnScreen'] ?? [] as $text) {
+            $this->assertStringContainsString($text, $this->visibleText($history), "Web page is missing: {$text}");
+        }
         foreach (array_merge($this->fixture()['jargon'], $this->fixture()[$which]['mustNotDisplay'] ?? []) as $word) {
             $this->assertStringNotContainsStringIgnoringCase($word, $this->visibleText($history), "Farmer's web page shows \"{$word}\"");
             $this->assertStringNotContainsStringIgnoringCase($word, $this->visibleText($farmerReport), "Farmer's part of the PDF shows \"{$word}\"");
