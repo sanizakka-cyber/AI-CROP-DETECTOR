@@ -39,4 +39,7 @@ test('the app shows every canonical field the web shows, from the same API respo
 
   const missing = fixture.mustDisplay.filter(s => !shown.includes(s));
   expect(missing).toEqual([]);
+  // No Latin names or jargon on the farmer's screen (staff see them under `technical`).
+  const technical = (fixture.mustNotDisplay || []).filter(w => shown.toLowerCase().includes(w.toLowerCase()));
+  expect(technical).toEqual([]);
 });

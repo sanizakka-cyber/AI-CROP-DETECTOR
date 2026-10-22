@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { Colors, Radius, Spacing, Typography, Shadows } from '../constants/Theme';
 
 // ── Button ────────────────────────────────────────────────────────────────────
-export function Button({ title, onPress, variant = 'primary', loading, disabled, style }) {
+export function Button({ title, onPress, variant = 'primary', loading, disabled, style, testID }) {
   const isPrimary = variant === 'primary';
   const isDanger  = variant === 'danger';
   return (
@@ -19,6 +19,8 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled,
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.82}
+      testID={testID}
+      accessibilityRole="button"
     >
       {loading
         ? <ActivityIndicator color={isPrimary ? Colors.white : Colors.primary} />

@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`label/value layout InfoField stacks the label above a wrapping value 1`] = `
+<View
+  style={
+    {
+      "alignSelf": "stretch",
+      "flexDirection": "column",
+      "marginBottom": 8,
+    }
+  }
+>
+  <Text
+    style={
+      {
+        "color": "#9DB5A2",
+        "flexShrink": 1,
+        "fontSize": 11,
+        "fontWeight": "700",
+        "letterSpacing": 0.5,
+        "lineHeight": 16,
+        "textTransform": "uppercase",
+      }
+    }
+  >
+    Plant/Body Part
+  </Text>
+  <Text
+    style={
+      {
+        "color": "#1A2E1C",
+        "flexShrink": 1,
+        "fontSize": 15,
+        "fontWeight": "400",
+        "lineHeight": 22,
+        "marginTop": 2,
+      }
+    }
+  >
+    stem (pseudostem) with a very long description that has to wrap
+  </Text>
+</View>
+`;
+
+exports[`label/value layout the diagnostic details card of the banana scan 1`] = `
+[
+  "Whether the inner stem is firm or rotting cannot be seen from outside.",
+  "Possible causes",
+  "1. Natural leaf sheath ageing",
+  "2. Natural drying and ageing of old leaf sheaths",
+  "3. Natural drying and shedding of old outer leaf sheaths",
+  "Please confirm with a vet or extension officer before treating.",
+  "No treatment is recommended until the problem is confirmed.",
+]
+`;

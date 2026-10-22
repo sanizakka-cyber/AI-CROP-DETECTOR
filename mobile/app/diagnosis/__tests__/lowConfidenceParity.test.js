@@ -45,21 +45,37 @@ test('the app shows the low-confidence result exactly as the web does', async ()
   expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe(fixture.headline);
   expect(screen.getAllByTestId('possible-condition')).toHaveLength(3);
   expect(screen.queryByText('Other possibilities considered')).toBeNull();
+  // Inconclusive: no severity or urgency, health "Needs checking", severity "Not determined".
+  expect(screen.queryByTestId('header-severity')).toBeNull();
+  expect(screen.queryByTestId('header-urgency')).toBeNull();
+  expect(flatText(screen.getByTestId('details-health').props.children)).toBe('Needs checking');
+  expect(flatText(screen.getByTestId('details-severity').props.children)).toBe('Not determined');
+  // What to do now (2-4 steps) and the retake button.
+  const steps = screen.getAllByTestId('what-to-do-step');
+  expect(steps.length).toBeGreaterThanOrEqual(2);
+  expect(steps.length).toBeLessThanOrEqual(4);
+  expect(screen.getByTestId('retake-button')).toBeTruthy();
+  const missingNot = (fixture.mustNotDisplay || []).filter(w => shown.toLowerCase().includes(w.toLowerCase()));
+  expect(missingNot).toEqual([]);
 });
 
 test('an older server without notCertain still gets the rule (confidence below 65)', async () => {
-  const { notCertain, possibleConditions, minConfidence, ...oldAssessment } = fixture.api.assessment;
-  await show({ ...fixture.api, assessment: oldAssessment });
-  expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe('Not certain');
+  // What a server from before these fields sent: no notCertain/result, and the disease name as primaryDiagnosis.
+  const { notCertain, possibleConditions, minConfidence, result, ...oldAssessment } = fixture.api.assessment;
+  await show({ ...fixture.api, aiResult: { ...fixture.api.aiResult, primaryDiagnosis: fixture.record.disease_name }, assessment: oldAssessment });
+  expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe(fixture.headline);
   expect(screen.getAllByTestId('possible-condition').map(n => flatText(n.props.children))).toEqual(
-    ['• Ringworm (Trichophyton verrucosum)', '• Mange', '• Lumpy skin disease']);
+    ['1. Ringworm (Trichophyton verrucosum)', '2. Mange', '3. Lumpy skin disease']);
 });
 
 test('at or above the threshold one diagnosis is shown', async () => {
   await show({ ...fixture.api, aiResult: { ...fixture.api.aiResult, confidence: 80 },
-    assessment: { ...fixture.api.assessment, notCertain: false, possibleConditions: [] } });
-  expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe('Ringworm (Trichophyton verrucosum)');
-  expect(screen.queryByTestId('not-certain-card')).toBeNull();
+    assessment: { ...fixture.api.assessment, notCertain: false, possibleConditions: [],
+      result: { ...fixture.api.assessment.result, kind: 'diagnosis', inconclusive: false, name: 'Ringworm', headline: 'Ringworm',
+        possible_causes: [], severity: 'mild', urgency: 'medium', health: { key: 'problem', label: 'Problem found' } } } });
+  expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe('Ringworm');
+  expect(screen.queryByTestId('inconclusive-card')).toBeNull();
+  expect(screen.getByTestId('header-severity')).toBeTruthy();
 });
 
 const DISCLAIMER = 'AI guidance can be wrong; confirm with an expert.';

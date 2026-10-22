@@ -27,10 +27,11 @@ const DEFAULT_WHATSAPP = 'https://wa.me/2348129582957';
 
 /** Renders a labeled field, or an explicit "Not applicable" note instead of
  * leaving the section blank — per the platform-parity requirement that
- * every diagnosis-result category always show something. */
-function InfoField({ label, value, testID }) {
+ * every diagnosis-result category always show something. Label above value,
+ * both free to wrap, so a long value never runs into its label. */
+export function InfoField({ label, value, testID }) {
   return (
-    <View style={{ marginBottom: Spacing.sm }}>
+    <View style={styles.infoField}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue} testID={testID}>{value || 'Not applicable for this diagnosis.'}</Text>
     </View>
@@ -317,26 +318,41 @@ export default function DiagnosisDetailScreen() {
   const confidence = hasConfidence ? Number(result.confidence) : null;
   const imageQuality = assessment.imageQuality || validation.quality?.status || null;
   const isUncertain = outcome === 'uncertain';
+  // What to show comes from the server (assessment.result, App\Support\ResultView),
+  // the same source as the web page and the PDF. Older servers don't send it:
+  // the rules below are then applied here.
+  const view = assessment.result || null;
   // Low-confidence rule: below the threshold (server-configured, 65% by
-  // default) never present one diagnosis. The server decides (assessment.
-  // notCertain); an older server without it gets the same rule applied here.
+  // default) never present one diagnosis.
   const minConfidence = Number(assessment.minConfidence ?? 65);
   const notCertain = assessment.notCertain ?? (!isUncertain && hasConfidence && confidence < minConfidence);
-  const possibleConditions = notCertain
-    ? (assessment.possibleConditions?.length
+  // Inconclusive: no single finding, or below the threshold. The title is
+  // never one candidate's name; no severity or urgency; at most 3 causes.
+  const inconclusive = view ? view.inconclusive === true : (isUncertain || notCertain);
+  const possibleConditions = !inconclusive ? [] : view ? (view.possible_causes || []) : (
+    assessment.possibleConditions?.length
       ? assessment.possibleConditions
-      : [...new Set([result.primaryDiagnosis, ...(assessment.alternativeFindings || []).map(a => a.name)].filter(Boolean))].slice(0, 3))
-    : [];
+      : [...new Set([result.primaryDiagnosis, ...(assessment.alternativeFindings || []).map(a => a.name)].filter(Boolean))]
+  ).slice(0, 3);
   // One severity value (server: severity_level). `severity` is how bad the
   // condition is; `urgency` is how soon to act, and is shown separately.
   // Before the server fix, `severity` carried the urgency; an old server
   // without `urgency` still has it there, so fall back to it only then.
-  const severity = result.urgency !== undefined ? result.severity : (result.severityLevel ? String(result.severityLevel).toLowerCase() : null);
-  const urgency = result.urgency !== undefined ? result.urgency : result.severity;
+  const severity = inconclusive ? null : view ? view.severity
+    : result.urgency !== undefined ? result.severity : (result.severityLevel ? String(result.severityLevel).toLowerCase() : null);
+  const urgency = inconclusive ? null : view ? view.urgency : result.urgency !== undefined ? result.urgency : result.severity;
   const isEmergency = urgency === 'emergency' || severity === 'critical';
   // Buffer zone: between the Not-certain line and confirmBelow the result is
   // "Likely X", with a request to confirm (server decides; older servers: never).
-  const needsConfirmation = !notCertain && assessment.needsConfirmation === true;
+  const needsConfirmation = !inconclusive && (view ? view.kind === 'likely' : assessment.needsConfirmation === true);
+  const findingName = view?.name ?? (isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis);
+  const headline = inconclusive ? t('inconclusiveHeadline') : `${needsConfirmation ? `${t('likely')}: ` : ''}${findingName}`;
+  // Fixed steps and tips come with a key the app translates; the AI's own come as text.
+  const tr = (key, text) => { const v = key ? t(key) : null; return v && v !== key ? v : text; };
+  const healthLabel = view?.health ? tr(`health_${view.health.key}`, view.health.label) : result.healthStatus;
+  const steps = view?.steps || [];
+  const retakeTips = view ? (view.retake?.tips || []) : (assessment.photoTips || []).map(text => ({ key: null, text }));
+  const technical = diag.technical || null;
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
@@ -346,7 +362,7 @@ export default function DiagnosisDetailScreen() {
     consultation.recommended ||
     result.needsExpertReview ||
     result.needsVetVisit ||
-    isUncertain ||
+    inconclusive ||
     (hasConfidence && confidence < 70) ||
     needsConfirmation ||
     ['severe', 'critical'].includes(severity) ||
@@ -359,9 +375,7 @@ export default function DiagnosisDetailScreen() {
           <Text style={styles.backBtn}>Back to records</Text>
         </TouchableOpacity>
         <Text style={styles.resultTitle}>{t('result')}</Text>
-        <Text style={styles.diagnosisName} testID="diagnosis-name">
-          {notCertain ? t('notCertain') : `${needsConfirmation ? `${t('likely')}: ` : ''}${isHausa ? result.primaryDiagnosisHa || result.primaryDiagnosis : result.primaryDiagnosis}`}
-        </Text>
+        <Text style={styles.diagnosisName} testID="diagnosis-name">{headline}</Text>
         <View style={styles.metaRow}>
           {severity && <SeverityBadge severity={severity} label={t('severity')} testID="header-severity" />}
           {urgency && <SeverityBadge severity={urgency} label={t('urgency')} testID="header-urgency" />}
@@ -421,6 +435,38 @@ export default function DiagnosisDetailScreen() {
         </View>
       </View>
 
+      {/* First thing under the title: the causes, what to do now, and the retake button. */}
+      {inconclusive && (
+        <Card style={[styles.card, styles.uncertainCard]} testID="inconclusive-card">
+          {assessment.whatCannotBeConfirmed ? <Text style={styles.treatBody}>{assessment.whatCannotBeConfirmed}</Text> : null}
+          <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{t('possibleCauses')}</Text>
+          {possibleConditions.map((name, i) => (
+            <Text key={name} style={styles.treatBody} testID="possible-condition">{i + 1}. {name}</Text>
+          ))}
+          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t('confirmWithExpert')}</Text>
+          <Text style={[styles.treatBody, { marginTop: Spacing.xs }]}>{t('noTreatmentUntilConfirmed')}</Text>
+        </Card>
+      )}
+
+      {steps.length > 0 && (
+        <Card style={[styles.card, styles.whatToDoCard]} testID="what-to-do">
+          <Text style={styles.cardTitle}>{t('whatToDoNow')}</Text>
+          {steps.map((step, i) => (
+            <Text key={i} style={styles.treatBody} testID="what-to-do-step">{i + 1}. {tr(step.key, step.text)}</Text>
+          ))}
+        </Card>
+      )}
+
+      {inconclusive && (
+        <Card style={styles.card} testID="retake-card">
+          {retakeTips.length > 0 && <Text style={styles.cardTitle}>{t('photoTips')}</Text>}
+          {retakeTips.map((tip, i) => (
+            <Text key={i} style={styles.treatBody}>• {tr(tip.key, tip.text)}</Text>
+          ))}
+          <Button title={t('retakeCloser')} onPress={() => router.push('/(tabs)/scan')} style={{ marginTop: Spacing.sm }} testID="retake-button" />
+        </Card>
+      )}
+
       {consultationRecommended && (
         <Card style={styles.consultCard}>
           <Text style={styles.consultTitle}>Professional consultation is recommended.</Text>
@@ -455,10 +501,11 @@ export default function DiagnosisDetailScreen() {
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Diagnostic Details</Text>
         <InfoField label="Detected Subject" value={diag.subjectName} />
-        <InfoField label="Scientific Name" value={diag.scientificName} />
-        <InfoField label="Plant/Body Part" value={diag.detectedPart} />
-        <InfoField label="Health Status" value={result.healthStatus} />
-        <InfoField label="Severity" value={result.severityLevel} testID="details-severity" />
+        {/* Latin names are for staff (technical details), not the farmer's view. */}
+        {technical && <InfoField label="Scientific Name" value={diag.scientificName} />}
+        <InfoField label="Plant/Body Part" value={diag.detectedPart} testID="details-part" />
+        <InfoField label="Health Status" value={healthLabel} testID="details-health" />
+        <InfoField label="Severity" value={inconclusive ? t('notDetermined') : view ? (severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : null) : result.severityLevel} testID="details-severity" />
         <InfoField label="Confidence" value={result.confidenceLabel} />
         <InfoField label="Symptoms Identified" value={result.symptomsIdentified} />
         <InfoField label="Environmental Factors" value={result.environmentalFactors} />
@@ -538,43 +585,7 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
-      {notCertain && (
-        <Card style={[styles.card, styles.uncertainCard]} testID="not-certain-card">
-          <Text style={styles.cardTitle}>{t('notCertain')}</Text>
-          <Text style={styles.treatBody}>{t('notCertainBody')}</Text>
-          <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{t('possibleConditions')}</Text>
-          {possibleConditions.map((name) => (
-            <Text key={name} style={styles.treatBody} testID="possible-condition">• {name}</Text>
-          ))}
-          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t('confirmWithExpert')}</Text>
-        </Card>
-      )}
-
-      {isUncertain && (
-        <Card style={[styles.card, styles.uncertainCard]} testID="uncertain-card">
-          <Text style={styles.cardTitle}>{isHausa ? 'Sakamako bai tabbata ba' : 'Inconclusive result'}</Text>
-          {assessment.whatCannotBeConfirmed ? <Text style={styles.treatBody}>{assessment.whatCannotBeConfirmed}</Text> : null}
-          {assessment.alternativeFindings?.length > 0 && (
-            <>
-              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{isHausa ? 'Wasu yiwuwar' : 'Other possibilities'}</Text>
-              {assessment.alternativeFindings.map((alt, i) => (
-                <Text key={i} style={styles.treatBody}>- {alt.name}{alt.why_considered ? `: ${alt.why_considered}` : ''}</Text>
-              ))}
-            </>
-          )}
-          {assessment.photoTips?.length > 0 && (
-            <>
-              <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{isHausa ? 'Don samun tabbaci' : 'To get a clearer answer'}</Text>
-              {assessment.photoTips.map((tip, i) => <Text key={i} style={styles.treatBody}>{i + 1}. {tip}</Text>)}
-            </>
-          )}
-          <Text style={[styles.treatBody, { marginTop: Spacing.sm }]}>
-            {isHausa ? 'Ba a bayar da magani ba har sai an tabbatar da matsalar.' : 'No treatment is recommended until the problem is confirmed.'}
-          </Text>
-        </Card>
-      )}
-
-      {!isUncertain && !notCertain && assessment.alternativeFindings?.length > 0 && (
+      {!inconclusive && assessment.alternativeFindings?.length > 0 && (
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>{isHausa ? "Wasu yiwuwar da aka yi la'akari da su" : 'Other possibilities considered'}</Text>
           {assessment.alternativeFindings.map((alt, i) => (
@@ -667,6 +678,18 @@ export default function DiagnosisDetailScreen() {
           </Card>
         ) : null;
       })()}
+
+      {/* Staff only (admin, ceo, customer-support): the unsimplified record. */}
+      {technical && (
+        <Card style={styles.card} testID="technical-details">
+          <Text style={styles.cardTitle}>Technical details (staff only)</Text>
+          <InfoField label="Technical name" value={technical.technical_name} />
+          <InfoField label="Scientific name" value={technical.scientific_name} />
+          <InfoField label="Detected part" value={technical.detected_part} />
+          <InfoField label="Condition label" value={technical.condition_label ? `${technical.condition_label}${technical.condition_category ? ` (${technical.condition_category})` : ''}` : null} />
+          <InfoField label="Repeat analyses" value={(technical.pass_findings || []).map((f, i) => `${f}${technical.pass_labels?.[i] ? ` [${technical.pass_labels[i]}]` : ''}${technical.pass_confidences?.[i] != null ? ` ${technical.pass_confidences[i]}%` : ''}`).join('; ')} />
+        </Card>
+      )}
 
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Additional Recommendations</Text>
@@ -801,8 +824,10 @@ const styles = StyleSheet.create({
   emergencyBtnText: { color: Colors.white, fontWeight: '800', ...Typography.body },
   cardTitle: { ...Typography.label, color: Colors.textPrimary, marginBottom: Spacing.xs },
   listItem: { ...Typography.body, color: Colors.textSecondary, marginBottom: 4 },
-  infoLabel: { ...Typography.tiny, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700' },
-  infoValue: { ...Typography.body, color: Colors.textPrimary, marginTop: 2 },
+  infoField: { marginBottom: Spacing.sm, flexDirection: 'column', alignSelf: 'stretch' },
+  infoLabel: { ...Typography.tiny, color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', flexShrink: 1 },
+  infoValue: { ...Typography.body, color: Colors.textPrimary, marginTop: 2, flexShrink: 1 },
+  whatToDoCard: { borderLeftWidth: 4, borderLeftColor: Colors.primary },
   noLocationText: { ...Typography.small, color: Colors.textMuted, fontStyle: 'italic' },
   coordsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.background, borderRadius: Radius.sm, padding: Spacing.sm, marginTop: 4, marginBottom: Spacing.sm },
   coordsRowText: { ...Typography.tiny, color: Colors.textSecondary, fontFamily: 'monospace' },
