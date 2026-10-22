@@ -210,28 +210,36 @@
 
                 <!-- Sample Collection Location (optional) -->
                 <div class="mb-8 border border-slate-200 rounded-xl p-5">
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="block text-sm font-bold text-slate-700">{{ __('Sample Collection Location') }} <span class="font-normal text-slate-400">{{ __('(optional)') }}</span></label>
-                        <button type="button" id="useMyLocationBtn" onclick="useMyLocation()"
-                            class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.5-4.5-7-8.25-7-11.25a7 7 0 1114 0C19 12.75 16.5 16.5 12 21z"/><circle cx="12" cy="9.75" r="2.25"/></svg>
-                            {{ __('Use my location') }}
-                        </button>
-                    </div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">{{ __('Sample Collection Location') }} <span class="font-normal text-slate-400">{{ __('(optional)') }}</span></label>
                     <p class="text-xs text-slate-400 mb-3">{{ __('Recording where this sample was actually collected helps track outbreaks and makes your scan useful for agricultural research. This never blocks your diagnosis — leave it blank if unsure.') }}</p>
 
-                    <div id="locGpsStatus" class="hidden mb-3 text-xs rounded-lg p-2"></div>
+                    {{-- Two ways to record the location: GPS fills State and LGA from the boundaries, or the farmer picks them --}}
+                    <div class="grid grid-cols-2 gap-2 mb-3" role="radiogroup" aria-label="{{ __('How to record the location') }}">
+                        <button type="button" id="locModeGps" role="radio" aria-checked="false" onclick="useMyLocation()"
+                            class="loc-mode text-sm font-bold border rounded-lg px-3 py-2.5 flex items-center justify-center gap-1.5 border-slate-200 text-slate-600 hover:bg-emerald-50">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.5-4.5-7-8.25-7-11.25a7 7 0 1114 0C19 12.75 16.5 16.5 12 21z"/><circle cx="12" cy="9.75" r="2.25"/></svg>
+                            {{ __('Use GPS') }}
+                        </button>
+                        <button type="button" id="locModeManual" role="radio" aria-checked="false" onclick="useManualEntry()"
+                            class="loc-mode text-sm font-bold border rounded-lg px-3 py-2.5 flex items-center justify-center gap-1.5 border-slate-200 text-slate-600 hover:bg-emerald-50">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.1 2.1 0 113 2.97L7.5 19.82 3 21l1.18-4.5L16.862 4.487z"/></svg>
+                            {{ __('Enter by hand') }}
+                        </button>
+                    </div>
+
+                    <div id="locGpsStatus" class="hidden mb-3 text-xs rounded-lg p-2" aria-live="polite"></div>
+                    <p id="locNamesSource" class="hidden mb-3 text-xs text-slate-500"></p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('State') }}</label>
-                            <select id="locState" name="loc_state" class="w-full border-slate-200 rounded-lg text-sm" onchange="populateLgas(); markAdministrative();">
+                            <select id="locState" name="loc_state" class="w-full border-slate-200 rounded-lg text-sm" onchange="populateLgas(); namesChangedByUser();">
                                 <option value="">{{ __('Select State') }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('LGA') }}</label>
-                            <select id="locLga" name="loc_lga" class="w-full border-slate-200 rounded-lg text-sm" onchange="markAdministrative();">
+                            <select id="locLga" name="loc_lga" class="w-full border-slate-200 rounded-lg text-sm" onchange="namesChangedByUser();">
                                 <option value="">{{ __('Select LGA') }}</option>
                             </select>
                         </div>
@@ -250,7 +258,7 @@
                     </div>
 
                     <div class="mt-3 flex items-start gap-2">
-                        <input type="checkbox" id="locDiffers" name="loc_differs_from_scan" value="1" class="mt-0.5 rounded border-slate-300">
+                        <input type="checkbox" id="locDiffers" name="loc_differs_from_scan" value="1" class="mt-0.5 rounded border-slate-300" onchange="differsChanged();">
                         <label for="locDiffers" class="text-xs text-slate-600">{{ __('I am scanning this sample at a different location from where it was actually collected (e.g. a lab or office, away from the farm).') }}</label>
                     </div>
                     <div class="mt-2 flex items-start gap-2">
@@ -264,6 +272,12 @@
                     <input type="hidden" id="locLongitude" name="loc_longitude" value="">
                     <input type="hidden" id="locAccuracy" name="loc_accuracy_meters" value="">
                     <input type="hidden" id="locCaptureMethod" name="loc_capture_method" value="">
+                    <input type="hidden" id="locSource" name="loc_location_source" value="">
+                    <input type="hidden" id="locGpsAt" name="loc_gps_captured_at" value="">
+                    <input type="hidden" id="locNamesFrom" name="loc_place_names_source" value="">
+                    <input type="hidden" id="locScanLatitude" name="loc_scan_latitude" value="">
+                    <input type="hidden" id="locScanLongitude" name="loc_scan_longitude" value="">
+                    <input type="hidden" id="locScanAccuracy" name="loc_scan_accuracy_meters" value="">
                 </div>
 
                 <!-- Tips -->
@@ -320,6 +334,24 @@
             'loginUrl'    => route('login'),
             'upgradeUrl'  => route('subscription.plans'),
         ];
+        $locText = [
+            'lookupUrl'      => route('diagnostics.location-lookup'),
+            'requesting'     => __('Requesting your location…'),
+            'captured'       => __('Location captured (±:accm).'),
+            'lowAccuracy'    => __('Accuracy is low — consider moving to open ground and trying again, or proceed with this estimate.'),
+            'checkNames'     => __('Check the State and LGA below.'),
+            'lookingUp'      => __('Finding your State and LGA…'),
+            'filledFrom'     => __('Filled from your GPS point: :place. Change them if they are wrong.'),
+            'notFound'       => __('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.'),
+            'fillOnSubmit'   => __('Could not look up your State and LGA now. Leave them blank and they will be filled from your GPS point when you submit, or select them below.'),
+            'namesChanged'   => __('You changed the State or LGA found from GPS. Your choice will be saved.'),
+            'scanPlaceSaved' => __('Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.'),
+            'unsupported'    => __('Your browser does not support location capture. Please select your state/LGA manually.'),
+            'denied'         => __('Location permission denied. You can still select your state/LGA manually below.'),
+            'unavailable'    => __('Location unavailable right now. You can still select your state/LGA manually below.'),
+            'timedOut'       => __('Location request timed out. You can still select your state/LGA manually below.'),
+            'failed'         => __('Could not get your location. You can still select your state/LGA manually below.'),
+        ];
     @endphp
     <script>
     // Nigeria states + LGAs — same server-side dataset the backend
@@ -350,44 +382,155 @@
         }
     }
 
-    // Selecting a state/LGA manually is its own valid provenance
-    // ('administrative_selection') — distinct from GPS capture — unless a
-    // GPS fix has already been captured, which takes precedence.
-    function markAdministrative() {
-        var methodField = document.getElementById('locCaptureMethod');
-        if (methodField.value !== 'gps_device') {
-            methodField.value = 'administrative_selection';
+    // ── Location: two ways ────────────────────────────────────────────────────
+    // GPS: the fix is stored and State/LGA are filled from the boundaries
+    // (LocationLookupController); if that call fails the server fills them on
+    // submit. By hand: the farmer picks State/LGA. loc_location_source says
+    // which (gps, manual, or gps_edited when GPS-filled names were changed).
+    // With "scanning somewhere else" ticked, the fix is where the phone is,
+    // so it is sent as the scan place, never as the collection place.
+    var LOC_TEXT = @json($locText);
+    var locFix = null;         // the GPS fix whose names are being looked up
+    var locFilled = false;     // State/LGA currently hold the lookup's answer
+
+    function setVal(id, v) { document.getElementById(id).value = v == null ? '' : v; }
+    function val(id) { return document.getElementById(id).value; }
+
+    function setLocMode(mode) {
+        [['locModeGps', 'gps'], ['locModeManual', 'manual']].forEach(function (b) {
+            var el = document.getElementById(b[0]), on = mode === b[1];
+            el.setAttribute('aria-checked', on ? 'true' : 'false');
+            el.classList.toggle('border-emerald-500', on);
+            el.classList.toggle('bg-emerald-50', on);
+            el.classList.toggle('text-emerald-800', on);
+            el.classList.toggle('border-slate-200', !on);
+            el.classList.toggle('text-slate-600', !on);
+        });
+    }
+
+    function showLocStatus(type, msg) {
+        var el = document.getElementById('locGpsStatus');
+        el.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-emerald-50', 'text-emerald-700', 'bg-amber-50', 'text-amber-800');
+        if (!msg) { el.classList.add('hidden'); return; }
+        el.classList.add.apply(el.classList, {
+            ok: ['bg-emerald-50', 'text-emerald-700'], warn: ['bg-amber-50', 'text-amber-800'], error: ['bg-red-50', 'text-red-700'],
+        }[type]);
+        el.textContent = msg;
+    }
+
+    function showNamesSource(msg) {
+        var el = document.getElementById('locNamesSource');
+        el.textContent = msg || '';
+        el.classList.toggle('hidden', !msg);
+    }
+
+    function setStateAndLga(state, lga) {
+        document.getElementById('locState').value = state || '';
+        populateLgas();
+        document.getElementById('locLga').value = lga || '';
+    }
+
+    function clearCollectionFix() {
+        ['locLatitude', 'locLongitude', 'locAccuracy', 'locGpsAt', 'locNamesFrom'].forEach(function (id) { setVal(id, ''); });
+        if (locFilled) { setStateAndLga('', ''); }
+        locFix = null;
+        locFilled = false;
+        showNamesSource('');
+    }
+
+    function useManualEntry() {
+        setLocMode('manual');
+        clearCollectionFix();
+        setVal('locSource', 'manual');
+        setVal('locCaptureMethod', val('locState') ? 'administrative_selection' : '');
+        showLocStatus(null);
+    }
+
+    function namesChangedByUser() {
+        if (!val('locSource')) {
+            setVal('locSource', 'manual');
+            setLocMode('manual');
+        }
+        if (val('locCaptureMethod') !== 'gps_device') {
+            setVal('locCaptureMethod', val('locState') ? 'administrative_selection' : '');
+        }
+        if (locFilled) {
+            locFilled = false;
+            setVal('locSource', 'gps_edited');
+            setVal('locNamesFrom', 'user');
+            showNamesSource(LOC_TEXT.namesChanged);
         }
     }
 
-    function useMyLocation() {
-        var statusEl = document.getElementById('locGpsStatus');
-        statusEl.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-emerald-50', 'text-emerald-700');
-        if (!('geolocation' in navigator)) {
-            statusEl.textContent = '{{ __("Your browser does not support location capture. Please select your state/LGA manually.") }}';
-            statusEl.classList.add('bg-red-50', 'text-red-700');
+    function setScanPlace(fix) {
+        setVal('locScanLatitude', fix ? fix.lat : '');
+        setVal('locScanLongitude', fix ? fix.lon : '');
+        setVal('locScanAccuracy', fix ? fix.acc : '');
+    }
+
+    function differsChanged() {
+        if (!document.getElementById('locDiffers').checked) {
+            setScanPlace(null);
             return;
         }
-        statusEl.textContent = '{{ __("Requesting your location…") }}';
-        statusEl.classList.add('bg-emerald-50', 'text-emerald-700');
+        if (val('locLatitude')) {
+            setScanPlace({ lat: val('locLatitude'), lon: val('locLongitude'), acc: val('locAccuracy') });
+            useManualEntry();
+            showLocStatus('ok', LOC_TEXT.scanPlaceSaved);
+        }
+    }
+
+    function lookupNames(fix) {
+        showNamesSource(LOC_TEXT.lookingUp);
+        fetch(LOC_TEXT.lookupUrl + '?lat=' + encodeURIComponent(fix.lat) + '&lon=' + encodeURIComponent(fix.lon), {
+            headers: { 'Accept': 'application/json' }, credentials: 'same-origin',
+        }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
+            if (locFix !== fix) { return; } // a newer fix or a switch to manual came first
+            if (!d.found) { showNamesSource(LOC_TEXT.notFound); return; }
+            setStateAndLga(d.state, d.lga);
+            locFilled = true;
+            setVal('locNamesFrom', 'lookup');
+            showNamesSource(LOC_TEXT.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
+        }).catch(function () {
+            if (locFix === fix) { showNamesSource(LOC_TEXT.fillOnSubmit); }
+        });
+    }
+
+    function useMyLocation() {
+        setLocMode('gps');
+        if (!('geolocation' in navigator)) {
+            useManualEntry();
+            showLocStatus('error', LOC_TEXT.unsupported);
+            return;
+        }
+        showLocStatus('ok', LOC_TEXT.requesting);
 
         navigator.geolocation.getCurrentPosition(function (pos) {
-            document.getElementById('locLatitude').value = pos.coords.latitude;
-            document.getElementById('locLongitude').value = pos.coords.longitude;
-            document.getElementById('locAccuracy').value = Math.round(pos.coords.accuracy || 0);
-            document.getElementById('locCaptureMethod').value = 'gps_device';
             var acc = Math.round(pos.coords.accuracy || 0);
-            statusEl.textContent = '{{ __("Location captured") }} (±' + acc + 'm). '
-                + ( acc > 100 ? '{{ __("Accuracy is low — consider moving to open ground and trying again, or proceed with this estimate.") }}' : '{{ __("Please still confirm the state/LGA below.") }}' );
+            var fix = {
+                lat: pos.coords.latitude, lon: pos.coords.longitude, acc: acc,
+                at: new Date(pos.timestamp || Date.now()).toISOString(),
+            };
+            if (document.getElementById('locDiffers').checked) {
+                setScanPlace(fix);
+                useManualEntry();
+                showLocStatus('ok', LOC_TEXT.scanPlaceSaved);
+                return;
+            }
+            clearCollectionFix();
+            setVal('locLatitude', fix.lat);
+            setVal('locLongitude', fix.lon);
+            setVal('locAccuracy', acc);
+            setVal('locGpsAt', fix.at);
+            setVal('locCaptureMethod', 'gps_device');
+            setVal('locSource', 'gps');
+            locFix = fix;
+            showLocStatus(acc > 100 ? 'warn' : 'ok', LOC_TEXT.captured.replace(':acc', acc) + ' ' + (acc > 100 ? LOC_TEXT.lowAccuracy : LOC_TEXT.checkNames));
+            lookupNames(fix);
         }, function (err) {
-            var msg = {
-                1: '{{ __("Location permission denied. You can still select your state/LGA manually below.") }}',
-                2: '{{ __("Location unavailable right now. You can still select your state/LGA manually below.") }}',
-                3: '{{ __("Location request timed out. You can still select your state/LGA manually below.") }}',
-            }[err.code] || '{{ __("Could not get your location. You can still select your state/LGA manually below.") }}';
-            statusEl.textContent = msg;
-            statusEl.classList.remove('bg-emerald-50', 'text-emerald-700');
-            statusEl.classList.add('bg-red-50', 'text-red-700');
+            var msg = { 1: LOC_TEXT.denied, 2: LOC_TEXT.unavailable, 3: LOC_TEXT.timedOut }[err.code] || LOC_TEXT.failed;
+            useManualEntry();
+            showLocStatus('error', msg);
         }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
     }
 

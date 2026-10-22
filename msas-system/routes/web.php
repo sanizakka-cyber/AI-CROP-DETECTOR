@@ -64,6 +64,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/diagnostics/analyze', [DiagnosticController::class, 'analyze'])
             ->middleware(['throttle:10,1', 'heic'])
             ->name('diagnostics.analyze');
+        Route::get('/diagnostics/location-lookup', \App\Http\Controllers\LocationLookupController::class)
+            ->middleware('throttle:30,1')
+            ->name('diagnostics.location-lookup');
         Route::get('/diagnostics/history', [DiagnosticController::class, 'history'])->name('diagnostics.history');
         Route::post('/diagnostics/{diagnosis}/feedback', [DiagnosticController::class, 'storeFeedback'])->name('diagnostics.feedback');
         Route::post('/diagnostics/translate', [DiagnosticController::class, 'translate'])->name('diagnostics.translate');

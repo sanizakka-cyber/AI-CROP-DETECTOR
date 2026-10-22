@@ -88,3 +88,40 @@ describe('buildLocationApiFields', () => {
     expect('loc_postal_code' in result).toBe(false);
   });
 });
+
+describe('buildLocationApiFields — the two ways of recording a location', () => {
+  test('a GPS capture sends how it was entered, when, and that the names came from the lookup', () => {
+    const result = buildLocationApiFields({
+      state: 'Katsina', lga: 'Funtua', coords: { latitude: 11.523, longitude: 7.312, accuracy: 8 },
+      captureMethod: 'gps_device', locationSource: 'gps', gpsCapturedAt: '2026-10-22T09:15:00.000Z', placeNamesFrom: 'lookup',
+    });
+    expect(result).toMatchObject({
+      loc_location_source: 'gps', loc_gps_captured_at: '2026-10-22T09:15:00.000Z', loc_place_names_source: 'lookup',
+    });
+  });
+
+  test('GPS with no names yet (offline) sends the coordinates only, for the server to name', () => {
+    const result = buildLocationApiFields({
+      coords: { latitude: 11.523, longitude: 7.312 }, captureMethod: 'gps_device', locationSource: 'gps', placeNamesFrom: 'lookup',
+    });
+    expect(result.loc_state).toBeUndefined();
+    expect(result.loc_place_names_source).toBeUndefined();
+    expect(result.loc_latitude).toBe('11.523');
+  });
+
+  test('a capture time without a fix is not sent', () => {
+    const result = buildLocationApiFields({ state: 'Kano', locationSource: 'manual', gpsCapturedAt: '2026-10-22T09:15:00.000Z' });
+    expect(result.loc_gps_captured_at).toBeUndefined();
+    expect(result.loc_location_source).toBe('manual');
+  });
+
+  test('the scan place is sent apart from the collection place, only while "scanning elsewhere" is ticked', () => {
+    const scanCoords = { latitude: 12.0022, longitude: 8.592, accuracy: 14.6 };
+    const ticked = buildLocationApiFields({ state: 'Katsina', lga: 'Funtua', locationSource: 'manual', differsFromScan: true, scanCoords });
+    expect(ticked).toMatchObject({ loc_scan_latitude: '12.0022', loc_scan_longitude: '8.592', loc_scan_accuracy_meters: '15' });
+    expect(ticked.loc_latitude).toBeUndefined();
+
+    const unticked = buildLocationApiFields({ state: 'Katsina', differsFromScan: false, scanCoords });
+    expect(unticked.loc_scan_latitude).toBeUndefined();
+  });
+});

@@ -17,8 +17,13 @@ jest.mock('expo-location', () => ({
 }));
 
 jest.mock('../api', () => ({
-  locationsAPI: { list: jest.fn(() => Promise.resolve({ countries: ['Nigeria'], states: [] })) },
+  locationsAPI: {
+    list: jest.fn(() => Promise.resolve({ countries: ['Nigeria'], states: [] })),
+    lookup: jest.fn(() => Promise.resolve({ found: false })),
+  },
 }));
+// eslint-disable-next-line import/first
+import { locationsAPI } from '../api';
 
 jest.spyOn(Linking, 'openSettings').mockImplementation(() => {});
 
@@ -105,5 +110,104 @@ describe('useLocationCapture — unmount guard', () => {
     // No assertion needed beyond "this didn't throw" -- React's own
     // "Warning: Cannot update a component" would otherwise surface as a
     // console.error, which a stricter test setup could assert on directly.
+  });
+});
+
+describe('useLocationCapture — two ways to record the location', () => {
+  const FUNTUA = { coords: { latitude: 11.523, longitude: 7.312, accuracy: 8 }, timestamp: Date.parse('2026-10-22T09:15:00Z') };
+
+  beforeEach(() => {
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ granted: true });
+    Location.hasServicesEnabledAsync.mockResolvedValue(true);
+    Location.getCurrentPositionAsync.mockResolvedValue(FUNTUA);
+  });
+  afterEach(() => jest.clearAllMocks());
+
+  test('GPS fills State and LGA from the lookup and sends them as lookup names', async () => {
+    locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua', attribution: 'Boundaries: GRID3.' });
+    const { result } = renderHook(() => useLocationCapture());
+
+    await act(async () => { await result.current.captureGps(); });
+
+    expect(locationsAPI.lookup).toHaveBeenCalledWith(11.523, 7.312);
+    expect(result.current.mode).toBe('gps');
+    expect(result.current.state).toBe('Katsina');
+    expect(result.current.lga).toBe('Funtua');
+    expect(result.current.namesNote).toMatch(/Filled from your GPS point: Funtua, Katsina/);
+    expect(result.current.toApiFields()).toMatchObject({
+      loc_location_source: 'gps', loc_place_names_source: 'lookup', loc_gps_captured_at: '2026-10-22T09:15:00.000Z',
+    });
+  });
+
+  test('changing a GPS-filled LGA marks the location as GPS, then changed', async () => {
+    locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua' });
+    const { result } = renderHook(() => useLocationCapture());
+    await act(async () => { await result.current.captureGps(); });
+
+    act(() => { result.current.selectLga('Bakori'); });
+
+    expect(result.current.toApiFields()).toMatchObject({
+      loc_lga: 'Bakori', loc_location_source: 'gps_edited', loc_place_names_source: 'user', loc_capture_method: 'gps_device',
+    });
+  });
+
+  test('when the lookup cannot be reached, names stay blank for the server to fill', async () => {
+    locationsAPI.lookup.mockRejectedValueOnce(new Error('Network request failed'));
+    const { result } = renderHook(() => useLocationCapture());
+
+    await act(async () => { await result.current.captureGps(); });
+
+    expect(result.current.state).toBe('');
+    expect(result.current.namesNote).toMatch(/filled from your GPS point when you submit/);
+    expect(result.current.toApiFields().loc_latitude).toBe('11.523');
+  });
+
+  test('switching to manual entry drops the fix and the names the lookup filled', async () => {
+    locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua' });
+    const { result } = renderHook(() => useLocationCapture());
+    await act(async () => { await result.current.captureGps(); });
+
+    act(() => { result.current.enterManually(); });
+
+    expect(result.current.mode).toBe('manual');
+    expect(result.current.coords).toBeNull();
+    expect(result.current.state).toBe('');
+    expect(result.current.toApiFields()).toBeNull();
+  });
+
+  test('picking a State first is manual entry', async () => {
+    const { result } = renderHook(() => useLocationCapture());
+    await act(async () => {}); // let the /locations fetch settle
+
+    act(() => { result.current.selectState('Kano'); });
+
+    expect(result.current.mode).toBe('manual');
+    expect(result.current.toApiFields()).toMatchObject({ loc_state: 'Kano', loc_location_source: 'manual', loc_capture_method: 'administrative_selection' });
+  });
+
+  test('a fix taken while "scanning elsewhere" is ticked is the scan place, not the collection place', async () => {
+    const { result } = renderHook(() => useLocationCapture());
+    act(() => { result.current.setDiffersFromScan(true); });
+
+    await act(async () => { await result.current.captureGps(); });
+    act(() => { result.current.selectState('Kano'); });
+
+    expect(locationsAPI.lookup).not.toHaveBeenCalled();
+    expect(result.current.coords).toBeNull();
+    expect(result.current.mode).toBe('manual');
+    expect(result.current.toApiFields()).toMatchObject({ loc_scan_latitude: '11.523', loc_location_source: 'manual', loc_differs_from_scan: '1' });
+    expect(result.current.toApiFields().loc_latitude).toBeUndefined();
+  });
+
+  test('ticking "scanning elsewhere" after a GPS capture moves the fix to the scan place', async () => {
+    locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua' });
+    const { result } = renderHook(() => useLocationCapture());
+    await act(async () => { await result.current.captureGps(); });
+
+    act(() => { result.current.setDiffersFromScan(true); });
+
+    expect(result.current.coords).toBeNull();
+    expect(result.current.state).toBe('');
+    expect(result.current.scanCoords).toEqual(FUNTUA.coords);
   });
 });

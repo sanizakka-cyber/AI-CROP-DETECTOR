@@ -102,6 +102,8 @@ class DiagnoseApiController extends Controller
             'loc_country', 'loc_state', 'loc_lga', 'loc_ward', 'loc_community',
             'loc_postal_code', 'loc_address', 'loc_latitude', 'loc_longitude',
             'loc_accuracy_meters', 'loc_capture_method', 'loc_collected_at',
+            'loc_location_source', 'loc_gps_captured_at', 'loc_place_names_source',
+            'loc_scan_latitude', 'loc_scan_longitude', 'loc_scan_accuracy_meters',
         ];
 
         $normalized = [];
@@ -139,6 +141,12 @@ class DiagnoseApiController extends Controller
             'loc_user_confirmed'     => ['sometimes', 'nullable', 'boolean'],
             'loc_differs_from_scan'  => ['sometimes', 'nullable', 'boolean'],
             'loc_collected_at'       => ['sometimes', 'nullable', 'date'],
+            'loc_location_source'    => ['sometimes', 'nullable', 'in:' . implode(',', CollectionLocation::LOCATION_SOURCES)],
+            'loc_gps_captured_at'    => ['sometimes', 'nullable', 'date'],
+            'loc_place_names_source' => ['sometimes', 'nullable', 'in:lookup,user'],
+            'loc_scan_latitude'      => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'loc_scan_longitude'     => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'loc_scan_accuracy_meters' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -433,6 +441,12 @@ class DiagnoseApiController extends Controller
                 'verificationStatus'      => $loc->verification_status,
                 'differsFromScanLocation' => $loc->differs_from_scan_location,
                 'collectedAt'             => $loc->collected_at?->toISOString(),
+                'locationSource'          => $loc->location_source,
+                'gpsCapturedAt'           => $loc->gps_captured_at?->toISOString(),
+                'placeNamesSource'        => $loc->place_names_source,
+                'scanLatitude'            => $loc->scan_latitude,
+                'scanLongitude'           => $loc->scan_longitude,
+                'scanAccuracyMeters'      => $loc->scan_accuracy_meters,
             ] : null,
             // Phase 11 canonical contract: which recoverable state the result
             // is in, and what to do next. outcome is null on legacy records.

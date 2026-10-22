@@ -46,6 +46,22 @@ export function useLocationCapture() {
   const [gpsStatus, setGpsStatus]   = useState(null); // { type: 'success'|'warning'|'error', message, canOpenSettings? }
   const [gpsLoading, setGpsLoading] = useState(false);
 
+  // The two ways to record a location: 'gps' (State/LGA filled from the
+  // boundaries via GET /locations/lookup, or by the server on submit when
+  // that call fails) or 'manual'. null until the farmer picks one.
+  const [mode, setMode] = useState(null);
+  // What is sent as loc_location_source: gps | manual | gps_edited (GPS, then the names were changed).
+  const [locationSource, setLocationSource] = useState(null);
+  const [gpsCapturedAt, setGpsCapturedAt]   = useState(null);
+  const [placeNamesFrom, setPlaceNamesFrom] = useState(null); // 'lookup' | 'user' | null
+  const [namesNote, setNamesNote]           = useState(null); // where State/LGA came from, shown under the pickers
+  // The phone's fix when the farmer is scanning away from where the sample was collected.
+  const [scanCoords, setScanCoords]         = useState(null);
+  const namesFilled = useRef(false); // State/LGA currently hold the lookup's answer
+  const lookupFor = useRef(null);    // the fix whose lookup is in flight; a newer fix or manual entry supersedes it
+  const fixRef = useRef(null);
+  const differsRef = useRef(false);
+
   // Guards every async setState below against firing after the screen that
   // owns this hook has unmounted (e.g. the user navigated away mid-capture).
   const isMounted = useRef(true);
@@ -65,6 +81,19 @@ export function useLocationCapture() {
     ? (locations.states.find(s => s.name === state)?.lgas || [])
     : [];
 
+  // A State/LGA picked by the farmer. Picking first means manual entry; picking
+  // over names the GPS lookup filled means the farmer corrected them.
+  const namesChangedByUser = useCallback(() => {
+    setLocationSource(s => s || 'manual');
+    setMode(m => m || 'manual');
+    if (namesFilled.current) {
+      namesFilled.current = false;
+      setLocationSource('gps_edited');
+      setPlaceNamesFrom('user');
+      setNamesNote('You changed the State or LGA found from GPS. Your choice will be saved.');
+    }
+  }, []);
+
   const selectState = useCallback((name) => {
     // Changing state invalidates any previously selected LGA — never leave
     // an LGA from a different state selected (same rule the registration
@@ -76,16 +105,82 @@ export function useLocationCapture() {
     // by picking a state afterward (e.g. to add detail the GPS fix can't
     // provide, like ward/community).
     if (captureMethod !== 'gps_device') setCaptureMethod('administrative_selection');
-  }, [captureMethod]);
+    namesChangedByUser();
+  }, [captureMethod, namesChangedByUser]);
 
   const selectLga = useCallback((name) => {
     setLga(name);
     if (captureMethod !== 'gps_device') setCaptureMethod('administrative_selection');
-  }, [captureMethod]);
+    namesChangedByUser();
+  }, [captureMethod, namesChangedByUser]);
+
+  // Drops the collection-place fix and any names the lookup filled from it.
+  const clearCollectionFix = useCallback(() => {
+    setCoords(null);
+    fixRef.current = null;
+    setGpsCapturedAt(null);
+    setPlaceNamesFrom(null);
+    if (namesFilled.current) {
+      setState('');
+      setLga('');
+    }
+    namesFilled.current = false;
+    lookupFor.current = null;
+    setNamesNote(null);
+  }, []);
+
+  const enterManually = useCallback(() => {
+    const keepsNames = Boolean(state) && !namesFilled.current;
+    clearCollectionFix();
+    setMode('manual');
+    setLocationSource('manual');
+    setCaptureMethod(keepsNames ? 'administrative_selection' : null);
+    setGpsStatus(null);
+  }, [clearCollectionFix, state]);
+
+  const setDiffersFromScanPlace = useCallback((on) => {
+    setDiffersFromScan(on);
+    differsRef.current = on;
+    if (!on) {
+      setScanCoords(null);
+      return;
+    }
+    // The fix already taken is where the phone is: the scan place.
+    if (fixRef.current) {
+      setScanCoords(fixRef.current);
+      enterManually();
+      setGpsStatus({ type: 'success', message: 'Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.' });
+    }
+  }, [enterManually]);
+
+  const lookupNames = useCallback(async (fix) => {
+    lookupFor.current = fix;
+    setNamesNote('Finding your State and LGA…');
+    try {
+      const res = await locationsAPI.lookup(fix.latitude, fix.longitude);
+      if (!isMounted.current || lookupFor.current !== fix) return;
+      if (!res?.found) {
+        setNamesNote('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.');
+        return;
+      }
+      setState(res.state);
+      setLga(res.lga);
+      namesFilled.current = true;
+      setPlaceNamesFrom('lookup');
+      setNamesNote(`Filled from your GPS point: ${res.lga}, ${res.state}. Change them if they are wrong. ${res.attribution || ''}`.trim());
+    } catch {
+      // Offline or the server is unreachable: the server fills State/LGA
+      // from the coordinates when the scan is submitted.
+      if (isMounted.current && lookupFor.current === fix) {
+        setNamesNote('Could not look up your State and LGA now. Leave them blank and they will be filled from your GPS point when you submit, or select them below.');
+      }
+    }
+  }, []);
 
   const captureGps = useCallback(async () => {
     setGpsLoading(true);
     setGpsStatus(null);
+    setMode('gps');
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!isMounted.current) return;
@@ -134,15 +229,28 @@ export function useLocationCapture() {
       }
 
       const acc = Math.round(pos.coords.accuracy || 0);
+      const fix = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
 
-      setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy });
+      if (differsRef.current) {
+        setScanCoords(fix);
+        enterManually();
+        setGpsStatus({ type: 'success', message: 'Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.' });
+        return;
+      }
+
+      clearCollectionFix();
+      setCoords(fix);
+      fixRef.current = fix;
+      setGpsCapturedAt(new Date(pos.timestamp || Date.now()).toISOString());
       setCaptureMethod('gps_device');
+      setLocationSource('gps');
       setGpsStatus({
         type: acc > 100 ? 'warning' : 'success',
         message: acc > 100
           ? `Location captured (±${acc}m). Accuracy is low — consider moving to open ground and trying again, or proceed with this estimate.`
-          : `Location captured (±${acc}m). Please still confirm the state/LGA below.`,
+          : `Location captured (±${acc}m). Check the State and LGA below.`,
       });
+      await lookupNames(fix);
     } catch (e) {
       if (!isMounted.current) return;
       const timedOut = e?.code === 'E_LOCATION_TIMEOUT' || /timeout/i.test(e?.message || '');
@@ -153,9 +261,13 @@ export function useLocationCapture() {
           : 'Could not get your location. You can still select your state/LGA manually below.',
       });
     } finally {
-      if (isMounted.current) setGpsLoading(false);
+      if (isMounted.current) {
+        setGpsLoading(false);
+        // No fix to show: the farmer is entering the location by hand.
+        if (!fixRef.current) setMode('manual');
+      }
     }
-  }, []);
+  }, [clearCollectionFix, lookupNames, enterManually]);
 
   const openLocationSettings = useCallback(() => {
     Linking.openSettings();
@@ -165,15 +277,20 @@ export function useLocationCapture() {
   // lib/locationFields.js (buildLocationApiFields) for the pure logic and
   // its unit tests.
   const toApiFields = useCallback(
-    () => buildLocationApiFields({ country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan }),
-    [country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan]
+    () => buildLocationApiFields({
+      country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan,
+      locationSource, gpsCapturedAt, placeNamesFrom, scanCoords,
+    }),
+    [country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan,
+      locationSource, gpsCapturedAt, placeNamesFrom, scanCoords]
   );
 
   return {
     country, state, lga, community, postalCode, address, coords, captureMethod,
     confirmed, differsFromScan, gpsStatus, gpsLoading,
+    mode, locationSource, namesNote, scanCoords,
     locations, lgasForState,
-    setCommunity, setPostalCode, setAddress, setConfirmed, setDiffersFromScan,
-    selectState, selectLga, captureGps, toApiFields, openLocationSettings,
+    setCommunity, setPostalCode, setAddress, setConfirmed, setDiffersFromScan: setDiffersFromScanPlace,
+    selectState, selectLga, captureGps, enterManually, toApiFields, openLocationSettings,
   };
 }

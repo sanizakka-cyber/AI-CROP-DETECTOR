@@ -33,16 +33,37 @@ export default function LocationCaptureSection({ loc }) {
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>📍 Sample Collection Location <Text style={styles.optional}>(optional)</Text></Text>
-        <TouchableOpacity style={styles.gpsBtn} onPress={loc.captureGps} disabled={loc.gpsLoading}>
-          {loc.gpsLoading
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Text style={styles.gpsBtnText}>Use my location</Text>}
-        </TouchableOpacity>
       </View>
       <Text style={styles.hint}>
         Recording where this sample was actually collected helps track outbreaks and makes your scan useful for
         agricultural research. This never blocks your diagnosis — leave it blank if unsure.
       </Text>
+
+      {/* Two ways: GPS fills State and LGA from the boundaries, or the farmer picks them. */}
+      <View style={styles.modeRow} accessibilityRole="radiogroup">
+        <TouchableOpacity
+          style={[styles.modeBtn, loc.mode === 'gps' && styles.modeBtnOn]}
+          onPress={loc.captureGps}
+          disabled={loc.gpsLoading}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: loc.mode === 'gps', busy: loc.gpsLoading }}
+          testID="loc-mode-gps"
+        >
+          {loc.gpsLoading
+            ? <ActivityIndicator size="small" color={Colors.primary} />
+            : <Text style={[styles.modeBtnText, loc.mode === 'gps' && styles.modeBtnTextOn]}>📡 Use GPS</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeBtn, loc.mode === 'manual' && styles.modeBtnOn]}
+          onPress={loc.enterManually}
+          disabled={loc.gpsLoading}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: loc.mode === 'manual' }}
+          testID="loc-mode-manual"
+        >
+          <Text style={[styles.modeBtnText, loc.mode === 'manual' && styles.modeBtnTextOn]}>✏️ Enter by hand</Text>
+        </TouchableOpacity>
+      </View>
 
       {loc.gpsStatus && (
         <View style={[
@@ -73,6 +94,8 @@ export default function LocationCaptureSection({ loc }) {
           </Text>
         </View>
       )}
+
+      {loc.namesNote && <Text style={styles.namesNote} testID="loc-names-note">{loc.namesNote}</Text>}
 
       <View style={styles.row}>
         <TouchableOpacity style={styles.pickerField} onPress={() => setStatePickerOpen(true)}>
@@ -198,11 +221,17 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   title:     { ...Typography.label, color: Colors.textPrimary, flexShrink: 1, marginRight: Spacing.sm },
   optional:  { ...Typography.tiny, color: Colors.textMuted, fontWeight: '400' },
-  gpsBtn: {
-    backgroundColor: '#EAF7EF', borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 6,
-  },
-  gpsBtnText: { ...Typography.tiny, color: Colors.primary, fontWeight: '700' },
   hint: { ...Typography.tiny, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 16 },
+
+  modeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
+  modeBtn: {
+    flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background, paddingHorizontal: Spacing.sm,
+  },
+  modeBtnOn: { borderColor: Colors.primary, backgroundColor: '#EAF7EF' },
+  modeBtnText: { ...Typography.small, color: Colors.textSecondary, fontWeight: '700' },
+  modeBtnTextOn: { color: Colors.primary },
+  namesNote: { ...Typography.tiny, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 16 },
 
   statusBox: { borderRadius: Radius.sm, padding: Spacing.sm, marginBottom: Spacing.sm },
   statusSuccess: { backgroundColor: '#EAF7EF' },
