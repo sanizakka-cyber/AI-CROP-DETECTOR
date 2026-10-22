@@ -3,6 +3,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "eval"))
+import run_eval  # noqa: E402
 from run_eval import label_matches, load_manifest, score  # noqa: E402
 
 
@@ -131,3 +132,33 @@ def test_unlabelled_photos_are_allowed_for_consistency_runs(tmp_path):
     (tmp_path / "m.csv").write_text("image,mode,expected,synonyms,expected_outcome\na.jpg,crop,,,\n", encoding="utf-8")
     _, errors = load_manifest(str(tmp_path / "m.csv"), labels_required=False)
     assert errors == []
+
+
+def _labelled_response(outcomes, findings, labels, confs):
+    return {"assessment_outcome": "x", "consensus": {"pass_outcomes": outcomes, "pass_findings": findings,
+                                                     "pass_labels": labels, "pass_confidences": confs}}
+
+
+def test_vote_change_replays_both_votes_on_the_same_passes():
+    banana = _labelled_response(["assessed"] * 3,
+                                ["Natural leaf sheath senescence", "Natural drying and senescence of old leaf sheaths",
+                                 "Natural drying and shedding of old outer leaf sheaths"],
+                                ["normal_ageing"] * 3, [78, 82, 80])
+    split = _labelled_response(["assessed"] * 3, ["Late blight", "Early blight", "Septoria leaf spot"],
+                               ["tomato_late_blight", "tomato_early_blight", "tomato_septoria_leaf_spot"], [70, 70, 70])
+    rows = [{"image": "a/banana.jpg", "expected": "Normal ageing", "names": ["natural", "ageing"]},
+            {"image": "a/tomato.jpg", "expected": "", "names": []}]
+    runs = [[{"status": 200, "body": banana}, {"status": 200, "body": split}]]
+    v = run_eval.vote_change(rows, runs)
+    assert v["results"] == 2
+    assert v["inconclusive_before"] == 2 and v["inconclusive_after"] == 1
+    assert v["inconclusive_to_clear"] == 1 and v["clear_to_inconclusive"] == 0
+    assert v["changed_and_labelled_correct"] == 1
+    assert v["changes"][0]["image"] == "banana.jpg" and v["changes"][0]["new_label"] == "normal_ageing"
+    assert "Inconclusive -> clear finding: 1" in run_eval.vote_table(v)
+
+
+def test_vote_change_skips_responses_without_per_pass_labels():
+    old_engine = {"assessment_outcome": "assessed", "consensus": {"pass_findings": ["Late blight"] * 3}}
+    v = run_eval.vote_change([{"image": "x.jpg", "expected": "", "names": []}], [[{"status": 200, "body": old_engine}]])
+    assert v["results"] == 0

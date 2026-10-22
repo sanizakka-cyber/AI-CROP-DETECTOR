@@ -32,6 +32,15 @@ run and a spread of 3 points or less. Unlabelled photos are allowed with
 --consistency-only. Compare two saved runs (e.g. SCAN_PASSES=1 vs 3):
     python eval/run_eval.py manifest.csv --repeats 5 --consistency-only --out before.json
     python eval/run_eval.py --compare before.json after.json
+
+Condition-label vote: every response from an engine with condition labels
+carries each pass's outcome, label, wording and confidence
+(consensus.pass_*). The runner replays both votes on those same passes, the
+old one on wording and the new one on labels, so the difference is the vote
+alone, not model randomness. It prints how many results move from
+inconclusive to a clear finding (and the reverse). A saved run can be
+re-scored without calling the engine:
+    python eval/run_eval.py --vote-compare results.json
 """
 import argparse
 import csv
@@ -43,6 +52,9 @@ import urllib.error
 import urllib.request
 import uuid
 from collections import Counter, defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from consensus import LABEL, NAME, combine  # noqa: E402
 
 MODES = {"crop", "livestock", "soil", "pest"}
 OUTCOMES = {"assessed", "uncertain", "poor_image", "unsupported_subject"}
@@ -250,6 +262,64 @@ def compare_photos(before, after, target_spread=3):
     return "\n".join(lines)
 
 
+def _replayed(body, vote_on):
+    """Combine the response's own passes again with the given vote rule."""
+    c = body.get("consensus") or {}
+    outs, labels = c.get("pass_outcomes"), c.get("pass_labels")
+    finds, confs = c.get("pass_findings") or [], c.get("pass_confidences") or []
+    if not outs or labels is None or len(outs) < 2:
+        return None
+    passes = [{"assessment_outcome": o, "disease": f if o in ("assessed", "uncertain") else None,
+               "condition_label": l, "confidence": cf, "alternative_findings": []}
+              for o, f, l, cf in zip(outs, finds, labels, confs)]
+    return combine(passes, vote_on=vote_on)
+
+
+CLEAR = ("diagnosis", "likely_confirm")
+
+
+def vote_change(rows, runs, min_confidence=65, confirm_below=75):
+    """Pure: per photo and run, the screen under the old (wording) and new
+    (label) vote on identical passes, and the counts that matter."""
+    items = []
+    for run in runs:
+        for row, res in zip(rows, run):
+            body = res.get("body") or {}
+            if res.get("status") != 200:
+                continue
+            old, new = _replayed(body, NAME), _replayed(body, LABEL)
+            if old is None:
+                continue
+            o, n = _shown_as(old, min_confidence, confirm_below), _shown_as(new, min_confidence, confirm_below)
+            correct = label_matches(_top(new), row.get("names") or []) if row.get("expected") and n in CLEAR else None
+            items.append({"image": os.path.basename(row["image"]), "expected": row.get("expected") or None,
+                          "old": o, "new": n, "old_finding": _top(old), "new_finding": _top(new),
+                          "new_label": new.get("condition_label"), "new_correct": correct})
+    to_clear = [i for i in items if i["old"] == "uncertain" and i["new"] in CLEAR]
+    to_unclear = [i for i in items if i["old"] in CLEAR and i["new"] == "uncertain"]
+    return {"results": len(items),
+            "inconclusive_before": sum(i["old"] == "uncertain" for i in items),
+            "inconclusive_after": sum(i["new"] == "uncertain" for i in items),
+            "inconclusive_to_clear": len(to_clear),
+            "clear_to_inconclusive": len(to_unclear),
+            "changed_and_labelled_correct": sum(i["new_correct"] is True for i in to_clear),
+            "changed_and_labelled_wrong": sum(i["new_correct"] is False for i in to_clear),
+            "changes": to_clear + to_unclear}
+
+
+def vote_table(v):
+    lines = [f"Results scored: {v['results']} (photos x runs, engine responses with per-pass labels)",
+             f"Inconclusive with the old wording vote: {v['inconclusive_before']}",
+             f"Inconclusive with the label vote:      {v['inconclusive_after']}",
+             f"Inconclusive -> clear finding: {v['inconclusive_to_clear']} "
+             f"(of the labelled ones: {v['changed_and_labelled_correct']} correct, {v['changed_and_labelled_wrong']} wrong)",
+             f"Clear finding -> inconclusive: {v['clear_to_inconclusive']}"]
+    for c in v["changes"]:
+        lines.append(f"  {c['image'][:34]:34} {c['old']:>14} -> {c['new']:<14} {c['new_finding']} [{c['new_label']}]"
+                     + (f"  expected {c['expected']}: {'ok' if c['new_correct'] else 'WRONG'}" if c["new_correct"] is not None else ""))
+    return "\n".join(lines)
+
+
 def compare(before, after):
     """Per-condition accuracy before vs after a change (two saved reports)."""
     lines = [f"{'mode/condition':45} {'before':>8} {'after':>8} {'change':>8}"]
@@ -275,7 +345,15 @@ def main(argv=None):
     ap.add_argument("--consistency-only", action="store_true",
                     help="allow photos without a label (consistency needs no label; accuracy is skipped for them)")
     ap.add_argument("--compare", nargs=2, metavar=("BEFORE_JSON", "AFTER_JSON"), help="compare two saved runs and exit")
+    ap.add_argument("--vote-compare", metavar="RESULTS_JSON", help="re-score a saved run under both votes and exit")
     a = ap.parse_args(argv)
+
+    if a.vote_compare:
+        saved = json.load(open(a.vote_compare, encoding="utf-8"))
+        raw = saved.get("raw") or []
+        rows = [{k: r.get(k) for k in ("image", "mode", "expected", "names")} for r in (raw[0] if raw else [])]
+        print(vote_table(vote_change(rows, raw, a.min_confidence, a.confirm_below)))
+        return 0
 
     if a.compare:
         before, after = (json.load(open(f, encoding="utf-8")) for f in a.compare)
@@ -314,12 +392,15 @@ def main(argv=None):
     report = score([rows[i] for i in labelled], [runs[0][i] for i in labelled], a.min_confidence)
     cons = consistency(rows, runs) if len(runs) > 1 else None
     photos = per_photo(rows, runs, a.min_confidence, a.confirm_below) if len(runs) > 1 else None
-    json.dump({"report": report, "consistency": cons, "per_photo": photos,
+    votes = vote_change(rows, runs, a.min_confidence, a.confirm_below)
+    json.dump({"report": report, "consistency": cons, "per_photo": photos, "vote_change": votes,
                "raw": [[{**r, **res} for r, res in zip(rows, run)] for run in runs]},
               open(a.out, "w", encoding="utf-8"), indent=1, default=str)
     print(json.dumps({"report": report, "consistency": cons}, indent=1, default=str))
     if photos:
         print(photo_table(photos, a.target_spread))
+    if votes["results"]:
+        print(vote_table(votes))
     print(f"Saved {a.out}")
     return 0
 
