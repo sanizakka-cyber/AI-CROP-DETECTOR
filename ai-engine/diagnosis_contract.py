@@ -28,6 +28,9 @@ from typing import Optional
 
 import conditions
 
+# Stored with every result and shown by /health, so a deploy can be checked from outside.
+CONTRACT_VERSION = "2026-10-condition-labels"
+
 # ── Outcomes ─────────────────────────────────────────────────────────────────
 ASSESSED = "assessed"                        # a supported finding, with treatment where justified
 UNCERTAIN = "uncertain"                      # subject visible but evidence insufficient for one finding
@@ -290,7 +293,7 @@ def finalize(mode: str, data: dict) -> dict:
 
     out = {
         # Phase 11 contract fields
-        "contract_version": "2026-10-condition-labels",
+        "contract_version": CONTRACT_VERSION,
         "assessment_outcome": outcome,
         "subject_present": outcome != UNSUPPORTED_SUBJECT,
         "image_quality": data.get("image_quality") if data.get("image_quality") in IMAGE_QUALITY else None,
