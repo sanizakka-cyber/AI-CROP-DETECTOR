@@ -480,5 +480,13 @@
   "Low": "Faible",
   "Medium": "Moyenne",
   "High": "Élevée",
-  "Emergency": "Urgence"
+  "Emergency": "Urgence",
+  "Low – the :count analyses did not agree": "Faible – les :count analyses ne concordent pas",
+  "Low – the AI could not tell from this photo": "Faible – l'IA n'a pas pu conclure avec cette photo",
+  "Recovery": "Rétablissement",
+  "Advice": "Conseil",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Ceci est un conseil de l'IA et peut être erroné. En cas de doute, demandez à un agent de vulgarisation ou à un vétérinaire.",
+  "Request Vet / Ask an expert": "Demander un vétérinaire / Consulter un expert",
+  "Scan attached": "Analyse jointe",
+  "About my scan :ref (:date):": "À propos de mon analyse :ref (:date) :"
 }

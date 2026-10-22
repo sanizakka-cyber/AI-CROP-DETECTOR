@@ -46,7 +46,7 @@ export default function DiagnosisDetailScreen() {
   const isHausa = i18n.language === 'ha';
   // Shown on every result screen (assessed, not certain, rejected photo, AI outage).
   const aiDisclaimer = (
-    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">⚠ {t('aiDisclaimer')}</Text>
+    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">ⓘ {t('aiDisclaimer')}</Text>
   );
 
   const [diag, setDiag] = useState(null);
@@ -353,6 +353,15 @@ export default function DiagnosisDetailScreen() {
   const steps = view?.steps || [];
   const retakeTips = view ? (view.retake?.tips || []) : (assessment.photoTips || []).map(text => ({ key: null, text }));
   const technical = diag.technical || null;
+  // Never "No score" for a judged result: say why confidence is low (server: assessment.result.confidence).
+  const passes = assessment.consensus?.passes_completed || 3;
+  const confidenceText = hasConfidence
+    ? `${confidence}% ${isHausa ? 'tabbaci' : 'confidence'}`
+    : view?.confidence?.key === 'disagree' ? String(t('confidenceLowDisagree', { count: passes })).replace('{{count}}', passes)
+    : view?.confidence?.key === 'unsure' ? t('confidenceLowUnsure')
+    : inconclusive ? t('confidenceLowUnsure')
+    : (isHausa ? 'Babu maki' : 'No score');
+  const healthyResult = ['healthy', 'normal_ageing'].includes(view?.health?.key);
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
@@ -380,7 +389,7 @@ export default function DiagnosisDetailScreen() {
           {severity && <SeverityBadge severity={severity} label={t('severity')} testID="header-severity" />}
           {urgency && <SeverityBadge severity={urgency} label={t('urgency')} testID="header-urgency" />}
           <View style={styles.confBadge}>
-            <Text style={styles.confText}>{hasConfidence ? `${confidence}% ${isHausa ? 'tabbaci' : 'confidence'}` : (isHausa ? 'Babu maki' : 'No score')}</Text>
+            <Text style={styles.confText} testID="header-confidence">{confidenceText}</Text>
           </View>
           {imageQuality && (
             <View style={styles.qualityBadge}>
@@ -438,6 +447,7 @@ export default function DiagnosisDetailScreen() {
       {/* First thing under the title: the causes, what to do now, and the retake button. */}
       {inconclusive && (
         <Card style={[styles.card, styles.uncertainCard]} testID="inconclusive-card">
+          <Text style={[styles.treatBody, { fontWeight: '700' }]} testID="confidence-line">{t('confidenceWord')}: {confidenceText}</Text>
           {assessment.whatCannotBeConfirmed ? <Text style={styles.treatBody}>{assessment.whatCannotBeConfirmed}</Text> : null}
           <Text style={[styles.cardTitle, { marginTop: Spacing.sm }]}>{t('possibleCauses')}</Text>
           {possibleConditions.map((name, i) => (
@@ -577,7 +587,12 @@ export default function DiagnosisDetailScreen() {
         </View>
       </Card>
 
-      <View style={{ paddingHorizontal: Spacing.md, paddingTop: Spacing.sm }}>{aiDisclaimer}</View>
+      <View style={styles.disclaimerBox}>
+        {aiDisclaimer}
+        {diag.askExpertUrl ? (
+          <Button title={t('askExpert')} onPress={() => Linking.openURL(diag.askExpertUrl)} variant="outline" testID="ask-expert" />
+        ) : null}
+      </View>
 
       {needsConfirmation && (
         <Card style={[styles.card, styles.uncertainCard]} testID="likely-confirm-card">
@@ -694,7 +709,8 @@ export default function DiagnosisDetailScreen() {
       <Card style={styles.card}>
         <Text style={styles.cardTitle}>Additional Recommendations</Text>
         <InfoField label="Fertilizer Recommendation" value={plan.fertilizerRecommendation} />
-        <InfoField label="Recovery Period" value={plan.recoveryPeriod} />
+        {/* "Advice" for a healthy or normally ageing result: there is nothing to recover from. */}
+        <InfoField label={healthyResult ? t('advice') : t('recoveryPeriod')} value={plan.recoveryPeriod} testID="recovery-field" />
         <InfoField label="Best Practices" value={plan.bestPractices} />
         <InfoField label="Expert Recommendation" value={plan.vetReferralAdvice} />
       </Card>
@@ -791,7 +807,8 @@ const styles = StyleSheet.create({
   outcomeBody: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
   outcomeCard: { marginTop: Spacing.md },
   outcomeNote: { ...Typography.small, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.md },
-  aiDisclaimer: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary || '#475569', marginVertical: 6 },
+  aiDisclaimer: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginVertical: 6 },
+  disclaimerBox: { marginHorizontal: Spacing.md, marginTop: Spacing.sm, padding: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.white, gap: Spacing.xs },
   uncertainCard: { borderLeftWidth: 4, borderLeftColor: Colors.warning },
   root: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: 80 },

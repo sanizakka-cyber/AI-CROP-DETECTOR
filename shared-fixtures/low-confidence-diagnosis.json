@@ -101,7 +101,12 @@
             "key": "call_vet",
             "text": "If the animal gets weaker or stops eating, call a vet now."
           }
-        ]
+        ],
+        "confidence": {
+          "key": "low",
+          "value": 55,
+          "label": "Low (55%)"
+        }
       }
     },
     "treatmentPlan": {
@@ -128,7 +133,7 @@
     "Needs checking",
     "Keep the animal apart from the others and watch it closely.",
     "Please confirm with a vet or extension officer before treating.",
-    "AI guidance can be wrong; confirm with an expert.",
+    "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.",
     "55%"
   ],
   "mustNotDisplay": [

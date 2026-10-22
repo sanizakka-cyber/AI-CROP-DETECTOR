@@ -129,3 +129,33 @@ describe('label/value layout', () => {
     expect(card.findAll(n => n.type === 'Text').map(n => flatText(n.props.children))).toMatchSnapshot();
   });
 });
+
+describe('disclaimer, ask an expert, advice', () => {
+  test('the disclaimer is farmer-friendly and the button opens the request page with this scan', async () => {
+    const { Linking } = require('react-native');
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    await show({ ...fixture.inconclusive.api, askExpertUrl: 'https://www.msasagro.com/diagnostics/1/ask-expert' });
+    expect(allText()).toContain('This is AI advice and can be wrong. If unsure, ask an extension officer or vet.');
+    fireEvent.press(screen.getByTestId('ask-expert'));
+    expect(open).toHaveBeenCalledWith('https://www.msasagro.com/diagnostics/1/ask-expert');
+    open.mockRestore();
+  });
+
+  test('no button when the server sends no request page (failed scan or older server)', async () => {
+    await show(fixture.inconclusive.api);
+    expect(screen.queryByTestId('ask-expert')).toBeNull();
+  });
+
+  test('a healthy result labels its advice "Advice", not "Recovery Period"', async () => {
+    await show({ ...fixture.normalAgeing.api, treatmentPlan: { ...BASE.treatmentPlan, recoveryPeriod: 'No recovery needed.' } });
+    expect(allText()).toContain('Advice');
+    expect(allText()).not.toContain('Recovery Period');
+  });
+
+  test('inconclusive: the confidence says why it is low, never "No score"', async () => {
+    await show(fixture.inconclusive.api);
+    expect(flatText(screen.getByTestId('header-confidence').props.children)).toBe('Low – the 3 analyses did not agree');
+    expect(flatText(screen.getByTestId('confidence-line').props.children)).toBe('Confidence: Low – the 3 analyses did not agree');
+    expect(allText()).not.toContain('No score');
+  });
+});

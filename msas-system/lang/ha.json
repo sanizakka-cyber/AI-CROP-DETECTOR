@@ -480,5 +480,13 @@
   "Low": "Ƙasa",
   "Medium": "Matsakaici",
   "High": "Babba",
-  "Emergency": "Gaggawa"
+  "Emergency": "Gaggawa",
+  "Low – the :count analyses did not agree": "Ƙanƙani – binciken :count ba su yarda da juna ba",
+  "Low – the AI could not tell from this photo": "Ƙanƙani – AI ba ta iya gane matsalar daga wannan hoton ba",
+  "Recovery": "Murmurewa",
+  "Advice": "Shawara",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Wannan shawarar AI ce kuma tana iya yin kuskure. Idan ba ka da tabbaci, tambayi jami'in faɗakarwa na noma ko likitan dabbobi.",
+  "Request Vet / Ask an expert": "Nemi likitan dabbobi / Tambayi ƙwararre",
+  "Scan attached": "An haɗa binciken",
+  "About my scan :ref (:date):": "Game da binciken na :ref (:date):"
 }

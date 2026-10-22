@@ -114,21 +114,24 @@
                 <h3 class="font-bold">Request Vet Consultation</h3>
                 <button onclick="document.getElementById('addModal').classList.add('hidden')" class="text-white hover:text-indigo-200 font-bold">&times;</button>
             </div>
+            @php $prefill = !empty($attachedScan) ? \App\Support\ScanAttachment::prefill($attachedScan) : []; @endphp
             <form action="{{ route('farmer.vet.store') }}" method="POST" class="p-6">
                 @csrf
+                @include('farmer.partials.attached-scan')
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Animal Type *</label>
-                            <input type="text" name="animal_type" required placeholder="E.g., Cattle, Layer Hen" class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <input type="text" name="animal_type" value="{{ old('animal_type', $prefill['subject'] ?? '') }}" required placeholder="E.g., Cattle, Layer Hen" class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Priority *</label>
                             <select name="priority" required class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="low">Low (Routine)</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High (Urgent)</option>
-                                <option value="critical">Critical (Emergency)</option>
+                                @php $pri = old('priority', $prefill['priority'] ?? 'low'); @endphp
+                                <option value="low" @selected($pri === 'low')>Low (Routine)</option>
+                                <option value="medium" @selected($pri === 'medium')>Medium</option>
+                                <option value="high" @selected($pri === 'high')>High (Urgent)</option>
+                                <option value="critical" @selected($pri === 'critical')>Critical (Emergency)</option>
                             </select>
                         </div>
                     </div>
@@ -163,7 +166,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Symptoms / Issue Description *</label>
-                        <textarea name="symptoms" required rows="4" placeholder="Describe the symptoms your animal is experiencing..." class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <textarea name="symptoms" required rows="4" placeholder="Describe the symptoms your animal is experiencing..." class="w-full border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">{{ old('symptoms', $prefill['symptoms'] ?? '') }}</textarea>
                     </div>
                     <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 flex justify-between items-center">
                         <span class="text-sm text-slate-600">Consultation Fee</span>
@@ -184,4 +187,9 @@
             </script>
         </div>
     </div>
+
+    @if($errors->any() || !empty($attachedScan))
+    {{-- Opened from a scan ("Request Vet / Ask an expert") or with errors: show the form. --}}
+    <script>document.getElementById('addModal').classList.remove('hidden');</script>
+    @endif
 </x-app-layout>

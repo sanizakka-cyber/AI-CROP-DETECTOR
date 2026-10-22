@@ -405,5 +405,13 @@
   "Low": "Ala",
   "Medium": "Etiti",
   "High": "Elu",
-  "Emergency": "Mberede"
+  "Emergency": "Mberede",
+  "Low – the :count analyses did not agree": "Ala – nyocha :count ekwekọrịtaghị",
+  "Low – the AI could not tell from this photo": "Ala – AI enweghị ike ịmata site na foto a",
+  "Recovery": "Mgbake",
+  "Advice": "Ndụmọdụ",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Nke a bụ ndụmọdụ AI, o nwere ike ihie ụzọ. Ọ bụrụ na i jighị n'aka, jụọ onye ndụmọdụ ọrụ ugbo ma ọ bụ dọkịta anụmanụ.",
+  "Request Vet / Ask an expert": "Rịọ dọkịta anụmanụ / Jụọ ọkachamara",
+  "Scan attached": "Etinyere nyocha",
+  "About my scan :ref (:date):": "Gbasara nyocha m :ref (:date):"
 }

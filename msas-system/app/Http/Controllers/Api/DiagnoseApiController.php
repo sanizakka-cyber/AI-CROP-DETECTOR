@@ -466,6 +466,9 @@ class DiagnoseApiController extends Controller
             ],
             // Staff only (admin, ceo, customer-support): the unsimplified record.
             'technical'        => $technical,
+            // "Request Vet / Ask an expert": the web request form with this scan attached
+            // (the app opens it in the browser; there is no in-app request screen yet).
+            'askExpertUrl'     => $d->is_failed_scan ? null : route('diagnostics.ask-expert', $d),
             'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [
                 'immediateActions' => $d->first_aid_steps ? [['action' => $plain($d->first_aid_steps)]] : [],

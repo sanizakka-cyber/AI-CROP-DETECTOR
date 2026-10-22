@@ -6,6 +6,7 @@
 @if(!empty($pdf))
 <div class="low-conf-box" data-inconclusive="1" style="display:block">
     <p style="font-weight:800;font-size:14px;margin-bottom:4px" data-headline="1">{{ $rv['headline'] }}</p>
+    @if($rv['confidence'])<p data-confidence-line="1">{{ __('Confidence') }}: {{ $rv['confidence']['label'] }}</p>@endif
     @if($rv['possible_causes'])
     <ul style="margin:4px 0 4px 16px;list-style:disc">
         @foreach($rv['possible_causes'] as $name)<li data-possible-cause="1">{{ $name }}</li>@endforeach
@@ -22,6 +23,9 @@
     <h3 class="text-lg font-extrabold text-amber-900 leading-tight flex items-center gap-2" data-headline="1">
         <i class="fa-solid fa-circle-question"></i> {{ $rv['headline'] }}
     </h3>
+    @if($rv['confidence'])
+    <p class="text-sm font-bold text-amber-900 mt-1" data-confidence-line="1">{{ __('Confidence') }}: {{ $rv['confidence']['label'] }}</p>
+    @endif
     @if(\App\Support\FarmerText::plain($diagnosis->what_cannot_be_confirmed))
     <p class="text-xs text-amber-900 mt-1">{{ \App\Support\FarmerText::plain($diagnosis->what_cannot_be_confirmed) }}</p>
     @endif

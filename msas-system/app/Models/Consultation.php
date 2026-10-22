@@ -31,7 +31,14 @@ class Consultation extends Model
         'consultant_status',
         'consultant_accepted_at',
         'consultant_decline_reason',
+        // The scan this request is about ("Request Vet / Ask an expert" on a result)
+        'diagnosis_id',
     ];
+
+    public function diagnosis()
+    {
+        return $this->belongsTo(Diagnosis::class);
+    }
 
     public function farmer()
     {

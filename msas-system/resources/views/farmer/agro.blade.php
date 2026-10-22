@@ -114,22 +114,25 @@
                 <button onclick="document.getElementById('addModal').classList.add('hidden')"
                         class="text-white hover:text-emerald-200 font-bold text-2xl leading-none">&times;</button>
             </div>
+            @php $prefill = !empty($attachedScan) ? \App\Support\ScanAttachment::prefill($attachedScan) : []; @endphp
             <form action="{{ route('farmer.agro.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
+                @include('farmer.partials.attached-scan')
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Crop Type *</label>
-                        <input type="text" name="crop_type" required placeholder="e.g., Maize, Tomato, Yam"
+                        <input type="text" name="crop_type" value="{{ old('crop_type', $prefill['subject'] ?? '') }}" required placeholder="e.g., Maize, Tomato, Yam"
                                class="w-full border-slate-200 rounded-lg text-sm focus:ring-[#1FA84A] focus:border-[#1FA84A]">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Priority *</label>
                         <select name="priority" required
                                 class="w-full border-slate-200 rounded-lg text-sm focus:ring-[#1FA84A] focus:border-[#1FA84A]">
-                            <option value="low">Low (Routine)</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High (Urgent)</option>
-                            <option value="critical">Critical (Emergency)</option>
+                            @php $pri = old('priority', $prefill['priority'] ?? 'medium'); @endphp
+                            <option value="low" @selected($pri === 'low')>Low (Routine)</option>
+                            <option value="medium" @selected($pri === 'medium')>Medium</option>
+                            <option value="high" @selected($pri === 'high')>High (Urgent)</option>
+                            <option value="critical" @selected($pri === 'critical')>Critical (Emergency)</option>
                         </select>
                     </div>
                 </div>
@@ -166,7 +169,7 @@
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Issue / Symptoms *</label>
                     <textarea name="symptoms" required rows="4"
                               placeholder="Describe the crop problem — symptoms, location on plant, when it started, how many plants affected..."
-                              class="w-full border-slate-200 rounded-lg text-sm focus:ring-[#1FA84A] focus:border-[#1FA84A]"></textarea>
+                              class="w-full border-slate-200 rounded-lg text-sm focus:ring-[#1FA84A] focus:border-[#1FA84A]">{{ old('symptoms', $prefill['symptoms'] ?? '') }}</textarea>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex justify-between items-center">
                     <span class="text-sm text-slate-600">Consultation Fee</span>
@@ -188,7 +191,8 @@
         </div>
     </div>
 
-    @if($errors->any())
+    @if($errors->any() || !empty($attachedScan))
+    {{-- Opened from a scan ("Request Vet / Ask an expert") or with errors: show the form. --}}
     <script>document.getElementById('addModal').classList.remove('hidden');</script>
     @endif
 </x-app-layout>

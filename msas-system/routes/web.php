@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/diagnostics/translate', [DiagnosticController::class, 'translate'])->name('diagnostics.translate');
         Route::get('/diagnostics/{diagnosis}/report', [DiagnosticController::class, 'downloadReport'])->name('diagnostics.report');
         Route::get('/diagnostics/{diagnosis}/image', [DiagnosticController::class, 'image'])->name('diagnostics.image');
+        // "Request Vet / Ask an expert" on a result: the request form with this scan attached.
+        Route::get('/diagnostics/{diagnosis}/ask-expert', [DiagnosticController::class, 'askExpert'])->name('diagnostics.ask-expert');
         Route::get('/diagnostics/{diagnosis}/narration', [NarrationController::class, 'show'])
             ->middleware('throttle:20,1')
             ->name('diagnostics.narration');

@@ -92,6 +92,15 @@ final class ResultView
 
     public const HEADLINE_INCONCLUSIVE = 'Inconclusive – possible causes below';
 
+    /** Confidence wording when there is no single score (never "N/A" for a judged scan). */
+    public const CONFIDENCE_DISAGREE = 'Low – the :count analyses did not agree';
+    public const CONFIDENCE_UNSURE   = 'Low – the AI could not tell from this photo';
+    public const CONFIDENCE_LOW      = 'Low';
+
+    /** The farmer-facing disclaimer, with a button to ask an expert about this scan. */
+    public const DISCLAIMER = 'This is AI advice and can be wrong. If unsure, ask an extension officer or vet.';
+    public const ASK_EXPERT = 'Request Vet / Ask an expert';
+
     public static function for(Diagnosis $d, ?User $viewer = null): array
     {
         $mode = match ($d->type) { 'animal', 'livestock' => 'livestock', 'soil' => 'soil', 'pest' => 'pest', default => 'crop' };
@@ -127,11 +136,45 @@ final class ResultView
             'steps'         => in_array($kind, ['failed', 'rejected'], true) ? [] : self::steps($d, $mode, $inconclusive ? 'inconclusive' : ($healthyish ? $health : 'problem')),
             'retake'        => $inconclusive ? ['show' => true, 'tips' => self::tips($d)] : ['show' => false, 'tips' => []],
             'detected_part' => FarmerText::plain($d->detected_part),
+            'confidence'    => self::confidence($d, $kind),
+            // The line under the finding: "Advice" when there is nothing to recover from.
+            'recovery_label' => $healthyish ? __('Advice') : __('Recovery'),
             'technical'     => self::isStaff($viewer) ? self::technical($d) : null,
         ];
         $view['severity_label'] = $view['severity'] ? __(ucfirst($view['severity'])) : null;
         $view['urgency_label']  = $view['urgency'] ? __(ucfirst($view['urgency'])) : null;
         return $view;
+    }
+
+    /**
+     * The confidence line. A score is shown as a percentage; an inconclusive
+     * result without one says why it is low (the analyses disagreed, or the AI
+     * could not tell), never a bare "N/A". Failed scans and rejected photos
+     * have no confidence at all.
+     *
+     * @return array{key: string, value: ?float, label: string}|null
+     */
+    public static function confidence(Diagnosis $d, ?string $kind = null): ?array
+    {
+        $kind ??= self::kind($d);
+        if (in_array($kind, ['failed', 'rejected'], true)) {
+            return null;
+        }
+        $score = $d->confidence_score;
+        if ($score !== null) {
+            $pct = (int) round($score);
+            return $kind === 'inconclusive'
+                ? ['key' => 'low', 'value' => (float) $score, 'label' => __(self::CONFIDENCE_LOW) . " ({$pct}%)"]
+                : ['key' => 'score', 'value' => (float) $score, 'label' => "{$pct}%"];
+        }
+        $c = $d->ai_consensus ?? [];
+        $passes = (int) ($c['passes_completed'] ?? 0);
+        $outcomes = array_filter($c['pass_outcomes'] ?? [], fn ($o) => is_string($o));
+        // Several analyses, and not all of them simply said "uncertain": they disagreed.
+        $disagreed = $passes > 1 && !(count($outcomes) === $passes && count(array_unique($outcomes)) === 1 && reset($outcomes) === 'uncertain');
+        return $disagreed
+            ? ['key' => 'disagree', 'value' => null, 'label' => __(self::CONFIDENCE_DISAGREE, ['count' => $passes])]
+            : ['key' => 'unsure', 'value' => null, 'label' => __(self::CONFIDENCE_UNSURE)];
     }
 
     public static function kind(Diagnosis $d): string

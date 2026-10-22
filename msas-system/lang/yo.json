@@ -405,5 +405,13 @@
   "Low": "Kékeré",
   "Medium": "Àárín",
   "High": "Gíga",
-  "Emergency": "Pàjáwìrì"
+  "Emergency": "Pàjáwìrì",
+  "Low – the :count analyses did not agree": "Kéré – àwọn àyẹ̀wò :count kò fohùn ṣọ̀kan",
+  "Low – the AI could not tell from this photo": "Kéré – AI kò lè mọ̀ láti inú fọ́tò yìí",
+  "Recovery": "Ìmúlàradá",
+  "Advice": "Ìmọ̀ràn",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Ìmọ̀ràn AI ni èyí, ó sì lè ṣàṣìṣe. Bí o kò bá dá ọ lójú, bèèrè lọ́wọ́ òṣìṣẹ́ ìgbaninímọ̀ràn àgbẹ̀ tàbí dókítà ẹranko.",
+  "Request Vet / Ask an expert": "Bèèrè dókítà ẹranko / Bèèrè lọ́wọ́ amòye",
+  "Scan attached": "A ti so àyẹ̀wò mọ́ ọn",
+  "About my scan :ref (:date):": "Nípa àyẹ̀wò mi :ref (:date):"
 }
