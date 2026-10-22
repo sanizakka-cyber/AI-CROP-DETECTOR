@@ -1,5 +1,5 @@
 {
-  "_about": "One stored scan, read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php checks the API returns `api` for `record`+`location` and that the web history and report show every `mustDisplay` string; mobile/app/diagnosis/__tests__/canonicalParity.test.js renders `api` in the app and checks the same strings. A field change that only one client handles breaks one of the two tests.",
+  "_about": "One stored scan, read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php checks the API returns `api` for `record`+`location` and that the web history and report show every `mustDisplay` string; mobile/app/diagnosis/__tests__/canonicalParity.test.js renders `api` in the app and checks the same strings. A field change that only one client handles breaks one of the two tests. Since the consensus-screen fixes the farmer sees plain words (no Latin names or jargon such as 'lesions'); the technical originals are staff-only (`technical`) and in the PDF appendix. `mustNotDisplay` is checked on the web history page, the farmer part of the PDF and the app.",
   "record": {
     "type": "plant",
     "status": "reviewed",
@@ -24,7 +24,12 @@
     "image_quality": "good",
     "image_issues": [],
     "photo_tips": [],
-    "alternative_findings": [{"name": "Early blight", "why_considered": "Brown lesions, but no target rings"}],
+    "alternative_findings": [
+      {
+        "name": "Early blight",
+        "why_considered": "Brown lesions, but no target rings"
+      }
+    ],
     "contract_version": "2026-10-phase11",
     "ai_model_name": "claude-sonnet-5",
     "validation_status": "unvalidated"
@@ -42,30 +47,71 @@
     "status": "reviewed",
     "statusLabel": "Completed",
     "subjectName": "Tomato",
-    "scientificName": "Solanum lycopersicum",
+    "scientificName": null,
     "detectedPart": "Leaf",
     "aiResult": {
-      "primaryDiagnosis": "Late blight (Phytophthora infestans)",
+      "primaryDiagnosis": "Late blight",
       "confidence": 78,
       "severity": "moderate",
       "severityLevel": "Moderate",
       "urgency": "high",
       "urgencyLevel": "High",
-      "healthStatus": "Diseased",
-      "symptomsIdentified": "dark water-soaked lesions, white growth on leaf underside",
-      "explanation": "Water-soaked lesions with white sporulation are typical of late blight"
+      "healthStatus": "Problem found",
+      "symptomsIdentified": "dark water-soaked spots, white growth on leaf underside",
+      "explanation": "Water-soaked spots with white spore growth are typical of late blight"
     },
     "assessment": {
       "outcome": "assessed",
       "imageQuality": "good",
       "imageIssues": [],
       "photoTips": [],
-      "alternativeFindings": [{"name": "Early blight", "why_considered": "Brown lesions, but no target rings"}],
-      "contractVersion": "2026-10-phase11"
+      "alternativeFindings": [
+        {
+          "name": "Early blight",
+          "why_considered": "Brown spots, but no target rings"
+        }
+      ],
+      "contractVersion": "2026-10-phase11",
+      "result": {
+        "kind": "diagnosis",
+        "inconclusive": false,
+        "headline": "Late blight",
+        "name": "Late blight",
+        "health": {
+          "key": "problem",
+          "label": "Problem found"
+        },
+        "severity": "moderate",
+        "urgency": "high",
+        "possible_causes": [],
+        "detected_part": "Leaf",
+        "steps": [
+          {
+            "key": null,
+            "text": "Remove and destroy infected leaves"
+          },
+          {
+            "key": null,
+            "text": "Avoid overhead watering"
+          }
+        ],
+        "retake": {
+          "show": false,
+          "tips": []
+        }
+      }
     },
     "treatmentPlan": {
-      "immediateActions": [{"action": "1) Remove and destroy infected leaves 2) Avoid overhead watering"}],
-      "chemicalTreatments": [{"product": "Copper-based fungicide, applied at the rate on the product label"}],
+      "immediateActions": [
+        {
+          "action": "1) Remove and destroy infected leaves 2) Avoid overhead watering"
+        }
+      ],
+      "chemicalTreatments": [
+        {
+          "product": "Copper-based fungicide, applied at the rate on the product label"
+        }
+      ],
       "preventiveMeasures": "Rotate crops away from tomato and potato",
       "organicOptions": "Remove infected plants and improve air flow"
     },
@@ -78,19 +124,26 @@
       "aiModelName": "claude-sonnet-5",
       "confidenceDecision": "sufficient",
       "validationStatus": "unvalidated"
-    }
+    },
+    "technical": null
   },
   "mustDisplay": [
-    "Late blight (Phytophthora infestans)",
+    "Late blight",
     "Tomato",
-    "Solanum lycopersicum",
     "78%",
-    "dark water-soaked lesions, white growth on leaf underside",
+    "dark water-soaked spots, white growth on leaf underside",
     "Early blight",
     "Remove and destroy infected leaves",
+    "Avoid overhead watering",
     "Remove infected plants and improve air flow",
     "Katsina",
     "Funtua",
     "Scanned at a different location than collected"
+  ],
+  "mustNotDisplay": [
+    "Phytophthora",
+    "Solanum lycopersicum",
+    "lesions",
+    "sporulation"
   ]
 }

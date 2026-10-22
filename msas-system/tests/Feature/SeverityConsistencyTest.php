@@ -42,7 +42,7 @@ class SeverityConsistencyTest extends TestCase
     /** Every severity shown for scan $d, keyed by surface. */
     private function severitiesShown(User $u, Diagnosis $d): array
     {
-        cache()->forget("diagnosis:v2:{$d->id}");
+        cache()->forget("diagnosis:v3:{$d->id}");
         $detail = $this->api($u)->getJson("/api/diagnose/{$d->id}")->assertOk();
         $list = collect($this->api($u)->getJson('/api/diagnose')->assertOk()->json('diagnoses'))->firstWhere('id', $d->id);
         $history = $this->actingAs($u)->get(route('diagnostics.history'))->assertOk()->getContent();

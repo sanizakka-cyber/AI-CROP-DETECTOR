@@ -275,6 +275,14 @@ a { color: inherit; text-decoration: none; }
         // Falls back to the stored (source-language) value when no translation
         // was produced — see DiagnosticController::translatedDiagnosisText().
         $t = fn($field) => $translated[$field] ?? $diagnosis->$field;
+        // Farmer-facing text in plain words (App\Support\FarmerText); the technical
+        // originals are in the appendix at the end.
+        $p = fn($field) => \App\Support\FarmerText::plain($t($field));
+        // Headline, health, severity, urgency, causes and steps: the same source as
+        // the web page and the app (App\Support\ResultView).
+        $rv   = $diagnosis->resultView();
+        $tech = \App\Support\ResultView::technical($diagnosis);
+        $healthy = in_array($rv['health']['key'] ?? null, ['healthy', 'normal_ageing'], true);
     @endphp
 
     {{-- ── Report Header ──────────────────────────────────────────────── --}}
@@ -297,7 +305,7 @@ a { color: inherit; text-decoration: none; }
 
     {{-- ── Subject Banner ─────────────────────────────────────────────── --}}
     @if($diagnosis->subject_name)
-    <div class="subject-banner" style="background:{{ $diagnosis->health_status === 'Healthy' ? '#ecfdf5' : '#fff7ed' }}; border-bottom:1px solid #e2e8f0">
+    <div class="subject-banner" style="background:{{ $healthy ? '#ecfdf5' : '#fff7ed' }}; border-bottom:1px solid #e2e8f0">
         <div class="subject-icon">
             @if($diagnosis->type === 'plant')
             <svg width="36" height="36" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22V12m0 0C12 7 7 4 2 5c0 5 4 8 10 7zm0 0c0-5 5-8 10-7-1 5-5 8-10 7"/></svg>
@@ -309,26 +317,22 @@ a { color: inherit; text-decoration: none; }
         </div>
         <div>
             <div class="subject-name">{{ $diagnosis->subject_name }}</div>
-            @if($diagnosis->scientific_name && $diagnosis->scientific_name !== 'Unknown')
-            <div class="subject-sci">{{ $diagnosis->scientific_name }}</div>
-            @endif
         </div>
         <div class="subject-right">
-            @if($diagnosis->severity_level && !$diagnosis->is_failed_scan)
-            {{-- Badge color logic matches the stored English enum value directly —
-                 only the trailing label word is translated, never severity_level itself. --}}
-            <span class="badge badge-{{ match($diagnosis->severity_level) { 'Critical','Severe'=>'red', 'Moderate'=>'orange', 'Mild'=>'amber', default=>'green' } }}" data-severity="{{ $diagnosis->severity_key }}">
-                {{ $diagnosis->severity_level }} {{ __('Severity') }}
+            {{-- None for a failed or inconclusive scan (App\Support\ResultView). Colour by key. --}}
+            @if($rv['severity'])
+            <span class="badge badge-{{ match($rv['severity']) { 'critical','severe'=>'red', 'moderate'=>'orange', 'mild'=>'amber', default=>'green' } }}" data-severity="{{ $rv['severity'] }}">
+                {{ $rv['severity_label'] }} {{ __('Severity') }}
             </span>
             @endif
-            @if($diagnosis->urgency_level && !$diagnosis->is_failed_scan)
-            <span class="badge badge-{{ match($diagnosis->urgency_level) { 'Emergency','High'=>'red', 'Medium'=>'amber', default=>'green' } }}" data-urgency="{{ $diagnosis->urgency_key }}">
-                {{ $diagnosis->urgency_level }} {{ __('Urgency') }}
+            @if($rv['urgency'])
+            <span class="badge badge-{{ match($rv['urgency']) { 'emergency','high'=>'red', 'medium'=>'amber', default=>'green' } }}" data-urgency="{{ $rv['urgency'] }}">
+                {{ $rv['urgency_label'] }} {{ __('Urgency') }}
             </span>
             @endif
-            @if($diagnosis->health_status)
-            <span class="badge badge-{{ $diagnosis->health_status === 'Healthy' ? 'green' : 'orange' }}">
-                {{ $diagnosis->health_status }}
+            @if($rv['health'])
+            <span class="badge badge-{{ $healthy ? 'green' : 'orange' }}" data-health="{{ $rv['health']['key'] }}">
+                {{ $rv['health']['label'] }}
             </span>
             @endif
         </div>
@@ -347,10 +351,12 @@ a { color: inherit; text-decoration: none; }
         <div>
             <div class="diag-headline">
                 <div class="diag-label">{{ __('Diagnosis') }}</div>
-                <div class="diag-name">{{ $diagnosis->is_failed_scan ? __('No result: this scan did not complete') : ($diagnosis->is_not_certain ? __('Not certain') : ($diagnosis->needs_confirmation ? __('Likely') . ': ' : '') . $t('disease_name')) }}</div>
+                <div class="diag-name" data-headline="1">{{ in_array($rv['kind'], ['likely', 'diagnosis'], true) && isset($translated['disease_name']) && !$diagnosis->farmer_name
+                    ? ($rv['kind'] === 'likely' ? __('Likely') . ': ' : '') . $p('disease_name')
+                    : $rv['headline'] }}</div>
                 <div class="meta-row">
-                    @if($diagnosis->detected_part)
-                    <span class="meta-pill">Part: {{ $t('detected_part') }}</span>
+                    @if($rv['detected_part'])
+                    <span class="meta-pill">{{ __('Detected Part') }}: {{ $p('detected_part') }}</span>
                     @endif
                     @if($diagnosis->recovery_period)
                     <span class="meta-pill">Recovery: {{ $t('recovery_period') }}</span>
@@ -367,18 +373,18 @@ a { color: inherit; text-decoration: none; }
                 <div class="conf-bar-bg"><div class="conf-bar-fill"></div></div>
             </div>
 
-            @if($diagnosis->confidence_score === null)
+            @if($rv['kind'] === 'failed')
             <div style="padding: 0 22px 12px">
                 <div class="low-conf-box">
                     <svg width="16" height="16" fill="none" stroke="#92400e" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                     <p>{{ __('AI analysis was unavailable for this scan. An expert will review it shortly.') }}</p>
                 </div>
             </div>
-            @elseif($diagnosis->is_not_certain)
+            @elseif($rv['inconclusive'])
             <div style="padding: 0 22px 12px">
-                @include('diagnostics.partials.not-certain', ['pdf' => true])
+                @include('diagnostics.partials.inconclusive', ['pdf' => true])
             </div>
-            @elseif($diagnosis->needs_confirmation)
+            @elseif($rv['kind'] === 'likely')
             <div style="padding: 0 22px 12px">
                 @include('diagnostics.partials.likely-confirm', ['pdf' => true])
             </div>
@@ -397,19 +403,19 @@ a { color: inherit; text-decoration: none; }
             @if($diagnosis->symptoms_identified)
             <div class="section-card s-red">
                 <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Symptoms') }}</div>
-                <p>{{ $t('symptoms_identified') }}</p>
+                <p>{{ $p('symptoms_identified') }}</p>
             </div>
             @endif
             @if($diagnosis->cause)
             <div class="section-card s-slate">
                 <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Root Cause') }}</div>
-                <p>{{ $t('cause') }}</p>
+                <p>{{ $p('cause') }}</p>
             </div>
             @endif
             @if($diagnosis->environmental_factors)
             <div class="section-card s-sky">
                 <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20a3 3 0 006 0 3 3 0 00-3-2.69V6a3 3 0 00-6 0v11.31A3 3 0 009 20z"/></svg> {{ __('Environment') }}</div>
-                <p>{{ $t('environmental_factors') }}</p>
+                <p>{{ $p('environmental_factors') }}</p>
             </div>
             @endif
         </div>
@@ -437,13 +443,8 @@ a { color: inherit; text-decoration: none; }
         </div>
         @endif
 
-        {{-- Immediate Action --}}
-        @if($diagnosis->first_aid_steps)
-        <div class="action-block">
-            <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> {{ __('Immediate Action Required') }}</div>
-            <p>{{ $t('first_aid_steps') }}</p>
-        </div>
-        @endif
+        {{-- What to do now: 2 to 4 steps on every judged result (replaces the old Immediate Action box) --}}
+        @include('diagnostics.partials.what-to-do', ['pdf' => true])
 
         {{-- Treatment + Fertilizer --}}
         @php $row3 = collect(['recommended_medication','fertilizer_recommendation'])->filter(fn($f)=>!empty($diagnosis->$f)); @endphp
@@ -498,9 +499,12 @@ a { color: inherit; text-decoration: none; }
         @if($diagnosis->explanation)
         <div class="explanation-box">
             <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> {{ __('Why this diagnosis?') }} (Explainable AI)</div>
-            <p>{{ $t('explanation') }}</p>
+            <p>{{ $p('explanation') }}</p>
         </div>
         @endif
+
+        {{-- Technical appendix: the unsimplified names, labels and votes (kept off the farmer's sections) --}}
+        @include('diagnostics.partials.technical-details', ['pdf' => true, 'tech' => $tech])
 
     </div>
 

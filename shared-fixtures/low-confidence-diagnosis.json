@@ -1,5 +1,5 @@
 {
-  "_about": "A stored scan below the confidence threshold (65% by default), read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php (API subset, web history, PDF report) and mobile/app/diagnosis/__tests__/lowConfidenceParity.test.js (app result screen). Neither side may present it as one diagnosis: both show 'Not certain', the possible conditions, the confirm-with-an-expert message and the AI disclaimer.",
+  "_about": "A stored scan below the confidence threshold (65% by default), read by BOTH test suites: msas-system/tests/Feature/CanonicalDiagnosisParityTest.php (API subset, web history, PDF report) and mobile/app/diagnosis/__tests__/lowConfidenceParity.test.js (app result screen). Neither side may present it as one diagnosis: both show the inconclusive headline, at most three possible causes in plain words, health 'Needs checking', no severity or urgency, 'What to do now', the retake button, the confirm-with-an-expert message and the AI disclaimer.",
   "record": {
     "type": "livestock",
     "status": "reviewed",
@@ -18,8 +18,14 @@
     "image_issues": [],
     "photo_tips": [],
     "alternative_findings": [
-      { "name": "Mange", "why_considered": "Crusting and hair loss" },
-      { "name": "Lumpy skin disease", "why_considered": "Raised skin lesions" }
+      {
+        "name": "Mange",
+        "why_considered": "Crusting and hair loss"
+      },
+      {
+        "name": "Lumpy skin disease",
+        "why_considered": "Raised skin lesions"
+      }
     ],
     "contract_version": "2026-10-phase11",
     "ai_model_name": "claude-sonnet-5",
@@ -31,10 +37,13 @@
     "statusLabel": "Low Confidence",
     "subjectName": "Cattle",
     "aiResult": {
-      "primaryDiagnosis": "Ringworm (Trichophyton verrucosum)",
+      "primaryDiagnosis": "Inconclusive – possible causes below",
       "confidence": 55,
       "symptomsIdentified": "circular grey crusted patches on the neck",
-      "explanation": "Crusted circular patches fit ringworm, but nodules would point elsewhere"
+      "explanation": "Crusted circular patches fit ringworm, but nodules would point elsewhere",
+      "severity": null,
+      "urgency": null,
+      "healthStatus": "Needs checking"
     },
     "assessment": {
       "outcome": "assessed",
@@ -42,17 +51,66 @@
       "imageIssues": [],
       "photoTips": [],
       "alternativeFindings": [
-        { "name": "Mange", "why_considered": "Crusting and hair loss" },
-        { "name": "Lumpy skin disease", "why_considered": "Raised skin lesions" }
+        {
+          "name": "Mange",
+          "why_considered": "Crusting and hair loss"
+        },
+        {
+          "name": "Lumpy skin disease",
+          "why_considered": "Raised skin lesions"
+        }
       ],
       "contractVersion": "2026-10-phase11",
       "notCertain": true,
       "minConfidence": 65,
-      "possibleConditions": ["Ringworm (Trichophyton verrucosum)", "Mange", "Lumpy skin disease"]
+      "possibleConditions": [
+        "Ringworm",
+        "Mange",
+        "Lumpy skin disease"
+      ],
+      "result": {
+        "kind": "inconclusive",
+        "inconclusive": true,
+        "headline": "Inconclusive – possible causes below",
+        "name": null,
+        "health": {
+          "key": "needs_checking",
+          "label": "Needs checking"
+        },
+        "severity": null,
+        "urgency": null,
+        "possible_causes": [
+          "Ringworm",
+          "Mange",
+          "Lumpy skin disease"
+        ],
+        "steps": [
+          {
+            "key": "isolate_animal",
+            "text": "Keep the animal apart from the others and watch it closely."
+          },
+          {
+            "key": "check_eating",
+            "text": "Check that the animal is eating, drinking and moving normally."
+          },
+          {
+            "key": "retake_closer",
+            "text": "Take a closer, sharper photo of the affected part in daylight and scan again."
+          },
+          {
+            "key": "call_vet",
+            "text": "If the animal gets weaker or stops eating, call a vet now."
+          }
+        ]
+      }
     },
     "treatmentPlan": {
       "immediateActions": [],
-      "chemicalTreatments": [{ "product": "Topical antifungal, as directed by a vet" }],
+      "chemicalTreatments": [
+        {
+          "product": "Topical antifungal, as directed by a vet"
+        }
+      ],
       "organicOptions": "Isolate the animal and clean shared equipment"
     },
     "confidenceProvenance": {
@@ -61,14 +119,19 @@
       "validationStatus": "unvalidated"
     }
   },
-  "headline": "Not certain",
+  "headline": "Inconclusive – possible causes below",
   "mustDisplay": [
-    "Not certain",
-    "Ringworm (Trichophyton verrucosum)",
+    "Inconclusive – possible causes below",
+    "Ringworm",
     "Mange",
     "Lumpy skin disease",
+    "Needs checking",
+    "Keep the animal apart from the others and watch it closely.",
     "Please confirm with a vet or extension officer before treating.",
     "AI guidance can be wrong; confirm with an expert.",
     "55%"
+  ],
+  "mustNotDisplay": [
+    "Trichophyton"
   ]
 }

@@ -1,5 +1,6 @@
 {{-- Phase 11: scan outcome block for the web history page. Same data and
-     wording as the mobile result screen, from the same backend record. --}}
+     wording as the mobile result screen, from the same backend record.
+     Inconclusive results have their own block (partials/inconclusive). --}}
 @php
     $outcome = $diagnosis->assessment_outcome;
     $issueLabels = [
@@ -12,7 +13,7 @@
     ];
 @endphp
 
-@if(in_array($outcome, ['poor_image', 'unsupported_subject', 'uncertain'], true))
+@if(in_array($outcome, ['poor_image', 'unsupported_subject'], true))
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4" data-outcome="{{ $outcome }}">
     <div class="text-sm font-extrabold text-amber-900 flex items-center gap-2 mb-1">
         <i class="fa-solid {{ $outcome === 'uncertain' ? 'fa-circle-question' : ($outcome === 'poor_image' ? 'fa-camera' : 'fa-magnifying-glass') }}"></i>
@@ -57,7 +58,7 @@
     <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{{ __('Other possibilities considered') }}</div>
     <ul class="text-xs text-slate-700 list-disc ml-4 space-y-0.5">
         @foreach($diagnosis->alternative_findings as $alt)
-            <li><strong>{{ $alt['name'] ?? '' }}</strong>@if(!empty($alt['why_considered'])): {{ $alt['why_considered'] }}@endif</li>
+            <li><strong>{{ \App\Support\FarmerText::plain(($alt['farmer_name'] ?? null) ?: ($alt['name'] ?? '')) }}</strong>@if(!empty($alt['why_considered'])): {{ \App\Support\FarmerText::plain($alt['why_considered']) }}@endif</li>
         @endforeach
     </ul>
 </div>
