@@ -53,7 +53,8 @@
 </div>
 @endif
 
-@if($outcome === 'assessed' && !empty($diagnosis->alternative_findings))
+{{-- Not for an inconclusive result: its possible causes are the list (same as the app). --}}
+@if($outcome === 'assessed' && !($rv['inconclusive'] ?? false) && !empty($diagnosis->alternative_findings))
 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
     <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{{ __('Other possibilities considered') }}</div>
     <ul class="text-xs text-slate-700 list-disc ml-4 space-y-0.5">

@@ -58,6 +58,13 @@ test('the buffer zone says Likely and asks to confirm', async () => {
   await show({ ...fixture.api, aiResult: { ...fixture.api.aiResult, confidence: 70 },
     assessment: { ...fixture.api.assessment, needsConfirmation: true } });
   expect(flatText(screen.getByTestId('diagnosis-name').props.children).trim()).toBe('Likely: Late blight');
+  // Late blight is a crop: an agronomist or extension officer, not a vet.
+  expect(textOf('likely-confirm-card')).toContain('Please confirm with an agronomist or extension officer before treating.');
+});
+
+test('the buffer zone on a livestock scan asks a vet', async () => {
+  await show({ ...fixture.api, type: 'livestock', aiResult: { ...fixture.api.aiResult, confidence: 70 },
+    assessment: { ...fixture.api.assessment, needsConfirmation: true } });
   expect(textOf('likely-confirm-card')).toContain('Please confirm with a vet or extension officer before treating.');
 });
 

@@ -392,7 +392,6 @@
   "Do not spray until the pest is confirmed.": "Má ṣe fín oògùn títí a ó fi fìdí kòkòrò náà múlẹ̀.",
   "Take a soil sample to a laboratory for testing before you add fertiliser.": "Gbé àpẹẹrẹ ilẹ̀ lọ sí ilé ìwádìí fún àyẹ̀wò kí o tó fi ajílẹ̀ sí i.",
   "Remove badly affected leaves or plants and keep them away from healthy ones.": "Yọ àwọn ewé tàbí ọ̀gbìn tí ọ̀rọ̀ kàn gidigidi kúrò, kí o sì yà wọ́n sọ́tọ̀ kúrò lọ́dọ̀ àwọn tó ní àlàáfíà.",
-  "Ask an extension officer or vet to confirm before you treat.": "Bèèrè lọ́wọ́ òṣìṣẹ́ ìgbaninímọ̀ràn àgbẹ̀ tàbí dókítà ẹranko kí wọ́n fìdí rẹ̀ múlẹ̀ kí o tó tọ́jú.",
   "Move closer so the affected part fills most of the photo.": "Súnmọ́ tòsí kí apá tí ọ̀rọ̀ kàn kún èyí tó pọ̀ jù nínú fọ́tò.",
   "Take the photo in daylight, without shadow on the affected part.": "Ya fọ́tò ní ọ̀sán, láìsí òjìji lórí apá tí ọ̀rọ̀ kàn.",
   "Hold the phone still and tap the screen on the affected part to focus.": "Di fóònù mú dáadáa, kí o sì tẹ ojú fóònù lórí apá tí ọ̀rọ̀ kàn kí ó lè hàn kedere.",
@@ -413,5 +412,13 @@
   "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Ìmọ̀ràn AI ni èyí, ó sì lè ṣàṣìṣe. Bí o kò bá dá ọ lójú, bèèrè lọ́wọ́ òṣìṣẹ́ ìgbaninímọ̀ràn àgbẹ̀ tàbí dókítà ẹranko.",
   "Request Vet / Ask an expert": "Bèèrè dókítà ẹranko / Bèèrè lọ́wọ́ amòye",
   "Scan attached": "A ti so àyẹ̀wò mọ́ ọn",
-  "About my scan :ref (:date):": "Nípa àyẹ̀wò mi :ref (:date):"
+  "About my scan :ref (:date):": "Nípa àyẹ̀wò mi :ref (:date):",
+  "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.": "Ìmọ̀ràn AI ni èyí, ó sì lè ṣàṣìṣe. Bí o kò bá dá ọ lójú, bèèrè lọ́wọ́ akẹ́kọ̀ọ́ ogbin tàbí òṣìṣẹ́ ìgbaninímọ̀ràn àgbẹ̀.",
+  "Request Agronomist / Ask an expert": "Bèèrè akẹ́kọ̀ọ́ ogbin / Bèèrè lọ́wọ́ amòye",
+  "Please confirm with an agronomist or extension officer before treating.": "Jọ̀wọ́ fìdí rẹ̀ múlẹ̀ pẹ̀lú akẹ́kọ̀ọ́ ogbin tàbí òṣìṣẹ́ àgbẹ̀ kí o tó tọ́jú.",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.": "AI rò pé ó ṣeé ṣe kí ó jẹ́ èyí, ṣùgbọ́n kò dá a lójú pátápátá. Jọ̀wọ́ fìdí rẹ̀ múlẹ̀ pẹ̀lú akẹ́kọ̀ọ́ ogbin tàbí òṣìṣẹ́ àgbẹ̀ kí o tó tọ́jú.",
+  "Ask an agronomist or extension officer to confirm before you treat.": "Bèèrè lọ́wọ́ akẹ́kọ̀ọ́ ogbin tàbí òṣìṣẹ́ ìgbaninímọ̀ràn àgbẹ̀ kí wọ́n fìdí rẹ̀ múlẹ̀ kí o tó tọ́jú.",
+  "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.": "Àwọn àmì inú fọ́tò yìí lè jẹ́ ọ̀kan nínú àwọn wọ̀nyí: :causes. AI kò lè mọ èwo ni láti inú fọ́tò yìí.",
+  "The AI cannot tell what the problem is from this photo.": "AI kò lè mọ ohun tí ìṣòro náà jẹ́ láti inú fọ́tò yìí.",
+  "AI explanation": "Àlàyé AI"
 }

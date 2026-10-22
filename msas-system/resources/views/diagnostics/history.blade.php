@@ -1,16 +1,25 @@
 <x-app-layout>
+    {{-- Title only in the 64px top bar (it shares the bar with search and profile; with the
+         button beside it the pair wrapped below ~1280 CSS px, e.g. a 1920 screen at 150%,
+         and the title's top was cut off). --}}
     <x-slot name="header">
-        <div class="flex justify-between items-center flex-wrap gap-3">
-            <h2 class="font-semibold text-xl text-slate-800 leading-tight flex items-center gap-2">
-                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> {{ __('AI Diagnostic Reports') }}
-            </h2>
-            <a href="{{ route('diagnostics.scan') }}" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition flex items-center gap-2 text-sm">
-                <i class="fa-solid fa-camera text-xs"></i> <span data-i18n="New Scan">{{ __('New Scan') }}</span>
-            </a>
-        </div>
+        <h2 class="font-semibold text-xl text-slate-800 leading-tight hidden md:flex items-center gap-2 min-w-0" data-page-title="1">
+            <svg class="w-5 h-5 text-slate-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span class="truncate">{{ __('AI Diagnostic Reports') }}</span>
+        </h2>
     </x-slot>
 
     <div class="space-y-6 max-w-5xl mx-auto">
+
+        {{-- Page toolbar: New Scan on every width; below 768px (where the top bar has
+             no room for the title) the title too. --}}
+        <div class="flex items-center justify-between gap-3" data-page-toolbar="1">
+            <h2 class="md:hidden font-semibold text-lg text-slate-800 leading-tight min-w-0">{{ __('AI Diagnostic Reports') }}</h2>
+            <a href="{{ route('diagnostics.scan') }}" data-new-scan="1"
+               class="ml-auto shrink-0 whitespace-nowrap bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow hover:bg-emerald-700 transition inline-flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-camera text-xs"></i> <span data-i18n="New Scan">{{ __('New Scan') }}</span>
+            </a>
+        </div>
 
         @if(session('success'))
         <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-xl shadow-sm flex items-center gap-3">
@@ -223,15 +232,15 @@
                              class="w-full h-full object-cover" loading="lazy"
                              onerror="imgError(this)">
 
-                        {{-- Confidence overlay --}}
-                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                            <div class="text-white text-[10px] font-bold uppercase opacity-70" data-i18n="AI Confidence">{{ __('AI Confidence') }}</div>
+                        {{-- Confidence: a solid dark band, so it reads on a bright or busy photo --}}
+                        <div class="absolute inset-x-0 bottom-0 bg-slate-900 px-3 py-2" data-confidence-band="1">
+                            <div class="text-slate-200 text-[10px] font-bold uppercase tracking-wide" data-i18n="AI Confidence">{{ __('AI Confidence') }}</div>
                             @if($diagnosis->confidence_score !== null)
                             <div class="flex items-baseline gap-1">
                                 <span class="text-white font-extrabold text-2xl leading-none">{{ number_format($diagnosis->confidence_score, 0) }}</span>
-                                <span class="text-white/70 text-xs font-bold">%</span>
+                                <span class="text-slate-200 text-xs font-bold">%</span>
                             </div>
-                            <div class="w-full bg-white/20 rounded-full h-1.5 mt-1.5">
+                            <div class="w-full bg-slate-700 rounded-full h-1.5 mt-1.5">
                                 <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= \App\Models\Diagnosis::minConfidence() ? 'bg-emerald-400' : 'bg-red-400' }}"
                                      style="width:{{ min((float)$diagnosis->confidence_score,100) }}%"></div>
                             </div>
@@ -240,7 +249,7 @@
                             <div class="text-white font-extrabold text-base leading-tight" data-confidence="{{ $rv['confidence']['key'] }}">{{ $rv['confidence']['label'] }}</div>
                             @else
                             <div class="text-white font-extrabold text-sm leading-none">N/A</div>
-                            <div class="text-white/70 text-[10px] mt-0.5">{{ __('AI Analysis Unavailable') }}</div>
+                            <div class="text-slate-200 text-[10px] mt-0.5">{{ __('AI Analysis Unavailable') }}</div>
                             @endif
                         </div>
 
@@ -496,8 +505,9 @@
                     @endif
 
                     {{-- Explainable AI --}}
-                    @if($diagnosis->explanation)
-                    <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    {{-- Inconclusive: built from the listed causes (ResultView), never the engine's own wording. --}}
+                    @if($rv['explanation'])
+                    <div class="border border-slate-200 rounded-xl overflow-hidden" data-explanation="{{ $rv['explanation']['key'] ?? 'ai' }}">
                         <button onclick="toggleSection('explain-{{ $diagnosis->id }}')"
                             class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition text-left">
                             <span class="text-xs font-bold text-slate-700 flex items-center gap-2">
@@ -507,8 +517,10 @@
                             <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform" id="icon-explain-{{ $diagnosis->id }}"></i>
                         </button>
                         <div id="explain-{{ $diagnosis->id }}" class="hidden px-4 py-3 text-xs text-slate-700 bg-white border-t border-slate-100 leading-relaxed">
-                            <p>{{ \App\Support\FarmerText::plain($diagnosis->explanation) }}</p>
+                            <p>{{ $rv['explanation']['text'] }}</p>
+                            @unless($rv['inconclusive'])
                             <p class="text-slate-400 italic mt-2">This describes the specific visual features the AI detected to reach this conclusion.</p>
+                            @endunless
                         </div>
                     </div>
                     @endif

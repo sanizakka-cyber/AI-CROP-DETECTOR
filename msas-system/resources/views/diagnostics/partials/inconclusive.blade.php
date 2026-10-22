@@ -12,7 +12,7 @@
         @foreach($rv['possible_causes'] as $name)<li data-possible-cause="1">{{ $name }}</li>@endforeach
     </ul>
     @endif
-    <p style="font-weight:700">{{ __('Please confirm with a vet or extension officer before treating.') }}</p>
+    <p style="font-weight:700">{{ $rv['expert']['confirm'] }}</p>
     @if($rv['retake']['show'])
     <p style="margin-top:4px"><strong>{{ __('Photo tips') }}:</strong> {{ collect($rv['retake']['tips'])->pluck('text')->implode(' ') }}</p>
     @endif
@@ -35,7 +35,7 @@
         @foreach($rv['possible_causes'] as $name)<li data-possible-cause="1">{{ $name }}</li>@endforeach
     </ol>
     @endif
-    <p class="text-xs font-bold text-amber-900 mt-2"><i class="fa-solid fa-user-doctor"></i> {{ __('Please confirm with a vet or extension officer before treating.') }} {{ __('No treatment is recommended until the problem is confirmed.') }}</p>
+    <p class="text-xs font-bold text-amber-900 mt-2"><i class="fa-solid fa-user-doctor"></i> {{ $rv['expert']['confirm'] }} {{ __('No treatment is recommended until the problem is confirmed.') }}</p>
 
     @if($rv['retake']['show'])
     <div class="mt-3 bg-white/70 border border-amber-200 rounded-lg p-3" data-retake="1">

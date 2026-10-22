@@ -99,15 +99,16 @@ class ResultConfidenceAdviceExpertTest extends TestCase
     public function test_disclaimer_and_button_in_every_language(string $lang): void
     {
         $strings = json_decode(file_get_contents(lang_path("{$lang}.json")), true);
-        foreach ([ResultView::DISCLAIMER, ResultView::ASK_EXPERT, ResultView::CONFIDENCE_DISAGREE, ResultView::CONFIDENCE_UNSURE, 'Advice', 'Recovery', 'Scan attached'] as $key) {
+        foreach ([ResultView::DISCLAIMER, ResultView::ASK_EXPERT, ResultView::DISCLAIMER_CROP, ResultView::ASK_EXPERT_CROP, ResultView::CONFIDENCE_DISAGREE, ResultView::CONFIDENCE_UNSURE, 'Advice', 'Recovery', 'Scan attached'] as $key) {
             $this->assertNotEmpty($strings[$key] ?? null, "{$lang}.json is missing \"{$key}\"");
         }
         $u = User::factory()->create(['role' => 'farmer']);
         $d = $this->banana($u, 'inconclusive');
         $html = $this->actingAs($u)->withSession(['locale' => $lang])->get(route('diagnostics.history'))->assertOk()->getContent();
         $text = $this->text($html);
-        $this->assertStringContainsString($strings[ResultView::DISCLAIMER], $text);
-        $this->assertStringContainsString($strings[ResultView::ASK_EXPERT], $text);
+        // A crop scan: an agronomist or extension officer, not a vet.
+        $this->assertStringContainsString($strings[ResultView::DISCLAIMER_CROP], $text);
+        $this->assertStringContainsString($strings[ResultView::ASK_EXPERT_CROP], $text);
         $this->assertStringContainsString('href="' . route('diagnostics.ask-expert', $d) . '"', $html);
         $this->assertStringContainsString(str_replace(':count', '3', $strings[ResultView::CONFIDENCE_DISAGREE]), $text);
     }
@@ -178,7 +179,7 @@ class ResultConfidenceAdviceExpertTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->banana($admin, 'inconclusive');
         $html = $this->actingAs($admin)->get(route('diagnostics.history'))->assertOk()->getContent();
-        $this->assertStringContainsString(ResultView::DISCLAIMER, $this->text($html));
+        $this->assertStringContainsString(ResultView::DISCLAIMER_CROP, $this->text($html));
         $this->assertStringNotContainsString('data-ask-expert', $html);
     }
 }

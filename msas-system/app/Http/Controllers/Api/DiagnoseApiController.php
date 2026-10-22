@@ -400,7 +400,8 @@ class DiagnoseApiController extends Controller
                 'environmentalFactors'=> $plain($d->environmental_factors),
                 'nutrientDeficiencies'=> $d->nutrient_deficiencies,
                 'pestDetection'       => $d->pest_detection,
-                'explanation'         => $plain($d->explanation),
+                // Inconclusive: built from the listed causes (ResultView), like the web page.
+                'explanation'         => $view['explanation']['text'] ?? null,
             ],
             // Confidence provenance (spec 4.5) — always present so the
             // client can render an honest "what does this number mean"

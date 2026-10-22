@@ -1,6 +1,8 @@
-// Screenshots of the web result card for the seeded banana scan, and a
-// layout check: in the side panel no label's box may overlap its value's
-// (the "DETECTEDstem (pseudostem)" bug). Used by result-screen-screenshots.yml.
+// Screenshots of the web result card for the seeded banana scan, and layout
+// checks: in the side panel no label's box may overlap its value's (the
+// "DETECTEDstem (pseudostem)" bug); the page title sits inside the 64px top
+// bar, whole, and "New Scan" stays on one line (both broke at 1280px); the
+// photo's confidence is on an opaque band. Used by result-screen-screenshots.yml.
 //   node result-screen.mjs <base url> <out dir> <name> [--expect-no-overlap]
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
@@ -12,7 +14,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
 const results = [];
-for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]]) {
+for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280], ['desktop-1366', 1366], ['desktop-1440', 1440], ['desktop-1920', 1920]]) {
   const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(`${base}/login`);
   // Post the login form directly (the page's own submit goes through script);
@@ -51,12 +53,42 @@ for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]
   // The card must get most of a phone's width (an open sidebar once left it 86px of 390).
   const cardWidth = (await card.boundingBox()).width;
   results.push({ width: label, label: 'card width', value: `${Math.round(cardWidth)}px`, a: {}, b: {}, bad: label === 'phone' && cardWidth < 280 });
+
+  // Page header. Only on a page that has the markers (main before this fix has none).
+  const head = await page.evaluate(() => {
+    const vis = (el) => !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+    const bar = document.querySelector('header.top-header').getBoundingClientRect();
+    const title = document.querySelector('[data-page-title]');
+    const titleText = title && title.querySelector('.truncate');
+    const phoneTitle = document.querySelector('[data-page-toolbar] h2');
+    const scan = document.querySelector('[data-new-scan] [data-i18n="New Scan"]');
+    const band = document.querySelector('[data-confidence-band]');
+    const alpha = band ? (getComputedStyle(band).backgroundColor.match(/rgba?\(([^)]+)\)/)?.[1].split(',')[3] ?? '1') : null;
+    const shown = vis(title) ? title : vis(phoneTitle) ? phoneTitle : null;
+    const t = shown && shown.getBoundingClientRect();
+    return {
+      marked: !!document.querySelector('[data-page-toolbar]'),
+      titleShown: !!shown,
+      titleInBar: vis(title) ? (t.top >= bar.top - 1 && t.bottom <= bar.bottom + 1) : true,
+      titleWhole: vis(title) && titleText ? titleText.scrollWidth <= titleText.clientWidth + 1 : true,
+      titleOnScreen: t ? t.left >= 0 && t.right <= innerWidth + 1 : false,
+      scanLines: scan ? scan.getClientRects().length : 0,
+      bandAlpha: alpha === null ? null : Number(alpha),
+    };
+  });
+  if (head.marked) {
+    results.push({ width: label, label: 'page title shown, inside the top bar, not cut', value: JSON.stringify(head), a: {}, b: {},
+      bad: !head.titleShown || !head.titleInBar || !head.titleWhole || !head.titleOnScreen });
+    results.push({ width: label, label: '"New Scan" on one line', value: `${head.scanLines} line(s)`, a: {}, b: {}, bad: head.scanLines !== 1 });
+    results.push({ width: label, label: 'confidence band opaque', value: String(head.bandAlpha), a: {}, b: {}, bad: !(head.bandAlpha >= 0.95) });
+  }
+  await page.screenshot({ path: path.join(outDir, `${name}-${label}-header.png`), clip: { x: 0, y: 0, width, height: 180 } });
   await page.close();
 }
 await browser.close();
 
 fs.writeFileSync(path.join(outDir, `${name}-layout.json`), JSON.stringify(results, null, 1));
 const bad = results.filter(r => r.bad);
-console.log(`${name}: ${results.length} checks (label/value overlap, card width), ${bad.length} failed`);
+console.log(`${name}: ${results.length} checks (label/value overlap, card width, page header, confidence band), ${bad.length} failed`);
 bad.forEach(r => console.log(`  ${r.width}: "${r.label}" / "${r.value}"`));
 if (strict && (bad.length || !results.length)) process.exit(1);

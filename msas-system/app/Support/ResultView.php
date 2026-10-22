@@ -45,7 +45,8 @@ final class ResultView
         'no_spray_yet'       => 'Do not spray until the pest is confirmed.',
         'soil_lab_test'      => 'Take a soil sample to a laboratory for testing before you add fertiliser.',
         'remove_affected'    => 'Remove badly affected leaves or plants and keep them away from healthy ones.',
-        'confirm_before_treating' => 'Ask an extension officer or vet to confirm before you treat.',
+        // Crops and pests only (livestock ends with call_vet): an agronomist, not a vet.
+        'confirm_before_treating' => 'Ask an agronomist or extension officer to confirm before you treat.',
     ];
 
     /** Fallback photo tips when the AI gave none. */
@@ -97,18 +98,56 @@ final class ResultView
     public const CONFIDENCE_UNSURE   = 'Low – the AI could not tell from this photo';
     public const CONFIDENCE_LOW      = 'Low';
 
-    /** The farmer-facing disclaimer, with a button to ask an expert about this scan. */
+    /**
+     * The farmer-facing disclaimer, with a button to ask an expert about this
+     * scan, and the "confirm before treating" lines. A vet for livestock and
+     * poultry; an agronomist or extension officer for crops, soil and pests.
+     */
     public const DISCLAIMER = 'This is AI advice and can be wrong. If unsure, ask an extension officer or vet.';
+    public const DISCLAIMER_CROP = 'This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.';
     public const ASK_EXPERT = 'Request Vet / Ask an expert';
+    public const ASK_EXPERT_CROP = 'Request Agronomist / Ask an expert';
+    public const CONFIRM = 'Please confirm with a vet or extension officer before treating.';
+    public const CONFIRM_CROP = 'Please confirm with an agronomist or extension officer before treating.';
+    public const LIKELY_CONFIRM = 'The AI thinks this is likely, but is not fully sure. Please confirm with a vet or extension officer before treating.';
+    public const LIKELY_CONFIRM_CROP = 'The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.';
+
+    /**
+     * The farmer's explanation of an inconclusive result, made from the listed
+     * possible causes so the two can never name different problems. The
+     * engine's own explanation (which can name other candidates, in technical
+     * words) is kept for staff (technical details) and the PDF appendix.
+     */
+    public const EXPLAIN_CAUSES = 'The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.';
+    public const EXPLAIN_UNSURE = 'The AI cannot tell what the problem is from this photo.';
+
+    public static function mode(Diagnosis $d): string
+    {
+        return match ($d->type) { 'animal', 'livestock' => 'livestock', 'soil' => 'soil', 'pest' => 'pest', default => 'crop' };
+    }
+
+    /** @return array{key: string, disclaimer: string, ask_expert: string, confirm: string, likely_confirm: string} */
+    public static function expert(Diagnosis $d): array
+    {
+        $vet = self::mode($d) === 'livestock';
+        return [
+            'key'            => $vet ? 'vet' : 'agronomist',
+            'disclaimer'     => __($vet ? self::DISCLAIMER : self::DISCLAIMER_CROP),
+            'ask_expert'     => __($vet ? self::ASK_EXPERT : self::ASK_EXPERT_CROP),
+            'confirm'        => __($vet ? self::CONFIRM : self::CONFIRM_CROP),
+            'likely_confirm' => __($vet ? self::LIKELY_CONFIRM : self::LIKELY_CONFIRM_CROP),
+        ];
+    }
 
     public static function for(Diagnosis $d, ?User $viewer = null): array
     {
-        $mode = match ($d->type) { 'animal', 'livestock' => 'livestock', 'soil' => 'soil', 'pest' => 'pest', default => 'crop' };
+        $mode = self::mode($d);
         $kind = self::kind($d);
         $inconclusive = $kind === 'inconclusive';
         $health = self::healthKey($d, $kind);
         $healthyish = in_array($health, ['healthy', 'normal_ageing'], true);
         $name = $d->farmer_name ?: FarmerText::plain($d->disease_name);
+        $causes = $inconclusive ? self::possibleCauses($d) : [];
 
         $headline = match ($kind) {
             'failed'       => __('No result: this scan did not complete'),
@@ -132,7 +171,9 @@ final class ResultView
                 default     => $d->severity_key,
             },
             'urgency'       => in_array($kind, ['failed', 'rejected', 'inconclusive'], true) || $healthyish ? null : $d->urgency_key,
-            'possible_causes' => $inconclusive ? self::possibleCauses($d) : [],
+            'possible_causes' => $causes,
+            'explanation'   => self::explanation($d, $inconclusive, $causes),
+            'expert'        => self::expert($d),
             'steps'         => in_array($kind, ['failed', 'rejected'], true) ? [] : self::steps($d, $mode, $inconclusive ? 'inconclusive' : ($healthyish ? $health : 'problem')),
             'retake'        => $inconclusive ? ['show' => true, 'tips' => self::tips($d)] : ['show' => false, 'tips' => []],
             'detected_part' => FarmerText::plain($d->detected_part),
@@ -250,6 +291,24 @@ final class ResultView
         return $out;
     }
 
+    /**
+     * "Why this diagnosis?" for the farmer. Inconclusive: built from the listed
+     * causes (key + causes for the app to translate). Otherwise the engine's
+     * explanation of its one finding, in plain words.
+     *
+     * @return array{key: ?string, text: string, causes: string[]}|null
+     */
+    private static function explanation(Diagnosis $d, bool $inconclusive, array $causes): ?array
+    {
+        if ($inconclusive) {
+            return $causes
+                ? ['key' => 'explain_causes', 'text' => __(self::EXPLAIN_CAUSES, ['causes' => implode(', ', $causes)]), 'causes' => $causes]
+                : ['key' => 'explain_unsure', 'text' => __(self::EXPLAIN_UNSURE), 'causes' => []];
+        }
+        $text = FarmerText::plain($d->explanation);
+        return $text ? ['key' => null, 'text' => $text, 'causes' => []] : null;
+    }
+
     /** 2 to 4 steps: the AI's own (already in the farmer's language) for a problem it found, else the fixed set. */
     private static function steps(Diagnosis $d, string $mode, string $set): array
     {
@@ -309,6 +368,8 @@ final class ResultView
             'scientific_name'    => $d->scientific_name,
             'detected_part'      => $d->detected_part,
             'health_status'      => $d->health_status,
+            // The engine's own words (the farmer's view of an inconclusive result is built from the causes).
+            'explanation'        => $d->explanation,
             'condition_label'    => $d->condition_label,
             'condition_category' => $d->condition_category,
             'stored_severity'    => $d->severity_level,
