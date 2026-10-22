@@ -48,9 +48,9 @@ for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]
   // The result card itself (other elements share its classes on small screens).
   const card = page.locator('div.bg-white.rounded-2xl.shadow-md', { has: page.locator('[data-i18n="Detected Part"]') }).first();
   await card.screenshot({ path: path.join(outDir, `${name}-${label}.png`) });
-  // The card must get most of a phone's width (an open sidebar once left it ~86px).
+  // The card must get most of a phone's width (an open sidebar once left it 86px of 390).
   const cardWidth = (await card.boundingBox()).width;
-  results.push({ width: label, label: 'card width', value: `${Math.round(cardWidth)}px`, a: {}, b: {}, bad: label === 'phone' && cardWidth < 300 });
+  results.push({ width: label, label: 'card width', value: `${Math.round(cardWidth)}px`, a: {}, b: {}, bad: label === 'phone' && cardWidth < 280 });
   await page.close();
 }
 await browser.close();

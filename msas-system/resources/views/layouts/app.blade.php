@@ -694,9 +694,9 @@
             </div>
             @endif
 
-            <div class="p-6">
+            <div class="p-3 sm:p-6">
             {{ $slot }}
-            </div>{{-- end p-6 --}}
+            </div>{{-- end page padding --}}
         </main>
 
     </div>
