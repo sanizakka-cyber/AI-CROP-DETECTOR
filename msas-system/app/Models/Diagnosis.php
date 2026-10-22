@@ -122,12 +122,15 @@ class Diagnosis extends Model
     public function getConfidenceLabelAttribute(): string
     {
         if ($this->confidence_score === null) {
-            // The AI judged the photo but gave no single score (unclear, healthy,
-            // several possibilities). Only a failed scan, or an old one with no
-            // recorded outcome, is "unavailable".
-            return $this->has_no_single_finding
-                ? 'N/A — ' . __('No single finding')
-                : 'N/A — ' . __('AI Analysis Unavailable');
+            // The AI judged the photo but gave no single score: say why the
+            // confidence is low ("the 3 analyses did not agree"), never "N/A".
+            // Only a failed scan, or an old one with no recorded outcome, is
+            // "unavailable"; a rejected photo has no finding to rate.
+            if (!$this->has_no_single_finding) {
+                return 'N/A — ' . __('AI Analysis Unavailable');
+            }
+            $conf = \App\Support\ResultView::confidence($this);
+            return $conf ? $conf['label'] : 'N/A — ' . __('No single finding');
         }
 
         $pct = (int) round($this->confidence_score);
@@ -373,7 +376,7 @@ class Diagnosis extends Model
         if ($view['possible_causes'])                                              $lines[] = 'Possible causes: ' . implode('; ', $view['possible_causes']) . '.';
         $lines[] = $this->confidence_score !== null
             ? "Confidence: " . (int) round($this->confidence_score) . " percent."
-            : ($this->has_no_single_finding ? 'No single finding, so there is no confidence score.' : 'AI analysis was unavailable for this scan. Pending expert review.');
+            : (($view['confidence'] ?? null) ? 'Confidence: ' . $view['confidence']['label'] . '.' : ($this->has_no_single_finding ? 'There is no confidence score because the photo could not be assessed.' : 'AI analysis was unavailable for this scan. Pending expert review.'));
         if ($severity)                                                             $lines[] = "Severity: {$severity}.";
         if ($urgency)                                                              $lines[] = "Urgency: {$urgency}.";
         if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: " . $plain($this->symptoms_identified) . ".";

@@ -84,6 +84,20 @@ $farmer = $consultation->farmer;
             <div style="background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;padding:14px;font-size:13px;color:#374151;line-height:1.7;font-style:italic;">
                 "{{ $consultation->symptoms }}"
             </div>
+            @if($consultation->diagnosis)
+            {{-- Sent with "Request Vet / Ask an expert" from this scan. --}}
+            <div style="margin-top:12px;display:flex;gap:12px;align-items:center;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;" data-attached-scan="{{ $consultation->diagnosis->id }}">
+                @if($consultation->diagnosis->image_thumbnail)
+                <img src="{{ $consultation->diagnosis->image_thumbnail }}" alt="Scan photo" style="width:72px;height:72px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+                @endif
+                <div style="font-size:12px;color:#334155;min-width:0;">
+                    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Attached scan · {{ $consultation->diagnosis->scan_ref }}</div>
+                    <div style="font-weight:700;">{{ $consultation->diagnosis->disease_name }}</div>
+                    @if($consultation->diagnosis->scientific_name)<div style="font-style:italic;">{{ $consultation->diagnosis->scientific_name }}</div>@endif
+                    <div>{{ $consultation->diagnosis->created_at?->format('j M Y, H:i') }}</div>
+                </div>
+            </div>
+            @endif
             @if($consultation->ai_diagnosis)
             <div style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
                 <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:4px;"><svg width="11" height="11" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" stroke-linecap="round" stroke-linejoin="round"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 9H5M7 12H5M7 15H5M17 9h2M17 12h2M17 15h2M9 7V5M12 7V5M15 7V5M9 17v2M12 17v2M15 17v2"/></svg> AI Pre-Analysis</div>

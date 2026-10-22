@@ -58,7 +58,9 @@ class ConsultationApiController extends Controller
         ]);
         $fee = self::CHANNEL_FEES[$data['channel']];
         $ref = 'MSAS-CONSULT-' . strtoupper(Str::random(10));
-        $consultation = Consultation::create([
+        // Attach the scan this request is about, when it is the farmer's own.
+        $scan = \App\Support\ScanAttachment::forUser($user, $request->input('diagnosis_id'));
+        $consultation = Consultation::create(($scan ? \App\Support\ScanAttachment::consultationFields($scan) : []) + [
             'farmer_id'         => $user->id,
             'case_type'         => 'livestock',
             'animal_type'       => $data['animal_type'],
@@ -88,7 +90,9 @@ class ConsultationApiController extends Controller
         ]);
         $fee = self::CHANNEL_FEES[$data['channel']];
         $ref = 'MSAS-CONSULT-' . strtoupper(Str::random(10));
-        $consultation = Consultation::create([
+        // Attach the scan this request is about, when it is the farmer's own.
+        $scan = \App\Support\ScanAttachment::forUser($user, $request->input('diagnosis_id'));
+        $consultation = Consultation::create(($scan ? \App\Support\ScanAttachment::consultationFields($scan) : []) + [
             'farmer_id'         => $user->id,
             'case_type'         => 'crop',
             'crop_type'         => $data['crop_type'],

@@ -408,5 +408,13 @@
   "Low": "Low",
   "Medium": "Medium",
   "High": "High",
-  "Emergency": "Emergency"
+  "Emergency": "Emergency",
+  "Low – the :count analyses did not agree": "Low – the :count analyses did not agree",
+  "Low – the AI could not tell from this photo": "Low – the AI could not tell from this photo",
+  "Recovery": "Recovery",
+  "Advice": "Advice",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.",
+  "Request Vet / Ask an expert": "Request Vet / Ask an expert",
+  "Scan attached": "Scan attached",
+  "About my scan :ref (:date):": "About my scan :ref (:date):"
 }

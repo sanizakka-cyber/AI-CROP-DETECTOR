@@ -332,10 +332,12 @@ class FarmerController extends Controller
 
     // ── Vet Consultation ───────────────────────────────────────────────
 
-    public function vetConsult()
+    public function vetConsult(Request $request)
     {
         $consultations = Consultation::where('farmer_id', Auth::id())->latest()->get();
-        return view('farmer.vet', compact('consultations'));
+        // Opened from a scan result: the form opens with that scan attached.
+        $attachedScan = \App\Support\ScanAttachment::forUser(Auth::user(), $request->query('diagnosis'));
+        return view('farmer.vet', compact('consultations', 'attachedScan'));
     }
 
     private const CHANNEL_FEES = [
@@ -375,8 +377,9 @@ class FarmerController extends Controller
 
         $fee  = self::CHANNEL_FEES[$validated['channel']];
         $ref  = 'MSAS-CONSULT-' . strtoupper(Str::random(10));
+        $scan = \App\Support\ScanAttachment::forUser($user, $request->input('diagnosis_id'));
 
-        $consultation = Consultation::create([
+        $consultation = Consultation::create(($scan ? \App\Support\ScanAttachment::consultationFields($scan) : []) + [
             'farmer_id'      => Auth::id(),
             'case_type'      => 'livestock',
             'animal_type'    => $validated['animal_type'],
@@ -405,13 +408,15 @@ class FarmerController extends Controller
 
     // ── Agronomist Request ─────────────────────────────────────────────
 
-    public function agroRequest()
+    public function agroRequest(Request $request)
     {
         $requests = Consultation::where('farmer_id', Auth::id())
             ->where('case_type', 'crop')
             ->latest()
             ->get();
-        return view('farmer.agro', compact('requests'));
+        // Opened from a scan result: the form opens with that scan attached.
+        $attachedScan = \App\Support\ScanAttachment::forUser(Auth::user(), $request->query('diagnosis'));
+        return view('farmer.agro', compact('requests', 'attachedScan'));
     }
 
     public function storeAgroRequest(Request $request)
@@ -445,8 +450,9 @@ class FarmerController extends Controller
 
         $fee = self::CHANNEL_FEES[$validated['channel']];
         $ref = 'MSAS-AGRO-' . strtoupper(Str::random(10));
+        $scan = \App\Support\ScanAttachment::forUser($user, $request->input('diagnosis_id'));
 
-        $consultation = Consultation::create([
+        $consultation = Consultation::create(($scan ? \App\Support\ScanAttachment::consultationFields($scan) : []) + [
             'farmer_id'         => Auth::id(),
             'case_type'         => 'crop',
             'crop_type'         => $validated['crop_type'],

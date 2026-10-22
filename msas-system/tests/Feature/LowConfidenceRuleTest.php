@@ -97,7 +97,7 @@ class LowConfidenceRuleTest extends TestCase
         $d = $this->scan($u);
         $strings = json_decode(file_get_contents(lang_path("{$lang}.json")), true);
         $headline = \App\Support\ResultView::HEADLINE_INCONCLUSIVE;
-        foreach ([$headline, 'Please confirm with a vet or extension officer before treating.', 'AI guidance can be wrong; confirm with an expert.'] as $key) {
+        foreach ([$headline, 'Please confirm with a vet or extension officer before treating.', 'This is AI advice and can be wrong. If unsure, ask an extension officer or vet.'] as $key) {
             $this->assertNotEmpty($strings[$key] ?? null, "{$lang}.json is missing \"{$key}\"");
         }
 
@@ -109,7 +109,7 @@ class LowConfidenceRuleTest extends TestCase
             $this->assertStringContainsString('data-inconclusive="1"', $html);
             $this->assertStringContainsString($strings[$headline], $text);
             $this->assertStringContainsString($strings['Please confirm with a vet or extension officer before treating.'], $text);
-            $this->assertStringContainsString($strings['AI guidance can be wrong; confirm with an expert.'], $text);
+            $this->assertStringContainsString($strings['This is AI advice and can be wrong. If unsure, ask an extension officer or vet.'], $text);
             foreach (['Ringworm', 'Mange', 'Lumpy skin disease'] as $name) {
                 $this->assertStringContainsString($name, $text);
             }
@@ -148,7 +148,7 @@ class LowConfidenceRuleTest extends TestCase
         foreach ([route('diagnostics.history'), route('diagnostics.report', $d)] as $url) {
             $html = $this->actingAs($u)->get($url)->assertOk()->getContent();
             $this->assertStringContainsString('data-ai-disclaimer="1"', $html, $url);
-            $this->assertStringContainsString('AI guidance can be wrong; confirm with an expert.', $html, $url);
+            $this->assertStringContainsString('This is AI advice and can be wrong. If unsure, ask an extension officer or vet.', $html, $url);
         }
     }
 

@@ -78,7 +78,7 @@ test('at or above the threshold one diagnosis is shown', async () => {
   expect(screen.getByTestId('header-severity')).toBeTruthy();
 });
 
-const DISCLAIMER = 'AI guidance can be wrong; confirm with an expert.';
+const DISCLAIMER = 'This is AI advice and can be wrong. If unsure, ask an extension officer or vet.';
 test.each([
   ['assessed', { aiResult: { ...fixture.api.aiResult, confidence: 80 }, assessment: { ...fixture.api.assessment, notCertain: false } }],
   ['not certain', {}],

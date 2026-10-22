@@ -346,7 +346,7 @@ a { color: inherit; text-decoration: none; }
                  src="{{ $imageB64 ?? route('diagnostics.image', $diagnosis) }}"
                  alt="Scanned Image"
                  onerror="this.onerror=null;this.style.opacity='0.3';">
-            <div class="conf-pill">AI Confidence: {{ $diagnosis->confidence_score === null ? 'N/A' : number_format($diagnosis->confidence_score, 0).'%' }}</div>
+            <div class="conf-pill">{{ __('AI Confidence') }}: {{ $diagnosis->confidence_score !== null ? number_format($diagnosis->confidence_score, 0).'%' : ($rv['confidence']['label'] ?? 'N/A') }}</div>
         </div>
         <div>
             <div class="diag-headline">
@@ -359,7 +359,7 @@ a { color: inherit; text-decoration: none; }
                     <span class="meta-pill">{{ __('Detected Part') }}: {{ $p('detected_part') }}</span>
                     @endif
                     @if($diagnosis->recovery_period)
-                    <span class="meta-pill">Recovery: {{ $t('recovery_period') }}</span>
+                    <span class="meta-pill" data-recovery-label="1">{{ $rv['recovery_label'] }}: {{ $p('recovery_period') }}</span>
                     @endif
                 </div>
             </div>
@@ -368,7 +368,7 @@ a { color: inherit; text-decoration: none; }
             <div class="conf-bar-wrap">
                 <div class="conf-bar-label">
                     <span>{{ __('AI Confidence') }}</span>
-                    <span>{{ $diagnosis->confidence_score === null ? 'N/A' : number_format($diagnosis->confidence_score, 0).'%' }}</span>
+                    <span data-confidence="{{ $rv['confidence']['key'] ?? 'none' }}">{{ $diagnosis->confidence_score !== null ? number_format($diagnosis->confidence_score, 0).'%' : ($rv['confidence']['label'] ?? 'N/A') }}</span>
                 </div>
                 <div class="conf-bar-bg"><div class="conf-bar-fill"></div></div>
             </div>

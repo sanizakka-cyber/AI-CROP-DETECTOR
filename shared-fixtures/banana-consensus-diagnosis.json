@@ -75,7 +75,8 @@
         "severityLevel": null,
         "urgency": null,
         "urgencyLevel": null,
-        "healthStatus": "Needs checking"
+        "healthStatus": "Needs checking",
+        "confidenceLabel": "Low – the 3 analyses did not agree"
       },
       "assessment": {
         "outcome": "uncertain",
@@ -141,7 +142,13 @@
                 "text": "If you can, include a healthy part next to the damaged one."
               }
             ]
-          }
+          },
+          "confidence": {
+            "key": "disagree",
+            "value": null,
+            "label": "Low – the 3 analyses did not agree"
+          },
+          "recovery_label": "Recovery"
         }
       },
       "technical": null
@@ -152,10 +159,15 @@
       "Natural leaf sheath ageing",
       "Natural drying and ageing of old leaf sheaths",
       "Natural drying and shedding of old outer leaf sheaths",
-      "Look closely for soft, rotting or bad-smelling parts."
+      "Look closely for soft, rotting or bad-smelling parts.",
+      "Low – the 3 analyses did not agree"
     ],
     "mustDisplayOnScreen": [
       "Retake a closer photo"
+    ],
+    "mustNotDisplay": [
+      "N/A",
+      "No single finding"
     ]
   },
   "normalAgeing": {
@@ -204,7 +216,8 @@
       },
       "contract_version": "2026-10-condition-labels",
       "ai_model_name": "claude-sonnet-5",
-      "validation_status": "unvalidated"
+      "validation_status": "unvalidated",
+      "recovery_period": "No recovery needed; new leaves keep growing from the centre."
     },
     "api": {
       "detectedPart": "stem",
@@ -253,14 +266,21 @@
           "retake": {
             "show": false,
             "tips": []
-          }
+          },
+          "confidence": {
+            "key": "score",
+            "value": 80,
+            "label": "80%"
+          },
+          "recovery_label": "Advice"
         }
       }
     },
     "mustDisplay": [
       "Old outer layers drying naturally",
       "Healthy (normal ageing)",
-      "No treatment is needed for this."
+      "No treatment is needed for this.",
+      "Advice"
     ],
     "mustNotDisplay": [
       "Unhealthy",

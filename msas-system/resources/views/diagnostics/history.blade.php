@@ -235,9 +235,12 @@
                                 <div class="h-1.5 rounded-full transition-all {{ $diagnosis->confidence_score >= \App\Models\Diagnosis::minConfidence() ? 'bg-emerald-400' : 'bg-red-400' }}"
                                      style="width:{{ min((float)$diagnosis->confidence_score,100) }}%"></div>
                             </div>
+                            @elseif($rv['confidence'])
+                            {{-- No single score: say why it is low, never "N/A" (App\Support\ResultView::confidence). --}}
+                            <div class="text-white font-extrabold text-base leading-tight" data-confidence="{{ $rv['confidence']['key'] }}">{{ $rv['confidence']['label'] }}</div>
                             @else
                             <div class="text-white font-extrabold text-sm leading-none">N/A</div>
-                            <div class="text-white/70 text-[10px] mt-0.5">{{ $diagnosis->has_no_single_finding ? __('No single finding') : __('AI Analysis Unavailable') }}</div>
+                            <div class="text-white/70 text-[10px] mt-0.5">{{ __('AI Analysis Unavailable') }}</div>
                             @endif
                         </div>
 
@@ -302,8 +305,9 @@
                             @include('diagnostics.partials.likely-confirm')
                             @endif
                             @if($diagnosis->recovery_period)
-                            <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                                <i class="fa-regular fa-clock"></i> Recovery: {{ $diagnosis->recovery_period }}
+                            {{-- "Advice" for a healthy or normally ageing result: there is nothing to recover from. --}}
+                            <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1" data-recovery-label="1">
+                                <i class="fa-regular {{ in_array($rv['health']['key'] ?? null, ['healthy', 'normal_ageing'], true) ? 'fa-lightbulb' : 'fa-clock' }}"></i> {{ $rv['recovery_label'] }}: {{ \App\Support\FarmerText::plain($diagnosis->recovery_period) }}
                             </p>
                             @endif
                         </div>

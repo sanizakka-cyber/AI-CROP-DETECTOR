@@ -383,6 +383,17 @@ class DiagnosticController extends Controller
         }
     }
 
+    /**
+     * "Request Vet / Ask an expert": the farmer's Request Vet page (livestock)
+     * or agronomist request page (crops, pests, soil), with this scan attached.
+     */
+    public function askExpert(Diagnosis $diagnosis)
+    {
+        abort_unless($diagnosis->user_id === auth()->id(), 403);
+        $route = \App\Support\ScanAttachment::isLivestock($diagnosis) ? 'farmer.vet' : 'farmer.agro';
+        return redirect()->route($route, ['diagnosis' => $diagnosis->id]);
+    }
+
     public function downloadReport(Diagnosis $diagnosis)
     {
         $viewer = auth()->user();

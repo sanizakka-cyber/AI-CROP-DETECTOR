@@ -405,5 +405,13 @@
   "Low": "منخفضة",
   "Medium": "متوسطة",
   "High": "عالية",
-  "Emergency": "طارئة"
+  "Emergency": "طارئة",
+  "Low – the :count analyses did not agree": "منخفضة – التحليلات الـ :count لم تتفق",
+  "Low – the AI could not tell from this photo": "منخفضة – لم يتمكن الذكاء الاصطناعي من التحديد من هذه الصورة",
+  "Recovery": "التعافي",
+  "Advice": "نصيحة",
+  "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "هذه نصيحة من الذكاء الاصطناعي وقد تكون خاطئة. إذا لم تكن متأكدًا، اسأل مرشدًا زراعيًا أو طبيبًا بيطريًا.",
+  "Request Vet / Ask an expert": "اطلب طبيبًا بيطريًا / اسأل خبيرًا",
+  "Scan attached": "الفحص مرفق",
+  "About my scan :ref (:date):": "بخصوص فحصي :ref (:date):"
 }

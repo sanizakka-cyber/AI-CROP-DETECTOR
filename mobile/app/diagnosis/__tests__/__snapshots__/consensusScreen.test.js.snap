@@ -44,6 +44,7 @@ exports[`label/value layout InfoField stacks the label above a wrapping value 1`
 
 exports[`label/value layout the diagnostic details card of the banana scan 1`] = `
 [
+  "Confidence: Low – the 3 analyses did not agree",
   "Whether the inner stem is firm or rotting cannot be seen from outside.",
   "Possible causes",
   "1. Natural leaf sheath ageing",
