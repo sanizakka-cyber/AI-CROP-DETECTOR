@@ -45,7 +45,8 @@ for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]
   const touching = (p) => Math.abs(p.a.y - p.b.y) < 2 && Math.abs((p.a.x + p.a.w) - p.b.x) < 2;
   for (const p of pairs) results.push({ width: label, ...p, bad: overlaps(p) || touching(p) });
 
-  const card = page.locator('.rounded-2xl.shadow-md').first();
+  // The result card itself (other elements share its classes on small screens).
+  const card = page.locator('div.bg-white.rounded-2xl.shadow-md', { has: page.locator('[data-i18n="Detected Part"]') }).first();
   await card.screenshot({ path: path.join(outDir, `${name}-${label}.png`) });
   await page.close();
 }

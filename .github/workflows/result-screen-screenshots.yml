@@ -80,7 +80,8 @@ jobs:
             kill "$server" || true
             cd - >/dev/null
           }
-          run_side ../before before-inconclusive 8101 inconclusive
+          # The "before" side is for comparison only, never a gate.
+          ( run_side ../before before-inconclusive 8101 inconclusive ) || echo "::warning::before (main) screenshots failed; not a gate"
           run_side "$PWD" after-inconclusive 8102 inconclusive --expect-no-overlap
           run_side "$PWD" after-label-vote 8103 normalAgeing --expect-no-overlap
 
