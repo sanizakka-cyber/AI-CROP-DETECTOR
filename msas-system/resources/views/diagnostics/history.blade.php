@@ -21,18 +21,24 @@
 
         @forelse($diagnoses as $diagnosis)
         @php
-            // ── Severity → colour tokens ──────────────────────────────────────
-            $sev = $diagnosis->severity_level ?? '';
-            // A failed scan has no urgency; a missing urgency is never shown as "Medium".
+            // ── What the farmer sees: one source for this card, the PDF and the app ──
+            // (App\Support\ResultView). An inconclusive result has no severity or
+            // urgency; a failed scan has neither; a missing urgency is never "Medium".
+            $rv      = $diagnosis->resultView(auth()->user());
             $failed  = $diagnosis->is_failed_scan;
-            $urgency = $failed ? null : $diagnosis->urgency_level;
+            $sevKey  = $rv['severity'];
+            $sev     = $rv['severity_label'] ?? '';
+            $urgKey  = $rv['urgency'];
+            $urgency = $rv['urgency_label'];
 
+            // ── Severity → colour tokens (by key, so translated labels still match) ──
             $theme = match(true) {
-                $sev === 'Critical'                => ['border'=>'border-red-500',    'hbg'=>'bg-red-600',    'htext'=>'text-white',   'ibg'=>'bg-red-50',    'badge'=>'bg-red-100 text-red-800 border-red-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#dc2626"><circle cx="5" cy="5" r="5"/></svg>'],
-                $sev === 'Severe'                  => ['border'=>'border-orange-500', 'hbg'=>'bg-orange-500', 'htext'=>'text-white',   'ibg'=>'bg-orange-50', 'badge'=>'bg-orange-100 text-orange-800 border-orange-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#f97316"><circle cx="5" cy="5" r="5"/></svg>'],
-                $sev === 'Moderate'                => ['border'=>'border-amber-500',  'hbg'=>'bg-amber-500',  'htext'=>'text-white',   'ibg'=>'bg-amber-50',  'badge'=>'bg-amber-100 text-amber-800 border-amber-200',  'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
-                $sev === 'Mild'                    => ['border'=>'border-yellow-400', 'hbg'=>'bg-yellow-400', 'htext'=>'text-slate-900','ibg'=>'bg-yellow-50', 'badge'=>'bg-yellow-100 text-yellow-800 border-yellow-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
-                ($diagnosis->health_status ?? '') === 'Healthy' => ['border'=>'border-emerald-500','hbg'=>'bg-emerald-600','htext'=>'text-white','ibg'=>'bg-emerald-50','badge'=>'bg-emerald-100 text-emerald-800 border-emerald-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#10b981"><circle cx="5" cy="5" r="5"/></svg>'],
+                $rv['inconclusive']                => ['border'=>'border-amber-400',  'hbg'=>'bg-amber-500',  'htext'=>'text-white',   'ibg'=>'bg-amber-50',  'badge'=>'bg-amber-100 text-amber-800 border-amber-200',  'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#f59e0b"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sevKey === 'critical'             => ['border'=>'border-red-500',    'hbg'=>'bg-red-600',    'htext'=>'text-white',   'ibg'=>'bg-red-50',    'badge'=>'bg-red-100 text-red-800 border-red-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#dc2626"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sevKey === 'severe'               => ['border'=>'border-orange-500', 'hbg'=>'bg-orange-500', 'htext'=>'text-white',   'ibg'=>'bg-orange-50', 'badge'=>'bg-orange-100 text-orange-800 border-orange-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#f97316"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sevKey === 'moderate'             => ['border'=>'border-amber-500',  'hbg'=>'bg-amber-500',  'htext'=>'text-white',   'ibg'=>'bg-amber-50',  'badge'=>'bg-amber-100 text-amber-800 border-amber-200',  'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
+                $sevKey === 'mild'                 => ['border'=>'border-yellow-400', 'hbg'=>'bg-yellow-400', 'htext'=>'text-slate-900','ibg'=>'bg-yellow-50', 'badge'=>'bg-yellow-100 text-yellow-800 border-yellow-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#fbbf24"><circle cx="5" cy="5" r="5"/></svg>'],
+                in_array($rv['health']['key'] ?? null, ['healthy', 'normal_ageing'], true) => ['border'=>'border-emerald-500','hbg'=>'bg-emerald-600','htext'=>'text-white','ibg'=>'bg-emerald-50','badge'=>'bg-emerald-100 text-emerald-800 border-emerald-200','icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#10b981"><circle cx="5" cy="5" r="5"/></svg>'],
                 default                            => ['border'=>'border-blue-400',   'hbg'=>'bg-blue-600',   'htext'=>'text-white',   'ibg'=>'bg-blue-50',   'badge'=>'bg-blue-100 text-blue-800 border-blue-200',   'icon'=>'<svg width="10" height="10" viewBox="0 0 10 10" fill="#3b82f6"><circle cx="5" cy="5" r="5"/></svg>'],
             };
 
@@ -58,9 +64,6 @@
                     <span>{!! $typeIcon !!}</span>
                     <div>
                         <div class="font-extrabold text-sm leading-tight">{{ $diagnosis->subject_name ?? $typeLbl }}</div>
-                        @if($diagnosis->scientific_name && $diagnosis->scientific_name !== 'Unknown')
-                        <div class="opacity-80 italic text-xs leading-tight">{{ $diagnosis->scientific_name }}</div>
-                        @endif
                         @if($diagnosis->scan_ref)
                         <div class="opacity-70 text-[10px] font-mono leading-tight mt-0.5">{{ $diagnosis->scan_ref }}</div>
                         @endif
@@ -243,34 +246,34 @@
                         @endif
                     </div>
 
-                    {{-- Badges --}}
-                    <div class="space-y-1.5">
-                        @if($sev && !$failed)
-                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border {{ $theme['badge'] }}" data-severity="{{ $diagnosis->severity_key }}">
-                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Severity">{{ __('Severity') }}</span>
-                            <span class="font-extrabold inline-flex items-center gap-1">{!! $theme['icon'] !!} {{ $sev }}</span>
+                    {{-- Side panel (App\Support\ResultView). Label above value, both free to wrap,
+                         so a long value can never run into its label ("DETECTEDstem (pseudostem)"). --}}
+                    <dl class="space-y-1.5" data-side-panel="1">
+                        @if($sevKey)
+                        <div class="side-fact {{ $theme['badge'] }}" data-severity="{{ $sevKey }}">
+                            <dt class="side-fact-label" data-i18n="Severity">{{ __('Severity') }}</dt>
+                            <dd class="side-fact-value inline-flex items-center gap-1">{!! $theme['icon'] !!} {{ $sev }}</dd>
                         </div>
                         @endif
-                        @if($urgency)
-                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border
-                            {{ $urgency === 'Emergency' || $urgency === 'High' ? 'bg-red-100 text-red-800 border-red-200' : ($urgency === 'Medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}" data-urgency="{{ $diagnosis->urgency_key }}">
-                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Urgency">{{ __('Urgency') }}</span>
-                            <span class="font-extrabold">{{ $urgency }}</span>
+                        @if($urgKey)
+                        <div class="side-fact {{ in_array($urgKey, ['emergency', 'high'], true) ? 'bg-red-100 text-red-800 border-red-200' : ($urgKey === 'medium' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200') }}" data-urgency="{{ $urgKey }}">
+                            <dt class="side-fact-label" data-i18n="Urgency">{{ __('Urgency') }}</dt>
+                            <dd class="side-fact-value">{{ $urgency }}</dd>
                         </div>
                         @endif
-                        @if($diagnosis->detected_part)
-                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-700">
-                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Detected Part">{{ __('Detected Part') }}</span>
-                            <span class="font-bold">{{ $diagnosis->detected_part }}</span>
+                        @if($rv['detected_part'])
+                        <div class="side-fact bg-slate-50 border-slate-200 text-slate-700" data-detected-part="1">
+                            <dt class="side-fact-label" data-i18n="Detected Part">{{ __('Detected Part') }}</dt>
+                            <dd class="side-fact-value">{{ $rv['detected_part'] }}</dd>
                         </div>
                         @endif
-                        @if($diagnosis->health_status)
-                        <div class="flex items-center justify-between text-xs px-3 py-1.5 rounded-lg border bg-slate-50 border-slate-200 text-slate-700">
-                            <span class="font-bold uppercase tracking-wide text-[10px]" data-i18n="Health">{{ __('Health') }}</span>
-                            <span class="font-bold">{{ $diagnosis->health_status }}</span>
+                        @if($rv['health'])
+                        <div class="side-fact {{ $rv['health']['key'] === 'needs_checking' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-700' }}" data-health="{{ $rv['health']['key'] }}">
+                            <dt class="side-fact-label" data-i18n="Health">{{ __('Health') }}</dt>
+                            <dd class="side-fact-value">{{ $rv['health']['label'] }}</dd>
                         </div>
                         @endif
-                    </div>
+                    </dl>
 
                     {{-- Download button --}}
                     <a href="{{ route('diagnostics.report', $diagnosis) }}" target="_blank"
@@ -287,14 +290,14 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" data-no-diagnosis="1">
                         <h3 class="text-base font-extrabold text-slate-700">{{ __('No result: this scan did not complete') }}</h3>
                     </div>
-                    @elseif($diagnosis->is_not_certain)
-                    @include('diagnostics.partials.not-certain')
+                    @elseif($rv['inconclusive'])
+                    @include('diagnostics.partials.inconclusive')
                     @else
                     <div class="{{ $theme['ibg'] }} border border-opacity-30 rounded-xl px-4 py-3 flex items-start justify-between gap-3 flex-wrap"
                          style="border-color: inherit">
                         <div>
                             <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5" data-i18n="Diagnosis">{{ __('Diagnosis') }}</div>
-                            <h3 class="text-lg font-extrabold text-slate-800 leading-tight">@if($diagnosis->needs_confirmation){{ __('Likely') }}: @endif{{ $diagnosis->disease_name }}</h3>
+                            <h3 class="text-lg font-extrabold text-slate-800 leading-tight" data-headline="1">{{ $rv['headline'] }}</h3>
                             @if($diagnosis->needs_confirmation)
                             @include('diagnostics.partials.likely-confirm')
                             @endif
@@ -313,6 +316,8 @@
                     </div>
                     @endif
 
+                    @include('diagnostics.partials.what-to-do')
+
                     @include('diagnostics.partials.ai-disclaimer')
 
                     @include('diagnostics.partials.outcome-history')
@@ -324,7 +329,7 @@
                             <div class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                 <i class="fa-solid fa-microscope text-[9px]"></i> <span data-i18n="Symptoms">{{ __('Symptoms') }}</span>
                             </div>
-                            <p class="text-xs text-red-800 leading-relaxed">{{ $diagnosis->symptoms_identified }}</p>
+                            <p class="text-xs text-red-800 leading-relaxed">{{ \App\Support\FarmerText::plain($diagnosis->symptoms_identified) }}</p>
                         </div>
                         @endif
                         @if($diagnosis->cause)
@@ -332,7 +337,7 @@
                             <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                 <i class="fa-solid fa-magnifying-glass text-[9px]"></i> <span data-i18n="Root Cause">{{ __('Root Cause') }}</span>
                             </div>
-                            <p class="text-xs text-slate-700 leading-relaxed">{{ $diagnosis->cause }}</p>
+                            <p class="text-xs text-slate-700 leading-relaxed">{{ \App\Support\FarmerText::plain($diagnosis->cause) }}</p>
                         </div>
                         @endif
                         @if($diagnosis->environmental_factors)
@@ -340,7 +345,7 @@
                             <div class="text-[10px] font-bold text-sky-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                 <i class="fa-solid fa-cloud-sun text-[9px]"></i> <span data-i18n="Environment">{{ __('Environment') }}</span>
                             </div>
-                            <p class="text-xs text-sky-800 leading-relaxed">{{ $diagnosis->environmental_factors }}</p>
+                            <p class="text-xs text-sky-800 leading-relaxed">{{ \App\Support\FarmerText::plain($diagnosis->environmental_factors) }}</p>
                         </div>
                         @endif
                     </div>
@@ -433,16 +438,6 @@
                     </div>
                     @endif
 
-                    {{-- Immediate Action --}}
-                    @if($diagnosis->first_aid_steps)
-                    <div class="bg-blue-600 text-white rounded-xl p-4">
-                        <div class="text-[10px] font-bold uppercase tracking-wider mb-2 opacity-80 flex items-center gap-1">
-                            <i class="fa-solid fa-kit-medical text-[9px]"></i> <span data-i18n="Immediate Action Required">{{ __('Immediate Action Required') }}</span>
-                        </div>
-                        <p class="text-sm leading-relaxed font-medium whitespace-pre-line">{{ $diagnosis->first_aid_steps }}</p>
-                    </div>
-                    @endif
-
                     {{-- Treatment + Fertilizer --}}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @if($diagnosis->recommended_medication)
@@ -508,10 +503,14 @@
                             <i class="fa-solid fa-chevron-down text-slate-400 text-xs transition-transform" id="icon-explain-{{ $diagnosis->id }}"></i>
                         </button>
                         <div id="explain-{{ $diagnosis->id }}" class="hidden px-4 py-3 text-xs text-slate-700 bg-white border-t border-slate-100 leading-relaxed">
-                            <p>{{ $diagnosis->explanation }}</p>
+                            <p>{{ \App\Support\FarmerText::plain($diagnosis->explanation) }}</p>
                             <p class="text-slate-400 italic mt-2">This describes the specific visual features the AI detected to reach this conclusion.</p>
                         </div>
                     </div>
+                    @endif
+
+                    @if($rv['technical'])
+                    @include('diagnostics.partials.technical-details', ['tech' => $rv['technical']])
                     @endif
 
                     {{-- Disclaimer --}}

@@ -78,7 +78,7 @@ class ConfidenceBufferZoneTest extends TestCase
             $this->assertStringContainsString('data-needs-confirmation="1"', $html);
             $this->assertStringContainsString('Please confirm with a vet or extension officer before treating.', html_entity_decode($html, ENT_QUOTES));
         }
-        $this->assertStringContainsString('<div class="diag-name">Likely: Lumpy skin disease</div>', $report);
+        $this->assertStringContainsString('<div class="diag-name" data-headline="1">Likely: Lumpy skin disease</div>', $report);
     }
 
     public function test_a_confident_result_has_no_likely_wording(): void
@@ -87,7 +87,7 @@ class ConfidenceBufferZoneTest extends TestCase
         $d = $this->scan($u, 88);
         $report = $this->actingAs($u)->get(route('diagnostics.report', $d))->assertOk()->getContent();
         $this->assertStringNotContainsString('data-needs-confirmation', $report);
-        $this->assertStringContainsString('<div class="diag-name">Lumpy skin disease</div>', $report);
+        $this->assertStringContainsString('<div class="diag-name" data-headline="1">Lumpy skin disease</div>', $report);
     }
 
     public function test_the_engine_consensus_summary_is_stored_and_exposed(): void

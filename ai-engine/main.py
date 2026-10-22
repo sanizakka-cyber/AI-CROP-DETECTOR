@@ -22,7 +22,7 @@ import uvicorn
 import logging
 
 from consensus import combine
-from diagnosis_contract import build_prompt, finalize, schema_for
+from diagnosis_contract import CONTRACT_VERSION, build_prompt, finalize, schema_for
 
 app = FastAPI(title="MSAS FarmAI Inference Engine", version="5.0.0")
 
@@ -348,6 +348,8 @@ async def health():
         "ai_ready": bool(ANTHROPIC_KEY),
         "model": AI_MODEL,
         "model_pro": AI_MODEL_PRO,
+        "contract_version": CONTRACT_VERSION,
+        "scan_passes": _scan_passes(),
     }
 
 # ─── /predict/crop ────────────────────────────────────────────────────────────

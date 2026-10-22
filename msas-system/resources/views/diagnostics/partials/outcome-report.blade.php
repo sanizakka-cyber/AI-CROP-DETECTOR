@@ -13,7 +13,8 @@
     $loc = $diagnosis->collectionLocation;
 @endphp
 
-@if(in_array($outcome, ['poor_image', 'unsupported_subject', 'uncertain'], true))
+{{-- Inconclusive results have their own block (partials/inconclusive). --}}
+@if(in_array($outcome, ['poor_image', 'unsupported_subject'], true))
 <div class="section-card s-orange" style="margin-bottom:10px">
     <div class="section-label">
         @if($outcome === 'poor_image') {{ __('Photo could not be assessed') }}
@@ -41,7 +42,8 @@
 @if($outcome === 'assessed' && !empty($diagnosis->alternative_findings))
 <div class="section-card s-slate" style="margin-bottom:10px">
     <div class="section-label">{{ __('Other possibilities considered') }}</div>
-    <p>{{ collect($diagnosis->alternative_findings)->map(fn ($a) => ($a['name'] ?? '') . (!empty($a['why_considered']) ? ' (' . $a['why_considered'] . ')' : ''))->filter()->implode('; ') }}</p>
+    {{-- Plain names here; the technical names are in the appendix. --}}
+    <p>{{ collect($diagnosis->alternative_findings)->map(fn ($a) => \App\Support\FarmerText::plain(($a['farmer_name'] ?? null) ?: ($a['name'] ?? '')) . (!empty($a['why_considered']) ? ' (' . \App\Support\FarmerText::plain($a['why_considered']) . ')' : ''))->filter()->implode('; ') }}</p>
 </div>
 @endif
 

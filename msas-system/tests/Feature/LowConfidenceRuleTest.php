@@ -11,9 +11,10 @@ use Tests\TestCase;
 /**
  * Phase 12.1:
  *  - below the configured confidence (default 65%) a result is never shown as
- *    one diagnosis: "Not certain", the possible conditions, and "confirm with a
- *    vet or extension officer" on the API, the web history page and the PDF,
- *    in every web language;
+ *    one diagnosis: it is inconclusive ("Inconclusive – possible causes below",
+ *    since the consensus-screen fixes), with the possible causes and "confirm
+ *    with a vet or extension officer", on the API, the web history page and the
+ *    PDF, in every web language;
  *  - the AI disclaimer is on every result (web history and PDF);
  *  - the soil scan card never promises pH from a photo, in any web language.
  */
@@ -95,7 +96,8 @@ class LowConfidenceRuleTest extends TestCase
         $u = User::factory()->create(['role' => 'farmer']);
         $d = $this->scan($u);
         $strings = json_decode(file_get_contents(lang_path("{$lang}.json")), true);
-        foreach (['Not certain', 'Please confirm with a vet or extension officer before treating.', 'AI guidance can be wrong; confirm with an expert.'] as $key) {
+        $headline = \App\Support\ResultView::HEADLINE_INCONCLUSIVE;
+        foreach ([$headline, 'Please confirm with a vet or extension officer before treating.', 'AI guidance can be wrong; confirm with an expert.'] as $key) {
             $this->assertNotEmpty($strings[$key] ?? null, "{$lang}.json is missing \"{$key}\"");
         }
 
@@ -104,8 +106,8 @@ class LowConfidenceRuleTest extends TestCase
 
         foreach ([$history, $report] as $html) {
             $text = html_entity_decode($html, ENT_QUOTES);
-            $this->assertStringContainsString('data-not-certain="1"', $html);
-            $this->assertStringContainsString($strings['Not certain'], $text);
+            $this->assertStringContainsString('data-inconclusive="1"', $html);
+            $this->assertStringContainsString($strings[$headline], $text);
             $this->assertStringContainsString($strings['Please confirm with a vet or extension officer before treating.'], $text);
             $this->assertStringContainsString($strings['AI guidance can be wrong; confirm with an expert.'], $text);
             foreach (['Ringworm', 'Mange', 'Lumpy skin disease'] as $name) {
@@ -113,7 +115,7 @@ class LowConfidenceRuleTest extends TestCase
             }
         }
         // The PDF never names one condition as "the" diagnosis.
-        $this->assertStringContainsString('<div class="diag-name">' . e($strings['Not certain']) . '</div>', $report);
+        $this->assertStringContainsString('<div class="diag-name" data-headline="1">' . e($strings[$headline]) . '</div>', $report);
     }
 
     public function test_a_confident_result_shows_one_diagnosis_and_no_not_certain_block(): void
@@ -122,8 +124,8 @@ class LowConfidenceRuleTest extends TestCase
         $d = $this->scan($u, ['confidence_score' => 82]);
         $history = $this->actingAs($u)->get(route('diagnostics.history'))->assertOk()->getContent();
         $report = $this->actingAs($u)->get(route('diagnostics.report', $d))->assertOk()->getContent();
-        $this->assertStringNotContainsString('data-not-certain', $history . $report);
-        $this->assertStringContainsString('<div class="diag-name">Ringworm</div>', $report);
+        $this->assertStringNotContainsString('data-inconclusive', $history . $report);
+        $this->assertStringContainsString('<div class="diag-name" data-headline="1">Ringworm</div>', $report);
     }
 
     public static function outcomes(): array

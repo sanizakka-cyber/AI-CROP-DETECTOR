@@ -43,7 +43,7 @@ class DiagnosisResultMapper
     }
 
     /** varchar(255) columns filled from AI text; capped so an over-long value can never fail the insert. */
-    private const SHORT_COLUMNS = ['subject_name', 'scientific_name', 'detected_part', 'health_status', 'severity_level', 'urgency_level', 'image_quality'];
+    private const SHORT_COLUMNS = ['subject_name', 'scientific_name', 'detected_part', 'health_status', 'severity_level', 'urgency_level', 'image_quality', 'farmer_name'];
 
     private static function capShortColumns(array $row): array
     {
@@ -185,7 +185,18 @@ class DiagnosisResultMapper
             'organic_options'           => self::organicOptions($aiResult),
             // Phase 12.2: how the engine's repeat analyses agreed; absent from older engines.
             'ai_consensus'              => is_array($aiResult['consensus'] ?? null) ? $aiResult['consensus'] : null,
+            // The condition the repeat analyses voted on (ai-engine/conditions.py),
+            // its category and the farmer's plain name; absent from older engines.
+            'condition_label'           => self::shortKey($aiResult['condition_label'] ?? null, 64),
+            'condition_category'        => self::shortKey($aiResult['condition_category'] ?? null, 32),
+            'farmer_name'               => is_string($aiResult['farmer_name'] ?? null) && trim($aiResult['farmer_name']) !== '' ? trim($aiResult['farmer_name']) : null,
         ];
+    }
+
+    /** A snake_case key from the engine, or null: never free text in a key column. */
+    private static function shortKey(mixed $v, int $max): ?string
+    {
+        return is_string($v) && preg_match('/^[a-z0-9_]{1,' . $max . '}$/', $v) ? $v : null;
     }
 
     private static function organicOptions(array $aiResult): ?string

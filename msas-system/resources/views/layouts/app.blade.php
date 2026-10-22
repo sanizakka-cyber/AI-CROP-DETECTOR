@@ -90,7 +90,8 @@
     </style>
 </head>
 <body class="antialiased"
-      x-data="{ sidebarOpen: true }"
+      {{-- Collapsed (icons only) below 1024px: open, the 256px sidebar left a phone ~86px for the page. --}}
+      x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
       @msas-close-overlays.window="$store.ui.closeAll()"
       @keydown.escape.window="$store.ui.closeAll()">
 
@@ -693,9 +694,9 @@
             </div>
             @endif
 
-            <div class="p-6">
+            <div class="p-3 sm:p-6">
             {{ $slot }}
-            </div>{{-- end p-6 --}}
+            </div>{{-- end page padding --}}
         </main>
 
     </div>

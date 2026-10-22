@@ -1,0 +1,95 @@
+name: Result Screen Screenshots
+
+# Before/after screenshots of the web result card for the banana scan
+# (shared-fixtures/banana-consensus-diagnosis.json), on main and on this
+# branch, plus a layout check that fails when a side-panel label overlaps
+# its value. Screenshots are uploaded as the "result-screen-screenshots"
+# artifact. CI sqlite database only; no real data.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'msas-system/resources/views/diagnostics/**'
+      - 'msas-system/resources/views/layouts/**'
+      - 'msas-system/resources/css/**'
+      - 'msas-system/app/Support/**'
+      - 'msas-system/tests/Visual/**'
+      - 'shared-fixtures/banana-consensus-diagnosis.json'
+      - '.github/workflows/result-screen-screenshots.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, sqlite3, curl, fileinfo, gd, zip, intl, bcmath, exif
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Composer install
+        working-directory: msas-system
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
+
+      - name: Check out main next to this branch (the "before")
+        run: |
+          git worktree add ../before origin/main
+          # Same composer.lock on both sides: reuse the installed vendor/.
+          cmp msas-system/composer.lock ../before/msas-system/composer.lock
+          ln -s "$PWD/msas-system/vendor" ../before/msas-system/vendor
+
+      - name: Playwright
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y >/dev/null && npm i playwright-core@1.48.2 >/dev/null
+          npx playwright-core install --with-deps chromium
+
+      - name: Screenshots, before (main) and after (this branch)
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIXTURE="$PWD/shared-fixtures/banana-consensus-diagnosis.json"
+          SCRIPT="$PWD/msas-system/tests/Visual/result-screen.mjs"
+          SEED="$PWD/msas-system/tests/Visual/seed_banana_scan.php"
+          cp "$SCRIPT" /tmp/pw/
+          run_side () { # dir name port record [--expect-no-overlap]
+            cd "$1/msas-system"
+            touch .env
+            export APP_KEY="base64:$(openssl rand -base64 32)" APP_ENV=testing APP_DEBUG=true \
+                   DB_CONNECTION=sqlite DB_DATABASE="/tmp/$2.sqlite" SESSION_DRIVER=file SESSION_SECURE_COOKIE=false CACHE_STORE=file QUEUE_CONNECTION=sync \
+                   APP_URL="http://127.0.0.1:$3"
+            mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs
+            rm -f "/tmp/$2.sqlite" && touch "/tmp/$2.sqlite"
+            php artisan migrate --force --no-interaction >/dev/null
+            php "$SEED" "$FIXTURE" "$4"
+            php artisan serve --port="$3" >"/tmp/$2-serve.log" 2>&1 &
+            local server=$!
+            for i in $(seq 1 30); do curl -sf "http://127.0.0.1:$3/login" >/dev/null && break; sleep 1; done
+            (cd /tmp/pw && node result-screen.mjs "http://127.0.0.1:$3" /tmp/shots "$2" ${5:-})
+            kill "$server" || true
+            cd - >/dev/null
+          }
+          # The "before" side is for comparison only, never a gate.
+          ( run_side ../before before-inconclusive 8101 inconclusive ) || echo "::warning::before (main) screenshots failed; not a gate"
+          run_side "$PWD" after-inconclusive 8102 inconclusive --expect-no-overlap
+          run_side "$PWD" after-label-vote 8103 normalAgeing --expect-no-overlap
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-screen-screenshots
+          path: |
+            /tmp/shots
+            /tmp/*-serve.log

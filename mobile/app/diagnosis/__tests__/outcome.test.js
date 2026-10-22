@@ -53,7 +53,8 @@ test('wrong subject: says the photo does not show what the scan needs', async ()
   expect(screen.getByText('1. Photograph the leaf')).toBeTruthy();
 });
 
-test('inconclusive: shows the candidates and says no treatment until confirmed', async () => {
+// An older server (no assessment.result): the app applies the inconclusive rules itself.
+test('inconclusive: never titled with a candidate; lists the candidates, steps to retake, no treatment', async () => {
   await show({
     ...base,
     aiResult: { primaryDiagnosis: 'Possible late blight', confidence: 35, healthStatus: 'Uncertain' },
@@ -63,10 +64,14 @@ test('inconclusive: shows the candidates and says no treatment until confirmed',
       whatCannotBeConfirmed: 'Spores are not visible',
     },
   });
-  expect(screen.getByText('Inconclusive result')).toBeTruthy();
+  expect(screen.getByTestId('diagnosis-name').props.children).toBe('inconclusiveHeadline');
   expect(screen.getByText('Spores are not visible')).toBeTruthy();
-  expect(screen.getByText('- Early blight: Similar brown lesions')).toBeTruthy();
-  expect(screen.getByText('No treatment is recommended until the problem is confirmed.')).toBeTruthy();
+  expect(screen.getAllByTestId('possible-condition').map(n => n.props.children.join(''))).toEqual(['1. Possible late blight', '2. Early blight']);
+  expect(screen.getByText('noTreatmentUntilConfirmed')).toBeTruthy();
+  expect(screen.getByText('• Photograph the leaf underside')).toBeTruthy();
+  expect(screen.getByTestId('retake-button')).toBeTruthy();
+  expect(screen.queryByTestId('header-severity')).toBeNull();
+  expect(screen.queryByTestId('header-urgency')).toBeNull();
   expect(screen.getByText('35% confidence')).toBeTruthy();
 });
 

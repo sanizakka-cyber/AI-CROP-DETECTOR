@@ -12,17 +12,22 @@ deterministic from here.
 What this does instead. The engine asks the same question N times in
 parallel (SCAN_PASSES, default 3) and combines the finalized results:
 
-- The outcome and the top finding are decided by vote. Two names count as
-  the same finding when they match after normalisation or one contains the
-  other ("Late blight" / "Tomato late blight").
+- The outcome and the top finding are decided by vote on the condition
+  label (conditions.py): each analysis picks one label from a fixed list,
+  so "natural leaf sheath senescence" and "natural drying of old outer
+  sheaths" are the same vote (normal_ageing). Wording is compared only when
+  a pass has no usable label ("unknown" or an older engine): then two names
+  count as the same finding when they match after normalisation or one
+  contains the other ("Late blight" / "Tomato late blight").
 - The reported confidence is the median confidence of the passes that
   agree with the winning finding, so one outlier pass cannot move it.
 - The text fields come from one real pass (the agreeing pass whose
   confidence is closest to the median), never stitched from several
   replies, so explanation and treatment stay coherent.
 - If no finding has a majority (for example three passes, three different
-  answers), the result is "uncertain" with every candidate listed, and no
-  treatment. That is the honest answer when the model disagrees with itself.
+  conditions), the result is "uncertain" with every candidate listed, and no
+  treatment, severity or urgency. That is the honest answer when the model
+  disagrees with itself.
 
 Everything here is pure (no I/O) and unit-tested.
 """
@@ -31,7 +36,10 @@ import statistics
 from typing import List, Optional
 
 ASSESSED, UNCERTAIN = "assessed", "uncertain"
+LABEL, NAME = "label", "name"  # what the vote compares (NAME = the pre-label rule, kept for eval replays)
 NO_FINDING = ("poor_image", "unsupported_subject")
+# An inconclusive result has no single condition to rate.
+UNRATED_KEYS = ("severity", "urgency")
 # Keys that only make sense for a supported assessment (see finalize()).
 TREATMENT_KEYS = ("medication", "organic_treatment", "preventive_measures", "recovery_period",
                   "fertilizer_recommendation", "amendment_recommendation", "chemical_control",
@@ -53,18 +61,27 @@ def _finding(r: dict) -> Optional[str]:
     return r.get("disease") or r.get("pest_name")
 
 
-def same_finding(a: dict, b: dict) -> bool:
+def _label(r: dict) -> Optional[str]:
+    """The pass's condition label, when it is a real one."""
+    label = r.get("condition_label")
+    return label if isinstance(label, str) and label and label != "unknown" else None
+
+
+def same_finding(a: dict, b: dict, vote_on: str = LABEL) -> bool:
+    la, lb = _label(a), _label(b)
+    if vote_on == LABEL and la and lb:
+        return la == lb
     # scientific_name is the subject's (the crop's or animal's), not the
     # finding's, so it cannot tell two findings apart and is not used here.
     fa, fb = _norm(_finding(a)), _norm(_finding(b))
     return bool(fa and fb and (fa == fb or f" {fa} " in f" {fb} " or f" {fb} " in f" {fa} "))
 
 
-def _groups(results: List[dict]) -> List[List[dict]]:
+def _groups(results: List[dict], vote_on: str = LABEL) -> List[List[dict]]:
     groups: List[List[dict]] = []
     for r in results:
         for g in groups:
-            if same_finding(g[0], r):
+            if same_finding(g[0], r, vote_on):
                 g.append(r)
                 break
         else:
@@ -86,10 +103,10 @@ def _median_pick(group: List[dict]) -> tuple:
     return rep, med
 
 
-def combine(results: List[dict], attempted: Optional[int] = None) -> dict:
+def combine(results: List[dict], attempted: Optional[int] = None, vote_on: str = LABEL) -> dict:
     """Combine N finalized results (finalize() output) into one result with
     a `consensus` block. A single result is returned unchanged apart from
-    that block."""
+    that block. vote_on=NAME replays the old wording-only vote (eval only)."""
     if not results:
         raise ValueError("no results to combine")
     attempted = attempted or len(results)
@@ -97,7 +114,7 @@ def combine(results: List[dict], attempted: Optional[int] = None) -> dict:
     findings = [r for r in results if r.get("assessment_outcome") in (ASSESSED, UNCERTAIN) and _finding(r)]
     no_finding = [r for r in results if r.get("assessment_outcome") in NO_FINDING]
 
-    groups = sorted(_groups(findings), key=lambda g: (len(g), statistics.median([_conf(r) or 0 for r in g])), reverse=True)
+    groups = sorted(_groups(findings, vote_on), key=lambda g: (len(g), statistics.median([_conf(r) or 0 for r in g])), reverse=True)
     top = groups[0] if groups else []
 
     if len(no_finding) > n / 2:
@@ -111,16 +128,20 @@ def combine(results: List[dict], attempted: Optional[int] = None) -> dict:
         out["confidence"] = round(median, 1) if median is not None else rep.get("confidence")
         # Assessed only when most agreeing passes said assessed.
         assessed_votes = sum(r.get("assessment_outcome") == ASSESSED for r in top)
-        if assessed_votes <= n / 2 and out.get("assessment_outcome") == ASSESSED:
+        if assessed_votes <= n / 2 or out.get("assessment_outcome") == UNCERTAIN:
             out = _as_uncertain(out)
         agreeing = len(top)
         out["alternative_findings"] = _alternatives(out, groups[1:], results)
     else:
-        # No majority: the model disagreed with itself. Never pick one.
+        # No majority: the model disagreed with itself. Never pick one, and
+        # carry nothing that belongs to one pass's answer (its label, plain
+        # name, health line).
         base = top[0] if top else results[0]
         out = _as_uncertain(dict(base))
         out["confidence"] = None
         out["confidence_valid"] = True
+        for k in ("condition_label", "condition_category", "farmer_name", "health_status"):
+            out[k] = None
         agreeing, median = (len(top) if top else 0), None
         out["alternative_findings"] = _alternatives(None, groups, results)
 
@@ -129,8 +150,10 @@ def combine(results: List[dict], attempted: Optional[int] = None) -> dict:
         "passes_requested": attempted,
         "passes_completed": n,
         "agreeing_passes": agreeing,
-        "method": "majority finding, median confidence" if n > 1 else "single pass",
+        "method": (("majority condition label" if vote_on == LABEL else "majority finding") + ", median confidence") if n > 1 else "single pass",
         "pass_findings": [_finding(r) or r.get("assessment_outcome") for r in results],
+        "pass_labels": [r.get("condition_label") for r in results],
+        "pass_outcomes": [r.get("assessment_outcome") for r in results],
         "pass_confidences": [_conf(r) for r in results],
         "confidence_spread": round(max(confs) - min(confs), 1) if len(confs) >= 2 else 0.0 if confs else None,
     }
@@ -139,7 +162,7 @@ def combine(results: List[dict], attempted: Optional[int] = None) -> dict:
 
 def _as_uncertain(r: dict) -> dict:
     r["assessment_outcome"] = UNCERTAIN
-    for k in TREATMENT_KEYS:
+    for k in TREATMENT_KEYS + UNRATED_KEYS:
         if k in r:
             r[k] = None
     return r
@@ -149,16 +172,27 @@ def _alternatives(chosen: Optional[dict], other_groups: List[List[dict]], result
     """The chosen pass's own alternatives, plus the findings other passes
     arrived at, without duplicates."""
     alts, seen = [], set()
+
+    def keys(item: dict) -> set:
+        # One entry per condition, whether it matches by label or by wording.
+        k = {"n:" + _norm(item.get("name") or _finding(item))}
+        if _label(item):
+            k.add("l:" + _label(item))
+        return k - {"n:"}
+
     if chosen is not None:
-        seen.add(_norm(_finding(chosen)))
+        seen |= keys(chosen)
     sources = list((chosen or {}).get("alternative_findings") or [])
     for g in other_groups:
-        sources.append({"name": _finding(g[0]), "why_considered": f"Named by {len(g)} of {len(results)} repeat analyses."})
+        sources.append({"name": _finding(g[0]), "farmer_name": g[0].get("farmer_name"),
+                        "condition_label": g[0].get("condition_label"),
+                        "why_considered": f"Named by {len(g)} of {len(results)} repeat analyses."})
     for r in results:
         sources.extend(r.get("alternative_findings") or [])
     for a in sources:
-        key = _norm(a.get("name"))
-        if key and key not in seen:
-            seen.add(key)
-            alts.append({"name": a["name"], "why_considered": a.get("why_considered") or ""})
+        k = keys(a)
+        if k and not (k & seen):
+            seen |= k
+            alts.append({"name": a["name"], "farmer_name": a.get("farmer_name"),
+                         "condition_label": a.get("condition_label"), "why_considered": a.get("why_considered") or ""})
     return alts

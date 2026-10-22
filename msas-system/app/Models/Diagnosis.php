@@ -65,6 +65,10 @@ class Diagnosis extends Model
         'organic_options',
         // Phase 12.2: how the repeat analyses agreed (passes, per-pass findings and confidences)
         'ai_consensus',
+        // The voted condition label (ai-engine/conditions.py), its category, the farmer's plain name
+        'condition_label',
+        'condition_category',
+        'farmer_name',
         // Optional research metadata (spec 6D / 7)
         'research_metadata',
         'consent_research_use',
@@ -276,6 +280,16 @@ class Diagnosis extends Model
         return ucfirst(str_replace('_', ' ', $this->status));
     }
 
+    /**
+     * What the farmer sees for this scan (headline, health, severity, urgency,
+     * possible causes, steps, retake tips), from one place for web, PDF and
+     * API. $viewer adds the technical details when they are staff.
+     */
+    public function resultView(?User $viewer = null): array
+    {
+        return \App\Support\ResultView::for($this, $viewer);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -344,26 +358,30 @@ class Diagnosis extends Model
             return '';
         }
         $typeLbl  = match($this->type) { 'plant' => 'Crop / Plant', 'soil' => 'Soil Assessment', 'pest' => 'Pest Identification', default => 'Livestock' };
-        $severity = $this->severity_level ?? '';
-        $urgency  = $this->urgency_level ?? 'Medium';
+        // Same headline, severity and urgency as the screen (App\Support\ResultView):
+        // an inconclusive result names no single condition and has neither.
+        $view     = $this->resultView();
+        $severity = $view['severity_label'] ?? '';
+        $urgency  = $view['urgency_label'] ?? '';
+        $plain    = fn ($t) => \App\Support\FarmerText::plain($t);
 
         $lines = ["AI Diagnostic Report. {$typeLbl} scan."];
         if ($this->subject_name)                                                   $lines[] = "Subject: {$this->subject_name}.";
-        if ($this->scientific_name && $this->scientific_name !== 'Unknown')        $lines[] = "Scientific name: {$this->scientific_name}.";
-        if ($this->detected_part)                                                  $lines[] = "Detected part: {$this->detected_part}.";
-        if ($this->health_status)                                                  $lines[] = "Health status: {$this->health_status}.";
-        $lines[] = "Condition: {$this->disease_name}.";
+        if ($view['detected_part'])                                                $lines[] = "Detected part: {$view['detected_part']}.";
+        if ($view['health'])                                                       $lines[] = "Health status: {$view['health']['label']}.";
+        $lines[] = $view['inconclusive'] ? "{$view['headline']}." : "Condition: {$view['headline']}.";
+        if ($view['possible_causes'])                                              $lines[] = 'Possible causes: ' . implode('; ', $view['possible_causes']) . '.';
         $lines[] = $this->confidence_score !== null
             ? "Confidence: " . (int) round($this->confidence_score) . " percent."
-            : "AI analysis was unavailable for this scan. Pending expert review.";
+            : ($this->has_no_single_finding ? 'No single finding, so there is no confidence score.' : 'AI analysis was unavailable for this scan. Pending expert review.');
         if ($severity)                                                             $lines[] = "Severity: {$severity}.";
-        $lines[] = "Urgency: {$urgency}.";
-        if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: {$this->symptoms_identified}.";
-        if ($this->cause)                                                          $lines[] = "Root cause: {$this->cause}.";
-        if ($this->environmental_factors)                                          $lines[] = "Environmental factors: {$this->environmental_factors}.";
+        if ($urgency)                                                              $lines[] = "Urgency: {$urgency}.";
+        if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: " . $plain($this->symptoms_identified) . ".";
+        if ($this->cause)                                                          $lines[] = "Root cause: " . $plain($this->cause) . ".";
+        if ($this->environmental_factors)                                          $lines[] = "Environmental factors: " . $plain($this->environmental_factors) . ".";
         if ($this->nutrient_deficiencies && $this->nutrient_deficiencies !== 'None detected') $lines[] = "Nutrient deficiencies: {$this->nutrient_deficiencies}.";
         if ($this->pest_detection && $this->pest_detection !== 'No pest detected') $lines[] = "Pest detection: {$this->pest_detection}.";
-        if ($this->first_aid_steps)                                                $lines[] = "Immediate action: {$this->first_aid_steps}.";
+        if ($this->first_aid_steps)                                                $lines[] = "Immediate action: " . $plain($this->first_aid_steps) . ".";
         if ($this->recommended_medication)                                         $lines[] = "Treatment: {$this->recommended_medication}.";
         if ($this->fertilizer_recommendation)                                      $lines[] = "Fertilizer: {$this->fertilizer_recommendation}.";
         if ($this->preventive_measures)                                            $lines[] = "Prevention: {$this->preventive_measures}.";

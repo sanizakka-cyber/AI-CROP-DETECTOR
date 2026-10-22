@@ -1,0 +1,271 @@
+{
+  "_about": "The real banana scan (farmer account, October 2026) whose result screen contradicted itself, read by BOTH test suites: msas-system/tests/Feature/ConsensusResultScreenTest.php (API subset, web history, PDF) and mobile/app/diagnosis/__tests__/consensusScreen.test.js (app). `inconclusive` is the record as the old wording vote stored it (three wordings of one finding, no majority); `normalAgeing` is the same three analyses under the condition-label vote. Both screens must agree with themselves: headline, health, severity and urgency from one source, at most 3 plain-language causes, 'What to do now', no Latin or jargon on the farmer's view. `mustDisplayOnScreen` is for the web page and the app only (a PDF has no buttons).",
+  "headline": "Inconclusive – possible causes below",
+  "jargon": [
+    "senescence",
+    "pseudostem",
+    "Musa",
+    "Cosmopolites",
+    "Fusarium oxysporum"
+  ],
+  "inconclusive": {
+    "record": {
+      "type": "plant",
+      "status": "reviewed",
+      "language": "en",
+      "subject_name": "Banana",
+      "scientific_name": "Musa spp.",
+      "detected_part": "stem (pseudostem)",
+      "health_status": "Unhealthy",
+      "severity_level": "Mild",
+      "urgency_level": "Low",
+      "disease_name": "Natural leaf sheath senescence",
+      "confidence_score": null,
+      "assessment_outcome": "uncertain",
+      "confidence_decision": "uncertain",
+      "image_quality": "good",
+      "image_issues": [],
+      "photo_tips": [],
+      "what_cannot_be_confirmed": "Whether the inner stem is firm or rotting cannot be seen from outside.",
+      "alternative_findings": [
+        {
+          "name": "Natural drying and senescence of old leaf sheaths",
+          "why_considered": "Named by 1 of 3 repeat analyses."
+        },
+        {
+          "name": "Natural drying and shedding of old outer leaf sheaths",
+          "why_considered": "Named by 1 of 3 repeat analyses."
+        },
+        {
+          "name": "Fusarium wilt (Fusarium oxysporum f. sp. cubense)",
+          "why_considered": "Yellowing and splitting of the pseudostem can also come from wilt"
+        },
+        {
+          "name": "Banana weevil damage (Cosmopolites sordidus)",
+          "why_considered": "Tunnels at the pseudostem base"
+        }
+      ],
+      "ai_consensus": {
+        "passes_requested": 3,
+        "passes_completed": 3,
+        "agreeing_passes": 1,
+        "method": "majority finding, median confidence",
+        "pass_findings": [
+          "Natural leaf sheath senescence",
+          "Natural drying and senescence of old leaf sheaths",
+          "Natural drying and shedding of old outer leaf sheaths"
+        ],
+        "pass_confidences": [
+          72,
+          68,
+          75
+        ]
+      },
+      "contract_version": "2026-10-phase11",
+      "ai_model_name": "claude-sonnet-5",
+      "validation_status": "unvalidated"
+    },
+    "api": {
+      "subjectName": "Banana",
+      "scientificName": null,
+      "detectedPart": "stem",
+      "aiResult": {
+        "primaryDiagnosis": "Inconclusive – possible causes below",
+        "severity": null,
+        "severityLevel": null,
+        "urgency": null,
+        "urgencyLevel": null,
+        "healthStatus": "Needs checking"
+      },
+      "assessment": {
+        "outcome": "uncertain",
+        "notCertain": true,
+        "possibleConditions": [
+          "Natural leaf sheath ageing",
+          "Natural drying and ageing of old leaf sheaths",
+          "Natural drying and shedding of old outer leaf sheaths"
+        ],
+        "whatCannotBeConfirmed": "Whether the inner stem is firm or rotting cannot be seen from outside.",
+        "result": {
+          "kind": "inconclusive",
+          "inconclusive": true,
+          "headline": "Inconclusive – possible causes below",
+          "name": null,
+          "health": {
+            "key": "needs_checking",
+            "label": "Needs checking"
+          },
+          "severity": null,
+          "urgency": null,
+          "possible_causes": [
+            "Natural leaf sheath ageing",
+            "Natural drying and ageing of old leaf sheaths",
+            "Natural drying and shedding of old outer leaf sheaths"
+          ],
+          "detected_part": "stem",
+          "steps": [
+            {
+              "key": "check_rot",
+              "text": "Look closely for soft, rotting or bad-smelling parts."
+            },
+            {
+              "key": "remove_dead_layers",
+              "text": "Cut off dead outer leaves or sheaths with a clean tool and take them away from the field."
+            },
+            {
+              "key": "retake_closer",
+              "text": "Take a closer, sharper photo of the affected part in daylight and scan again."
+            },
+            {
+              "key": "contact_extension",
+              "text": "If the problem spreads or you are not sure, contact an extension officer."
+            }
+          ],
+          "retake": {
+            "show": true,
+            "tips": [
+              {
+                "key": "tip_fill_frame",
+                "text": "Move closer so the affected part fills most of the photo."
+              },
+              {
+                "key": "tip_daylight",
+                "text": "Take the photo in daylight, without shadow on the affected part."
+              },
+              {
+                "key": "tip_focus",
+                "text": "Hold the phone still and tap the screen on the affected part to focus."
+              },
+              {
+                "key": "tip_compare",
+                "text": "If you can, include a healthy part next to the damaged one."
+              }
+            ]
+          }
+        }
+      },
+      "technical": null
+    },
+    "mustDisplay": [
+      "Inconclusive – possible causes below",
+      "Needs checking",
+      "Natural leaf sheath ageing",
+      "Natural drying and ageing of old leaf sheaths",
+      "Natural drying and shedding of old outer leaf sheaths",
+      "Look closely for soft, rotting or bad-smelling parts."
+    ],
+    "mustDisplayOnScreen": [
+      "Retake a closer photo"
+    ]
+  },
+  "normalAgeing": {
+    "record": {
+      "type": "plant",
+      "status": "reviewed",
+      "language": "en",
+      "subject_name": "Banana",
+      "scientific_name": "Musa spp.",
+      "detected_part": "stem (pseudostem)",
+      "health_status": "Unhealthy",
+      "severity_level": "Mild",
+      "urgency_level": "Low",
+      "disease_name": "Natural drying and shedding of old outer leaf sheaths",
+      "farmer_name": "Old outer layers drying naturally",
+      "condition_label": "normal_ageing",
+      "condition_category": "normal_ageing",
+      "confidence_score": 80,
+      "assessment_outcome": "assessed",
+      "confidence_decision": "sufficient",
+      "image_quality": "good",
+      "image_issues": [],
+      "photo_tips": [],
+      "first_aid_steps": "1) Cut off the dry outer sheaths 2) Check the stem base for soft rot",
+      "alternative_findings": [],
+      "ai_consensus": {
+        "passes_requested": 3,
+        "passes_completed": 3,
+        "agreeing_passes": 3,
+        "method": "majority condition label, median confidence",
+        "pass_findings": [
+          "Natural leaf sheath senescence",
+          "Natural drying and senescence of old leaf sheaths",
+          "Natural drying and shedding of old outer leaf sheaths"
+        ],
+        "pass_labels": [
+          "normal_ageing",
+          "normal_ageing",
+          "normal_ageing"
+        ],
+        "pass_confidences": [
+          78,
+          82,
+          80
+        ]
+      },
+      "contract_version": "2026-10-condition-labels",
+      "ai_model_name": "claude-sonnet-5",
+      "validation_status": "unvalidated"
+    },
+    "api": {
+      "detectedPart": "stem",
+      "aiResult": {
+        "primaryDiagnosis": "Old outer layers drying naturally",
+        "severity": "none",
+        "severityLevel": "None",
+        "urgency": null,
+        "urgencyLevel": null,
+        "healthStatus": "Healthy (normal ageing)"
+      },
+      "assessment": {
+        "outcome": "assessed",
+        "notCertain": false,
+        "possibleConditions": [],
+        "result": {
+          "kind": "diagnosis",
+          "inconclusive": false,
+          "headline": "Old outer layers drying naturally",
+          "name": "Old outer layers drying naturally",
+          "health": {
+            "key": "normal_ageing",
+            "label": "Healthy (normal ageing)"
+          },
+          "severity": "none",
+          "urgency": null,
+          "possible_causes": [],
+          "steps": [
+            {
+              "key": "no_treatment_needed",
+              "text": "No treatment is needed for this."
+            },
+            {
+              "key": "remove_dead_layers",
+              "text": "Cut off dead outer leaves or sheaths with a clean tool and take them away from the field."
+            },
+            {
+              "key": "check_rot",
+              "text": "Look closely for soft, rotting or bad-smelling parts."
+            },
+            {
+              "key": "check_weekly",
+              "text": "Check the plant every week for new spots, rot or wilting."
+            }
+          ],
+          "retake": {
+            "show": false,
+            "tips": []
+          }
+        }
+      }
+    },
+    "mustDisplay": [
+      "Old outer layers drying naturally",
+      "Healthy (normal ageing)",
+      "No treatment is needed for this."
+    ],
+    "mustNotDisplay": [
+      "Unhealthy",
+      "Problem found",
+      "Inconclusive"
+    ]
+  }
+}

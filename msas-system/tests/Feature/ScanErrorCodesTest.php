@@ -331,7 +331,7 @@ class ScanErrorCodesTest extends TestCase
         $this->assertStringNotContainsString('tts-' . $d->id . '-playbtn', $html);
         $this->assertSame('', $d->narrationText());
 
-        cache()->forget("diagnosis:v2:{$d->id}");
+        cache()->forget("diagnosis:v3:{$d->id}");
         $api = $this->withHeaders(['Authorization' => 'Bearer ' . $farmer->createToken('t')->plainTextToken])->getJson("/api/diagnose/{$d->id}");
         $api->assertJsonPath('diagnosis.assessment.failedScan', true)->assertJsonPath('diagnosis.aiResult.urgency', null)->assertJsonPath('diagnosis.aiResult.severity', null);
         $this->assertSame(0, app(SubscriptionLimitService::class)->canScan($farmer)['used']);

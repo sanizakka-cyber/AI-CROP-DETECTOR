@@ -99,8 +99,24 @@ class CanonicalDiagnosisParityTest extends TestCase
             $this->assertStringContainsString($text, $history, "Web history page is missing: {$text}");
             $this->assertStringContainsString($text, $report, "Web report is missing: {$text}");
         }
-        // The headline is "Not certain", never the leading condition.
-        $this->assertStringContainsString('<div class="diag-name">' . $this->lowConfidence()['headline'] . '</div>', $reportHtml);
+        // The headline is the inconclusive one, never the leading condition.
+        $this->assertStringContainsString('<div class="diag-name" data-headline="1">' . e($this->lowConfidence()['headline']) . '</div>', $reportHtml);
+        $this->assertNothingTechnicalForTheFarmer($this->lowConfidence(), $history, $reportHtml);
+    }
+
+    /** Text of the PDF before its technical appendix: what the farmer reads. */
+    private function farmerPartOfReport(string $reportHtml): string
+    {
+        $cut = strpos($reportHtml, 'data-technical-appendix');
+        return $this->visibleText($cut === false ? $reportHtml : substr($reportHtml, 0, $cut));
+    }
+
+    private function assertNothingTechnicalForTheFarmer(array $fixture, string $historyText, string $reportHtml): void
+    {
+        foreach ($fixture['mustNotDisplay'] ?? [] as $word) {
+            $this->assertStringNotContainsStringIgnoringCase($word, $historyText, "Farmer's web page shows \"{$word}\"");
+            $this->assertStringNotContainsStringIgnoringCase($word, $this->farmerPartOfReport($reportHtml), "Farmer's part of the PDF shows \"{$word}\"");
+        }
     }
 
     public function test_web_history_and_report_show_every_field_the_app_shows(): void
@@ -109,11 +125,17 @@ class CanonicalDiagnosisParityTest extends TestCase
         $d = $this->seedCanonical($user);
 
         $history = $this->visibleText($this->actingAs($user)->get(route('diagnostics.history'))->assertOk()->getContent());
-        $report  = $this->visibleText($this->actingAs($user)->get(route('diagnostics.report', $d))->assertOk()->getContent());
+        $reportHtml = $this->actingAs($user)->get(route('diagnostics.report', $d))->assertOk()->getContent();
+        $report  = $this->visibleText($reportHtml);
 
         foreach ($this->fixture()['mustDisplay'] as $text) {
             $this->assertStringContainsString($text, $history, "Web history page is missing: {$text}");
             $this->assertStringContainsString($text, $report, "Web report is missing: {$text}");
         }
+        $this->assertNothingTechnicalForTheFarmer($this->fixture(), $history, $reportHtml);
+        // The technical names are kept, in the PDF's appendix.
+        $appendix = substr($reportHtml, (int) strpos($reportHtml, 'data-technical-appendix'));
+        $this->assertStringContainsString('Late blight (Phytophthora infestans)', $appendix);
+        $this->assertStringContainsString('Solanum lycopersicum', $appendix);
     }
 }

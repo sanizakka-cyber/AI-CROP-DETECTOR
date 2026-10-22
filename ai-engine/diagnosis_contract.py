@@ -26,6 +26,11 @@ value stays None.
 """
 from typing import Optional
 
+import conditions
+
+# Stored with every result and shown by /health, so a deploy can be checked from outside.
+CONTRACT_VERSION = "2026-10-condition-labels"
+
 # ── Outcomes ─────────────────────────────────────────────────────────────────
 ASSESSED = "assessed"                        # a supported finding, with treatment where justified
 UNCERTAIN = "uncertain"                      # subject visible but evidence insufficient for one finding
@@ -67,12 +72,17 @@ COMMON_PROPS = {
     "detected_part": NS,
     "health_status": NS,
     "primary_finding": NS,
+    # The vote key (consensus.py): one label from conditions.py. A plain
+    # string, not an enum, to keep the compiled grammar small; checked in code.
+    "condition_label": S,
+    # The finding in plain words for the farmer, no Latin or jargon.
+    "farmer_name": NS,
     "alternative_findings": {
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {"name": S, "why_considered": S},
-            "required": ["name", "why_considered"],
+            "properties": {"name": S, "farmer_name": S, "condition_label": S, "why_considered": S},
+            "required": ["name", "farmer_name", "condition_label", "why_considered"],
             "additionalProperties": False,
         },
     },
@@ -191,7 +201,14 @@ Rules:
 - image_issues lists every quality problem you notice, even when you could still assess the image.
 - Recommend organic or non-chemical options only where evidence shows they work for this finding.
 - explanation says which visible features led to your conclusion.
+- condition_label is exactly one label from the list below, for the condition primary_finding names. Different wordings of the same condition must get the same label. If the visible change is the natural ageing, drying or shedding of old leaves, sheaths or outer layers with no sign of disease, use the healthy or normal-ageing label, set health_status to "Healthy (normal ageing)" and severity to "none". Use "unknown" only when no label fits. Give each alternative_findings entry its own condition_label from the same list.
+- immediate_actions: 2 to 4 short, safe steps the farmer can do today, for "assessed" and "uncertain" results.
 {_MODE_RULES[mode]}{extra_rules}
+
+Condition labels (label: meaning):
+{conditions.prompt_block(mode)}
+
+Farmer-facing words. farmer_name, detected_part, health_status, symptoms_observed, explanation, what_cannot_be_confirmed, immediate_actions, photo_tips and every alternative's farmer_name and why_considered are read by the farmer: use everyday words, no Latin names and no technical terms (for example say "stem", not "pseudostem"; "drying with age", not "senescence"; "yellowing", not "chlorosis"; "dead patches", not "necrosis"; "spots", not "lesions"). Technical and Latin names go only in primary_finding, each alternative's name, and scientific_name.
 
 Write all text values in plain language a smallholder farmer understands: no Markdown, no emojis."""
 
@@ -233,6 +250,20 @@ def _absent_to_none(data: dict) -> dict:
     return out
 
 
+def _alternatives(mode: str, items) -> list:
+    out = []
+    for a in items or []:
+        if not isinstance(a, dict) or not (isinstance(a.get("name"), str) and a["name"].strip()):
+            continue
+        out.append({
+            "name": a["name"].strip(),
+            "farmer_name": (a.get("farmer_name") or "").strip() or None,
+            "condition_label": conditions.normalize(mode, a.get("condition_label")),
+            "why_considered": a.get("why_considered") or "",
+        })
+    return out
+
+
 def finalize(mode: str, data: dict) -> dict:
     """Map the validated structured reply onto the response keys the Laravel
     DiagnosisResultMapper already reads (backward compatible), plus the new
@@ -262,16 +293,16 @@ def finalize(mode: str, data: dict) -> dict:
 
     out = {
         # Phase 11 contract fields
-        "contract_version": "2026-10-phase11",
+        "contract_version": CONTRACT_VERSION,
         "assessment_outcome": outcome,
         "subject_present": outcome != UNSUPPORTED_SUBJECT,
         "image_quality": data.get("image_quality") if data.get("image_quality") in IMAGE_QUALITY else None,
         "image_issues": [i for i in (data.get("image_issues") or []) if i in IMAGE_ISSUES],
         "photo_tips": [p for p in (data.get("photo_tips") or []) if isinstance(p, str) and p.strip()],
-        "alternative_findings": [] if no_finding else [
-            a for a in (data.get("alternative_findings") or [])
-            if isinstance(a, dict) and a.get("name")
-        ],
+        "alternative_findings": [] if no_finding else _alternatives(mode, data.get("alternative_findings")),
+        # The vote key and its category (conditions.py); the farmer's plain name.
+        "condition_label": None if no_finding else conditions.normalize(mode, data.get("condition_label")),
+        "farmer_name": f("farmer_name"),
         "what_cannot_be_confirmed": data.get("what_cannot_be_confirmed"),
         # Keys the existing mapper reads
         "subject_name": f("subject_name"),
@@ -281,8 +312,9 @@ def finalize(mode: str, data: dict) -> dict:
         "disease": f("primary_finding"),
         "confidence": conf["value"],
         "confidence_valid": conf["valid"],
-        "severity": _title(f("severity")),
-        "urgency": _title(f("urgency")),
+        # An inconclusive result has no single condition to rate.
+        "severity": None if no_treatment else _title(data.get("severity")),
+        "urgency": None if no_treatment else _title(data.get("urgency")),
         "symptoms_identified": None if no_finding else _join(data.get("symptoms_observed")),
         "cause": f("cause"),
         "environmental_factors": f("contributing_factors"),
@@ -294,6 +326,7 @@ def finalize(mode: str, data: dict) -> dict:
         "explanation": data.get("explanation"),
         "scan_type": mode,
     }
+    out["condition_category"] = conditions.category(mode, out["condition_label"])
 
     if mode == "crop":
         out.update({

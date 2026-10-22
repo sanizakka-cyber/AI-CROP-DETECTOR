@@ -326,7 +326,8 @@ class DiagnoseApiController extends Controller
         MobileNotification::send(
             $request->user()->id,
             $notifTitle,
-            "Diagnosis: {$diagnosis->disease_name} · Tap to view treatment plan",
+            // The same headline the result screen shows: never one candidate's name for an inconclusive scan.
+            $diagnosis->resultView()['headline'] . ' · ' . __('Tap to view the result'),
             'scan',
             ['diagnosis_id' => $diagnosis->id]
         );
@@ -337,7 +338,7 @@ class DiagnoseApiController extends Controller
     /** One place building the cache payload mobile's show() serves immediately after a scan — kept in sync with the full field set both success and fallback paths now populate. */
     private function cacheScanPayload(Diagnosis $diagnosis, ?string $imagePath): void
     {
-        cache()->put("diagnosis:v2:{$diagnosis->id}", $this->shapeDiagnosis($diagnosis, $imagePath), now()->addHours(24));
+        cache()->put("diagnosis:v3:{$diagnosis->id}", $this->shapeDiagnosis($diagnosis, $imagePath), now()->addHours(24));
     }
 
     /** Shared response shape for show()/history()/the post-scan cache — one mapping from a Diagnosis row to the JSON mobile actually renders. */
@@ -351,6 +352,15 @@ class DiagnoseApiController extends Controller
             ->first();
 
         $loc = $d->collectionLocation;
+        // Headline, health, severity, urgency, causes and steps: one source
+        // (App\Support\ResultView), shared with the web page and the PDF.
+        // The payload is only ever served to the scan's owner, so they are the viewer.
+        $view = $d->resultView($d->user);
+        $technical = $view['technical'];
+        unset($view['technical']);
+        $sevLevel = $view['severity'] ? ucfirst($view['severity']) : null;
+        $plain = fn (?string $text) => \App\Support\FarmerText::plain($text);
+        $urgLevel = $view['urgency'] ? ucfirst($view['urgency']) : null;
 
         return [
             'diagnosisId'      => $d->id,
@@ -366,27 +376,31 @@ class DiagnoseApiController extends Controller
             'createdAt'        => $d->created_at->toISOString(),
             'image_path'       => $imageUrl,
             'subjectName'      => $d->subject_name,
-            'scientificName'   => $d->scientific_name,
-            'detectedPart'     => $d->detected_part,
+            // Latin names stay off the farmer's screen; staff get them under `technical`.
+            'scientificName'   => $technical ? $d->scientific_name : null,
+            'detectedPart'     => $view['detected_part'],
             'aiResult' => [
-                'primaryDiagnosis'    => $d->disease_name,
+                // The farmer's plain name, or the inconclusive headline (older app
+                // builds show this as the title, so never one candidate's name).
+                'primaryDiagnosis'    => $view['name'] ?? $view['headline'],
                 'confidence'          => $d->confidence_score,
                 'confidenceLabel'     => $d->confidenceLabel,
                 // One severity value (App\Support\Severity): `severity` is the
                 // lowercase key of severity_level, never urgency (that was the
                 // HIGH-badge vs Moderate-details bug). Urgency has its own keys.
-                // A failed scan (older records) has no severity or urgency at all.
-                'severity'            => $d->is_failed_scan ? null : $d->severity_key,
-                'severityLevel'       => $d->is_failed_scan ? null : $d->severity_level,
-                'urgency'             => $d->is_failed_scan ? null : $d->urgency_key,
-                'urgencyLevel'        => $d->is_failed_scan ? null : $d->urgency_level,
-                'healthStatus'        => $d->health_status,
-                'likelyCauses'        => $d->cause ? [$d->cause] : [],
-                'symptomsIdentified'  => $d->symptoms_identified,
-                'environmentalFactors'=> $d->environmental_factors,
+                // None at all for a failed or inconclusive scan (ResultView).
+                'severity'            => $view['severity'],
+                'severityLevel'       => $sevLevel,
+                'urgency'             => $view['urgency'],
+                'urgencyLevel'        => $urgLevel,
+                'healthStatus'        => $view['health']['label'] ?? null,
+                // Farmer-facing text in plain words (FarmerText); originals under `technical`.
+                'likelyCauses'        => $d->cause ? [$plain($d->cause)] : [],
+                'symptomsIdentified'  => $plain($d->symptoms_identified),
+                'environmentalFactors'=> $plain($d->environmental_factors),
                 'nutrientDeficiencies'=> $d->nutrient_deficiencies,
                 'pestDetection'       => $d->pest_detection,
-                'explanation'         => $d->explanation,
+                'explanation'         => $plain($d->explanation),
             ],
             // Confidence provenance (spec 4.5) — always present so the
             // client can render an honest "what does this number mean"
@@ -425,14 +439,19 @@ class DiagnoseApiController extends Controller
                 'imageQuality'          => $d->image_quality,
                 'imageIssues'           => $d->image_issues ?? [],
                 'photoTips'             => $d->photo_tips ?? [],
-                'alternativeFindings'   => $d->alternative_findings ?? [],
-                'whatCannotBeConfirmed' => $d->what_cannot_be_confirmed,
+                'alternativeFindings'   => array_map(fn ($a) => [
+                    'name'           => $plain(($a['farmer_name'] ?? null) ?: ($a['name'] ?? '')),
+                    'why_considered' => $plain($a['why_considered'] ?? null) ?? '',
+                ], $d->alternative_findings ?? []),
+                'whatCannotBeConfirmed' => $plain($d->what_cannot_be_confirmed),
                 'contractVersion'       => $d->contract_version,
                 // Low-confidence rule: below minConfidence the app shows "Not certain"
                 // with these possible conditions instead of one diagnosis.
-                'notCertain'            => $d->is_not_certain,
+                // Every inconclusive result (no single finding, or below minConfidence):
+                // older app builds then show "Not certain" with these possible causes.
+                'notCertain'            => $view['inconclusive'],
                 'minConfidence'         => Diagnosis::minConfidence(),
-                'possibleConditions'    => $d->is_not_certain ? $d->possible_conditions : [],
+                'possibleConditions'    => $view['possible_causes'],
                 // Buffer zone: "Likely X, please confirm with a vet or extension officer".
                 'needsConfirmation'     => $d->needs_confirmation,
                 // The AI never completed this scan: no diagnosis, urgency or narration.
@@ -440,10 +459,16 @@ class DiagnoseApiController extends Controller
                 'confirmBelow'          => Diagnosis::confirmBelow(),
                 // How the engine's repeat analyses agreed (null for older scans).
                 'consensus'             => $d->ai_consensus,
+                // What the result screen shows (App\Support\ResultView). Step and tip
+                // `key`s are translated by the app; `text` is English or the AI's own
+                // words, already in the farmer's language.
+                'result'                => $view,
             ],
+            // Staff only (admin, ceo, customer-support): the unsimplified record.
+            'technical'        => $technical,
             'dataQualityStatus' => $d->dataQualityStatus,
             'treatmentPlan' => [
-                'immediateActions' => $d->first_aid_steps ? [['action' => $d->first_aid_steps]] : [],
+                'immediateActions' => $d->first_aid_steps ? [['action' => $plain($d->first_aid_steps)]] : [],
                 'chemicalTreatments' => $d->recommended_medication ? [['product' => $d->recommended_medication]] : [],
                 'preventiveMeasures' => $d->preventive_measures,
                 'fertilizerRecommendation' => $d->fertilizer_recommendation,
@@ -459,7 +484,7 @@ class DiagnoseApiController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         // 1. Try hot cache first (populated immediately after scan)
-        $result = cache()->get("diagnosis:v2:{$id}");
+        $result = cache()->get("diagnosis:v3:{$id}");
 
         if ($result) {
             if ((int) $result['userId'] !== $request->user()->id) {
@@ -487,39 +512,47 @@ class DiagnoseApiController extends Controller
             ->latest()
             ->paginate(20);
 
-        $shaped = $diagnoses->map(fn ($d) => [
-            'id'                    => $d->id,
-            'scan_ref'              => $d->scan_ref,
-            'type'                  => match ($d->type) {
-                'plant'  => 'crop',
-                'animal' => 'livestock',
-                default  => $d->type,
-            },
-            'subject_name'          => $d->subject_name,
-            'disease_name'          => $d->disease_name,
-            'confidence_score'      => $d->confidence_score,
-            'confidence_label'      => $d->confidenceLabel,
-            'urgency_level'         => $d->is_failed_scan ? null : $d->urgency_level,
-            'failed_scan'           => $d->is_failed_scan,
-            'severity_level'        => $d->severity_level,
-            'severity'              => $d->severity_key,
-            'cause'                 => $d->cause,
-            'first_aid_steps'       => $d->first_aid_steps,
-            'recommended_medication'=> $d->recommended_medication,
-            'vet_referral_advice'   => $d->vet_referral_advice,
-            'status'                => $d->status === 'confirmed' ? 'processed' : $d->status,
-            'status_label'          => $d->statusLabel,
-            'image_path'            => $d->image_thumbnail ?? ($d->image_path ? asset('storage/' . $d->image_path) : null),
-            'created_at'            => $d->created_at->toISOString(),
-            // The history list previously carried no location information
-            // at all, despite the single-diagnosis detail endpoint (below)
-            // having a full location section -- a lightweight label is
-            // enough for a list row; the detail screen still has the full
-            // picture (coordinates, provenance, verification status).
-            'location_label'        => $d->collectionLocation
-                ? (trim(implode(', ', array_filter([$d->collectionLocation->lga, $d->collectionLocation->state]))) ?: 'Location recorded')
-                : null,
-        ]);
+
+        $shaped = $diagnoses->map(function ($d) {
+            $v = $d->resultView();
+            return [
+                'id'                    => $d->id,
+                'scan_ref'              => $d->scan_ref,
+                'type'                  => match ($d->type) {
+                    'plant'  => 'crop',
+                    'animal' => 'livestock',
+                    default  => $d->type,
+                },
+                'subject_name'          => $d->subject_name,
+                // The row title is the result screen's headline (App\Support\ResultView):
+                // never one candidate's name for an inconclusive scan.
+                'disease_name'          => $v['name'] ?? $v['headline'],
+                'headline'              => $v['headline'],
+                'inconclusive'          => $v['inconclusive'],
+                'confidence_score'      => $d->confidence_score,
+                'confidence_label'      => $d->confidenceLabel,
+                'urgency_level'         => $v['urgency'] ? ucfirst($v['urgency']) : null,
+                'failed_scan'           => $d->is_failed_scan,
+                'severity_level'        => $v['severity'] ? ucfirst($v['severity']) : null,
+                'severity'              => $v['severity'],
+                'cause'                 => $d->cause,
+                'first_aid_steps'       => $d->first_aid_steps,
+                'recommended_medication'=> $d->recommended_medication,
+                'vet_referral_advice'   => $d->vet_referral_advice,
+                'status'                => $d->status === 'confirmed' ? 'processed' : $d->status,
+                'status_label'          => $d->statusLabel,
+                'image_path'            => $d->image_thumbnail ?? ($d->image_path ? asset('storage/' . $d->image_path) : null),
+                'created_at'            => $d->created_at->toISOString(),
+                // The history list previously carried no location information
+                // at all, despite the single-diagnosis detail endpoint (below)
+                // having a full location section -- a lightweight label is
+                // enough for a list row; the detail screen still has the full
+                // picture (coordinates, provenance, verification status).
+                'location_label'        => $d->collectionLocation
+                    ? (trim(implode(', ', array_filter([$d->collectionLocation->lga, $d->collectionLocation->state]))) ?: 'Location recorded')
+                    : null,
+            ];
+        });
 
         return response()->json([
             'data'         => $shaped,
