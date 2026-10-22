@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
+    public const PERMISSIONS_POLICY = 'camera=(self), microphone=(self), geolocation=(self), payment=()';
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
@@ -15,7 +17,11 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+        // (self): only msasagro.com itself may ask for these; embedded third-party
+        // pages still cannot. The empty () used here before made the browser refuse
+        // "Use my location" and the AI assistant's voice input without even asking.
+        // Keep in step with docker/nginx.conf (tests/Feature/SecurityHeadersTest.php).
+        $response->headers->set('Permissions-Policy', self::PERMISSIONS_POLICY);
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
         // Content-Security-Policy: blocks injected scripts from untrusted origins,
