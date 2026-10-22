@@ -15,13 +15,14 @@ const results = [];
 for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]]) {
   const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 2 });
   await page.goto(`${base}/login`);
-  // The login fields are readonly until focused (an autofill guard).
-  for (const [sel, val] of [['input[name="login"]', 'umar.demo@example.test'], ['input[name="password"]', 'screenshot-only']]) {
-    await page.focus(sel);
-    await page.fill(sel, val);
-  }
-  await Promise.all([page.waitForNavigation(), page.click('button[type="submit"]')]);
+  // Post the login form directly (the page's own submit goes through script);
+  // the session cookie lands in this page's context.
+  const token = await page.inputValue('input[name="_token"]');
+  await page.request.post(`${base}/login`, { form: { _token: token, login: 'umar.demo@example.test', password: 'screenshot-only' } });
   await page.goto(`${base}/diagnostics/history`, { waitUntil: 'networkidle' });
+  if (!page.url().includes('/diagnostics/history')) {
+    throw new Error(`Not logged in: ended on ${page.url()}`);
+  }
 
   // Label/value pairs in the side panel, on either version of the page.
   const pairs = await page.evaluate(() => {
