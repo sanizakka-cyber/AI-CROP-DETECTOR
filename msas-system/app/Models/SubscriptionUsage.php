@@ -19,7 +19,9 @@ class SubscriptionUsage extends Model
     public static function track(int $userId, string $featureKey, int $by = 1): void
     {
         $period = now()->format('Y-m');
-        static::updateOrCreate(
+        // firstOrCreate, not updateOrCreate: updateOrCreate wrote count = 0 on
+        // every call, so each counter reset and never passed 1.
+        static::firstOrCreate(
             ['user_id' => $userId, 'feature_key' => $featureKey, 'period' => $period],
             ['count' => 0]
         );
