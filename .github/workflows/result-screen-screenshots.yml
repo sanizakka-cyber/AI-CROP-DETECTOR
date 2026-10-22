@@ -12,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'msas-system/resources/views/diagnostics/**'
+      - 'msas-system/resources/views/layouts/**'
       - 'msas-system/resources/css/**'
       - 'msas-system/app/Support/**'
       - 'msas-system/tests/Visual/**'

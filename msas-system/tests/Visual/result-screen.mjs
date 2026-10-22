@@ -48,12 +48,15 @@ for (const [label, width] of [['phone', 390], ['tablet', 768], ['desktop', 1280]
   // The result card itself (other elements share its classes on small screens).
   const card = page.locator('div.bg-white.rounded-2xl.shadow-md', { has: page.locator('[data-i18n="Detected Part"]') }).first();
   await card.screenshot({ path: path.join(outDir, `${name}-${label}.png`) });
+  // The card must get most of a phone's width (an open sidebar once left it ~86px).
+  const cardWidth = (await card.boundingBox()).width;
+  results.push({ width: label, label: 'card width', value: `${Math.round(cardWidth)}px`, a: {}, b: {}, bad: label === 'phone' && cardWidth < 300 });
   await page.close();
 }
 await browser.close();
 
 fs.writeFileSync(path.join(outDir, `${name}-layout.json`), JSON.stringify(results, null, 1));
 const bad = results.filter(r => r.bad);
-console.log(`${name}: ${results.length} label/value pairs checked, ${bad.length} overlapping`);
-bad.forEach(r => console.log(`  ${r.width}: "${r.label}" overlaps "${r.value}"`));
+console.log(`${name}: ${results.length} checks (label/value overlap, card width), ${bad.length} failed`);
+bad.forEach(r => console.log(`  ${r.width}: "${r.label}" / "${r.value}"`));
 if (strict && (bad.length || !results.length)) process.exit(1);
