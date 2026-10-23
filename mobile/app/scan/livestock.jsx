@@ -14,6 +14,7 @@ import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Th
 import { Button, LoadingOverlay } from '../../components/UI';
 import LocationCaptureSection from '../../components/LocationCaptureSection';
 import { showScanError } from '../../lib/scanErrors';
+import { saveScanOffline } from '../../lib/scanQueue';
 
 const ANIMALS = [
   { id: 'cattle',  icon: '🐄', name: 'Cattle / Shanu' },
@@ -105,10 +106,11 @@ export default function LivestockScanScreen() {
     }
 
     setLoading(true);
+    let payload = null;
     try {
       if (!scanIdRef.current) scanIdRef.current = newClientScanId();
       setUploadPct(0);
-      const { diagnosisId } = await diagnoseAPI.livestock({
+      payload = {
         clientScanId: scanIdRef.current,
         onProgress: setUploadPct,
         animalType: animal.id,
@@ -117,10 +119,12 @@ export default function LivestockScanScreen() {
         symptoms,
         behavioral: { notes },
         location: loc.toApiFields(),
-      });
+      };
+      const { diagnosisId } = await diagnoseAPI.livestock(payload);
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
-      // Coded failure from the server (or a lost connection): plain message,
+      // No internet: the scan, its photos and GPS point are saved on the phone and sent later.
+      if (await saveScanOffline(e, 'livestock', payload, { t, router })) return;      // Coded failure from the server (or a lost connection): plain message,
       // reference, next step; staff also get technical details.
       showScanError(e, {
         lang: i18n.language,

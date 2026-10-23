@@ -228,7 +228,54 @@
                     </div>
 
                     <div id="locGpsStatus" class="hidden mb-3 text-xs rounded-lg p-2" aria-live="polite"></div>
+
+                    {{-- While the GPS is being watched: the accuracy as it improves --}}
+                    <div id="locProgress" class="hidden mb-3 flex flex-wrap items-center gap-2 bg-emerald-50 text-emerald-800 text-xs rounded-lg p-2" aria-live="polite" data-loc-progress="1">
+                        <span class="inline-block w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                        <span id="locProgressText" class="font-semibold"></span>
+                        <button type="button" id="locStopNow" onclick="stopCaptureNow()" class="hidden ml-auto font-bold underline">{{ __('Use this reading now') }}</button>
+                    </div>
+
+                    {{-- A failure never blocks the scan: what to do, try again, or enter by hand --}}
+                    <div id="locError" class="hidden mb-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg p-3" role="alert" data-loc-error="">
+                        <p id="locErrorText" class="font-semibold"></p>
+                        <ul id="locErrorHelp" class="list-disc ml-4 mt-1 space-y-0.5"></ul>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <button type="button" onclick="useMyLocation()" class="font-bold text-white bg-red-700 hover:bg-red-800 px-3 py-1.5 rounded-lg">{{ __('Try again') }}</button>
+                            <button type="button" onclick="useManualEntry()" class="font-bold text-red-800 bg-white border border-red-300 px-3 py-1.5 rounded-lg">{{ __('Enter manually instead') }}</button>
+                        </div>
+                    </div>
+
+                    {{-- The captured point, to check before submitting --}}
+                    <div id="locResult" class="hidden mb-3 border border-slate-200 rounded-lg p-3" data-loc-result="1">
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <span id="locRating" class="px-2 py-0.5 rounded-full font-bold" data-rating=""></span>
+                            <span id="locAccText" class="font-semibold text-slate-700"></span>
+                            <span id="locAdjusted" class="hidden text-slate-500">{{ __('Point adjusted on the map by you.') }}</span>
+                            <a id="locGmaps" href="#" target="_blank" rel="noopener" class="ml-auto font-bold text-emerald-700 hover:underline">{{ __('Open in Google Maps') }} ↗</a>
+                        </div>
+                        <dl class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1 text-xs mt-2">
+                            <div><dt class="text-slate-400">{{ __('Latitude') }}</dt><dd id="locLatText" class="font-mono text-slate-700"></dd></div>
+                            <div><dt class="text-slate-400">{{ __('Longitude') }}</dt><dd id="locLonText" class="font-mono text-slate-700"></dd></div>
+                            <div><dt class="text-slate-400">{{ __('Accuracy') }}</dt><dd id="locAccCell" class="text-slate-700"></dd></div>
+                            <div><dt class="text-slate-400">{{ __('Time captured') }}</dt><dd id="locTimeText" class="text-slate-700"></dd></div>
+                        </dl>
+                        <div id="locMap" class="mt-2 h-56 rounded-lg border border-slate-200 bg-slate-100 relative z-0 isolate" role="img" aria-label="{{ __('Map preview of the captured location') }}"></div>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ __('Drag the pin if it is not where the sample was collected.') }}</p>
+                        <div id="locAdvice" class="hidden mt-2 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg p-2" data-loc-advice="1">
+                            <p id="locAdviceText" class="font-semibold"></p>
+                            <ul class="list-disc ml-4 mt-1 space-y-0.5">
+                                <li>{{ __('Go outside, away from buildings and trees.') }}</li>
+                                <li>{{ __('Wait a few seconds for the signal to settle.') }}</li>
+                                <li>{{ __('Turn on your phone\'s high-accuracy location mode.') }}</li>
+                            </ul>
+                            <p id="locDesktopHint" class="hidden mt-1 font-semibold">{{ __('This computer has no GPS, so its location comes from Wi-Fi and can be hundreds of metres out. For a precise location, use the MSAS app or your phone\'s browser in the field.') }}</p>
+                            <button type="button" onclick="useMyLocation()" class="mt-2 font-bold text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg">{{ __('Try again') }}</button>
+                        </div>
+                    </div>
+
                     <p id="locNamesSource" class="hidden mb-3 text-xs text-slate-500"></p>
+                    <p class="mb-3 text-[11px] text-slate-400">{{ __('Privacy: the exact point is visible only to you and authorised MSAS staff. Reports, exports, research data and outbreak maps show the State and LGA only.') }}</p>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -278,6 +325,8 @@
                     <input type="hidden" id="locScanLatitude" name="loc_scan_latitude" value="">
                     <input type="hidden" id="locScanLongitude" name="loc_scan_longitude" value="">
                     <input type="hidden" id="locScanAccuracy" name="loc_scan_accuracy_meters" value="">
+                    <input type="hidden" id="locOrigLatitude" name="loc_gps_original_latitude" value="">
+                    <input type="hidden" id="locOrigLongitude" name="loc_gps_original_longitude" value="">
                 </div>
 
                 <!-- Tips -->
@@ -337,9 +386,16 @@
         $locText = [
             'lookupUrl'      => route('diagnostics.location-lookup'),
             'requesting'     => __('Requesting your location…'),
-            'captured'       => __('Location captured (±:accm).'),
-            'lowAccuracy'    => __('Accuracy is low — consider moving to open ground and trying again, or proceed with this estimate.'),
+            'gettingFirst'   => __('Getting your location… ±:to m'),
+            'improving'      => __('Improving accuracy… ±:from m → ±:to m'),
+            'captured'       => __('Location captured: ±:acc m (:rating).'),
+            'bestIn30'       => __('This is the best reading in 30 seconds.'),
+            'adviceFairLow'  => __('The accuracy is :rating (±:acc m). For a better reading:'),
             'checkNames'     => __('Check the State and LGA below.'),
+            'ratings'        => ['excellent' => __('Excellent'), 'good' => __('Good'), 'fair' => __('Fair'), 'low' => __('Low')],
+            'deniedHelp'     => [__('Click the lock or site-settings icon next to the web address.'), __('Open Location and choose Allow.'), __('Then press Try again.')],
+            'unavailableHelp' => [__('Check that location (GPS) is turned on for this device.'), __('Go outside, away from buildings and trees.')],
+            'noSignal'       => __('No location was found within 30 seconds. Go outside, away from buildings and trees, and try again.'),
             'lookingUp'      => __('Finding your State and LGA…'),
             'filledFrom'     => __('Filled from your GPS point: :place. Change them if they are wrong.'),
             'notFound'       => __('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.'),
@@ -347,12 +403,14 @@
             'namesChanged'   => __('You changed the State or LGA found from GPS. Your choice will be saved.'),
             'scanPlaceSaved' => __('Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.'),
             'unsupported'    => __('Your browser does not support location capture. Please select your state/LGA manually.'),
-            'denied'         => __('Location permission denied. You can still select your state/LGA manually below.'),
-            'unavailable'    => __('Location unavailable right now. You can still select your state/LGA manually below.'),
-            'timedOut'       => __('Location request timed out. You can still select your state/LGA manually below.'),
+            'denied'         => __('This site is not allowed to use your location.'),
+            'unavailable'    => __('Your device could not find its location.'),
             'failed'         => __('Could not get your location. You can still select your state/LGA manually below.'),
         ];
     @endphp
+    {{-- GPS capture (best reading over 30 s) and the map preview with a draggable pin --}}
+    <script src="{{ asset('js/gps-quality.js') }}"></script>
+    @vite('resources/js/location-map.js')
     <script>
     // Nigeria states + LGAs — same server-side dataset the backend
     // validates against (App\Data\NigeriaLocations), so client and server
@@ -430,17 +488,47 @@
         document.getElementById('locLga').value = lga || '';
     }
 
+    var locCapture = null;     // the running MsasGps.captureBest(), if any
+    var locOriginal = null;    // the device's own fix once the pin has been moved
+
+    function fmtAcc(m) { return m < 10 ? (Math.round(m * 10) / 10).toString() : String(Math.round(m)); }
+    function ratingLabel(r) { return LOC_TEXT.ratings[r] || r; }
+
+    function hide(id, hidden) { document.getElementById(id).classList.toggle('hidden', hidden !== false); }
+
+    function showProgress(text, canStop) {
+        document.getElementById('locProgressText').textContent = text;
+        hide('locStopNow', !canStop);
+        hide('locProgress', false);
+    }
+
+    function showLocError(code) {
+        var text = { denied: LOC_TEXT.denied, unavailable: LOC_TEXT.unavailable, timeout: LOC_TEXT.noSignal, unsupported: LOC_TEXT.unsupported }[code] || LOC_TEXT.failed;
+        var help = { denied: LOC_TEXT.deniedHelp, unavailable: LOC_TEXT.unavailableHelp }[code] || [];
+        document.getElementById('locErrorText').textContent = text;
+        var list = document.getElementById('locErrorHelp');
+        list.innerHTML = '';
+        help.forEach(function (h) { var li = document.createElement('li'); li.textContent = h; list.appendChild(li); });
+        document.getElementById('locError').setAttribute('data-loc-error', code);
+        hide('locError', false);
+    }
+
     function clearCollectionFix() {
-        ['locLatitude', 'locLongitude', 'locAccuracy', 'locGpsAt', 'locNamesFrom'].forEach(function (id) { setVal(id, ''); });
+        ['locLatitude', 'locLongitude', 'locAccuracy', 'locGpsAt', 'locNamesFrom', 'locOrigLatitude', 'locOrigLongitude'].forEach(function (id) { setVal(id, ''); });
         if (locFilled) { setStateAndLga('', ''); }
         locFix = null;
         locFilled = false;
+        locOriginal = null;
         showNamesSource('');
+        hide('locResult');
     }
 
     function useManualEntry() {
+        if (locCapture) { var c = locCapture; locCapture = null; c.stop(); }
         setLocMode('manual');
         clearCollectionFix();
+        hide('locProgress');
+        hide('locError');
         setVal('locSource', 'manual');
         setVal('locCaptureMethod', val('locState') ? 'administrative_selection' : '');
         showLocStatus(null);
@@ -456,7 +544,8 @@
         }
         if (locFilled) {
             locFilled = false;
-            setVal('locSource', 'gps_edited');
+            // A moved pin stays "adjusted"; the names are recorded as the farmer's either way.
+            if (!locOriginal) { setVal('locSource', 'gps_edited'); }
             setVal('locNamesFrom', 'user');
             showNamesSource(LOC_TEXT.namesChanged);
         }
@@ -474,7 +563,8 @@
             return;
         }
         if (val('locLatitude')) {
-            setScanPlace({ lat: val('locLatitude'), lon: val('locLongitude'), acc: val('locAccuracy') });
+            // The device's fix is where the phone is: the scan place.
+            setScanPlace({ lat: locOriginal ? locOriginal.lat : val('locLatitude'), lon: locOriginal ? locOriginal.lon : val('locLongitude'), acc: val('locAccuracy') });
             useManualEntry();
             showLocStatus('ok', LOC_TEXT.scanPlaceSaved);
         }
@@ -492,46 +582,128 @@
             setVal('locNamesFrom', 'lookup');
             showNamesSource(LOC_TEXT.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
         }).catch(function () {
+            // Keep the coordinates: the server fills the names on submit, or the farmer picks them.
             if (locFix === fix) { showNamesSource(LOC_TEXT.fillOnSubmit); }
         });
     }
 
-    function useMyLocation() {
-        setLocMode('gps');
-        if (!('geolocation' in navigator)) {
+    // The point the form will submit, shown for checking: coordinates, the
+    // accuracy the device reported (never rounded down to look better), its
+    // rating, the time, and the map with a pin the farmer can drag.
+    function showResult(fix) {
+        var r = MsasGps.rating(fix.acc);
+        var badge = document.getElementById('locRating');
+        badge.textContent = ratingLabel(r);
+        badge.setAttribute('data-rating', r);
+        badge.className = 'px-2 py-0.5 rounded-full font-bold ' + ({
+            excellent: 'bg-emerald-100 text-emerald-800', good: 'bg-sky-100 text-sky-800',
+            fair: 'bg-amber-100 text-amber-800', low: 'bg-red-100 text-red-800',
+        }[r]);
+        document.getElementById('locAccText').textContent = '±' + fmtAcc(fix.acc) + ' m';
+        document.getElementById('locAccCell').textContent = '±' + fmtAcc(fix.acc) + ' m';
+        document.getElementById('locTimeText').textContent = new Date(fix.at).toLocaleString();
+        showPoint(fix.lat, fix.lon);
+        hide('locAdjusted');
+
+        var advice = MsasGps.needsRetry(r);
+        hide('locAdvice', !advice);
+        if (advice) {
+            document.getElementById('locAdviceText').textContent = LOC_TEXT.adviceFairLow.replace(':rating', ratingLabel(r)).replace(':acc', fmtAcc(fix.acc));
+        }
+        hide('locDesktopHint', !(advice && fix.acc > 50 && MsasGps.isLikelyDesktop(navigator, window)));
+        hide('locResult', false);
+
+        if (window.MsasMap) {
+            window.MsasMap.show(document.getElementById('locMap'), {
+                lat: fix.lat, lon: fix.lon, accuracy: fix.acc, onMove: onPinMoved,
+            });
+        } else {
+            hide('locMap');
+        }
+    }
+
+    function showPoint(lat, lon) {
+        document.getElementById('locLatText').textContent = Number(lat).toFixed(6);
+        document.getElementById('locLonText').textContent = Number(lon).toFixed(6);
+        document.getElementById('locGmaps').href = 'https://www.google.com/maps?q=' + lat + ',' + lon;
+    }
+
+    // The farmer moved the pin: that point is submitted, the device's fix is kept beside it.
+    function onPinMoved(lat, lon) {
+        if (!locOriginal) {
+            locOriginal = { lat: val('locLatitude'), lon: val('locLongitude') };
+            setVal('locOrigLatitude', locOriginal.lat);
+            setVal('locOrigLongitude', locOriginal.lon);
+        }
+        setVal('locLatitude', lat);
+        setVal('locLongitude', lon);
+        setVal('locSource', 'gps_adjusted');
+        showPoint(lat, lon);
+        hide('locAdjusted', false);
+        // Names the lookup filled follow the pin; names the farmer chose stay.
+        if (locFilled || !val('locState')) {
+            locFix = { lat: lat, lon: lon };
+            lookupNames(locFix);
+        }
+    }
+
+    function applyFix(fix, reason) {
+        fix = { lat: fix.lat, lon: fix.lon, acc: fix.accuracy, at: new Date(fix.timestamp || Date.now()).toISOString() };
+        if (document.getElementById('locDiffers').checked) {
+            setScanPlace(fix);
             useManualEntry();
-            showLocStatus('error', LOC_TEXT.unsupported);
+            showLocStatus('ok', LOC_TEXT.scanPlaceSaved);
             return;
         }
-        showLocStatus('ok', LOC_TEXT.requesting);
+        clearCollectionFix();
+        setVal('locLatitude', fix.lat);
+        setVal('locLongitude', fix.lon);
+        setVal('locAccuracy', Math.round(fix.acc * 10) / 10);
+        setVal('locGpsAt', fix.at);
+        setVal('locCaptureMethod', 'gps_device');
+        setVal('locSource', 'gps');
+        locFix = fix;
+        var r = MsasGps.rating(fix.acc);
+        showLocStatus(MsasGps.needsRetry(r) ? 'warn' : 'ok',
+            LOC_TEXT.captured.replace(':acc', fmtAcc(fix.acc)).replace(':rating', ratingLabel(r))
+            + (reason === 'window' ? ' ' + LOC_TEXT.bestIn30 : '') + ' ' + LOC_TEXT.checkNames);
+        showResult(fix);
+        lookupNames(fix);
+    }
 
-        navigator.geolocation.getCurrentPosition(function (pos) {
-            var acc = Math.round(pos.coords.accuracy || 0);
-            var fix = {
-                lat: pos.coords.latitude, lon: pos.coords.longitude, acc: acc,
-                at: new Date(pos.timestamp || Date.now()).toISOString(),
-            };
-            if (document.getElementById('locDiffers').checked) {
-                setScanPlace(fix);
-                useManualEntry();
-                showLocStatus('ok', LOC_TEXT.scanPlaceSaved);
-                return;
-            }
-            clearCollectionFix();
-            setVal('locLatitude', fix.lat);
-            setVal('locLongitude', fix.lon);
-            setVal('locAccuracy', acc);
-            setVal('locGpsAt', fix.at);
-            setVal('locCaptureMethod', 'gps_device');
-            setVal('locSource', 'gps');
-            locFix = fix;
-            showLocStatus(acc > 100 ? 'warn' : 'ok', LOC_TEXT.captured.replace(':acc', acc) + ' ' + (acc > 100 ? LOC_TEXT.lowAccuracy : LOC_TEXT.checkNames));
-            lookupNames(fix);
+    function stopCaptureNow() { if (locCapture) { locCapture.stop(); } }
+
+    // Watches the GPS for up to 30 s for a fresh position (no cached one),
+    // keeps the best reading, and stops as soon as it is 5 m or better.
+    function useMyLocation() {
+        setLocMode('gps');
+        hide('locError');
+        showLocStatus(null);
+        if (locCapture) { var old = locCapture; locCapture = null; old.stop(); }
+        if (!('geolocation' in navigator) || !window.MsasGps) {
+            showLocError('unsupported');
+            return;
+        }
+        showProgress(LOC_TEXT.requesting, false);
+        var capture = MsasGps.captureBest(navigator.geolocation, {
+            onProgress: function (best, first) {
+                showProgress(first.accuracy > best.accuracy
+                    ? LOC_TEXT.improving.replace(':from', fmtAcc(first.accuracy)).replace(':to', fmtAcc(best.accuracy))
+                    : LOC_TEXT.gettingFirst.replace(':to', fmtAcc(best.accuracy)), true);
+            },
+        });
+        locCapture = capture;
+        capture.promise.then(function (res) {
+            if (locCapture !== capture) { return; } // replaced or cancelled
+            locCapture = null;
+            hide('locProgress');
+            applyFix(res.fix, res.reason);
         }, function (err) {
-            var msg = { 1: LOC_TEXT.denied, 2: LOC_TEXT.unavailable, 3: LOC_TEXT.timedOut }[err.code] || LOC_TEXT.failed;
-            useManualEntry();
-            showLocStatus('error', msg);
-        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+            if (locCapture !== capture) { return; }
+            locCapture = null;
+            hide('locProgress');
+            showLocError(err.code);
+        });
     }
 
     function setScanType(type) {

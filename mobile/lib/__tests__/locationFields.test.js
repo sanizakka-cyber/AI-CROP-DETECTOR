@@ -125,3 +125,18 @@ describe('buildLocationApiFields — the two ways of recording a location', () =
     expect(unticked.loc_scan_latitude).toBeUndefined();
   });
 });
+
+describe('buildLocationApiFields — mocked flag and a moved pin', () => {
+  const coords = { latitude: 11.53, longitude: 7.33, accuracy: 4 };
+  test('the mocked flag is sent once known, as 1 or 0', () => {
+    expect(buildLocationApiFields({ coords, isMocked: true }).loc_is_mocked).toBe('1');
+    expect(buildLocationApiFields({ coords, isMocked: false }).loc_is_mocked).toBe('0');
+    expect('loc_is_mocked' in buildLocationApiFields({ coords })).toBe(false);
+  });
+
+  test('a moved pin sends the device\'s own fix beside the farmer\'s point', () => {
+    const fields = buildLocationApiFields({ coords, locationSource: 'gps_adjusted', originalCoords: { latitude: 11.523, longitude: 7.312 } });
+    expect(fields).toMatchObject({ loc_latitude: '11.53', loc_gps_original_latitude: '11.523', loc_gps_original_longitude: '7.312' });
+    expect('loc_gps_original_latitude' in buildLocationApiFields({ coords, locationSource: 'gps', originalCoords: { latitude: 1, longitude: 2 } })).toBe(false);
+  });
+});

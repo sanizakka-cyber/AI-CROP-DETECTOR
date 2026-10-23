@@ -15,6 +15,7 @@ import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Th
 import { Button, LoadingOverlay } from '../../components/UI';
 import LocationCaptureSection from '../../components/LocationCaptureSection';
 import { showScanError } from '../../lib/scanErrors';
+import { saveScanOffline } from '../../lib/scanQueue';
 
 function QualityIndicator({ score, warnings }) {
   const { label, color } = qualityLabel(score);
@@ -93,20 +94,23 @@ export default function PestScanScreen() {
     }
 
     setLoading(true);
+    let payload = null;
     try {
       if (!scanIdRef.current) scanIdRef.current = newClientScanId();
       setUploadPct(0);
-      const { diagnosisId } = await diagnoseAPI.pest({
+      payload = {
         clientScanId: scanIdRef.current,
         onProgress: setUploadPct,
         cropType: cropType.trim() || undefined,
         locationHint: regionHint.trim() || undefined,
         images,
         location: loc.toApiFields(),
-      });
+      };
+      const { diagnosisId } = await diagnoseAPI.pest(payload);
       router.replace(`/diagnosis/${diagnosisId}`);
     } catch (e) {
-      // Coded failure from the server (or a lost connection): plain message,
+      // No internet: the scan, its photos and GPS point are saved on the phone and sent later.
+      if (await saveScanOffline(e, 'pest', payload, { t, router })) return;      // Coded failure from the server (or a lost connection): plain message,
       // reference, next step; staff also get technical details.
       showScanError(e, {
         lang: i18n.language,

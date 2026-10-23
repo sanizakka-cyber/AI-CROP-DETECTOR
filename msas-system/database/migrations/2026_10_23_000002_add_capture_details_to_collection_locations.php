@@ -7,15 +7,20 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Two ways to record where a sample was collected: GPS capture or manual
  * entry. Adds how the location was entered (location_source: gps, manual,
- * gps_edited), when the GPS fix was taken, how State/LGA were filled
- * (place_names_source: the user, or the server's boundary lookup, which is
- * also how an offline GPS capture gets its names on sync), and the scan
- * place's GPS, kept apart from the collection location when the farmer
- * says they are scanning somewhere else. All nullable.
+ * gps_edited when GPS-filled names were changed, gps_adjusted when the pin
+ * was moved on the map, with the device's own fix kept in gps_original_*),
+ * when the GPS fix was taken, where each place-name field came from
+ * (field_sources: {"state": "grid3-2022-...", "community": "user", ...}; a
+ * boundary dataset version means the server's lookup, which is also how an
+ * offline GPS capture gets its names on sync), whether Android reported the
+ * fix as mocked, and the scan place's GPS, kept apart from the collection
+ * location when the farmer says they are scanning somewhere else. All
+ * nullable.
  */
 return new class extends Migration
 {
-    private const COLUMNS = ['location_source', 'gps_captured_at', 'place_names_source', 'scan_latitude', 'scan_longitude', 'scan_accuracy_meters'];
+    private const COLUMNS = ['location_source', 'gps_captured_at', 'field_sources', 'is_mocked', 'gps_original_latitude',
+        'gps_original_longitude', 'scan_latitude', 'scan_longitude', 'scan_accuracy_meters'];
 
     public function up(): void
     {
@@ -26,8 +31,15 @@ return new class extends Migration
             if (!Schema::hasColumn('collection_locations', 'gps_captured_at')) {
                 $table->timestamp('gps_captured_at')->nullable();
             }
-            if (!Schema::hasColumn('collection_locations', 'place_names_source')) {
-                $table->string('place_names_source', 64)->nullable();
+            if (!Schema::hasColumn('collection_locations', 'field_sources')) {
+                $table->json('field_sources')->nullable();
+            }
+            if (!Schema::hasColumn('collection_locations', 'is_mocked')) {
+                $table->boolean('is_mocked')->nullable();
+            }
+            if (!Schema::hasColumn('collection_locations', 'gps_original_latitude')) {
+                $table->decimal('gps_original_latitude', 10, 7)->nullable();
+                $table->decimal('gps_original_longitude', 10, 7)->nullable();
             }
             if (!Schema::hasColumn('collection_locations', 'scan_latitude')) {
                 $table->decimal('scan_latitude', 10, 7)->nullable();

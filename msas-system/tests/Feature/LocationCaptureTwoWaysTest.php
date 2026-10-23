@@ -17,7 +17,7 @@ use Tests\TestCase;
 /**
  * The two ways to record where a sample was collected: GPS capture (State
  * and LGA filled from the GRID3 boundaries) or manual entry. Covers how
- * each is stored (location_source, place_names_source), the scan place
+ * each is stored (location_source, field_sources), the scan place
  * kept apart from the collection place, the lookup endpoint on web and
  * API, and the LGA spelling migration.
  */
@@ -85,7 +85,8 @@ class LocationCaptureTwoWaysTest extends TestCase
         $this->assertSame('Katsina', $loc->state);
         $this->assertSame('Funtua', $loc->lga);
         $this->assertSame('gps', $loc->location_source);
-        $this->assertStringStartsWith('grid3-2022', $loc->place_names_source);
+        $this->assertStringStartsWith('grid3-2022', $loc->field_sources['state']);
+        $this->assertSame($loc->field_sources['state'], $loc->field_sources['lga']);
         $this->assertSame('device', $loc->coordinate_source);
         $this->assertSame('2026-10-22 09:15:00', $loc->gps_captured_at->utc()->format('Y-m-d H:i:s'));
     }
@@ -98,7 +99,7 @@ class LocationCaptureTwoWaysTest extends TestCase
         ]);
 
         $this->assertSame('manual', $loc->location_source);
-        $this->assertSame('user', $loc->place_names_source);
+        $this->assertSame(['state' => 'user', 'lga' => 'user', 'community' => 'user'], $loc->field_sources);
         $this->assertSame('Dala', $loc->lga);
         $this->assertNull($loc->latitude);
         $this->assertNull($loc->gps_captured_at);
@@ -110,7 +111,7 @@ class LocationCaptureTwoWaysTest extends TestCase
             'loc_latitude' => self::FUNTUA[0], 'loc_longitude' => self::FUNTUA[1], 'loc_capture_method' => 'gps_device',
             'loc_state' => 'Katsina', 'loc_lga' => 'Funtua', 'loc_place_names_source' => 'lookup', 'loc_location_source' => 'gps',
         ]);
-        $this->assertStringStartsWith('grid3-2022', $matching->place_names_source);
+        $this->assertStringStartsWith('grid3-2022', $matching->field_sources['lga']);
 
         CollectionLocation::query()->delete();
 
@@ -119,7 +120,7 @@ class LocationCaptureTwoWaysTest extends TestCase
             'loc_state' => 'Katsina', 'loc_lga' => 'Bakori', 'loc_place_names_source' => 'lookup', 'loc_location_source' => 'gps_edited',
         ]);
         $this->assertSame('Bakori', $changed->lga);
-        $this->assertSame('user', $changed->place_names_source);
+        $this->assertSame('user', $changed->field_sources['lga']);
         $this->assertSame('gps_edited', $changed->location_source);
         $this->assertSame('GPS captured, then changed by the user', $changed->provenanceLabel);
     }
@@ -130,7 +131,7 @@ class LocationCaptureTwoWaysTest extends TestCase
 
         $this->assertNull($loc->state);
         $this->assertNull($loc->lga);
-        $this->assertNull($loc->place_names_source);
+        $this->assertNull($loc->field_sources);
         $this->assertSame('gps', $loc->location_source);
     }
 
@@ -234,7 +235,7 @@ class LocationCaptureTwoWaysTest extends TestCase
             ->assertOk()
             ->assertJsonPath('diagnosis.collectionLocation.lga', 'Funtua')
             ->assertJsonPath('diagnosis.collectionLocation.locationSource', 'gps')
-            ->assertJsonPath('diagnosis.collectionLocation.placeNamesSource', fn ($s) => str_starts_with($s, 'grid3-2022'))
+            ->assertJsonPath('diagnosis.collectionLocation.fieldSources.lga', fn ($s) => str_starts_with($s, 'grid3-2022'))
             ->assertJsonPath('diagnosis.collectionLocation.scanLatitude', null);
     }
 

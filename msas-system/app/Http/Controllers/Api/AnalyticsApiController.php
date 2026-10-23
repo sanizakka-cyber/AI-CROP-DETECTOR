@@ -139,7 +139,9 @@ class AnalyticsApiController extends Controller
                     \App\Services\DiagnosisResultMapper::outcomeHeadline('unsupported_subject'),
                     \App\Services\DiagnosisResultMapper::outcomeHeadline('uncertain'),
                 ])
-                ->whereRaw("LOWER(disease_name) NOT LIKE 'healthy%'");
+                ->whereRaw("LOWER(disease_name) NOT LIKE 'healthy%'")
+                // A location the phone reported as mocked (a fake-GPS app) never feeds an outbreak map.
+                ->whereDoesntHave('collectionLocation', fn ($q) => $q->where('is_mocked', true));
 
             if ($region !== null) {
                 $query->whereHas('collectionLocation', fn ($q) => $q->whereRaw('LOWER(state) = ?', [mb_strtolower($region)]));

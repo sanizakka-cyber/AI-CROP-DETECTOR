@@ -35,3 +35,17 @@ beforeAll(() => {
 
 // expo-clipboard (build 25): native module, faked for tests.
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(() => Promise.resolve(true)), getStringAsync: jest.fn(() => Promise.resolve('')) }));
+
+// Offline scan queue (lib/scanQueue) and the map preview (build 27): native modules, faked for tests.
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
+jest.mock('expo-file-system/legacy', () => ({
+  documentDirectory: 'file:///docs/',
+  makeDirectoryAsync: jest.fn(() => Promise.resolve()),
+  copyAsync: jest.fn(() => Promise.resolve()),
+  deleteAsync: jest.fn(() => Promise.resolve()),
+}));
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  const WebView = (props) => require('react').createElement(View, { testID: 'webview', ...props });
+  return { WebView, default: WebView };
+});

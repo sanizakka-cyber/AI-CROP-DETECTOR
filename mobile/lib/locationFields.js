@@ -32,6 +32,7 @@ export function buildLocationApiFields(locState) {
     postalCode = '', address = '', coords = null,
     captureMethod = null, confirmed = false, differsFromScan = false,
     locationSource = null, gpsCapturedAt = null, placeNamesFrom = null, scanCoords = null,
+    isMocked = null, originalCoords = null,
   } = locState || {};
 
   // No location fields submitted means no location row at all — mirrors
@@ -51,6 +52,13 @@ export function buildLocationApiFields(locState) {
     fields.loc_longitude = String(coords.longitude);
     if (coords.accuracy != null) fields.loc_accuracy_meters = String(Math.round(coords.accuracy));
     if (gpsCapturedAt) fields.loc_gps_captured_at = gpsCapturedAt;
+    // Android's mock-location flag: sent either way once known, so the server can tell "real" from "not asked".
+    if (isMocked !== null && isMocked !== undefined) fields.loc_is_mocked = isMocked ? '1' : '0';
+    // The pin was moved: the device's own fix goes beside the farmer's point.
+    if (locationSource === 'gps_adjusted' && originalCoords) {
+      fields.loc_gps_original_latitude  = String(originalCoords.latitude);
+      fields.loc_gps_original_longitude = String(originalCoords.longitude);
+    }
   }
   if (captureMethod)   fields.loc_capture_method = captureMethod;
   if (confirmed)        fields.loc_user_confirmed = '1';

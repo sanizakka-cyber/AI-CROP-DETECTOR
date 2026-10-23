@@ -60,16 +60,14 @@
     @if(!$loc)
         <p>{{ __('No collection location was recorded for this scan.') }}</p>
     @else
-        <p>
+        {{-- State and LGA only: a report can be shared, so it never carries the
+             exact point, community, address or postal code (config/location_privacy.php). --}}
+        <p data-report-location="1">
             @if($loc->state){{ __('State') }}: <strong>{{ $loc->state }}</strong> @endif
             @if($loc->lga) &middot; {{ __('LGA') }}: <strong>{{ $loc->lga }}</strong> @endif
-            @if($loc->ward) &middot; {{ __('Ward') }}: <strong>{{ $loc->ward }}</strong> @endif
-            @if($loc->community) &middot; {{ __('Community') }}: <strong>{{ $loc->community }}</strong> @endif
-            @if($loc->postal_code) &middot; {{ __('Postal Code') }}: <strong>{{ $loc->postal_code }}</strong> @endif
         </p>
-        @if($loc->address_landmark)<p>{{ __('Address/Landmark') }}: {{ $loc->address_landmark }}</p>@endif
         @if($loc->hasCoordinates())
-            <p>{{ __('Coordinates') }}: {{ number_format($loc->latitude, 6) }}, {{ number_format($loc->longitude, 6) }}@if($loc->accuracy_meters) (±{{ round($loc->accuracy_meters) }}m)@endif</p>
+            <p>{{ __('GPS point recorded') }}@if($loc->accuracy_meters) (±{{ round($loc->accuracy_meters) }} m, {{ __(ucfirst($loc->accuracy_rating)) }})@endif. {{ __('The exact point is shown only to you and authorised MSAS staff.') }}</p>
         @endif
         <p>
             {{ $loc->provenanceLabel }}
