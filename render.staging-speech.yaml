@@ -1,0 +1,36 @@
+# ── MSAS FarmAI — STAGING speech service (PR #157) ──────────────────────────
+# NEEDS SPENDING APPROVAL: a paid Render instance. Both voice models together
+# peak at 2.05 GB, so the 2 GB Standard plan is too small (docs/speech-hosting.md).
+# Billed by the second; delete it after the staging tests to stop the cost.
+#
+# Separate from render.staging.yaml so creating staging never starts this
+# by accident. Apply as its own Blueprint (Blueprint file path =
+# render.staging-speech.yaml, branch `staging`), then copy this service's
+# TTS_SERVICE_KEY into msas-farmai-staging's TTS_CPU_KEY.
+
+services:
+  - type: web
+    name: msas-tts-cpu-staging
+    env: docker
+    dockerfilePath: ./tts-service/Dockerfile.openbible
+    dockerContext: ./tts-service
+    region: frankfurt
+    plan: pro                  # 2 CPU / 4 GB (about USD 85/month, prorated by the second)
+    branch: staging
+    autoDeploy: true
+    healthCheckPath: /health
+    disk:
+      name: models
+      mountPath: /models
+      sizeGB: 5                # OpenBible Hausa 0.95 GB + Kokoro 0.3 GB + Yoruba/Igbo if added
+    envVars:
+      # The image's uvicorn listens on 8002; tell Render to route there.
+      - key: PORT
+        value: "8002"
+      - key: TTS_ENGINES
+        value: openbible,kokoro
+      # For review packs in all three languages; Hausa only is enough for launch audio.
+      - key: OPENBIBLE_LANGS
+        value: "Hausa Yoruba Igbo"
+      - key: TTS_SERVICE_KEY
+        generateValue: true

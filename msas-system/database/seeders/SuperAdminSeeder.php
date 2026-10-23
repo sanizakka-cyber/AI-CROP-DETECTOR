@@ -28,13 +28,18 @@ class SuperAdminSeeder extends Seeder
                 'state'      => 'Katsina',
             ]);
             $this->command->info('CEO account already exists — profile updated, password/force_reset NOT changed.');
+        } elseif (strlen((string) getenv('SUPER_ADMIN_PASSWORD')) < 12) {
+            // Never create the CEO account with a password from this public
+            // repo (it was 'Admin@12345'): on a fresh database, e.g. staging,
+            // anyone who read the repo could have signed in as CEO.
+            $this->command?->warn('CEO account not created: set SUPER_ADMIN_PASSWORD (12+ characters) as a secret first.');
         } else {
             User::create([
                 'first_name'           => 'Sani',
                 'middle_name'          => 'Zakka',
                 'last_name'            => 'Yawale',
                 'email'                => 'msaslivestockagroservices@gmail.com',
-                'password'             => Hash::make('Admin@12345'),
+                'password'             => Hash::make((string) getenv('SUPER_ADMIN_PASSWORD')),
                 'role'                 => 'ceo',
                 'is_verified'          => true,
                 'is_active'            => true,

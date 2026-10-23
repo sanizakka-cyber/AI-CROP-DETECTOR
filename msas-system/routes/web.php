@@ -707,3 +707,14 @@ require __DIR__.'/auth.php';
 Route::middleware(['auth', 'role:admin,ceo,customer-support'])->prefix('admin/scan-errors')->name('admin.scan-errors.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ScanErrorController::class, 'index'])->name('index');
 });
+
+// ── Admin: labelled photo contributions for the evaluation set (Phase 12.2) ──
+// Partners (vets, extension officers, agronomists) upload; admins/CEO review
+// and export (checked in the controller, config/training_images.php).
+Route::middleware(['auth', 'role:vet,extension-officer,agronomist,admin,ceo'])->prefix('admin/training-images')->name('admin.training-images.')->group(function () {
+    Route::get('/',                         [\App\Http\Controllers\Admin\TrainingImageController::class, 'index'])->name('index');
+    Route::post('/',                        [\App\Http\Controllers\Admin\TrainingImageController::class, 'store'])->middleware(['throttle:20,1', 'heic'])->name('store');
+    Route::get('/export',                   [\App\Http\Controllers\Admin\TrainingImageController::class, 'export'])->name('export');
+    Route::get('/{trainingImage}/image',    [\App\Http\Controllers\Admin\TrainingImageController::class, 'image'])->whereNumber('trainingImage')->name('image');
+    Route::post('/{trainingImage}/review',  [\App\Http\Controllers\Admin\TrainingImageController::class, 'review'])->whereNumber('trainingImage')->name('review');
+});

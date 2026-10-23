@@ -28,6 +28,26 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
 
         $this->constrainIdRouteParameters();
+        $this->refuseLivePaymentKeysOutsideProduction();
+    }
+
+    /**
+     * Phase 12.2: staging and every other non-production environment take
+     * payments in test mode only. A live Paystack key there (copied by
+     * mistake from production) is dropped, so payments are switched off
+     * rather than charging a real card from a QA run.
+     */
+    private function refuseLivePaymentKeysOutsideProduction(): void
+    {
+        if ($this->app->isProduction()) {
+            return;
+        }
+        $secret = (string) config('services.paystack.secret_key');
+        $public = (string) config('services.paystack.public_key');
+        if (str_starts_with($secret, 'sk_live_') || str_starts_with($public, 'pk_live_')) {
+            config(['services.paystack.secret_key' => null, 'services.paystack.public_key' => null]);
+            \Illuminate\Support\Facades\Log::warning('Live Paystack keys are set outside production; payments disabled. Use test keys (sk_test_/pk_test_).');
+        }
     }
 
     /**
