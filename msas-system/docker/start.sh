@@ -17,6 +17,14 @@ echo "upload_tmp_dir = /var/www/html/storage/tmp" >> /usr/local/etc/php/conf.d/t
 echo "catch_workers_output = yes" >> /usr/local/etc/php-fpm.d/www.conf
 echo "decorate_workers_output = no" >> /usr/local/etc/php-fpm.d/www.conf
 
+# Staging: APP_KEY comes from the Render-generated APP_KEY_SEED (render.staging.yaml)
+# when no APP_KEY is set, so no one ever has to create or paste one. Not
+# printed. Production keeps its own APP_KEY and never takes this branch.
+if [ -z "$APP_KEY" ] && [ -n "$APP_KEY_SEED" ] && [ "$APP_ENV" != "production" ]; then
+  APP_KEY="$(php -r 'echo "base64:".base64_encode(hash("sha256", getenv("APP_KEY_SEED"), true));')"
+  export APP_KEY
+fi
+
 # Discover packages now that env vars are available (skipped during Docker build)
 echo "==> Discovering packages..."
 php artisan package:discover --ansi 2>/dev/null || true
@@ -47,6 +55,12 @@ php artisan db:seed --class=ProductSeeder --force 2>/dev/null || true
 
 # Upsert super admin account on every deploy (idempotent)
 php artisan db:seed --class=SuperAdminSeeder --force 2>/dev/null || true
+
+# Staging only: the four QA accounts, passwords from Render-generated secrets
+# (never printed). The seeder itself refuses to run unless APP_ENV=staging.
+if [ "$APP_ENV" = "staging" ]; then
+  php artisan db:seed --class=StagingQaAccountsSeeder --force || true
+fi
 
 # Fix permissions AFTER artisan commands so compiled/cached files are also
 # owned by www-data and writable at runtime (view:cache runs as root and

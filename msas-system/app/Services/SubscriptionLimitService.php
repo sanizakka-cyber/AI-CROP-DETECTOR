@@ -22,6 +22,9 @@ class SubscriptionLimitService
         if (config('qa.enabled') && $user->is_qa) {
             $plan  = 'qa';
             $limit = (int) config('qa.scan_limit', 200);
+        } elseif (config('qa.scans_qa_only')) {
+            // Staging: scan quota for QA accounts only; everyone else gets none.
+            return ['allowed' => false, 'used' => 0, 'limit' => 0, 'remaining' => 0, 'plan' => 'staging_qa_only'];
         }
 
         if ($limit === -1) {
