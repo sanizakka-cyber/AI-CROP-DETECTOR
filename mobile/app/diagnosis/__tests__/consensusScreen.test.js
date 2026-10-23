@@ -169,6 +169,21 @@ describe('disclaimer, ask an expert, advice', () => {
     expect(screen.queryByTestId('ask-expert')).toBeNull();
   });
 
+  test('"Likely Causes" only for a confident result, even if an older server sends it', async () => {
+    const cause = ['Old outer sheaths drying'];
+    await show({ ...fixture.inconclusive.api, aiResult: { ...fixture.inconclusive.api.aiResult, likelyCauses: cause } });
+    expect(screen.queryByTestId('likely-causes')).toBeNull();
+    screen.unmount();
+
+    const likely = fixture.normalAgeing.api;
+    await show({ ...likely, aiResult: { ...likely.aiResult, likelyCauses: cause }, assessment: { ...likely.assessment, result: { ...likely.assessment.result, kind: 'likely' } } });
+    expect(screen.queryByTestId('likely-causes')).toBeNull();
+    screen.unmount();
+
+    await show({ ...likely, aiResult: { ...likely.aiResult, likelyCauses: cause } });
+    expect(screen.getByTestId('likely-causes')).toBeTruthy();
+  });
+
   test('a healthy result labels its advice "Advice", not "Recovery Period"', async () => {
     await show({ ...fixture.normalAgeing.api, treatmentPlan: { ...BASE.treatmentPlan, recoveryPeriod: 'No recovery needed.' } });
     expect(allText()).toContain('Advice');

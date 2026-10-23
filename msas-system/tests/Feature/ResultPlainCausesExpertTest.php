@@ -191,6 +191,39 @@ class ResultPlainCausesExpertTest extends TestCase
         $this->assertStringContainsString(str_replace(':causes', 'Orange rust spots, Leaf burn, Leaf injury', $strings[ResultView::EXPLAIN_CAUSES]), $text);
     }
 
+    public static function rootCauseCases(): array
+    {
+        // [confidence, outcome, shown]: inconclusive (58), "Likely X" (70), uncertain (no score), confident (88).
+        return [[58, 'assessed', false], [70, 'assessed', false], [null, 'uncertain', false], [88, 'assessed', true]];
+    }
+
+    #[DataProvider('rootCauseCases')]
+    public function test_root_cause_only_for_a_confident_result(?int $confidence, string $outcome, bool $shown): void
+    {
+        $u = User::factory()->create(['role' => 'farmer']);
+        $d = $this->mango($u, ['confidence_score' => $confidence, 'assessment_outcome' => $outcome,
+            'cause' => 'Algal infection of the leaf surface']);
+
+        $this->assertSame($shown ? 'Algal infection of the leaf surface' : null, $d->resultView()['root_cause']);
+
+        $history = $this->actingAs($u)->get(route('diagnostics.history'))->getContent();
+        $pdf = $this->actingAs($u)->get(route('diagnostics.report', $d))->getContent();
+        foreach (['web' => $history, 'pdf' => $pdf] as $where => $html) {
+            $this->assertSame($shown, str_contains($html, 'data-root-cause="1"'), "{$where}: Root Cause box");
+        }
+        $this->assertSame($shown, str_contains($d->narrationText(), 'Root cause:'), 'narration');
+
+        $api = $this->api($u)->getJson("/api/diagnose/{$d->id}")->assertOk();
+        $this->assertSame($shown ? ['Algal infection of the leaf surface'] : [], $api->json('diagnosis.aiResult.likelyCauses'));
+    }
+
+    public function test_the_top_bar_search_is_hidden_until_it_works(): void
+    {
+        $u = User::factory()->create(['role' => 'farmer']);
+        $html = $this->actingAs($u)->get(route('diagnostics.history'))->getContent();
+        $this->assertMatchesRegularExpression('/<div class="relative hidden" data-topbar-search="1">/', $html);
+    }
+
     public function test_header_title_alone_in_the_top_bar_and_a_solid_confidence_band(): void
     {
         $u = User::factory()->create(['role' => 'farmer']);

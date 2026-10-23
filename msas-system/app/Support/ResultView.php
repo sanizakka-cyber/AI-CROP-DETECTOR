@@ -172,6 +172,9 @@ final class ResultView
             },
             'urgency'       => in_array($kind, ['failed', 'rejected', 'inconclusive'], true) || $healthyish ? null : $d->urgency_key,
             'possible_causes' => $causes,
+            // The engine's "root cause" belongs to one finding: shown only for a confident
+            // result, never beside an inconclusive one's causes or a "Likely X".
+            'root_cause'    => $kind === 'diagnosis' ? FarmerText::plain($d->cause) : null,
             'explanation'   => self::explanation($d, $inconclusive, $causes),
             'expert'        => self::expert($d),
             'steps'         => in_array($kind, ['failed', 'rejected'], true) ? [] : self::steps($d, $mode, $inconclusive ? 'inconclusive' : ($healthyish ? $health : 'problem')),

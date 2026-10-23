@@ -506,8 +506,9 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
-      {result.likelyCauses?.length > 0 && (
-        <Card style={styles.card}>
+      {/* Confident results only; older servers still send it for inconclusive and "Likely" results. */}
+      {!inconclusive && !needsConfirmation && result.likelyCauses?.length > 0 && (
+        <Card style={styles.card} testID="likely-causes">
           <Text style={styles.cardTitle}>{isHausa ? 'Dalilan yiwuwa' : 'Likely Causes'}</Text>
           {result.likelyCauses.map((cause, index) => (
             <Text key={index} style={styles.listItem}>- {cause}</Text>

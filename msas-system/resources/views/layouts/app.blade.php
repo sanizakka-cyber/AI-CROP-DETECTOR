@@ -480,8 +480,9 @@
             <!-- Right: Search + Actions + Profile -->
             <div class="flex items-center gap-3 shrink-0">
 
-                <!-- Search (from 1280px: below that its 220px went to the page title) -->
-                <div class="relative hidden xl:block">
+                <!-- Search: hidden on every width until it does something (it is not wired
+                     to any search yet; tracked as its own task). -->
+                <div class="relative hidden" data-topbar-search="1">
                     <div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">
                         <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     </div>

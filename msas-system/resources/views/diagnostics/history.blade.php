@@ -1,5 +1,5 @@
 <x-app-layout>
-    {{-- Title only in the 64px top bar (it shares the bar with search and profile; with the
+    {{-- Title only in the 64px top bar (it shares the bar with the notifications and profile; with the
          button beside it the pair wrapped below ~1280 CSS px, e.g. a 1920 screen at 150%,
          and the title's top was cut off). --}}
     <x-slot name="header">
@@ -345,12 +345,13 @@
                             <p class="text-xs text-red-800 leading-relaxed">{{ \App\Support\FarmerText::plain($diagnosis->symptoms_identified) }}</p>
                         </div>
                         @endif
-                        @if($diagnosis->cause)
-                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        {{-- Confident results only (ResultView::root_cause): never beside possible causes or a "Likely". --}}
+                        @if($rv['root_cause'])
+                        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3" data-root-cause="1">
                             <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                                 <i class="fa-solid fa-magnifying-glass text-[9px]"></i> <span data-i18n="Root Cause">{{ __('Root Cause') }}</span>
                             </div>
-                            <p class="text-xs text-slate-700 leading-relaxed">{{ \App\Support\FarmerText::plain($diagnosis->cause) }}</p>
+                            <p class="text-xs text-slate-700 leading-relaxed">{{ $rv['root_cause'] }}</p>
                         </div>
                         @endif
                         @if($diagnosis->environmental_factors)

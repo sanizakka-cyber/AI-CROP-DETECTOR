@@ -380,7 +380,7 @@ class Diagnosis extends Model
         if ($severity)                                                             $lines[] = "Severity: {$severity}.";
         if ($urgency)                                                              $lines[] = "Urgency: {$urgency}.";
         if ($this->symptoms_identified)                                            $lines[] = "Symptoms observed: " . $plain($this->symptoms_identified) . ".";
-        if ($this->cause)                                                          $lines[] = "Root cause: " . $plain($this->cause) . ".";
+        if ($view['root_cause'])                                                   $lines[] = "Root cause: {$view['root_cause']}.";
         if ($this->environmental_factors)                                          $lines[] = "Environmental factors: " . $plain($this->environmental_factors) . ".";
         if ($this->nutrient_deficiencies && $this->nutrient_deficiencies !== 'None detected') $lines[] = "Nutrient deficiencies: {$this->nutrient_deficiencies}.";
         if ($this->pest_detection && $this->pest_detection !== 'No pest detected') $lines[] = "Pest detection: {$this->pest_detection}.";

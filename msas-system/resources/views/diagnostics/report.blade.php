@@ -397,7 +397,8 @@ a { color: inherit; text-decoration: none; }
         @include('diagnostics.partials.outcome-report')
 
         {{-- Symptoms + Cause + Environment --}}
-        @php $row1 = collect(['symptoms_identified','cause','environmental_factors'])->filter(fn($f)=>!empty($diagnosis->$f)); @endphp
+        {{-- Root cause: confident results only (ResultView::root_cause). --}}
+        @php $row1 = collect(['symptoms_identified','cause','environmental_factors'])->filter(fn($f)=>$f === 'cause' ? $rv['root_cause'] !== null : !empty($diagnosis->$f)); @endphp
         @if($row1->isNotEmpty())
         <div class="section-grid">
             @if($diagnosis->symptoms_identified)
@@ -406,8 +407,8 @@ a { color: inherit; text-decoration: none; }
                 <p>{{ $p('symptoms_identified') }}</p>
             </div>
             @endif
-            @if($diagnosis->cause)
-            <div class="section-card s-slate">
+            @if($rv['root_cause'])
+            <div class="section-card s-slate" data-root-cause="1">
                 <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Root Cause') }}</div>
                 <p>{{ $p('cause') }}</p>
             </div>
