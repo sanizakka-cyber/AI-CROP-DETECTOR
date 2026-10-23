@@ -38,6 +38,12 @@ describe.each([['app', app], ['web', web]])('%s', (_name, gps) => {
     expect(t.best()).toBeNull();
   });
 
+  test('keeps a reading from a phone whose clock is far from GPS time, and one a few seconds old', () => {
+    expect(gps.createTracker(T0).offer(reading(4, { timestamp: T0 - 3 * 3600 * 1000 })).used).toBe(true);
+    expect(gps.createTracker(T0).offer(reading(4, { timestamp: T0 + 3600 * 1000 })).used).toBe(true);
+    expect(gps.createTracker(T0).offer(reading(4, { timestamp: T0 - 5000 })).used).toBe(true);
+  });
+
   test('ignores (0,0), impossible points and missing accuracy', () => {
     const t = gps.createTracker(T0);
     expect(t.offer(reading(4, { lat: 0, lon: 0 })).used).toBe(false);

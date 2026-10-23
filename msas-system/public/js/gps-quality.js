@@ -16,8 +16,11 @@
     var BANDS = [['excellent', 5], ['good', 15], ['fair', 50]];
     var TARGET_METERS = 5;
     var WINDOW_MS = 30000;
-    // A reading timestamped this long before the capture began is a cached one.
-    var STALE_SLACK_MS = 1000;
+    // A cached reading: timestamped 10 s to 30 min before the capture began.
+    // Further back is a phone whose clock disagrees with GPS time (common on
+    // phones with a wrong clock), not a cached fix, so it is not refused.
+    var STALE_MIN_MS = 10000;
+    var STALE_MAX_MS = 30 * 60 * 1000;
 
     function rating(meters) {
         if (meters == null || !isFinite(meters)) { return null; }
@@ -44,7 +47,8 @@
         var target = targetMeters == null ? TARGET_METERS : targetMeters;
         return {
             offer: function (r) {
-                var fresh = r.timestamp == null || r.timestamp >= startedAt - STALE_SLACK_MS;
+                var age = r.timestamp == null ? 0 : startedAt - r.timestamp;
+                var fresh = !(age > STALE_MIN_MS && age < STALE_MAX_MS);
                 var usable = fresh && validPoint(r.lat, r.lon) && isFinite(r.accuracy) && r.accuracy > 0;
                 if (usable && first === null) { first = r; }
                 if (usable && (best === null || r.accuracy < best.accuracy)) { best = r; }

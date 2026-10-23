@@ -219,7 +219,7 @@ class LocationCaptureTwoWaysTest extends TestCase
 
         $this->withHeaders($headers)->getJson('/api/locations/lookup?lat=' . self::FUNTUA[0] . '&lon=' . self::FUNTUA[1])
             ->assertOk()->assertJson(['found' => true, 'lga' => 'Funtua']);
-        $this->getJson('/api/locations/lookup?lat=11.5&lon=7.3')->assertUnauthorized();
+        $this->flushHeaders()->getJson('/api/locations/lookup?lat=11.5&lon=7.3')->assertUnauthorized();
 
         // An offline capture syncing later: coordinates only, names left to the server.
         $this->withHeaders($headers)->post('/api/diagnose/crop', [

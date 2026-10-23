@@ -34,6 +34,7 @@ const shot = async (page, name) => section(page).screenshot({ path: path.join(ou
 // 1–3. Capture: ±18 m → ±7 m live, then ±4 m (target reached), names filled, map; then move the pin.
 {
   const { context, page } = await openScanPage();
+  await context.setGeolocation({ ...FUNTUA, accuracy: 18 }); // a fresh timestamp for the emulated fix
   await page.click('#locModeGps');
   await page.waitForSelector('#locProgressText:has-text("±18")');
   await context.setGeolocation({ ...FUNTUA, accuracy: 7 });
