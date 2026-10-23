@@ -88,3 +88,55 @@ describe('buildLocationApiFields', () => {
     expect('loc_postal_code' in result).toBe(false);
   });
 });
+
+describe('buildLocationApiFields — the two ways of recording a location', () => {
+  test('a GPS capture sends how it was entered, when, and that the names came from the lookup', () => {
+    const result = buildLocationApiFields({
+      state: 'Katsina', lga: 'Funtua', coords: { latitude: 11.523, longitude: 7.312, accuracy: 8 },
+      captureMethod: 'gps_device', locationSource: 'gps', gpsCapturedAt: '2026-10-22T09:15:00.000Z', placeNamesFrom: 'lookup',
+    });
+    expect(result).toMatchObject({
+      loc_location_source: 'gps', loc_gps_captured_at: '2026-10-22T09:15:00.000Z', loc_place_names_source: 'lookup',
+    });
+  });
+
+  test('GPS with no names yet (offline) sends the coordinates only, for the server to name', () => {
+    const result = buildLocationApiFields({
+      coords: { latitude: 11.523, longitude: 7.312 }, captureMethod: 'gps_device', locationSource: 'gps', placeNamesFrom: 'lookup',
+    });
+    expect(result.loc_state).toBeUndefined();
+    expect(result.loc_place_names_source).toBeUndefined();
+    expect(result.loc_latitude).toBe('11.523');
+  });
+
+  test('a capture time without a fix is not sent', () => {
+    const result = buildLocationApiFields({ state: 'Kano', locationSource: 'manual', gpsCapturedAt: '2026-10-22T09:15:00.000Z' });
+    expect(result.loc_gps_captured_at).toBeUndefined();
+    expect(result.loc_location_source).toBe('manual');
+  });
+
+  test('the scan place is sent apart from the collection place, only while "scanning elsewhere" is ticked', () => {
+    const scanCoords = { latitude: 12.0022, longitude: 8.592, accuracy: 14.6 };
+    const ticked = buildLocationApiFields({ state: 'Katsina', lga: 'Funtua', locationSource: 'manual', differsFromScan: true, scanCoords });
+    expect(ticked).toMatchObject({ loc_scan_latitude: '12.0022', loc_scan_longitude: '8.592', loc_scan_accuracy_meters: '15' });
+    expect(ticked.loc_latitude).toBeUndefined();
+
+    const unticked = buildLocationApiFields({ state: 'Katsina', differsFromScan: false, scanCoords });
+    expect(unticked.loc_scan_latitude).toBeUndefined();
+  });
+});
+
+describe('buildLocationApiFields — mocked flag and a moved pin', () => {
+  const coords = { latitude: 11.53, longitude: 7.33, accuracy: 4 };
+  test('the mocked flag is sent once known, as 1 or 0', () => {
+    expect(buildLocationApiFields({ coords, isMocked: true }).loc_is_mocked).toBe('1');
+    expect(buildLocationApiFields({ coords, isMocked: false }).loc_is_mocked).toBe('0');
+    expect('loc_is_mocked' in buildLocationApiFields({ coords })).toBe(false);
+  });
+
+  test('a moved pin sends the device\'s own fix beside the farmer\'s point', () => {
+    const fields = buildLocationApiFields({ coords, locationSource: 'gps_adjusted', originalCoords: { latitude: 11.523, longitude: 7.312 } });
+    expect(fields).toMatchObject({ loc_latitude: '11.53', loc_gps_original_latitude: '11.523', loc_gps_original_longitude: '7.312' });
+    expect('loc_gps_original_latitude' in buildLocationApiFields({ coords, locationSource: 'gps', originalCoords: { latitude: 1, longitude: 2 } })).toBe(false);
+  });
+});

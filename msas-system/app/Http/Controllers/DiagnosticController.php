@@ -35,6 +35,9 @@ class DiagnosticController extends Controller
             'loc_country', 'loc_state', 'loc_lga', 'loc_ward', 'loc_community',
             'loc_postal_code', 'loc_address', 'loc_latitude', 'loc_longitude',
             'loc_accuracy_meters', 'loc_capture_method', 'loc_collected_at',
+            'loc_location_source', 'loc_gps_captured_at', 'loc_place_names_source',
+            'loc_scan_latitude', 'loc_scan_longitude', 'loc_scan_accuracy_meters',
+            'loc_is_mocked', 'loc_gps_original_latitude', 'loc_gps_original_longitude',
         ] as $locKey) {
             if ($request->has($locKey) && $request->input($locKey) === '') {
                 $request->merge([$locKey => null]);
@@ -85,6 +88,15 @@ class DiagnosticController extends Controller
             'loc_user_confirmed'     => 'nullable|boolean',
             'loc_differs_from_scan'  => 'nullable|boolean',
             'loc_collected_at'       => 'nullable|date',
+            'loc_location_source'    => 'nullable|in:' . implode(',', CollectionLocation::LOCATION_SOURCES),
+            'loc_gps_captured_at'    => 'nullable|date',
+            'loc_place_names_source' => 'nullable|in:lookup,user',
+            'loc_scan_latitude'      => 'nullable|numeric|between:-90,90',
+            'loc_scan_longitude'     => 'nullable|numeric|between:-180,180',
+            'loc_scan_accuracy_meters' => 'nullable|numeric|min:0',
+            'loc_is_mocked'          => 'nullable|boolean',
+            'loc_gps_original_latitude'  => 'nullable|numeric|between:-90,90',
+            'loc_gps_original_longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         // ── Subscription scan limit check ─────────────────────────────────────

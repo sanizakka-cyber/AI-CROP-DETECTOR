@@ -278,6 +278,8 @@ export const authAPI = {
 // ── Locations (states/LGAs/countries for registration & profile forms) ─────────
 export const locationsAPI = {
   list: () => request('/locations'),
+  // The State and LGA a GPS point falls in: { found, state, lga, source, attribution }.
+  lookup: (lat, lon) => request(`/locations/lookup?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`),
 };
 
 // ── Farms ─────────────────────────────────────────────────────────────────────

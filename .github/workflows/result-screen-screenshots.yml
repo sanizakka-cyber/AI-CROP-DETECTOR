@@ -14,6 +14,8 @@ on:
       - 'msas-system/resources/views/diagnostics/**'
       - 'msas-system/resources/views/layouts/**'
       - 'msas-system/resources/css/**'
+      - 'msas-system/resources/js/**'
+      - 'msas-system/public/js/gps-quality.js'
       - 'msas-system/app/Support/**'
       - 'msas-system/tests/Visual/**'
       - 'shared-fixtures/banana-consensus-diagnosis.json'
@@ -64,6 +66,7 @@ jobs:
           SCRIPT="$PWD/msas-system/tests/Visual/result-screen.mjs"
           SEED="$PWD/msas-system/tests/Visual/seed_banana_scan.php"
           cp "$SCRIPT" /tmp/pw/
+          cp "$PWD/msas-system/tests/Visual/location-capture.mjs" /tmp/pw/
           run_side () { # dir name port record [--expect-no-overlap]
             cd "$1/msas-system"
             touch .env
@@ -78,6 +81,8 @@ jobs:
             local server=$!
             for i in $(seq 1 30); do curl -sf "http://127.0.0.1:$3/login" >/dev/null && break; sleep 1; done
             (cd /tmp/pw && node result-screen.mjs "http://127.0.0.1:$3" /tmp/shots "$2" ${5:-})
+            # Location capture with a faked GPS (this branch only): live accuracy, rating, names, map, pin, errors, manual.
+            if [ "$2" = "after-inconclusive" ]; then (cd /tmp/pw && node location-capture.mjs "http://127.0.0.1:$3" /tmp/shots); fi
             kill "$server" || true
             cd - >/dev/null
           }

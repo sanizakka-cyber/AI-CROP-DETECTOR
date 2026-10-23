@@ -3,17 +3,29 @@
 // Pair with the useLocationCapture() hook (../lib/locationCapture) for state.
 //
 // Mirrors the web scan form's location section (resources/views/
-// diagnostics/scan.blade.php) field-for-field, and reuses the same
-// state/LGA picker pattern already established in app/(auth)/register.jsx
-// for visual consistency rather than inventing a second picker UI.
+// diagnostics/scan.blade.php): GPS with live accuracy, a quality rating,
+// the captured point to check (coordinates, accuracy, time, map with a
+// draggable pin), or entry by hand. Every message comes from the hook as an
+// i18n key and is shown in the farmer's language.
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Modal, FlatList,
+  View, Text, TextInput, TouchableOpacity, Modal, FlatList, Linking,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../constants/Theme';
+import { formatAccuracy, needsRetry } from '../lib/gpsQuality';
+import LocationMapPreview from './LocationMapPreview';
+
+const RATING_STYLE = {
+  excellent: { backgroundColor: '#D1FAE5', color: '#065F46' },
+  good:      { backgroundColor: '#E0F2FE', color: '#075985' },
+  fair:      { backgroundColor: '#FEF3C7', color: '#92400E' },
+  low:       { backgroundColor: '#FEE2E2', color: '#991B1B' },
+};
 
 export default function LocationCaptureSection({ loc }) {
+  const { t } = useTranslation();
   const [statePickerOpen, setStatePickerOpen] = useState(false);
   const [lgaPickerOpen, setLgaPickerOpen]     = useState(false);
   const [stateSearch, setStateSearch] = useState('');
@@ -29,72 +41,159 @@ export default function LocationCaptureSection({ loc }) {
     return q ? loc.lgasForState.filter(l => l.toLowerCase().includes(q)) : loc.lgasForState;
   }, [loc.lgasForState, lgaSearch]);
 
+  // i18next interpolates {{x}}; the explicit replace keeps tests with a plain t() mock honest.
+  const tx = (key, params = {}) => Object.entries(params)
+    .reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, String(v)), String(t(key, params)));
+  const status = loc.gpsStatus;
+  const statusParams = status?.params
+    ? { ...status.params, acc: formatAccuracy(status.params.acc), rating: t(`rating_${status.params.rating}`) }
+    : {};
+  const progress = loc.gpsProgress;
+  const fix = loc.originalCoords || loc.coords;
+
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>📍 Sample Collection Location <Text style={styles.optional}>(optional)</Text></Text>
-        <TouchableOpacity style={styles.gpsBtn} onPress={loc.captureGps} disabled={loc.gpsLoading}>
+        <Text style={styles.title}>📍 {t('loc_title')} <Text style={styles.optional}>{t('loc_optional')}</Text></Text>
+      </View>
+      <Text style={styles.hint}>{t('loc_hint')}</Text>
+
+      {/* Two ways: GPS fills State and LGA from the boundaries, or the farmer picks them. */}
+      <View style={styles.modeRow} accessibilityRole="radiogroup">
+        <TouchableOpacity
+          style={[styles.modeBtn, loc.mode === 'gps' && styles.modeBtnOn]}
+          onPress={loc.captureGps}
+          disabled={loc.gpsLoading}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: loc.mode === 'gps', busy: loc.gpsLoading }}
+          testID="loc-mode-gps"
+        >
           {loc.gpsLoading
             ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Text style={styles.gpsBtnText}>Use my location</Text>}
+            : <Text style={[styles.modeBtnText, loc.mode === 'gps' && styles.modeBtnTextOn]}>📡 {t('loc_use_gps')}</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeBtn, loc.mode === 'manual' && styles.modeBtnOn]}
+          onPress={loc.enterManually}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: loc.mode === 'manual' }}
+          testID="loc-mode-manual"
+        >
+          <Text style={[styles.modeBtnText, loc.mode === 'manual' && styles.modeBtnTextOn]}>✏️ {t('loc_enter_by_hand')}</Text>
         </TouchableOpacity>
       </View>
-      <Text style={styles.hint}>
-        Recording where this sample was actually collected helps track outbreaks and makes your scan useful for
-        agricultural research. This never blocks your diagnosis — leave it blank if unsure.
-      </Text>
 
-      {loc.gpsStatus && (
-        <View style={[
-          styles.statusBox,
-          loc.gpsStatus.type === 'success' && styles.statusSuccess,
-          loc.gpsStatus.type === 'warning' && styles.statusWarning,
-          loc.gpsStatus.type === 'error'   && styles.statusError,
-        ]}>
-          <Text style={[
-            styles.statusText,
-            loc.gpsStatus.type === 'success' && styles.statusTextSuccess,
-            loc.gpsStatus.type === 'warning' && styles.statusTextWarning,
-            loc.gpsStatus.type === 'error'   && styles.statusTextError,
-          ]}>{loc.gpsStatus.message}</Text>
-          {loc.gpsStatus.canOpenSettings && (
-            <TouchableOpacity onPress={loc.openLocationSettings} style={styles.settingsBtn}>
-              <Text style={styles.settingsBtnText}>Open Settings</Text>
+      {/* While watching the GPS: the accuracy as it improves. */}
+      {loc.gpsLoading && (
+        <View style={[styles.statusBox, styles.statusSuccess]} testID="loc-progress">
+          <Text style={[styles.statusText, styles.statusTextSuccess]}>
+            {!progress ? t('loc_requesting')
+              : progress.first > progress.best
+                ? tx('loc_improving', { from: formatAccuracy(progress.first), to: formatAccuracy(progress.best) })
+                : tx('loc_getting', { to: formatAccuracy(progress.best) })}
+          </Text>
+          {progress && (
+            <TouchableOpacity onPress={loc.stopCapture} style={styles.settingsBtn} testID="loc-use-now">
+              <Text style={styles.settingsBtnText}>{t('loc_use_now')}</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
 
-      {loc.coords && (
-        <View style={styles.coordsBox}>
-          <Text style={styles.coordsText}>
-            📡 {loc.coords.latitude.toFixed(6)}, {loc.coords.longitude.toFixed(6)}
-            {loc.coords.accuracy != null ? `  (±${Math.round(loc.coords.accuracy)}m)` : ''}
+      {status && !loc.gpsLoading && (
+        <View testID="loc-status" style={[
+          styles.statusBox,
+          status.type === 'success' && styles.statusSuccess,
+          status.type === 'warning' && styles.statusWarning,
+          status.type === 'error'   && styles.statusError,
+        ]}>
+          <Text style={[
+            styles.statusText,
+            status.type === 'success' && styles.statusTextSuccess,
+            status.type === 'warning' && styles.statusTextWarning,
+            status.type === 'error'   && styles.statusTextError,
+          ]}>
+            {tx(status.key, statusParams)}{status.bestIn30 ? ` ${t('loc_best_in_30')}` : ''}
           </Text>
+          {(status.help || []).map(h => (
+            <Text key={h} style={[styles.statusText, styles.helpLine]}>• {t(h)}</Text>
+          ))}
+          <View style={styles.actionRow}>
+            {status.canRetry && (
+              <TouchableOpacity onPress={loc.captureGps} style={styles.actionBtn} testID="loc-try-again">
+                <Text style={styles.actionBtnText}>{t('loc_try_again')}</Text>
+              </TouchableOpacity>
+            )}
+            {status.canOpenSettings && (
+              <TouchableOpacity onPress={loc.openLocationSettings} style={styles.actionBtn} testID="loc-open-settings">
+                <Text style={styles.actionBtnText}>{t('loc_open_settings')}</Text>
+              </TouchableOpacity>
+            )}
+            {status.canManual && (
+              <TouchableOpacity onPress={loc.enterManually} style={styles.actionBtn} testID="loc-manual-instead">
+                <Text style={styles.actionBtnText}>{t('loc_manual_instead')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+      )}
+
+      {/* The captured point, to check before submitting. */}
+      {loc.coords && (
+        <View style={styles.coordsBox} testID="loc-result">
+          <View style={styles.ratingRow}>
+            {loc.quality && (
+              <Text style={[styles.ratingBadge, RATING_STYLE[loc.quality]]} testID="loc-rating">{t(`rating_${loc.quality}`)}</Text>
+            )}
+            <Text style={styles.coordsText}>±{formatAccuracy(loc.coords.accuracy)} m</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(`https://www.google.com/maps?q=${loc.coords.latitude},${loc.coords.longitude}`)}>
+              <Text style={styles.settingsBtnText}>{t('loc_open_maps')} ↗</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.coordsText}>
+            {t('loc_latitude')}: {loc.coords.latitude.toFixed(6)}   {t('loc_longitude')}: {loc.coords.longitude.toFixed(6)}
+          </Text>
+          {loc.gpsCapturedAt && (
+            <Text style={styles.coordsText}>{t('loc_time_captured')}: {new Date(loc.gpsCapturedAt).toLocaleString()}</Text>
+          )}
+          {loc.locationSource === 'gps_adjusted' && <Text style={styles.coordsText} testID="loc-adjusted">{t('loc_adjusted')}</Text>}
+          {loc.isMocked && <Text style={[styles.coordsText, styles.statusTextError]} testID="loc-mocked">{t('loc_mocked_badge')}</Text>}
+          {needsRetry(loc.quality) && !status?.canRetry && (
+            <TouchableOpacity onPress={loc.captureGps} style={styles.actionBtn}>
+              <Text style={styles.actionBtnText}>{t('loc_try_again')}</Text>
+            </TouchableOpacity>
+          )}
+          <LocationMapPreview key={`${fix.latitude},${fix.longitude}`} fix={fix} onMove={loc.adjustPoint} t={t} />
+        </View>
+      )}
+
+      {loc.namesNote && (
+        <Text style={styles.namesNote} testID="loc-names-note">
+          {tx(loc.namesNote.key, loc.namesNote.params)}{loc.namesNote.attribution ? ` ${loc.namesNote.attribution}` : ''}
+        </Text>
       )}
 
       <View style={styles.row}>
         <TouchableOpacity style={styles.pickerField} onPress={() => setStatePickerOpen(true)}>
-          <Text style={styles.pickerLabel}>State</Text>
+          <Text style={styles.pickerLabel}>{t('loc_state')}</Text>
           <Text style={[styles.pickerValue, !loc.state && styles.pickerPlaceholder]}>
-            {loc.state || 'Select state'}
+            {loc.state || t('loc_select_state')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.pickerField, !loc.state && styles.pickerFieldDisabled]}
           onPress={() => loc.state && setLgaPickerOpen(true)}
         >
-          <Text style={styles.pickerLabel}>LGA</Text>
+          <Text style={styles.pickerLabel}>{t('loc_lga')}</Text>
           <Text style={[styles.pickerValue, !loc.lga && styles.pickerPlaceholder]}>
-            {loc.lga || 'Select LGA'}
+            {loc.lga || t('loc_select_lga')}
           </Text>
         </TouchableOpacity>
       </View>
 
       <TextInput
         style={styles.input}
-        placeholder="Community / town / village (e.g. Funtua town)"
+        placeholder={t('loc_community_ph')}
         placeholderTextColor={Colors.textMuted}
         value={loc.community}
         onChangeText={loc.setCommunity}
@@ -102,14 +201,14 @@ export default function LocationCaptureSection({ loc }) {
       <View style={styles.row}>
         <TextInput
           style={[styles.input, styles.inputHalf]}
-          placeholder="Postal code (if known)"
+          placeholder={t('loc_postal_ph')}
           placeholderTextColor={Colors.textMuted}
           value={loc.postalCode}
           onChangeText={loc.setPostalCode}
         />
         <TextInput
           style={[styles.input, styles.inputHalf]}
-          placeholder="Address / landmark"
+          placeholder={t('loc_address_ph')}
           placeholderTextColor={Colors.textMuted}
           value={loc.address}
           onChangeText={loc.setAddress}
@@ -120,41 +219,43 @@ export default function LocationCaptureSection({ loc }) {
         <View style={[styles.checkbox, loc.differsFromScan && styles.checkboxChecked]}>
           {loc.differsFromScan && <Text style={styles.checkboxTick}>✓</Text>}
         </View>
-        <Text style={styles.checkLabel}>
-          I&apos;m scanning this sample at a different location from where it was collected (e.g. a lab or office, away from the farm).
-        </Text>
+        <Text style={styles.checkLabel}>{t('loc_differs')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.checkRow} onPress={() => loc.setConfirmed(!loc.confirmed)}>
         <View style={[styles.checkbox, loc.confirmed && styles.checkboxChecked]}>
           {loc.confirmed && <Text style={styles.checkboxTick}>✓</Text>}
         </View>
-        <Text style={styles.checkLabel}>I confirm the location entered above is correct.</Text>
+        <Text style={styles.checkLabel}>{t('loc_confirm')}</Text>
       </TouchableOpacity>
+
+      <Text style={[styles.hint, { marginTop: Spacing.sm }]}>{t('loc_privacy')}</Text>
 
       <PickerModal
         visible={statePickerOpen}
-        title="Select State"
+        title={t('loc_select_state')}
         search={stateSearch}
         onSearch={setStateSearch}
         items={filteredStates.map(s => s.name)}
         onSelect={(name) => { loc.selectState(name); setStateSearch(''); setStatePickerOpen(false); }}
         onClose={() => { setStatePickerOpen(false); setStateSearch(''); }}
+        t={t}
       />
       <PickerModal
         visible={lgaPickerOpen}
-        title="Select LGA"
+        title={t('loc_select_lga')}
         search={lgaSearch}
         onSearch={setLgaSearch}
         items={filteredLgas}
         onSelect={(name) => { loc.selectLga(name); setLgaSearch(''); setLgaPickerOpen(false); }}
         onClose={() => { setLgaPickerOpen(false); setLgaSearch(''); }}
+        t={t}
       />
     </View>
   );
 }
 
-function PickerModal({ visible, title, search, onSearch, items, onSelect, onClose }) {
+function PickerModal({ visible, title, search, onSearch, items, onSelect, onClose, t }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -165,7 +266,7 @@ function PickerModal({ visible, title, search, onSearch, items, onSelect, onClos
             style={styles.modalSearch}
             value={search}
             onChangeText={onSearch}
-            placeholder="Search…"
+            placeholder={t('loc_search')}
             placeholderTextColor={Colors.textMuted}
             autoCapitalize="none"
           />
@@ -174,7 +275,7 @@ function PickerModal({ visible, title, search, onSearch, items, onSelect, onClos
             keyExtractor={(item) => item}
             style={{ maxHeight: 360 }}
             keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={<Text style={styles.modalEmpty}>No matches found.</Text>}
+            ListEmptyComponent={<Text style={styles.modalEmpty}>{t('loc_no_matches')}</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity style={styles.modalOption} onPress={() => onSelect(item)}>
                 <Text style={styles.modalOptionText}>{item}</Text>
@@ -182,7 +283,7 @@ function PickerModal({ visible, title, search, onSearch, items, onSelect, onClos
             )}
           />
           <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
-            <Text style={styles.modalCloseText}>Cancel</Text>
+            <Text style={styles.modalCloseText}>{t('loc_cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -198,11 +299,23 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   title:     { ...Typography.label, color: Colors.textPrimary, flexShrink: 1, marginRight: Spacing.sm },
   optional:  { ...Typography.tiny, color: Colors.textMuted, fontWeight: '400' },
-  gpsBtn: {
-    backgroundColor: '#EAF7EF', borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 6,
-  },
-  gpsBtnText: { ...Typography.tiny, color: Colors.primary, fontWeight: '700' },
   hint: { ...Typography.tiny, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 16 },
+
+  modeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
+  modeBtn: {
+    flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background, paddingHorizontal: Spacing.sm,
+  },
+  modeBtnOn: { borderColor: Colors.primary, backgroundColor: '#EAF7EF' },
+  modeBtnText: { ...Typography.small, color: Colors.textSecondary, fontWeight: '700' },
+  modeBtnTextOn: { color: Colors.primary },
+  helpLine: { marginTop: 2 },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.xs },
+  actionBtn: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.card, borderRadius: Radius.sm, paddingHorizontal: Spacing.sm, paddingVertical: 6, alignSelf: 'flex-start', marginTop: 4 },
+  actionBtnText: { ...Typography.tiny, color: Colors.primary, fontWeight: '700' },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', marginBottom: 4 },
+  ratingBadge: { ...Typography.tiny, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.full, overflow: 'hidden' },
+  namesNote: { ...Typography.tiny, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 16 },
 
   statusBox: { borderRadius: Radius.sm, padding: Spacing.sm, marginBottom: Spacing.sm },
   statusSuccess: { backgroundColor: '#EAF7EF' },

@@ -191,9 +191,10 @@ class CeoScanAnalyticsController extends Controller
                 'users.first_name as user_first_name', 'users.last_name as user_last_name',
                 'users.state as user_state', 'users.lga as user_lga',
                 'collection_locations.state as collection_state', 'collection_locations.lga as collection_lga',
-                'collection_locations.community as collection_community',
-                'collection_locations.latitude as collection_latitude', 'collection_locations.longitude as collection_longitude',
+                // LGA level only: no community or exact point in an export (config/location_privacy.php).
+                DB::raw('case when collection_locations.latitude is not null then 1 else 0 end as collection_has_gps'),
                 'collection_locations.accuracy_meters as collection_accuracy_meters',
+                'collection_locations.is_mocked as collection_is_mocked',
                 'collection_locations.capture_method as collection_capture_method',
                 'collection_locations.verification_status as collection_verification_status',
                 'collection_locations.collected_at as collection_collected_at'
@@ -217,8 +218,8 @@ class CeoScanAnalyticsController extends Controller
                 'Confidence %', 'Confidence Decision', 'Validation Status', 'AI Model', 'AI Model Version',
                 'Severity', 'Raw Status', 'Display Status', 'User',
                 "User's Registered State", "User's Registered LGA",
-                'Sample Collection State', 'Sample Collection LGA', 'Sample Collection Community',
-                'Sample Latitude (WGS84)', 'Sample Longitude (WGS84)', 'Sample GPS Accuracy (m)',
+                'Sample Collection State', 'Sample Collection LGA',
+                'Sample GPS Point Recorded', 'Sample GPS Accuracy (m)', 'Sample GPS Accuracy Rating', 'Sample GPS Mocked',
                 'Sample Location Capture Method', 'Sample Location Verification Status',
                 'Sample Collected At (Africa/Lagos)',
             ]);
@@ -242,10 +243,10 @@ class CeoScanAnalyticsController extends Controller
                     $row->user_lga,
                     $row->collection_state,
                     $row->collection_lga,
-                    $row->collection_community,
-                    $row->collection_latitude,
-                    $row->collection_longitude,
+                    $row->collection_has_gps ? 'yes' : 'no',
                     $row->collection_accuracy_meters,
+                    $row->collection_has_gps ? \App\Models\CollectionLocation::accuracyRating($row->collection_accuracy_meters !== null ? (float) $row->collection_accuracy_meters : null) : null,
+                    $row->collection_is_mocked === null ? null : ((bool) $row->collection_is_mocked ? 'yes' : 'no'),
                     $row->collection_capture_method,
                     $row->collection_verification_status,
                     $row->collection_collected_at

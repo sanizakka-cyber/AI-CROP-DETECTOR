@@ -2,7 +2,7 @@ import '../lib/i18n';
 import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { LanguageProvider } from '../context/LanguageContext';
@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import { profileAPI } from '../lib/api';
 import { setupGlobalErrorHandler } from '../lib/betaLogger';
 import { initOfflineQueue, offlineQueue } from '../lib/offlineQueue';
+import { scanQueue } from '../lib/scanQueue';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api';
@@ -83,6 +84,17 @@ function RootGuard({ children }) {
       if (notifListener.current)  Notifications.removeNotificationSubscription(notifListener.current);
       if (responseListener.current) Notifications.removeNotificationSubscription(responseListener.current);
     };
+  }, [user, loading]);
+
+  // Scans saved on the phone without internet (lib/scanQueue): sent on login,
+  // whenever the app comes back to the foreground, and every minute while open.
+  useEffect(() => {
+    if (loading || !user) return undefined;
+    const sync = () => { scanQueue.flush().catch(() => {}); };
+    sync();
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') sync(); });
+    const timer = setInterval(sync, 60000);
+    return () => { sub.remove(); clearInterval(timer); };
   }, [user, loading]);
 
   useEffect(() => {

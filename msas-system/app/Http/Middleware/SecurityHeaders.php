@@ -34,7 +34,8 @@ class SecurityHeaders
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.paystack.co https://meet.jit.si https://browser.sentry-cdn.com https://cdn.jsdelivr.net",
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdnjs.cloudflare.com",
-            "img-src 'self' data: https://ui-avatars.com https://images.unsplash.com",
+            // tile.openstreetmap.org: map preview tiles on the scan form (resources/js/location-map.js).
+            "img-src 'self' data: https://ui-avatars.com https://images.unsplash.com https://tile.openstreetmap.org",
             "font-src 'self' data: https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "connect-src 'self' https://api.open-meteo.com https://api.paystack.co https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io https://cdn.jsdelivr.net https://browser.sentry-cdn.com",
             "frame-src 'self' https://meet.jit.si",

@@ -142,6 +142,7 @@ Route::middleware('auth.api')->group(function () {
         Route::post('/diagnose/soil',      [DiagnoseApiController::class, 'soil']);
         Route::post('/diagnose/pest',      [DiagnoseApiController::class, 'pest']);
     });
+    Route::get('/locations/lookup', \App\Http\Controllers\LocationLookupController::class)->middleware('throttle:30,1');
     Route::get('/diagnose',            [DiagnoseApiController::class, 'history']);
     Route::get('/diagnose/{id}',       [DiagnoseApiController::class, 'show']);
     Route::patch('/diagnose/{id}/feedback', [DiagnoseApiController::class, 'feedback']);

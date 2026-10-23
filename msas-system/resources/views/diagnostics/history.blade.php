@@ -382,11 +382,13 @@
                                 @if($loc->address_landmark)<div class="col-span-2 sm:col-span-3"><span class="text-slate-400">{{ __('Address/Landmark') }}:</span> <span class="font-semibold text-slate-700">{{ $loc->address_landmark }}</span></div>@endif
                             </div>
 
-                            @if($loc->hasCoordinates())
-                            <div class="flex items-center gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 mb-2">
+                            {{-- The exact point: the farmer and permitted staff only (config/location_privacy.php). --}}
+                            @if($loc->hasCoordinates() && \App\Models\CollectionLocation::canSeeExactPoint(auth()->user(), $diagnosis))
+                            <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 rounded-lg px-3 py-2 mb-2" data-exact-point="1">
                                 <i class="fa-solid fa-crosshairs text-slate-400"></i>
                                 <span class="font-mono text-slate-700">{{ number_format($loc->latitude, 6) }}, {{ number_format($loc->longitude, 6) }}</span>
-                                @if($loc->accuracy_meters)<span class="text-slate-400">(±{{ round($loc->accuracy_meters) }}m)</span>@endif
+                                @if($loc->accuracy_meters)<span class="text-slate-500" data-accuracy-rating="{{ $loc->accuracy_rating }}">±{{ round($loc->accuracy_meters) }} m · {{ __(ucfirst($loc->accuracy_rating)) }}</span>@endif
+                                @if($loc->gps_captured_at)<span class="text-slate-400">{{ $loc->gps_captured_at->format('M j, Y H:i') }}</span>@endif
                                 <a href="https://www.google.com/maps?q={{ $loc->latitude }},{{ $loc->longitude }}" target="_blank" rel="noopener" class="ml-auto text-emerald-600 hover:underline font-semibold">{{ __('Open in Maps') }} ↗</a>
                             </div>
                             @endif
@@ -394,8 +396,13 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full
                                     {{ $loc->verification_status === 'boundary_mismatch_flagged' ? 'bg-amber-100 text-amber-800' : ($loc->user_confirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600') }}">
-                                    {{ $loc->provenanceLabel }}
+                                    {{ __($loc->provenanceLabel) }}
                                 </span>
+                                @if($loc->is_mocked)
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-800" data-mocked="1">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> {{ __('The phone reported a simulated location. This scan is left out of outbreak maps.') }}
+                                </span>
+                                @endif
                                 @if($loc->verification_status === 'boundary_mismatch_flagged')
                                 <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-800">
                                     <i class="fa-solid fa-triangle-exclamation"></i> {{ __('Location outside expected range — unverified') }}

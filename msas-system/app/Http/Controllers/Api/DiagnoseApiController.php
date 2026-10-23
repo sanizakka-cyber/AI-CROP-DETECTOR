@@ -102,6 +102,9 @@ class DiagnoseApiController extends Controller
             'loc_country', 'loc_state', 'loc_lga', 'loc_ward', 'loc_community',
             'loc_postal_code', 'loc_address', 'loc_latitude', 'loc_longitude',
             'loc_accuracy_meters', 'loc_capture_method', 'loc_collected_at',
+            'loc_location_source', 'loc_gps_captured_at', 'loc_place_names_source',
+            'loc_scan_latitude', 'loc_scan_longitude', 'loc_scan_accuracy_meters',
+            'loc_is_mocked', 'loc_gps_original_latitude', 'loc_gps_original_longitude',
         ];
 
         $normalized = [];
@@ -139,6 +142,15 @@ class DiagnoseApiController extends Controller
             'loc_user_confirmed'     => ['sometimes', 'nullable', 'boolean'],
             'loc_differs_from_scan'  => ['sometimes', 'nullable', 'boolean'],
             'loc_collected_at'       => ['sometimes', 'nullable', 'date'],
+            'loc_location_source'    => ['sometimes', 'nullable', 'in:' . implode(',', CollectionLocation::LOCATION_SOURCES)],
+            'loc_gps_captured_at'    => ['sometimes', 'nullable', 'date'],
+            'loc_place_names_source' => ['sometimes', 'nullable', 'in:lookup,user'],
+            'loc_scan_latitude'      => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'loc_scan_longitude'     => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
+            'loc_scan_accuracy_meters' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'loc_is_mocked'          => ['sometimes', 'nullable', 'boolean'],
+            'loc_gps_original_latitude'  => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
+            'loc_gps_original_longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
         ];
     }
 
@@ -352,6 +364,8 @@ class DiagnoseApiController extends Controller
             ->first();
 
         $loc = $d->collectionLocation;
+        // Exact GPS points only for the farmer or a permitted role (config/location_privacy.php).
+        $exact = $loc && CollectionLocation::canSeeExactPoint(request()->user() ?? $d->user, $d);
         // Headline, health, severity, urgency, causes and steps: one source
         // (App\Support\ResultView), shared with the web page and the PDF.
         // The payload is only ever served to the scan's owner, so they are the viewer.
@@ -426,13 +440,25 @@ class DiagnoseApiController extends Controller
                 'community'               => $loc->community,
                 'postalCode'              => $loc->postal_code,
                 'addressLandmark'         => $loc->address_landmark,
-                'latitude'                => $loc->latitude,
-                'longitude'               => $loc->longitude,
+                'latitude'                => $exact ? $loc->latitude : null,
+                'longitude'               => $exact ? $loc->longitude : null,
                 'accuracyMeters'          => $loc->accuracy_meters,
+                // excellent / good / fair / low, from the accuracy the device reported.
+                'accuracyRating'          => $loc->accuracy_rating,
+                'isMocked'                => $loc->is_mocked,
                 'provenanceLabel'         => $loc->provenanceLabel,
                 'verificationStatus'      => $loc->verification_status,
                 'differsFromScanLocation' => $loc->differs_from_scan_location,
                 'collectedAt'             => $loc->collected_at?->toISOString(),
+                'locationSource'          => $loc->location_source,
+                'gpsCapturedAt'           => $loc->gps_captured_at?->toISOString(),
+                // Per field: a boundary dataset version (filled from GPS) or "user".
+                'fieldSources'            => $loc->field_sources ?? (object) [],
+                'gpsOriginalLatitude'     => $exact ? $loc->gps_original_latitude : null,
+                'gpsOriginalLongitude'    => $exact ? $loc->gps_original_longitude : null,
+                'scanLatitude'            => $exact ? $loc->scan_latitude : null,
+                'scanLongitude'           => $exact ? $loc->scan_longitude : null,
+                'scanAccuracyMeters'      => $loc->scan_accuracy_meters,
             ] : null,
             // Phase 11 canonical contract: which recoverable state the result
             // is in, and what to do next. outcome is null on legacy records.

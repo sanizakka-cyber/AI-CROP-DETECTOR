@@ -12,12 +12,16 @@ on:
     paths:
       - 'mobile/**'
       - 'shared-fixtures/**'
+      # lib/__tests__/gpsQuality.test.js also runs the web form's copy of the GPS rules.
+      - 'msas-system/public/js/gps-quality.js'
       - '.github/workflows/mobile-tests.yml'
   pull_request:
     branches: [main]
     paths:
       - 'mobile/**'
       - 'shared-fixtures/**'
+      # lib/__tests__/gpsQuality.test.js also runs the web form's copy of the GPS rules.
+      - 'msas-system/public/js/gps-quality.js'
       - '.github/workflows/mobile-tests.yml'
 
 permissions:

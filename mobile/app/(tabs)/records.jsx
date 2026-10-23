@@ -10,6 +10,7 @@ import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Th
 import { Card, SeverityBadge, EmptyState, Button } from '../../components/UI';
 import { subjectIcon, typeLabel } from '../../lib/subjectIcon';
 import { statusMeta } from '../../lib/diagnosisStatus';
+import PendingScans from '../../components/PendingScans';
 
 const LOAD_FALLBACK = 'Could not load your records. Check your connection and try again.';
 const ANIMAL_ICON = {
@@ -84,6 +85,9 @@ export default function RecordsScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>📋 {t('records')}</Text>
       </View>
+
+      {/* Scans saved on the phone without internet: not yet synced / synced. */}
+      <PendingScans onSynced={load} />
 
       {/* Tabs */}
       <View style={styles.tabRow}>
