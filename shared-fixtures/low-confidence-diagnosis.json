@@ -40,7 +40,7 @@
       "primaryDiagnosis": "Inconclusive – possible causes below",
       "confidence": 55,
       "symptomsIdentified": "circular grey crusted patches on the neck",
-      "explanation": "Crusted circular patches fit ringworm, but nodules would point elsewhere",
+      "explanation": "The signs in this photo could be one of these: Ringworm, Mange, Lumpy skin disease. The AI cannot tell which one from this photo.",
       "severity": null,
       "urgency": null,
       "healthStatus": "Needs checking"
