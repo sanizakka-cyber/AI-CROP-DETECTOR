@@ -392,7 +392,6 @@
   "Do not spray until the pest is confirmed.": "Do not spray until the pest is confirmed.",
   "Take a soil sample to a laboratory for testing before you add fertiliser.": "Take a soil sample to a laboratory for testing before you add fertiliser.",
   "Remove badly affected leaves or plants and keep them away from healthy ones.": "Remove badly affected leaves or plants and keep them away from healthy ones.",
-  "Ask an extension officer or vet to confirm before you treat.": "Ask an extension officer or vet to confirm before you treat.",
   "Move closer so the affected part fills most of the photo.": "Move closer so the affected part fills most of the photo.",
   "Take the photo in daylight, without shadow on the affected part.": "Take the photo in daylight, without shadow on the affected part.",
   "Hold the phone still and tap the screen on the affected part to focus.": "Hold the phone still and tap the screen on the affected part to focus.",
@@ -413,5 +412,13 @@
   "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.",
   "Request Vet / Ask an expert": "Request Vet / Ask an expert",
   "Scan attached": "Scan attached",
-  "About my scan :ref (:date):": "About my scan :ref (:date):"
+  "About my scan :ref (:date):": "About my scan :ref (:date):",
+  "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.": "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.",
+  "Request Agronomist / Ask an expert": "Request Agronomist / Ask an expert",
+  "Please confirm with an agronomist or extension officer before treating.": "Tiiɗno, ndaar e annduɗo noma walla jaŋngingoowo remooɓe hade safrude.",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.": "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.",
+  "Ask an agronomist or extension officer to confirm before you treat.": "Ask an agronomist or extension officer to confirm before you treat.",
+  "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.": "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.",
+  "The AI cannot tell what the problem is from this photo.": "The AI cannot tell what the problem is from this photo.",
+  "AI explanation": "AI explanation"
 }

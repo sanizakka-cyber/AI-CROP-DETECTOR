@@ -68,7 +68,7 @@ jobs:
             cd "$1/msas-system"
             touch .env
             export APP_KEY="base64:$(openssl rand -base64 32)" APP_ENV=testing APP_DEBUG=true \
-                   DB_CONNECTION=sqlite DB_DATABASE="/tmp/$2.sqlite" SESSION_DRIVER=file SESSION_SECURE_COOKIE=false CACHE_STORE=file QUEUE_CONNECTION=sync \
+                   DB_CONNECTION=sqlite DB_DATABASE="/tmp/$2.sqlite" SESSION_DRIVER=file SESSION_SECURE_COOKIE=false CACHE_STORE=array QUEUE_CONNECTION=sync \
                    APP_URL="http://127.0.0.1:$3"
             mkdir -p bootstrap/cache storage/framework/{sessions,views,cache} storage/logs
             rm -f "/tmp/$2.sqlite" && touch "/tmp/$2.sqlite"

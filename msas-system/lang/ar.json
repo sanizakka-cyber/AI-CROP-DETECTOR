@@ -392,7 +392,6 @@
   "Do not spray until the pest is confirmed.": "لا ترش المبيد حتى يتم تأكيد الآفة.",
   "Take a soil sample to a laboratory for testing before you add fertiliser.": "خذ عينة من التربة إلى مختبر لفحصها قبل إضافة السماد.",
   "Remove badly affected leaves or plants and keep them away from healthy ones.": "أزل الأوراق أو النباتات المصابة بشدة وأبعدها عن السليمة.",
-  "Ask an extension officer or vet to confirm before you treat.": "اطلب من مرشد زراعي أو طبيب بيطري التأكيد قبل العلاج.",
   "Move closer so the affected part fills most of the photo.": "اقترب حتى يملأ الجزء المصاب معظم الصورة.",
   "Take the photo in daylight, without shadow on the affected part.": "التقط الصورة في ضوء النهار دون ظل على الجزء المصاب.",
   "Hold the phone still and tap the screen on the affected part to focus.": "ثبّت الهاتف واضغط على الشاشة فوق الجزء المصاب لضبط التركيز.",
@@ -413,5 +412,13 @@
   "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "هذه نصيحة من الذكاء الاصطناعي وقد تكون خاطئة. إذا لم تكن متأكدًا، اسأل مرشدًا زراعيًا أو طبيبًا بيطريًا.",
   "Request Vet / Ask an expert": "اطلب طبيبًا بيطريًا / اسأل خبيرًا",
   "Scan attached": "الفحص مرفق",
-  "About my scan :ref (:date):": "بخصوص فحصي :ref (:date):"
+  "About my scan :ref (:date):": "بخصوص فحصي :ref (:date):",
+  "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.": "هذه نصيحة من الذكاء الاصطناعي وقد تكون خاطئة. إذا لم تكن متأكدًا، اسأل مهندسًا زراعيًا أو مرشدًا زراعيًا.",
+  "Request Agronomist / Ask an expert": "اطلب مهندسًا زراعيًا / اسأل خبيرًا",
+  "Please confirm with an agronomist or extension officer before treating.": "يرجى التأكد من مهندس زراعي أو مرشد زراعي قبل العلاج.",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.": "يعتقد الذكاء الاصطناعي أن هذا مرجح، لكنه ليس متأكدًا تمامًا. يرجى التأكد من مهندس زراعي أو مرشد زراعي قبل العلاج.",
+  "Ask an agronomist or extension officer to confirm before you treat.": "اطلب من مهندس زراعي أو مرشد زراعي التأكيد قبل العلاج.",
+  "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.": "قد تدل العلامات في هذه الصورة على أحد هذه الأسباب: :causes. لا يستطيع الذكاء الاصطناعي تحديد أيها من هذه الصورة.",
+  "The AI cannot tell what the problem is from this photo.": "لا يستطيع الذكاء الاصطناعي تحديد المشكلة من هذه الصورة.",
+  "AI explanation": "تفسير الذكاء الاصطناعي"
 }

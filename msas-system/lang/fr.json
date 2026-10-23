@@ -467,7 +467,6 @@
   "Do not spray until the pest is confirmed.": "Ne pulvérisez pas tant que le ravageur n'est pas confirmé.",
   "Take a soil sample to a laboratory for testing before you add fertiliser.": "Faites analyser un échantillon de sol en laboratoire avant d'ajouter de l'engrais.",
   "Remove badly affected leaves or plants and keep them away from healthy ones.": "Retirez les feuilles ou plantes très atteintes et éloignez-les des plantes saines.",
-  "Ask an extension officer or vet to confirm before you treat.": "Demandez à un agent de vulgarisation ou à un vétérinaire de confirmer avant de traiter.",
   "Move closer so the affected part fills most of the photo.": "Approchez-vous pour que la partie touchée remplisse la majeure partie de la photo.",
   "Take the photo in daylight, without shadow on the affected part.": "Prenez la photo à la lumière du jour, sans ombre sur la partie touchée.",
   "Hold the phone still and tap the screen on the affected part to focus.": "Tenez le téléphone immobile et touchez l'écran sur la partie touchée pour faire la mise au point.",
@@ -488,5 +487,13 @@
   "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Ceci est un conseil de l'IA et peut être erroné. En cas de doute, demandez à un agent de vulgarisation ou à un vétérinaire.",
   "Request Vet / Ask an expert": "Demander un vétérinaire / Consulter un expert",
   "Scan attached": "Analyse jointe",
-  "About my scan :ref (:date):": "À propos de mon analyse :ref (:date) :"
+  "About my scan :ref (:date):": "À propos de mon analyse :ref (:date) :",
+  "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.": "Ceci est un conseil de l'IA et peut être erroné. En cas de doute, demandez à un agronome ou à un agent de vulgarisation.",
+  "Request Agronomist / Ask an expert": "Demander un agronome / Consulter un expert",
+  "Please confirm with an agronomist or extension officer before treating.": "Veuillez confirmer avec un agronome ou un agent de vulgarisation avant de traiter.",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.": "L'IA pense que c'est probable, mais n'en est pas tout à fait sûre. Veuillez confirmer avec un agronome ou un agent de vulgarisation avant de traiter.",
+  "Ask an agronomist or extension officer to confirm before you treat.": "Demandez à un agronome ou à un agent de vulgarisation de confirmer avant de traiter.",
+  "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.": "Les signes visibles sur cette photo peuvent correspondre à l'un de ces problèmes : :causes. L'IA ne peut pas dire lequel à partir de cette photo.",
+  "The AI cannot tell what the problem is from this photo.": "L'IA ne peut pas dire quel est le problème à partir de cette photo.",
+  "AI explanation": "Explication de l'IA"
 }

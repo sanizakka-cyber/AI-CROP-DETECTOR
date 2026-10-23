@@ -397,7 +397,8 @@ a { color: inherit; text-decoration: none; }
         @include('diagnostics.partials.outcome-report')
 
         {{-- Symptoms + Cause + Environment --}}
-        @php $row1 = collect(['symptoms_identified','cause','environmental_factors'])->filter(fn($f)=>!empty($diagnosis->$f)); @endphp
+        {{-- Root cause: confident results only (ResultView::root_cause). --}}
+        @php $row1 = collect(['symptoms_identified','cause','environmental_factors'])->filter(fn($f)=>$f === 'cause' ? $rv['root_cause'] !== null : !empty($diagnosis->$f)); @endphp
         @if($row1->isNotEmpty())
         <div class="section-grid">
             @if($diagnosis->symptoms_identified)
@@ -406,8 +407,8 @@ a { color: inherit; text-decoration: none; }
                 <p>{{ $p('symptoms_identified') }}</p>
             </div>
             @endif
-            @if($diagnosis->cause)
-            <div class="section-card s-slate">
+            @if($rv['root_cause'])
+            <div class="section-card s-slate" data-root-cause="1">
                 <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg> {{ __('Root Cause') }}</div>
                 <p>{{ $p('cause') }}</p>
             </div>
@@ -496,10 +497,11 @@ a { color: inherit; text-decoration: none; }
         @endif
 
         {{-- Explainable AI --}}
-        @if($diagnosis->explanation)
-        <div class="explanation-box">
+        {{-- Inconclusive: built from the listed causes (ResultView); the engine's own words are in the appendix. --}}
+        @if($rv['explanation'])
+        <div class="explanation-box" data-explanation="{{ $rv['explanation']['key'] ?? 'ai' }}">
             <div class="section-label"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg> {{ __('Why this diagnosis?') }} (Explainable AI)</div>
-            <p>{{ $p('explanation') }}</p>
+            <p>{{ $rv['inconclusive'] ? $rv['explanation']['text'] : ($p('explanation') ?? $rv['explanation']['text']) }}</p>
         </div>
         @endif
 

@@ -50,7 +50,7 @@ exports[`label/value layout the diagnostic details card of the banana scan 1`] =
   "1. Natural leaf sheath ageing",
   "2. Natural drying and ageing of old leaf sheaths",
   "3. Natural drying and shedding of old outer leaf sheaths",
-  "Please confirm with a vet or extension officer before treating.",
+  "Please confirm with an agronomist or extension officer before treating.",
   "No treatment is recommended until the problem is confirmed.",
 ]
 `;

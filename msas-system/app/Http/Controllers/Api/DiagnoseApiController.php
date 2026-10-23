@@ -395,12 +395,14 @@ class DiagnoseApiController extends Controller
                 'urgencyLevel'        => $urgLevel,
                 'healthStatus'        => $view['health']['label'] ?? null,
                 // Farmer-facing text in plain words (FarmerText); originals under `technical`.
-                'likelyCauses'        => $d->cause ? [$plain($d->cause)] : [],
+                // Confident results only (ResultView::root_cause); empty for inconclusive and "Likely X".
+                'likelyCauses'        => $view['root_cause'] ? [$view['root_cause']] : [],
                 'symptomsIdentified'  => $plain($d->symptoms_identified),
                 'environmentalFactors'=> $plain($d->environmental_factors),
                 'nutrientDeficiencies'=> $d->nutrient_deficiencies,
                 'pestDetection'       => $d->pest_detection,
-                'explanation'         => $plain($d->explanation),
+                // Inconclusive: built from the listed causes (ResultView), like the web page.
+                'explanation'         => $view['explanation']['text'] ?? null,
             ],
             // Confidence provenance (spec 4.5) — always present so the
             // client can render an honest "what does this number mean"

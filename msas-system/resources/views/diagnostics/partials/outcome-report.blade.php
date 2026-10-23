@@ -39,7 +39,8 @@
 </div>
 @endif
 
-@if($outcome === 'assessed' && !empty($diagnosis->alternative_findings))
+{{-- Not for an inconclusive result: its possible causes are the list (same as the app). --}}
+@if($outcome === 'assessed' && !($rv['inconclusive'] ?? false) && !empty($diagnosis->alternative_findings))
 <div class="section-card s-slate" style="margin-bottom:10px">
     <div class="section-label">{{ __('Other possibilities considered') }}</div>
     {{-- Plain names here; the technical names are in the appendix. --}}

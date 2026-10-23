@@ -455,8 +455,9 @@
         <!-- Top Header -->
         <header class="top-header h-16 flex items-center justify-between px-5 gap-4 flex-shrink-0 z-20">
 
-            <!-- Left: Toggle + Page title -->
-            <div class="flex items-center gap-4">
+            <!-- Left: Toggle + Page title. min-w-0 so a long title shrinks inside the
+                 64px bar instead of wrapping out of it (which cut its top off). -->
+            <div class="flex items-center gap-4 min-w-0 flex-1">
                 <button @click="sidebarOpen = !sidebarOpen"
                     class="w-9 h-9 rounded-lg flex items-center justify-center border transition-all"
                     style="border-color:#e2e8f0; color:#64748b;"
@@ -469,18 +470,19 @@
                 </button>
 
                 <!-- Breadcrumb / Page header -->
-                <div class="hidden sm:block">
+                <div class="hidden sm:block min-w-0 flex-1" data-page-header="1">
                     @isset($header)
-                        <div class="text-slate-800">{{ $header }}</div>
+                        <div class="text-slate-800 min-w-0">{{ $header }}</div>
                     @endisset
                 </div>
             </div>
 
             <!-- Right: Search + Actions + Profile -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 shrink-0">
 
-                <!-- Search -->
-                <div class="relative hidden md:block">
+                <!-- Search: hidden on every width until it does something (it is not wired
+                     to any search yet; tracked as its own task). -->
+                <div class="relative hidden" data-topbar-search="1">
                     <div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;">
                         <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     </div>
@@ -585,7 +587,7 @@
                     <button @click="$store.ui.toggle('profile')" class="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-slate-50 transition border border-transparent hover:border-slate-200">
                         <img src="{{ auth()->user()->avatarUrl }}"
                              alt="" class="w-8 h-8 rounded-lg object-cover">
-                        <div class="hidden sm:block text-left">
+                        <div class="hidden md:block text-left">
                             <div class="text-xs font-bold text-slate-800 leading-tight">{{ auth()->user()->displayFirstName }}</div>
                             @php
                             $roleClass = match(\App\Support\Roles::canonical(auth()->user()->role)) {

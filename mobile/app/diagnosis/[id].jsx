@@ -44,12 +44,15 @@ export default function DiagnosisDetailScreen() {
   const router = useRouter();
   const { language, voiceEnabled } = useLanguage();
   const isHausa = i18n.language === 'ha';
+  const [diag, setDiag] = useState(null);
+  // Who to ask: a vet for livestock and poultry, an agronomist or extension
+  // officer for crops, soil and pests (server: assessment.result.expert).
+  const vetScan = (diag?.assessment?.result?.expert?.key ?? (diag?.type === 'livestock' ? 'vet' : 'agronomist')) === 'vet';
+  const expertKey = (key) => (vetScan ? key : `${key}Crop`);
   // Shown on every result screen (assessed, not certain, rejected photo, AI outage).
   const aiDisclaimer = (
-    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">ⓘ {t('aiDisclaimer')}</Text>
+    <Text style={styles.aiDisclaimer} testID="ai-disclaimer">ⓘ {t(expertKey('aiDisclaimer'))}</Text>
   );
-
-  const [diag, setDiag] = useState(null);
   const [activeTab, setActiveTab] = useState('treatment');
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackSending, setFeedbackSending] = useState(false);
@@ -362,6 +365,10 @@ export default function DiagnosisDetailScreen() {
     : inconclusive ? t('confidenceLowUnsure')
     : (isHausa ? 'Babu maki' : 'No score');
   const healthyResult = ['healthy', 'normal_ageing'].includes(view?.health?.key);
+  // The explanation: translated here when the server built it from the causes (key + causes).
+  const explanationText = view?.explanation?.key
+    ? String(t(view.explanation.key, { causes: view.explanation.causes.join(', ') })).replace('{{causes}}', view.explanation.causes.join(', '))
+    : (view?.explanation?.text ?? result.explanation);
   const consultation = plan.consultation || {};
   const expertType = consultation.expertType || result.expertType || (diag.type === 'livestock' ? 'vet' : 'agronomist');
   const expertLabel = expertType === 'agronomist' ? 'Agronomist' : 'Vet Doctor';
@@ -453,7 +460,7 @@ export default function DiagnosisDetailScreen() {
           {possibleConditions.map((name, i) => (
             <Text key={name} style={styles.treatBody} testID="possible-condition">{i + 1}. {name}</Text>
           ))}
-          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t('confirmWithExpert')}</Text>
+          <Text style={[styles.treatBody, { marginTop: Spacing.sm, fontWeight: '700' }]} testID="confirm-with-expert">{t(expertKey('confirmWithExpert'))}</Text>
           <Text style={[styles.treatBody, { marginTop: Spacing.xs }]}>{t('noTreatmentUntilConfirmed')}</Text>
         </Card>
       )}
@@ -481,8 +488,8 @@ export default function DiagnosisDetailScreen() {
         <Card style={styles.consultCard}>
           <Text style={styles.consultTitle}>Professional consultation is recommended.</Text>
           <Text style={styles.consultBody}>
-            {diag.type === 'crop'
-              ? 'This plant case should be reviewed by an agronomist for safe treatment and quality input advice.'
+            {!vetScan
+              ? 'This case should be reviewed by an agronomist or extension officer for safe treatment and quality input advice.'
               : 'This animal case should be reviewed by a veterinary doctor before medication is administered.'}
           </Text>
           <View style={styles.consultGrid}>
@@ -499,8 +506,9 @@ export default function DiagnosisDetailScreen() {
         </Card>
       )}
 
-      {result.likelyCauses?.length > 0 && (
-        <Card style={styles.card}>
+      {/* Confident results only; older servers still send it for inconclusive and "Likely" results. */}
+      {!inconclusive && !needsConfirmation && result.likelyCauses?.length > 0 && (
+        <Card style={styles.card} testID="likely-causes">
           <Text style={styles.cardTitle}>{isHausa ? 'Dalilan yiwuwa' : 'Likely Causes'}</Text>
           {result.likelyCauses.map((cause, index) => (
             <Text key={index} style={styles.listItem}>- {cause}</Text>
@@ -521,7 +529,8 @@ export default function DiagnosisDetailScreen() {
         <InfoField label="Environmental Factors" value={result.environmentalFactors} />
         <InfoField label="Nutrient Deficiency" value={result.nutrientDeficiencies} />
         <InfoField label="Pest Detection" value={result.pestDetection} />
-        <InfoField label="Explanation" value={result.explanation} />
+        {/* Inconclusive: built from the listed causes, so it never names a different problem. */}
+        <InfoField label="Explanation" value={explanationText} testID="details-explanation" />
       </Card>
 
       {/* Sample Collection Location — spec Section 6C. Null when the
@@ -590,13 +599,13 @@ export default function DiagnosisDetailScreen() {
       <View style={styles.disclaimerBox}>
         {aiDisclaimer}
         {diag.askExpertUrl ? (
-          <Button title={t('askExpert')} onPress={() => Linking.openURL(diag.askExpertUrl)} variant="outline" testID="ask-expert" />
+          <Button title={t(expertKey('askExpert'))} onPress={() => Linking.openURL(diag.askExpertUrl)} variant="outline" testID="ask-expert" />
         ) : null}
       </View>
 
       {needsConfirmation && (
         <Card style={[styles.card, styles.uncertainCard]} testID="likely-confirm-card">
-          <Text style={[styles.treatBody, { fontWeight: '700' }]}>{t('likelyConfirm')}</Text>
+          <Text style={[styles.treatBody, { fontWeight: '700' }]}>{t(expertKey('likelyConfirm'))}</Text>
         </Card>
       )}
 

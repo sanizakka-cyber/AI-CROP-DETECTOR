@@ -135,15 +135,53 @@ describe('disclaimer, ask an expert, advice', () => {
     const { Linking } = require('react-native');
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     await show({ ...fixture.inconclusive.api, askExpertUrl: 'https://www.msasagro.com/diagnostics/1/ask-expert' });
-    expect(allText()).toContain('This is AI advice and can be wrong. If unsure, ask an extension officer or vet.');
+    // A crop scan: an agronomist or extension officer, never a vet.
+    expect(allText()).toContain('This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.');
+    expect(allText()).toContain('Request Agronomist / Ask an expert');
+    expect(allText()).toContain('Please confirm with an agronomist or extension officer before treating.');
+    expect(allText()).not.toMatch(/\bvet\b/i);
     fireEvent.press(screen.getByTestId('ask-expert'));
     expect(open).toHaveBeenCalledWith('https://www.msasagro.com/diagnostics/1/ask-expert');
     open.mockRestore();
   });
 
+  test('a livestock scan names a vet', async () => {
+    const api = fixture.inconclusive.api;
+    await show({ ...api, type: 'livestock', askExpertUrl: 'https://www.msasagro.com/diagnostics/2/ask-expert',
+      assessment: { ...api.assessment, result: { ...api.assessment.result, expert: { key: 'vet' } } } });
+    expect(allText()).toContain('This is AI advice and can be wrong. If unsure, ask an extension officer or vet.');
+    expect(allText()).toContain('Request Vet / Ask an expert');
+    expect(allText()).toContain('Please confirm with a vet or extension officer before treating.');
+  });
+
+  test('the explanation of an inconclusive result is made from the listed causes', async () => {
+    const api = fixture.inconclusive.api;
+    const causes = api.assessment.result.possible_causes;
+    await show({ ...api, aiResult: { ...api.aiResult, explanation: 'Algal leaf spot or anthracnose (Colletotrichum).' },
+      assessment: { ...api.assessment, result: { ...api.assessment.result, explanation: { key: 'explain_causes', text: 'x', causes } } } });
+    const explanation = flatText(screen.getByTestId('details-explanation').props.children);
+    expect(explanation).toBe(`The signs in this photo could be one of these: ${causes.join(', ')}. The AI cannot tell which one from this photo.`);
+    expect(allText()).not.toMatch(/anthracnose|algal/i);
+  });
+
   test('no button when the server sends no request page (failed scan or older server)', async () => {
     await show(fixture.inconclusive.api);
     expect(screen.queryByTestId('ask-expert')).toBeNull();
+  });
+
+  test('"Likely Causes" only for a confident result, even if an older server sends it', async () => {
+    const cause = ['Old outer sheaths drying'];
+    await show({ ...fixture.inconclusive.api, aiResult: { ...fixture.inconclusive.api.aiResult, likelyCauses: cause } });
+    expect(screen.queryByTestId('likely-causes')).toBeNull();
+    screen.unmount();
+
+    const likely = fixture.normalAgeing.api;
+    await show({ ...likely, aiResult: { ...likely.aiResult, likelyCauses: cause }, assessment: { ...likely.assessment, result: { ...likely.assessment.result, kind: 'likely' } } });
+    expect(screen.queryByTestId('likely-causes')).toBeNull();
+    screen.unmount();
+
+    await show({ ...likely, aiResult: { ...likely.aiResult, likelyCauses: cause } });
+    expect(screen.getByTestId('likely-causes')).toBeTruthy();
   });
 
   test('a healthy result labels its advice "Advice", not "Recovery Period"', async () => {

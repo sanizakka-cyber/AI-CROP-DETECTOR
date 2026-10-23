@@ -392,7 +392,6 @@
   "Do not spray until the pest is confirmed.": "Agbala ọgwụ ruo mgbe a kwadoro ahụhụ ahụ.",
   "Take a soil sample to a laboratory for testing before you add fertiliser.": "Buru ihe nlele ala gaa ụlọ nyocha tupu ị tinye fatịlaịza.",
   "Remove badly affected leaves or plants and keep them away from healthy ones.": "Wepụ akwụkwọ ma ọ bụ osisi metụtara nke ukwuu, debe ha ebe dị anya n'ebe ndị dị mma nọ.",
-  "Ask an extension officer or vet to confirm before you treat.": "Gwa onye ndụmọdụ ọrụ ugbo ma ọ bụ dọkịta anụmanụ ka o kwado tupu ị gwọọ.",
   "Move closer so the affected part fills most of the photo.": "Bịaruo nso ka akụkụ metụtara juputa ọtụtụ foto ahụ.",
   "Take the photo in daylight, without shadow on the affected part.": "Sere foto n'ehihie, na-enweghị onyinyo n'akụkụ metụtara.",
   "Hold the phone still and tap the screen on the affected part to focus.": "Jide ekwentị ahụ nke ọma, pịa ihuenyo n'akụkụ metụtara ka o doo anya.",
@@ -413,5 +412,13 @@
   "This is AI advice and can be wrong. If unsure, ask an extension officer or vet.": "Nke a bụ ndụmọdụ AI, o nwere ike ihie ụzọ. Ọ bụrụ na i jighị n'aka, jụọ onye ndụmọdụ ọrụ ugbo ma ọ bụ dọkịta anụmanụ.",
   "Request Vet / Ask an expert": "Rịọ dọkịta anụmanụ / Jụọ ọkachamara",
   "Scan attached": "Etinyere nyocha",
-  "About my scan :ref (:date):": "Gbasara nyocha m :ref (:date):"
+  "About my scan :ref (:date):": "Gbasara nyocha m :ref (:date):",
+  "This is AI advice and can be wrong. If unsure, ask an agronomist or extension officer.": "Nke a bụ ndụmọdụ AI, o nwere ike ihie ụzọ. Ọ bụrụ na i jighị n'aka, jụọ ọkà mmụta ubi ma ọ bụ onye ndụmọdụ ọrụ ugbo.",
+  "Request Agronomist / Ask an expert": "Rịọ ọkà mmụta ubi / Jụọ ọkachamara",
+  "Please confirm with an agronomist or extension officer before treating.": "Biko kwado ya na ọkà mmụta ubi ma ọ bụ onye ndụmọdụ ugbo tupu ị gwọọ.",
+  "The AI thinks this is likely, but is not fully sure. Please confirm with an agronomist or extension officer before treating.": "AI chere na ọ ga-abụ nke a, mana o jighị n'aka nke ọma. Biko kwado ya na ọkà mmụta ubi ma ọ bụ onye ndụmọdụ ugbo tupu ị gwọọ.",
+  "Ask an agronomist or extension officer to confirm before you treat.": "Gwa ọkà mmụta ubi ma ọ bụ onye ndụmọdụ ọrụ ugbo ka o kwado tupu ị gwọọ.",
+  "The signs in this photo could be one of these: :causes. The AI cannot tell which one from this photo.": "Ihe ịrịba ama dị na foto a nwere ike ịbụ otu n'ime ndị a: :causes. AI enweghị ike ịmata nke ọ bụ site na foto a.",
+  "The AI cannot tell what the problem is from this photo.": "AI enweghị ike ịmata ihe nsogbu ahụ bụ site na foto a.",
+  "AI explanation": "Nkọwa AI"
 }

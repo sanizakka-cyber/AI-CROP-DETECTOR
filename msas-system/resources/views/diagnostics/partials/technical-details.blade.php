@@ -7,6 +7,7 @@
         __('Scientific name')  => $tech['scientific_name'] ?? null,
         __('Detected part')    => $tech['detected_part'] ?? null,
         __('Health status')    => $tech['health_status'] ?? null,
+        __('AI explanation')   => $tech['explanation'] ?? null,
         __('Condition label')  => isset($tech['condition_label']) ? $tech['condition_label'] . (isset($tech['condition_category']) ? ' (' . $tech['condition_category'] . ')' : '') : null,
         __('Stored severity')  => $tech['stored_severity'] ?? null,
         __('Stored urgency')   => $tech['stored_urgency'] ?? null,
