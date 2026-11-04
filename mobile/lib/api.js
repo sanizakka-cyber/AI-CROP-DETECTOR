@@ -452,7 +452,11 @@ export const profileAPI = {
 // ── Subscription ──────────────────────────────────────────────────────────────
 export const subscriptionAPI = {
   status:    () => request('/subscription/status'),
-  subscribe: (plan, cycle) => request('/subscription/subscribe', { method: 'POST', body: JSON.stringify({ plan, cycle }) }),
+  // refund_acknowledged: the user accepted "subscription payments are
+  // non-refundable" in the confirmation step (required by the server).
+  subscribe: (plan, cycle, refundAcknowledged = false) => request('/subscription/subscribe', {
+    method: 'POST', body: JSON.stringify({ plan, cycle, refund_acknowledged: refundAcknowledged }),
+  }),
   cancel:    (reason) => request('/subscription/cancel', { method: 'POST', body: JSON.stringify({ reason }) }),
 };
 

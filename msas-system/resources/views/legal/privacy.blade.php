@@ -43,16 +43,16 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
 <div class="hero">
     <h1>Privacy Policy</h1>
-    <p>Last updated: July 2026 &nbsp;·&nbsp; Effective immediately</p>
+    <p>Last updated: November 2026 &nbsp;·&nbsp; Version {{ config('legal.versions.privacy') }}</p>
 </div>
 
 <div class="container">
 
     <div class="section">
-        <span class="badge">NDPR Compliant</span>
+        <span class="badge">Nigeria Data Protection Act 2023</span>
         <h2>1. Who We Are</h2>
         <p>MSAS FarmAI is operated by <strong>MSAS Livestock & Agro Services</strong>, a Nigerian agricultural technology company. We provide AI-powered crop and livestock diagnostics, agro-dealer marketplace, veterinary and agronomist consultations, logistics, and farm management tools to farmers across Nigeria.</p>
-        <p style="margin-top:10px">This Privacy Policy explains how we collect, use, store, and protect your personal data in line with the <strong>Nigeria Data Protection Regulation (NDPR) 2019</strong> and the Nigeria Data Protection Act 2023.</p>
+        <p style="margin-top:10px">This Privacy Policy explains how we collect, use, store, and protect your personal data in line with the <strong>Nigeria Data Protection Act 2023 (NDPA)</strong> and the Nigeria Data Protection Commission's <strong>General Application and Implementation Directive (GAID) 2025</strong>.</p>
         <div class="highlight">Our Data Protection Officer can be reached at <strong>privacy@msasagro.com</strong>. You may also write to us at our registered address in Nigeria.</div>
     </div>
 
@@ -62,6 +62,8 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
         <ul>
             <li>Full name, email address, phone number</li>
             <li>State, LGA, and farm location</li>
+            <li>Your age, as you state it when you register (to confirm you are 18 or older)</li>
+            <li>A record of the versions of our Terms, Privacy Policy and Refund Policy you accepted, and when</li>
             <li>Role on the platform (farmer, vet, agronomist, agro-dealer, rider)</li>
             <li>Profile photo (optional)</li>
             <li>Government/professional credentials uploaded for verification</li>
@@ -71,6 +73,8 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
             <li>Farm details, livestock records, poultry records</li>
             <li>Crop and animal images submitted for AI diagnosis</li>
             <li>Soil and pest assessment inputs</li>
+            <li>Sample collection location: State and LGA, and — only if you choose "Use my location" — the exact GPS coordinates and their accuracy</li>
+            <li>Voice recordings, only when you use the microphone in the AI assistant (converted to text, not kept as audio)</li>
             <li>Diagnosis history and AI recommendations</li>
         </ul>
         <h3>Transaction & Payment Data</h3>
@@ -98,18 +102,27 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
             <li><strong>Security</strong> — Detecting fraud, monitoring unusual login activity, enforcing rate limits</li>
             <li><strong>Compliance</strong> — Meeting obligations under Nigerian law</li>
         </ul>
+        <p style="margin-top:10px">We process your data because it is needed to provide the service you signed up for (our contract with you), because you have given consent (for example, precise GPS location), to meet legal obligations (for example, keeping payment records), or for our legitimate interests in keeping the platform secure.</p>
     </div>
 
     <div class="section">
         <h2>4. Data Sharing</h2>
-        <p>We do <strong>not sell your personal data</strong>. We share data only with:</p>
+        <p>We do <strong>not sell your personal data</strong>. We share it only with the service providers who help us run the platform, under agreements that require them to protect it, and only as far as each one needs:</p>
         <ul>
-            <li><strong>Paystack</strong> — for payment processing (subject to Paystack's privacy policy)</li>
-            <li><strong>MSAS AI Engine</strong> — images and scan metadata are sent to our privately hosted AI service for diagnosis; they are not shared with third-party AI providers</li>
-            <li><strong>Experts on the platform</strong> — vets and agronomists receive only the consultation details you submit; your full profile is not visible to them</li>
-            <li><strong>Logistics riders</strong> — receive only your delivery address and order details</li>
-            <li><strong>Nigerian regulatory authorities</strong> — if required by law or court order</li>
+            <li><strong>Anthropic (Claude AI)</strong> — the photos and details you submit for an AI Smart Scan, and questions to the AI assistant, are sent to Anthropic's AI service to produce the result. Anthropic's servers are outside Nigeria.</li>
+            <li><strong>OpenAI</strong> — voice recordings from the AI assistant microphone are converted to text; some spoken (read-aloud) results may be produced by OpenAI or Spitch.</li>
+            <li><strong>Paystack</strong> (and other payment providers we may add) — to process payments. We never see or store your card details.</li>
+            <li><strong>Render</strong> — hosts our website, app servers and database. Render's servers are outside Nigeria.</li>
+            <li><strong>Email and SMS providers</strong> — to send one-time codes, receipts and service messages.</li>
+            <li><strong>Map and weather services</strong> (such as OpenStreetMap-based map tiles and Open-Meteo) — to show maps and local weather; these receive approximate location and your device's IP address.</li>
+            <li><strong>Experts on the platform</strong> — vets and agronomists receive only the consultation details you submit, including a linked scan; your full profile is not visible to them.</li>
+            <li><strong>Logistics riders</strong> — receive only your delivery address and order details.</li>
+            <li><strong>Nigerian regulatory authorities</strong> — if required by law or court order.</li>
         </ul>
+        <h3>International transfers</h3>
+        <p>Some of these providers process data outside Nigeria. Where this happens, we transfer only what is needed for the service and rely on the safeguards allowed under Part VIII of the Nigeria Data Protection Act 2023 and the GAID 2025, such as contractual protections with the provider.</p>
+        <h3>Exact location</h3>
+        <p>Exact GPS coordinates are visible only to you and authorised MSAS staff. Reports, exports, research data and outbreak maps show location only at State and LGA level.</p>
     </div>
 
     <div class="section">
@@ -124,8 +137,8 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
     </div>
 
     <div class="section">
-        <h2>6. Your Rights (NDPR)</h2>
-        <p>Under the Nigeria Data Protection Regulation, you have the right to:</p>
+        <h2>6. Your Rights</h2>
+        <p>Under the Nigeria Data Protection Act 2023, you have the right to:</p>
         <ul>
             <li><strong>Access</strong> — Request a copy of all personal data we hold about you</li>
             <li><strong>Correction</strong> — Update inaccurate or incomplete information via your Profile settings</li>
@@ -135,6 +148,11 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
             <li><strong>Withdraw consent</strong> — Withdraw consent at any time without affecting prior lawful processing</li>
         </ul>
         <p style="margin-top:10px">To exercise these rights, go to <strong>Account → Privacy Settings</strong> within the app, or email <strong>privacy@msasagro.com</strong>. We respond within 14 days.</p>
+    </div>
+
+    <div class="section">
+        <h2>Children</h2>
+        <p>MSAS FarmAI is only for people aged <strong>18 or older</strong>. Under the Nigeria Data Protection Act 2023, a person below 18 is a child. Registration asks for your age and is refused below 18, and we do not knowingly collect children's personal data. If we learn that an account belongs to someone under 18, we will close it and delete its data. If you believe a child has registered, contact <strong>privacy@msasagro.com</strong>.</p>
     </div>
 
     <div class="section">
@@ -156,7 +174,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
     <div class="section">
         <h2>9. Changes to This Policy</h2>
-        <p>We may update this policy from time to time. When we make significant changes, we will notify you by email and display a notice on your dashboard. Continued use of the platform after the effective date constitutes acceptance.</p>
+        <p>We may update this policy from time to time. Each version has a version number and date. When we make significant changes, we will show you the new version and ask you to accept it before you continue using the platform, and we keep a record of your acceptance.</p>
     </div>
 
     <div class="section">

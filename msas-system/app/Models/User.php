@@ -359,6 +359,9 @@ class User extends Authenticatable
             'data_export_completed_at' => 'datetime',
             'nps_rated_at'             => 'datetime',
             'nps_score'                => 'integer',
+            'terms_accepted_at'        => 'datetime',
+            'age_declared_at'          => 'datetime',
+            'age_declared'             => 'integer',
         ];
     }
 }

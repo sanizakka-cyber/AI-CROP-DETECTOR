@@ -41,8 +41,12 @@ class SubscriptionApiController extends Controller
         $user       = $request->user();
         $validPlans = implode(',', array_keys(config('subscription.plans', [])));
         $data = $request->validate([
-            'plan'  => "required|in:{$validPlans}",
-            'cycle' => 'required|in:monthly,yearly',
+            'plan'                => "required|in:{$validPlans}",
+            'cycle'               => 'required|in:monthly,yearly',
+            // App builds before v1.4.11 don't send this; see config/legal.php.
+            'refund_acknowledged' => config('legal.require_api_refund_ack', true) ? ['accepted'] : ['sometimes', 'accepted'],
+        ], [
+            'refund_acknowledged.accepted' => 'Please confirm you understand that subscription payments are non-refundable.',
         ]);
         $activeSub = $user->activeSubscription();
         if ($activeSub && $activeSub->plan === $data['plan'] && $activeSub->billing_cycle === $data['cycle'] && $activeSub->status !== 'trial') {
@@ -51,6 +55,11 @@ class SubscriptionApiController extends Controller
 
         $amount    = config("subscription.plans.{$data['plan']}.price.{$data['cycle']}");
         $reference = $this->subs->generateReference();
+
+        if ($request->boolean('refund_acknowledged')) {
+            app(\App\Services\LegalConsentService::class)
+                ->recordRefundAcknowledgement($user, $request, $reference, 'subscription_app');
+        }
 
         if (! config('services.paystack.secret_key') || str_contains(config('services.paystack.secret_key'), 'REPLACE')) {
             return response()->json(['error' => 'Payment service is not configured.'], 503);

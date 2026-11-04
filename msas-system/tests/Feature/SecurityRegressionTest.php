@@ -312,6 +312,7 @@ class SecurityRegressionTest extends TestCase
     public function test_registration_without_state_succeeds_and_defaults_state(): void
     {
         $response = $this->post('/register', [
+            'age' => 30, 'age_confirmed' => '1', 'terms_accepted' => '1',
             'first_name' => 'Audit',
             'last_name'  => 'Test',
             'identifier' => 'audit-test-no-state@example.com',

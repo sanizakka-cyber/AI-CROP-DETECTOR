@@ -43,7 +43,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
 <div class="hero">
     <h1>Terms & Conditions</h1>
-    <p>Last updated: July 2026 &nbsp;·&nbsp; Effective immediately</p>
+    <p>Last updated: November 2026 &nbsp;·&nbsp; Version {{ config('legal.versions.terms') }}</p>
 </div>
 
 <div class="container">
@@ -52,6 +52,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
         <h2>1. Acceptance of Terms</h2>
         <p>By registering for or using the MSAS FarmAI platform (website at <strong>msasagro.com</strong> and mobile application), you agree to be bound by these Terms & Conditions and our <a href="{{ route('legal.privacy') }}" style="color:#0F6B3E;font-weight:600">Privacy Policy</a>. If you do not agree, you must not use the platform.</p>
         <p style="margin-top:10px">These Terms constitute a legally binding agreement between you and <strong>MSAS Livestock & Agro Services</strong>, a company registered in Nigeria.</p>
+        <p style="margin-top:10px">You accept these Terms by ticking the agreement box when you register. When we change these Terms in a way that matters, we will show you the new version and ask you to accept it before you continue using the platform. We keep a record of the version you accepted and when.</p>
     </div>
 
     <div class="section">
@@ -64,14 +65,14 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
             <li><strong>Logistics</strong> — Rider-delivered marketplace orders</li>
             <li><strong>Farm Management</strong> — Tools for recording livestock, poultry, and farm data</li>
             <li><strong>Knowledge Base</strong> — Agricultural guides and best practices</li>
-            <li><strong>Subscription Plans</strong> — Free trial and paid plans (Basic, Basic Pro, Premium)</li>
+            <li><strong>Subscription Plans</strong> — Free trial and paid plans; current plans, features and prices are shown on the Subscription Plans page</li>
         </ul>
     </div>
 
     <div class="section">
         <h2>3. Eligibility</h2>
         <ul>
-            <li>You must be at least 18 years of age</li>
+            <li>You must be at least <strong>18 years of age</strong>. You are asked to state your age and confirm you are 18 or older when you register; registration is refused below 18. We do not knowingly collect personal data from anyone under 18 — if we learn that an account belongs to someone under 18, we will close it and delete its data</li>
             <li>You must provide accurate and truthful registration information</li>
             <li>Veterinarians and agronomists must hold valid professional credentials; these will be verified before approval</li>
             <li>Agro-dealers must provide valid business information</li>
@@ -94,9 +95,9 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
         <h3>Plans</h3>
         <p>Subscription plans are billed monthly or annually in Nigerian Naira (NGN). A 14-day free trial is available once per plan per user. After the trial period, continued access requires payment.</p>
         <h3>Payment Processing</h3>
-        <p>All payments are processed by <strong>Paystack</strong>. By making a payment you also agree to Paystack's terms of service. MSAS does not store your card or bank details.</p>
+        <p>Payments are processed by our payment providers (currently <strong>Paystack</strong>). By making a payment you also agree to the payment provider's terms of service. MSAS does not store your card or bank details.</p>
         <h3>Refunds</h3>
-        <p>Subscription fees are non-refundable except where required by Nigerian consumer protection law. If you believe you were incorrectly charged, contact us within 7 days at <strong>support@msasagro.com</strong>.</p>
+        <p><strong>Subscription payments are non-refundable once your payment is confirmed and your plan is activated.</strong> You confirm that you understand this before each payment. The exceptions — a duplicate charge, a payment taken without your plan being activated, a significant service failure on our side, or where Nigerian law requires a refund — are set out in our <a href="{{ route('legal.refund') }}" style="color:#0F6B3E;font-weight:600;">Refund Policy</a>. If you believe you were incorrectly charged, contact us at <strong>billing@msasagro.com</strong>. Nothing in these Terms limits your rights under Nigerian consumer protection law.</p>
         <h3>Cancellation</h3>
         <p>You may cancel your subscription at any time. Access continues until the end of your current billing period.</p>
     </div>

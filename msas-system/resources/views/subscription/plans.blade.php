@@ -22,6 +22,23 @@
 @endif
 @endforeach
 
+{{-- ══ No-refund agreement — required before any subscription payment ══ --}}
+<div id="refund-notice" style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:#92400e;margin-bottom:6px;">{{ __('Subscription payments are non-refundable') }}</div>
+    <p style="font-size:13px;color:#78350f;line-height:1.6;margin:0 0 10px;">
+        {{ __('Once your payment is confirmed and your plan is activated, we cannot refund it. Exceptions: you were charged twice, you paid but your plan was not activated, the service failed on our side, or where Nigerian law requires a refund.') }}
+        <a href="{{ route('legal.refund') }}" target="_blank" rel="noopener" style="color:#92400e;font-weight:700;">{{ __('Read the Refund Policy') }}</a>
+    </p>
+    <label for="refund-ack" style="display:flex;align-items:flex-start;gap:9px;font-size:13px;font-weight:600;color:#78350f;cursor:pointer;">
+        <input type="checkbox" id="refund-ack" {{ old('refund_acknowledged') ? 'checked' : '' }}
+            style="width:17px;height:17px;accent-color:#0F6B3E;margin-top:1px;flex-shrink:0;">
+        <span>{{ __('I understand that subscription payments are non-refundable.') }}</span>
+    </label>
+    <div id="refund-ack-error" role="alert" style="display:{{ $errors->has('refund_acknowledged') ? 'block' : 'none' }};color:#dc2626;font-size:12px;font-weight:600;margin-top:8px;">
+        {{ $errors->first('refund_acknowledged') ?: __('Please tick the box to confirm you understand that subscription payments are non-refundable.') }}
+    </div>
+</div>
+
 @php
 $isProfessional = !in_array($user->role, ['farmer', 'ceo', 'admin', 'general-user']);
 $proPlans = ['professional_starter', 'professional_business'];
@@ -527,11 +544,27 @@ $rowIdx    = 0;
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var ack    = document.getElementById('refund-ack');
+    var ackErr = document.getElementById('refund-ack-error');
+    var payForms = [];
+
     document.querySelectorAll('form').forEach(function (form) {
         var btn = form.querySelector('.subscribe-btn');
         if (!btn) return;
 
+        // Every subscription payment form carries the no-refund acknowledgement.
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden'; hidden.name = 'refund_acknowledged'; hidden.value = '';
+        form.appendChild(hidden);
+        payForms.push({ btn: btn, hidden: hidden });
+
         form.addEventListener('submit', function (e) {
+            if (ack && !ack.checked) {
+                e.preventDefault();
+                if (ackErr) ackErr.style.display = 'block';
+                document.getElementById('refund-notice').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
             if (form.dataset.submitting === '1') {
                 e.preventDefault();
                 return;
@@ -541,6 +574,18 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.innerHTML = 'Processing&hellip;';
         });
     });
+
+    function syncAck() {
+        var ok = !ack || ack.checked;
+        payForms.forEach(function (f) {
+            f.hidden.value = ok ? '1' : '';
+            f.btn.style.opacity = ok ? '' : '0.55';
+            f.btn.setAttribute('aria-disabled', ok ? 'false' : 'true');
+        });
+        if (ok && ackErr) ackErr.style.display = 'none';
+    }
+    if (ack) ack.addEventListener('change', syncAck);
+    syncAck();
 });
 </script>
 

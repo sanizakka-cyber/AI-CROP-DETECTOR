@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ApplicationReceivedMail;
 use App\Models\AuditLog;
 use App\Models\UserDocument;
+use App\Services\LegalConsentService;
 use App\Services\OtpService;
 use App\Services\RegistrationService;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,7 @@ use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    public function __construct(private OtpService $otp, private RegistrationService $registration) {}
+    public function __construct(private OtpService $otp, private RegistrationService $registration, private LegalConsentService $legal) {}
 
     public function create(): View
     {
@@ -37,6 +38,16 @@ class RegisteredUserController extends Controller
     {
         $publicRoles = RegistrationService::PUBLIC_ROLES;
 
+        // Under the minimum age: stop before anything is stored. The usual
+        // validation redirect would flash the entered name and contact details
+        // into the session, so return without any of the input (only the
+        // chosen role, so the form reopens on the details step).
+        if ($this->legal->isUnderAge($request->input('age'))) {
+            return redirect()->route('register')
+                ->with('_old_input', ['role' => (string) $request->input('role', '')])
+                ->withErrors(['age' => $this->legal->underAgeMessage()]);
+        }
+
         $request->validate([
             'first_name'  => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -52,7 +63,7 @@ class RegisteredUserController extends Controller
             'password'    => ['required', 'confirmed', Rules\Password::min(8)
                 ->mixedCase()->numbers()->symbols()],
             'documents.*' => 'nullable|file|max:5120|mimes:pdf,jpg,jpeg,png',
-        ]);
+        ] + $this->legal->registrationRules(), $this->legal->registrationMessages());
 
         try {
             ['type' => $identifierType, 'value' => $identifier] = $this->registration->resolveIdentifier($request->identifier);
@@ -80,6 +91,8 @@ class RegisteredUserController extends Controller
             $identifierType,
             $identifier,
             function ($user, $role) use ($request) {
+                $this->legal->recordRegistration($user, $request, 'registration_web');
+
                 // Store uploaded documents (base64 in DB — survives Render ephemeral wipes)
                 if ($request->hasFile('documents')) {
                     $docLabels = $this->getDocumentLabels($role);

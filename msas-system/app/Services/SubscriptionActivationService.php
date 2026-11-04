@@ -64,6 +64,7 @@ class SubscriptionActivationService
                     'billing_cycle' => $cycle,
                     'plan_name'     => $planName,
                     'active_sub_id' => $activeSub?->id,
+                    'refund_policy_version' => config('legal.versions.refund'),
                 ],
             ]);
 

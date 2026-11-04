@@ -62,6 +62,10 @@ const PLANS = [
 
 const fmt = (n) => '₦' + n.toLocaleString('en-NG');
 
+// Legal pages live on the website (same host as the API, without /api).
+const WEB_BASE = (process.env.EXPO_PUBLIC_API_URL || 'https://www.msasagro.com/api')
+  .replace(/\/$/, '').replace(/\/api$/, '');
+
 export default function SubscriptionScreen() {
   const { user }    = useAuth();
   const sub         = useSubscription();
@@ -74,7 +78,9 @@ export default function SubscriptionScreen() {
     const cycle = yearly ? 'yearly' : 'monthly';
     setLoading(true);
     try {
-      const res = await subscriptionAPI.subscribe(plan.key, cycle);
+      // Only reached from the confirmation below, where the user tapped
+      // "I understand – continue" after reading the no-refund notice.
+      const res = await subscriptionAPI.subscribe(plan.key, cycle, true);
       await WebBrowser.openBrowserAsync(res.authorization_url);
       // Paystack redirects the in-app browser to a backend confirmation
       // page when the user finishes (or cancels); openBrowserAsync only
@@ -93,10 +99,13 @@ export default function SubscriptionScreen() {
     const cycle = yearly ? 'yearly' : 'monthly';
     Alert.alert(
       `Subscribe to ${plan.name}`,
-      `You'll be taken to Paystack to complete payment.\n\nPlan: ${plan.name}\nPrice: ${fmt(plan.price[cycle])}/${yearly ? 'year' : 'month'}`,
+      `You'll be taken to Paystack to complete payment.\n\nPlan: ${plan.name}\nPrice: ${fmt(plan.price[cycle])}/${yearly ? 'year' : 'month'}\n\n` +
+      'Subscription payments are non-refundable. Once your payment is confirmed and your plan is activated, we cannot refund it. ' +
+      'Exceptions: you were charged twice, you paid but your plan was not activated, the service failed on our side, or where Nigerian law requires a refund.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue to Payment', onPress: () => startCheckout(plan) },
+        { text: 'Refund Policy', onPress: () => WebBrowser.openBrowserAsync(`${WEB_BASE}/refund-policy`) },
+        { text: 'I understand – Pay', onPress: () => startCheckout(plan) },
       ]
     );
   };
