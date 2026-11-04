@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Image, Modal, FlatList,
   StyleSheet, ScrollView, KeyboardAvoidingView,
-  Platform, Alert, StatusBar, ActivityIndicator,
+  Platform, Alert, StatusBar, ActivityIndicator, Linking,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +42,12 @@ const PASSWORD_RULES = [
   { key: 'symbol',  label: 'One special character',  test: (v) => /[^A-Za-z0-9]/.test(v) },
 ];
 
+// Legal pages live on the website (same host as the API, without /api).
+const WEB_BASE = (process.env.EXPO_PUBLIC_API_URL || 'https://www.msasagro.com/api')
+  .replace(/\/$/, '').replace(/\/api$/, '');
+// Must match config('legal.minimum_age') on the server (Terms §3).
+const MIN_AGE = 18;
+
 export default function RegisterScreen() {
   const { t, i18n } = useTranslation();
   const { register } = useAuth();
@@ -50,8 +57,10 @@ export default function RegisterScreen() {
   const [form, setForm] = useState({
     firstName: '', middleName: '', lastName: '', identifier: '',
     country: 'Nigeria', state: '', lga: '',
-    password: '', confirmPassword: '',
+    password: '', confirmPassword: '', age: '',
   });
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -142,10 +151,29 @@ export default function RegisterScreen() {
       return Alert.alert('', isHausa ? 'Zaɓi ƙananan hukuma' : 'Please select your LGA.');
     if (!isNigeria && !state.trim())
       return Alert.alert('', isHausa ? 'Shigar da jiha' : 'Please enter your state or region.');
+    // Age: 18+ only. An under-age user is stopped here and nothing is sent.
+    const ageNum = Number(form.age.trim());
+    if (!form.age.trim())
+      return Alert.alert('', isHausa ? 'Shigar da shekarunka.' : 'Please enter your age.');
+    if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120)
+      return Alert.alert('', isHausa ? 'Shigar da shekarunka a lamba, misali 35.' : 'Please enter your age as a number, for example 35.');
+    if (ageNum < MIN_AGE)
+      return Alert.alert(
+        isHausa ? 'Ba za a iya yin rijista ba' : 'Registration not allowed',
+        isHausa
+          ? 'Dole ne ka kasance shekara 18 ko fiye kafin ka buɗe asusun MSAS FarmAI. Ka roƙi iyaye ko mai kula da kai su yi rijista maimakon haka.'
+          : 'You must be 18 or older to create an MSAS FarmAI account. Please ask a parent or guardian to register instead.'
+      );
+    if (!ageConfirmed)
+      return Alert.alert('', isHausa ? 'Tabbatar cewa shekarunka 18 ko fiye.' : 'Please confirm that you are 18 years or older.');
     if (!passwordValid)
       return Alert.alert('', isHausa ? 'Kalmar sirri ba ta cika ka’idoji ba' : 'Password does not meet the requirements below.');
     if (password !== confirmPassword)
       return Alert.alert('', isHausa ? 'Kalmar sirri ba ta dace ba' : 'Passwords do not match.');
+    if (!termsAccepted)
+      return Alert.alert('', isHausa
+        ? 'Dole ne ka yarda da Sharuɗɗan Sabis da Manufar Sirri kafin ka ci gaba.'
+        : 'You must agree to the Terms of Service and Privacy Policy to continue.');
 
     setLoading(true);
     try {
@@ -160,6 +188,10 @@ export default function RegisterScreen() {
         password,
         password_confirmation: confirmPassword,
         language: i18n.language,
+        age: ageNum,
+        age_confirmed: true,
+        terms_accepted: true,
+        app_version: Constants.expoConfig?.version || null,
       });
 
       if (result.status === 'authenticated') {
@@ -231,6 +263,20 @@ export default function RegisterScreen() {
               placeholder="you@example.com or 08012345678" placeholderTextColor={C.textLight}
               keyboardType="email-address" autoComplete="email" autoCapitalize="none" autoCorrect={false} />
           </Field>
+
+          {/* Age — 18+ only */}
+          <Field label={isHausa ? 'SHEKARU' : 'AGE'} icon="🎂">
+            <TextInput style={styles.input} value={form.age}
+              onChangeText={(v) => set('age')(v.replace(/[^0-9]/g, '').slice(0, 3))}
+              placeholder={isHausa ? 'misali 35' : 'e.g. 35'} placeholderTextColor={C.textLight}
+              keyboardType="number-pad" maxLength={3} accessibilityLabel={isHausa ? 'Shekaru' : 'Age'} testID="age-input" />
+          </Field>
+          <CheckRow
+            checked={ageConfirmed}
+            onToggle={() => setAgeConfirmed(v => !v)}
+            testID="age-confirm"
+            label={isHausa ? 'Na tabbatar shekaruna 18 ko fiye.' : 'I confirm I am 18 years or older.'}
+          />
 
           {/* Country — searchable dropdown */}
           <Field label={isHausa ? 'ƘASA' : 'COUNTRY'} icon="🌍">
@@ -336,20 +382,35 @@ export default function RegisterScreen() {
             )}
           </Field>
 
-          {/* Terms */}
+          {/* Terms — must be ticked to register */}
           <View style={styles.termsBox}>
-            <Text style={styles.termsText}>
-              {isHausa
-                ? 'Ta hanyar ƙirƙirar asusun, kun yarda da Terms of Service da Privacy Policy.'
-                : 'By creating an account, you agree to our Terms of Service and Privacy Policy.'}
-            </Text>
+            <CheckRow
+              checked={termsAccepted}
+              onToggle={() => setTermsAccepted(v => !v)}
+              testID="terms-accept"
+              label={
+                <Text style={styles.termsText}>
+                  {isHausa ? 'Na yarda da ' : 'I agree to the '}
+                  <Text style={styles.termsLink} onPress={() => Linking.openURL(`${WEB_BASE}/terms`)}>
+                    {isHausa ? 'Sharuɗɗan Sabis' : 'Terms of Service'}
+                  </Text>
+                  {isHausa ? ' da ' : ' and '}
+                  <Text style={styles.termsLink} onPress={() => Linking.openURL(`${WEB_BASE}/privacy-policy`)}>
+                    {isHausa ? 'Manufar Sirri' : 'Privacy Policy'}
+                  </Text>
+                  .
+                </Text>
+              }
+            />
           </View>
 
           {/* Submit */}
           <TouchableOpacity
-            style={[styles.submitBtn, loading && { opacity: 0.6 }]}
+            style={[styles.submitBtn, (loading || !termsAccepted) && { opacity: 0.6 }]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || !termsAccepted}
+            accessibilityState={{ disabled: loading || !termsAccepted }}
+            testID="register-submit"
             activeOpacity={0.85}
           >
             {loading ? <ActivityIndicator color={C.white} /> : (
@@ -441,6 +502,20 @@ function PickerModal({ visible, title, search, onSearch, items, onSelect, onClos
 }
 
 // ── Reusable field wrapper ────────────────────────
+function CheckRow({ checked, onToggle, label, testID }) {
+  return (
+    <TouchableOpacity style={styles.checkRow} onPress={onToggle} activeOpacity={0.7}
+      accessibilityRole="checkbox" accessibilityState={{ checked }} testID={testID}>
+      <View style={[styles.checkBox, checked && styles.checkBoxOn]}>
+        {checked ? <Text style={styles.checkMark}>✓</Text> : null}
+      </View>
+      <View style={{ flex: 1 }}>
+        {typeof label === 'string' ? <Text style={styles.termsText}>{label}</Text> : label}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function Field({ label, icon, children }) {
   return (
     <View style={styles.fieldWrap}>
@@ -524,6 +599,14 @@ const styles = StyleSheet.create({
     padding: 12, marginBottom: 18,
   },
   termsText: { fontSize: 12, color: C.textMid, lineHeight: 18 },
+  termsLink: { color: C.green, fontWeight: '700', textDecorationLine: 'underline' },
+  checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 14 },
+  checkBox: {
+    width: 20, height: 20, borderRadius: 5, borderWidth: 2, borderColor: C.textLight,
+    alignItems: 'center', justifyContent: 'center', marginTop: 1, backgroundColor: C.white,
+  },
+  checkBoxOn: { backgroundColor: C.green, borderColor: C.green },
+  checkMark: { color: C.white, fontSize: 13, fontWeight: '900', lineHeight: 15 },
 
   submitBtn: {
     backgroundColor: C.green, borderRadius: 12,

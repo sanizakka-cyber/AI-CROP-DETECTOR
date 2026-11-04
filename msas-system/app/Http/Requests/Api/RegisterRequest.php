@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Services\LegalConsentService;
 use App\Services\RegistrationService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -20,7 +21,11 @@ class RegisterRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        // Terms/Privacy agreement and the 18+ age rule (same as the web form).
+        $legal = app(LegalConsentService::class)
+            ->registrationRules((bool) config('legal.require_api_consent', true));
+
+        return $legal + [
             'first_name'  => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name'   => ['required', 'string', 'max:255'],
@@ -44,6 +49,6 @@ class RegisterRequest extends FormRequest
             'last_name.required'  => 'Last name is required.',
             'identifier.required' => 'Enter your email address or phone number.',
             'password.confirmed'  => 'Password and confirmation do not match.',
-        ];
+        ] + app(LegalConsentService::class)->registrationMessages();
     }
 }

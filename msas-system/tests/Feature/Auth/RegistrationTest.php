@@ -38,6 +38,7 @@ class RegistrationTest extends TestCase
         Mail::fake();
 
         $response = $this->post('/register', [
+            'age' => 30, 'age_confirmed' => '1', 'terms_accepted' => '1',
             'first_name' => 'Test',
             'last_name'  => 'User',
             'identifier' => 'test@example.com',
@@ -77,6 +78,7 @@ class RegistrationTest extends TestCase
     public function test_phone_only_registration_authenticates_immediately(): void
     {
         $response = $this->post('/register', [
+            'age' => 30, 'age_confirmed' => '1', 'terms_accepted' => '1',
             'first_name' => 'Test',
             'last_name'  => 'User',
             'identifier' => '+2348012345678',

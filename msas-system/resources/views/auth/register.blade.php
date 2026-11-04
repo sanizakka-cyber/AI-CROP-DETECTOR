@@ -58,7 +58,7 @@ $oldWard       = old('ward', '');
 @endpush
 
 @php
-$startStep       = $oldRole ? 3 : 1;
+$startStep       = ($errors->has('age') || $errors->has('age_confirmed')) ? 2 : ($oldRole ? 3 : 1);
 $preselectedPlan = $preselectedPlan ?? old('plan', '');
 $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[$preselectedPlan]['name'] : '';
 @endphp
@@ -206,6 +206,20 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <p style="font-size:11px;color:#94a3b8;margin:4px 0 0;">e.g. name@email.com or 08012345678</p>
         </div>
 
+        {{-- Age (minimum 18 — Terms §3; children's data is not accepted) --}}
+        <div style="margin-bottom:10px;">
+            <label class="fl" for="s2_age">{{ __('Age') }} *</label>
+            <input id="s2_age" class="form-input" type="number" inputmode="numeric" min="1" max="120" step="1"
+                placeholder="{{ __('e.g. 35') }}" value="{{ old('age') }}" style="max-width:160px;">
+            <label for="s2_age_confirmed" style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12px;color:#475569;cursor:pointer;line-height:1.5;">
+                <input type="checkbox" id="s2_age_confirmed" {{ old('age_confirmed') ? 'checked' : '' }}
+                    style="width:16px;height:16px;accent-color:#0F6B3E;margin-top:1px;flex-shrink:0;">
+                <span>{{ __('I confirm I am 18 years or older.') }}</span>
+            </label>
+            @error('age')<div class="fe" role="alert">{{ $message }}</div>@enderror
+            @error('age_confirmed')<div class="fe" role="alert">{{ $message }}</div>@enderror
+        </div>
+
         {{-- Location --}}
         <div style="padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #dcfce7;margin-bottom:14px;">
             <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;">
@@ -284,6 +298,8 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <input type="hidden" name="state"       id="h_state"       :value="step2.state">
             <input type="hidden" name="lga"         id="h_lga"         :value="step2.lga">
             <input type="hidden" name="ward"        id="h_ward"        :value="step2.ward">
+            <input type="hidden" name="age"           id="h_age"           :value="step2.age">
+            <input type="hidden" name="age_confirmed" id="h_age_confirmed" :value="step2.age_confirmed ? '1' : ''">
             <input type="hidden" name="plan"        value="{{ $preselectedPlan }}">
 
             {{-- Summary card --}}
@@ -457,14 +473,15 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             </script>
 
             <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:16px;padding:10px 12px;background:#f0fdf4;border-radius:9px;border:1px solid #bbf7d0;">
-                <input type="checkbox" id="terms" required style="width:16px;height:16px;border-radius:4px;accent-color:#0F6B3E;cursor:pointer;margin-top:1px;flex-shrink:0;">
+                <input type="checkbox" id="terms" name="terms_accepted" value="1" required x-model="termsOk" style="width:16px;height:16px;border-radius:4px;accent-color:#0F6B3E;cursor:pointer;margin-top:1px;flex-shrink:0;">
                 <label for="terms" style="font-size:12px;color:#475569;cursor:pointer;line-height:1.5;">
                     {{ __('I agree to the') }} <a href="{{ route('legal.terms') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">{{ __('Terms of Service') }}</a> and <a href="{{ route('legal.privacy') }}" target="_blank" style="color:#0F6B3E;font-weight:700;text-decoration:none;">{{ __('Privacy Policy') }}</a>
                 </label>
             </div>
 
             <div style="margin-bottom:14px;">
-                <button type="submit" class="btn-primary">
+                @error('terms_accepted')<div class="fe" role="alert" style="margin:-8px 0 10px;">{{ $message }}</div>@enderror
+                <button type="submit" class="btn-primary" :disabled="!termsOk" :style="termsOk ? '' : 'opacity:.55;cursor:not-allowed;'">
                     <span style="display:flex;align-items:center;justify-content:center;gap:8px;">
                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
                         <span x-text="['farmer','general-user'].includes(role) ? createMyAccount : submitApplication">{{ __('Create My Account') }}</span>
@@ -639,6 +656,16 @@ function regWizard() {
             state:       '{{ $oldState }}',
             lga:         '{{ $oldLga }}',
             ward:        '{{ $oldWard }}',
+            age:         @json((string) old('age', '')),
+            age_confirmed: @json((bool) old('age_confirmed')),
+        },
+        termsOk:         @json((bool) old('terms_accepted')),
+        minAge:          {{ (int) config('legal.minimum_age', 18) }},
+        ageMsgs: {
+            required:  @json(__('Please enter your age.')),
+            number:    @json(__('Please enter your age as a number, for example 35.')),
+            underAge:  @json(__('You must be 18 or older to create an MSAS FarmAI account. Please ask a parent or guardian to register instead.')),
+            confirm:   @json(__('Please confirm that you are 18 years or older.')),
         },
 
         roleMap: @json($roleMap),
@@ -682,6 +709,14 @@ function regWizard() {
             if (!co)  msgs.push('Please select your country.');
             if (!st)  msgs.push('Please select your state / province.');
 
+            const ageRaw = document.getElementById('s2_age').value.trim();
+            const ageOk  = document.getElementById('s2_age_confirmed').checked;
+            const age    = Number(ageRaw);
+            if (!ageRaw) msgs.push(this.ageMsgs.required);
+            else if (!Number.isInteger(age) || age < 1 || age > 120) msgs.push(this.ageMsgs.number);
+            else if (age < this.minAge) msgs.push(this.ageMsgs.underAge);
+            else if (!ageOk) msgs.push(this.ageMsgs.confirm);
+
             if (msgs.length) {
                 err.textContent = msgs[0];
                 err.style.display = 'block';
@@ -698,6 +733,8 @@ function regWizard() {
                 state:       st,
                 lga:         tsLga ? tsLga.getValue() : '',
                 ward:        document.getElementById('s2_ward').value.trim(),
+                age:         ageRaw,
+                age_confirmed: ageOk,
             };
             this.step = 3;
         },

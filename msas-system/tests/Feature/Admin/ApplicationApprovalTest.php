@@ -29,6 +29,7 @@ class ApplicationApprovalTest extends TestCase
     public function test_farmer_registers_without_any_document_prompt_and_is_approved_immediately(): void
     {
         $response = $this->post('/register', [
+            'age' => 30, 'age_confirmed' => '1', 'terms_accepted' => '1',
             'first_name' => 'Amina',
             'last_name'  => 'Bello',
             'identifier' => '+2348011112222',
@@ -48,6 +49,7 @@ class ApplicationApprovalTest extends TestCase
     public function test_equipment_dealer_registration_requires_approval_and_defaults_to_inactive(): void
     {
         $this->post('/register', [
+            'age' => 30, 'age_confirmed' => '1', 'terms_accepted' => '1',
             'first_name' => 'Chuka',
             'last_name'  => 'Obi',
             'identifier' => 'dealer-no-docs@example.com',
