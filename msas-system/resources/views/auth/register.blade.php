@@ -46,6 +46,7 @@ $oldWard       = old('ward', '');
 .reg-form .form-input.has-icon{padding-left:calc(var(--f-pad) + var(--f-icon) + var(--f-gap));}
 .reg-form .form-input.has-toggle{padding-right:calc(var(--f-pad) + var(--f-icon) + var(--f-gap));}
 .reg-form .form-input.has-badge{padding-right:76px;}
+.reg-form .form-input.has-badge:placeholder-shown{padding-right:var(--f-pad);}   /* badge only shows once something is typed */
 .reg-form .field-icon{position:absolute;left:var(--f-pad);top:50%;transform:translateY(-50%);width:var(--f-icon);height:var(--f-icon);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s;}
 .reg-form .field-icon svg,.reg-form .field-toggle svg{width:var(--f-icon);height:var(--f-icon);}
 .reg-form .field-toggle{position:absolute;right:calc(var(--f-pad) - 6px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;border-radius:6px;cursor:pointer;padding:0;color:#94a3b8;}
@@ -66,6 +67,9 @@ $oldWard       = old('ward', '');
    no second box is drawn inside the field. */
 .reg-form .ts-control input,.reg-form .ts-control input:focus{border:0!important;padding:0!important;margin:0!important;height:auto!important;min-width:4rem;background:transparent!important;box-shadow:none!important;outline:none!important;font-size:inherit!important;font-family:'Inter',sans-serif!important;color:#1e293b;}
 .reg-form .ts-control input::placeholder{color:#94a3b8;opacity:1;}
+/* Once a value is chosen, hide the search box's placeholder next to it. */
+.reg-form .ts-wrapper.single.has-items .ts-control input::placeholder{color:transparent;}
+.reg-form .ts-wrapper.single.has-items:not(.focus) .ts-control input{min-width:0!important;width:0!important;}
 .ts-dropdown{border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:0 8px 30px rgba(0,0,0,.1)!important;font-size:14px!important;}
 .ts-dropdown .option{padding:10px 14px!important;}
 .ts-dropdown .option:hover,.ts-dropdown .option.active{background:#f0fdf4!important;color:#0F6B3E!important;}
@@ -73,7 +77,7 @@ $oldWard       = old('ward', '');
 
 /* ── Phones: 16px text so iOS doesn't zoom; nothing overflows at 360px ── */
 @media (max-width:640px){
-    .reg-form .form-input:not([type=file]),.reg-form .ts-control,.reg-form .ts-control input,.ts-dropdown{font-size:16px!important;}
+    .reg-form .form-input:not([type=file]),.reg-form .ts-wrapper.single .ts-control,.reg-form .ts-control,.reg-form .ts-control input,.ts-dropdown{font-size:16px!important;}
 }
 @media (max-width:420px){
     .reg-pw-grid{grid-template-columns:1fr;}
