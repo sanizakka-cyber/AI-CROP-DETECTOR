@@ -17,8 +17,10 @@
 <meta name="twitter:title" content="MSAS FarmAI | Smart Agriculture. Healthy Future.">
 <meta name="twitter:description" content="AI-powered agribusiness platform for Nigerian farmers and agri-enterprises.">
 <meta name="theme-color" content="#0B3B24">
-<link rel="preconnect" href="https://fonts.bunny.net">
-<link href="https://fonts.bunny.net/css?family=poppins:600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+{{-- Fonts load without blocking the first paint: text shows at once in the system font, then switches. --}}
+<link rel="preload" as="style" href="https://fonts.bunny.net/css?family=poppins:700,800|inter:400,600,700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.bunny.net/css?family=poppins:700,800|inter:400,600,700&display=swap"></noscript>
 @vite(['resources/js/app.js'])
 @php
     // Real numbers only: plans, prices, scan counts and trial length come from config/subscription.php.
@@ -327,8 +329,8 @@ ul,ol{margin:0;padding:0;list-style:none;}
 {{-- ═══════════ HEADER ═══════════ --}}
 <header id="main-nav" class="hdr" x-data="{ open:false }" :class="open ? 'open' : ''">
     <div class="wrap hdr-in">
-        <a href="/" class="brand" aria-label="MSAS FarmAI home">
-            <img src="{{ asset('images/branding/msas-farmai-mark-96.png') }}" alt="" width="40" height="40">
+        <a href="/" class="brand">
+            <img src="{{ asset('images/branding/msas-farmai-mark-96.png') }}" alt="" width="40" height="40" fetchpriority="high">
             <span><b>MSAS FarmAI</b><small>Smart Agriculture. Healthy Future.</small></span>
         </a>
 
