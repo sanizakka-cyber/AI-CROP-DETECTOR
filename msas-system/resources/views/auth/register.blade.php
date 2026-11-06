@@ -35,15 +35,49 @@ $oldWard       = old('ward', '');
 .role-title{display:block;font-size:12px;font-weight:700;color:#1e293b;line-height:1.3;}
 .role-desc{display:block;font-size:10px;color:#94a3b8;margin-top:2px;line-height:1.4;}
 
-/* ── Tom Select overrides ── */
+/* ── Fields: one size for every input, select and the email/phone field ──
+   44px high, 10px radius, 14px text (16px on phones so iPhones don't zoom),
+   1px light border; leading icons 16px, 14px from the edge, 10px gap to text. */
+.reg-form{--f-h:44px;--f-r:10px;--f-pad:14px;--f-icon:16px;--f-gap:10px;--f-border:#e2e8f0;--f-bg:#f8fafc;--f-green:#0F6B3E;--f-ring:0 0 0 3px rgba(15,107,62,.15);--f-red:#dc2626;--f-red-ring:0 0 0 3px rgba(220,38,38,.12);}
+.reg-form .form-input:not([type=file]){height:var(--f-h);padding:0 var(--f-pad);border:1px solid var(--f-border);border-radius:var(--f-r);font-size:14px;line-height:1.2;background:var(--f-bg);color:#1e293b;box-shadow:none;}
+.reg-form .form-input[type=file]{border:1px solid var(--f-border);border-radius:var(--f-r);font-size:13px;}
+.reg-form .form-input::placeholder{color:#94a3b8;opacity:1;}
+.reg-form .form-input:focus{border-color:var(--f-green);background:#fff;box-shadow:var(--f-ring);outline:none;}
+.reg-form .form-input.has-icon{padding-left:calc(var(--f-pad) + var(--f-icon) + var(--f-gap));}
+.reg-form .form-input.has-toggle{padding-right:calc(var(--f-pad) + var(--f-icon) + var(--f-gap));}
+.reg-form .form-input.has-badge{padding-right:76px;}
+.reg-form .field-icon{position:absolute;left:var(--f-pad);top:50%;transform:translateY(-50%);width:var(--f-icon);height:var(--f-icon);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s;}
+.reg-form .field-icon svg,.reg-form .field-toggle svg{width:var(--f-icon);height:var(--f-icon);}
+.reg-form .field-toggle{position:absolute;right:calc(var(--f-pad) - 6px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;border-radius:6px;cursor:pointer;padding:0;color:#94a3b8;}
+.reg-form .field-toggle:focus-visible{outline:2px solid var(--f-green);outline-offset:1px;}
+.reg-form .field-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:none;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+/* Error state: red border; the existing message stays under the field. */
+.reg-form .form-input.error,.reg-form .form-input.is-invalid{border-color:var(--f-red);background:#fff;}
+.reg-form .form-input.error:focus,.reg-form .form-input.is-invalid:focus{box-shadow:var(--f-red-ring);}
+.reg-pw-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;}
+
+/* ── Tom Select: same box as the inputs ── */
 .ts-wrapper{margin:0;}
-.ts-control{border:1.5px solid #e2e8f0!important;border-radius:10px!important;padding:10px 14px!important;font-size:14px!important;font-family:'Inter',sans-serif!important;background:#f8fafc!important;min-height:44px!important;box-shadow:none!important;}
-.ts-control:focus-within{border-color:#0F6B3E!important;background:#fff!important;box-shadow:0 0 0 3px rgba(15,107,62,.1)!important;}
-.ts-dropdown{border:1.5px solid #e2e8f0!important;border-radius:10px!important;box-shadow:0 8px 30px rgba(0,0,0,.1)!important;font-size:13px!important;}
-.ts-dropdown .option{padding:9px 14px!important;}
+.reg-form .ts-wrapper.single .ts-control,.reg-form .ts-control{display:flex;align-items:center;flex-wrap:nowrap;height:var(--f-h);min-height:var(--f-h)!important;padding:0 calc(var(--f-pad) + 18px) 0 var(--f-pad)!important;border:1px solid var(--f-border)!important;border-radius:var(--f-r)!important;font-size:14px!important;font-family:'Inter',sans-serif!important;line-height:1.2!important;background:var(--f-bg)!important;box-shadow:none!important;}
+.reg-form .ts-control:focus-within,.reg-form .ts-wrapper.focus .ts-control{border-color:var(--f-green)!important;background:#fff!important;box-shadow:var(--f-ring)!important;}
+.reg-form .ts-wrapper.is-invalid .ts-control{border-color:var(--f-red)!important;background:#fff!important;}
+.reg-form .ts-control > .item{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* @tailwindcss/forms styles every text input; undo it inside Tom Select so
+   no second box is drawn inside the field. */
+.reg-form .ts-control input,.reg-form .ts-control input:focus{border:0!important;padding:0!important;margin:0!important;height:auto!important;min-width:4rem;background:transparent!important;box-shadow:none!important;outline:none!important;font-size:inherit!important;font-family:'Inter',sans-serif!important;color:#1e293b;}
+.reg-form .ts-control input::placeholder{color:#94a3b8;opacity:1;}
+.ts-dropdown{border:1px solid #e2e8f0!important;border-radius:10px!important;box-shadow:0 8px 30px rgba(0,0,0,.1)!important;font-size:14px!important;}
+.ts-dropdown .option{padding:10px 14px!important;}
 .ts-dropdown .option:hover,.ts-dropdown .option.active{background:#f0fdf4!important;color:#0F6B3E!important;}
-.ts-wrapper.disabled .ts-control{background:#f8fafc!important;opacity:.55!important;cursor:not-allowed!important;}
-.ts-control input{font-family:'Inter',sans-serif!important;}
+.reg-form .ts-wrapper.disabled .ts-control{background:#f8fafc!important;opacity:.55!important;cursor:not-allowed!important;}
+
+/* ── Phones: 16px text so iOS doesn't zoom; nothing overflows at 360px ── */
+@media (max-width:640px){
+    .reg-form .form-input:not([type=file]),.reg-form .ts-control,.reg-form .ts-control input,.ts-dropdown{font-size:16px!important;}
+}
+@media (max-width:420px){
+    .reg-pw-grid{grid-template-columns:1fr;}
+}
 
 /* ── Step nav buttons ── */
 .btn-back{display:inline-flex;align-items:center;gap:5px;padding:11px 18px;border-radius:10px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;}
@@ -70,7 +104,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 </div>
 @endif
 
-<div x-data="regWizard()" x-init="init()">
+<div class="reg-form" x-data="regWizard()" x-init="init()">
 
     {{-- ── Progress bar ── --}}
     <div class="reg-progress" x-show="step > 0">
@@ -167,15 +201,15 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             <div>
                 <label class="fl">{{ __('First Name') }} *</label>
                 <div style="position:relative;">
-                    <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
-                    <input id="s2_first_name" class="form-input" style="padding-left:32px;" type="text" placeholder="" value="{{ old('first_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
+                    <div class="field-icon"><svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
+                    <input id="s2_first_name" class="form-input has-icon" type="text" placeholder="" value="{{ old('first_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                 </div>
             </div>
             <div>
                 <label class="fl">{{ __('Last Name') }} *</label>
                 <div style="position:relative;">
-                    <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
-                    <input id="s2_last_name" class="form-input" style="padding-left:32px;" type="text" placeholder="" value="{{ old('last_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
+                    <div class="field-icon"><svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>
+                    <input id="s2_last_name" class="form-input has-icon" type="text" placeholder="" value="{{ old('last_name') }}" readonly onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
                 </div>
             </div>
         </div>
@@ -189,10 +223,10 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         <div style="margin-bottom:10px;">
             <label class="fl">{{ __('Email Address or Phone Number *') }}</label>
             <div style="position:relative;">
-                <div id="s2-id-icon" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;transition:opacity .2s;">
-                    <svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                <div id="s2-id-icon" class="field-icon">
+                    <svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </div>
-                <input id="s2_identifier" class="form-input" style="padding-left:32px;padding-right:130px;"
+                <input id="s2_identifier" class="form-input has-icon has-badge"
                     type="text" inputmode="email"
                     placeholder="Enter your email address or phone number"
                     value="{{ old('identifier') }}"
@@ -201,7 +235,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
                     onclick="this.removeAttribute('readonly')"
                     oninput="detectIdentifier(this.value)">
                 {{-- Auto-detected type badge --}}
-                <div id="s2-id-badge" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);display:none;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;"></div>
+                <div id="s2-id-badge" class="field-badge"></div>
             </div>
             <p style="font-size:11px;color:#94a3b8;margin:4px 0 0;">e.g. name@email.com or 08012345678</p>
         </div>
@@ -209,7 +243,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
         {{-- Age (minimum 18 — Terms §3; children's data is not accepted) --}}
         <div style="margin-bottom:10px;">
             <label class="fl" for="s2_age">{{ __('Age') }} *</label>
-            <input id="s2_age" class="form-input" type="number" inputmode="numeric" min="1" max="120" step="1"
+            <input id="s2_age" class="form-input {{ $errors->has('age') ? 'error' : '' }}" type="number" inputmode="numeric" min="1" max="120" step="1"
                 placeholder="{{ __('e.g. 35') }}" value="{{ old('age') }}" style="max-width:160px;">
             <label for="s2_age_confirmed" style="display:flex;align-items:flex-start;gap:8px;margin-top:8px;font-size:12px;color:#475569;cursor:pointer;line-height:1.5;">
                 <input type="checkbox" id="s2_age_confirmed" {{ old('age_confirmed') ? 'checked' : '' }}
@@ -246,7 +280,7 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
 
             <div>
                 <label class="fl" style="color:#374151;">{{ __('Ward / Village') }} <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">{{ __('(optional)') }}</span></label>
-                <input id="s2_ward" class="form-input" type="text" placeholder="{{ __('Enter ward or village name') }}" value="{{ $oldWard }}" style="background:#fff;">
+                <input id="s2_ward" class="form-input" type="text" placeholder="{{ __('Enter ward or village name') }}" value="{{ $oldWard }}">
             </div>
         </div>
 
@@ -380,19 +414,18 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
             </div>
             {{-- ── END Documents ── --}}
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">
+            <div class="reg-pw-grid">
                 <div>
                     <label class="fl">{{ __('Password *') }}</label>
                     <div style="position:relative;">
-                        <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-                        <input id="password" class="form-input {{ $errors->has('password') ? 'error' : '' }}" style="padding-left:32px;padding-right:34px;"
+                        <div class="field-icon"><svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+                        <input id="password" class="form-input has-icon has-toggle {{ $errors->has('password') ? 'error' : '' }}"
                             type="password" name="password" required autocomplete="new-password" readonly
                             placeholder="{{ __('Create a password') }}"
                             oninput="checkPasswordStrength(this.value)"
                             onfocus="this.removeAttribute('readonly');document.getElementById('pw-requirements').style.display='block';checkPasswordStrength(this.value)"
                             onclick="this.removeAttribute('readonly')">
-                        <button type="button" onclick="togglePwVisibility('password', this)" aria-label="{{ __('Show password') }}"
-                            style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;color:#94a3b8;">
+                        <button type="button" class="field-toggle" onclick="togglePwVisibility('password', this)" aria-label="{{ __('Show password') }}">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         </button>
                     </div>
@@ -401,14 +434,13 @@ $planName        = $preselectedPlan && isset($plans[$preselectedPlan]) ? $plans[
                 <div>
                     <label class="fl">{{ __('Confirm Password *') }}</label>
                     <div style="position:relative;">
-                        <div style="position:absolute;left:11px;top:50%;transform:translateY(-50%);pointer-events:none;"><svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
-                        <input id="password_confirmation" class="form-input" style="padding-left:32px;padding-right:34px;"
+                        <div class="field-icon"><svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+                        <input id="password_confirmation" class="form-input has-icon has-toggle"
                             type="password" name="password_confirmation" required autocomplete="new-password" readonly
                             placeholder="{{ __('Re-enter your password') }}"
                             oninput="checkPasswordMatch()"
                             onfocus="this.removeAttribute('readonly')" onclick="this.removeAttribute('readonly')">
-                        <button type="button" onclick="togglePwVisibility('password_confirmation', this)" aria-label="{{ __('Show password') }}"
-                            style="position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;color:#94a3b8;">
+                        <button type="button" class="field-toggle" onclick="togglePwVisibility('password_confirmation', this)" aria-label="{{ __('Show password') }}">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         </button>
                     </div>
@@ -538,15 +570,15 @@ function detectIdentifier(val) {
         badge.style.display='block';
         badge.textContent='Email';
         badge.style.background='#dbeafe'; badge.style.color='#1d4ed8';
-        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>';
+        icon.innerHTML='<svg width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>';
     } else if (isValidPhone(val)) {
         badge.style.display='block';
         badge.textContent='Phone';
         badge.style.background='#dcfce7'; badge.style.color='#15803d';
-        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>';
+        icon.innerHTML='<svg width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>';
     } else {
         badge.style.display='none';
-        icon.innerHTML='<svg width="13" height="13" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
+        icon.innerHTML='<svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
     }
 }
 
@@ -640,6 +672,20 @@ function onStateChange(val, silent) {
     }
 }
 
+// Red border on the field behind the step-2 message (visual only).
+function markInvalidField(id) {
+    const ts = { 'ts-country': tsCountry, 'ts-state': tsState }[id];
+    const el = ts ? ts.wrapper : document.getElementById(id);
+    if (!el) return;
+    el.classList.add('is-invalid');
+    const clear = () => el.classList.remove('is-invalid');
+    if (ts) ts.on('change', clear);
+    else el.addEventListener('input', clear, { once: true });
+}
+function clearInvalidFields() {
+    document.querySelectorAll('.reg-form .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+}
+
 function regWizard() {
     return {
         step:            {{ $startStep }},
@@ -694,6 +740,8 @@ function regWizard() {
             const err = document.getElementById('s2-error');
             err.style.display = 'none';
             const msgs = [];
+            const bad  = [];   // field behind each message, same order (red border only)
+            clearInvalidFields();
 
             const fn  = document.getElementById('s2_first_name').value.trim();
             const ln  = document.getElementById('s2_last_name').value.trim();
@@ -701,23 +749,24 @@ function regWizard() {
             const co  = tsCountry ? tsCountry.getValue() : '';
             const st  = tsState   ? tsState.getValue()   : '';
 
-            if (!fn)  msgs.push('First name is required.');
-            if (!ln)  msgs.push('Last name is required.');
-            if (!id)  msgs.push('Email address or phone number is required.');
+            if (!fn)  { msgs.push('First name is required.'); bad.push('s2_first_name'); }
+            if (!ln)  { msgs.push('Last name is required.'); bad.push('s2_last_name'); }
+            if (!id)  { msgs.push('Email address or phone number is required.'); bad.push('s2_identifier'); }
             else if (!isValidEmail(id) && !isValidPhone(id))
-                      msgs.push('Enter a valid email address or phone number.');
-            if (!co)  msgs.push('Please select your country.');
-            if (!st)  msgs.push('Please select your state / province.');
+                      { msgs.push('Enter a valid email address or phone number.'); bad.push('s2_identifier'); }
+            if (!co)  { msgs.push('Please select your country.'); bad.push('ts-country'); }
+            if (!st)  { msgs.push('Please select your state / province.'); bad.push('ts-state'); }
 
             const ageRaw = document.getElementById('s2_age').value.trim();
             const ageOk  = document.getElementById('s2_age_confirmed').checked;
             const age    = Number(ageRaw);
-            if (!ageRaw) msgs.push(this.ageMsgs.required);
-            else if (!Number.isInteger(age) || age < 1 || age > 120) msgs.push(this.ageMsgs.number);
-            else if (age < this.minAge) msgs.push(this.ageMsgs.underAge);
+            if (!ageRaw) { msgs.push(this.ageMsgs.required); bad.push('s2_age'); }
+            else if (!Number.isInteger(age) || age < 1 || age > 120) { msgs.push(this.ageMsgs.number); bad.push('s2_age'); }
+            else if (age < this.minAge) { msgs.push(this.ageMsgs.underAge); bad.push('s2_age'); }
             else if (!ageOk) msgs.push(this.ageMsgs.confirm);
 
             if (msgs.length) {
+                if (bad.length) markInvalidField(bad[0]);   // every message but the 18+ tick has a field
                 err.textContent = msgs[0];
                 err.style.display = 'block';
                 err.scrollIntoView({behavior:'smooth', block:'nearest'});
