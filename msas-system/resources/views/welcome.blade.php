@@ -19,7 +19,6 @@
 <meta name="theme-color" content="#0B3B24">
 {{-- No web fonts: the phone's own UI font renders instantly. (fonts.bunny.net now serves its files from
      cdn.jsdelivr.net, which the site's Content Security Policy blocks, so they never loaded anyway.) --}}
-@vite(['resources/js/app.js'])
 @php
     // Real numbers only: plans, prices, scan counts and trial length come from config/subscription.php.
     $planKeys  = ['basic', 'basic_pro', 'premium', 'enterprise', 'enterprise_plus'];
@@ -81,7 +80,7 @@ a{color:inherit;text-decoration:none;}
 h1,h2,h3{font-family:var(--head);color:var(--ink);margin:0;line-height:1.2;letter-spacing:-.01em;}
 p{margin:0;}
 ul,ol{margin:0;padding:0;list-style:none;}
-[x-cloak]{display:none!important;}
+[hidden]{display:none!important;}
 :focus-visible{outline:3px solid var(--g500);outline-offset:2px;border-radius:6px;}
 .wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
 .skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--white);color:var(--g700);padding:10px 14px;border-radius:var(--r-sm);font-weight:700;}
@@ -135,6 +134,8 @@ ul,ol{margin:0;padding:0;list-style:none;}
 .avatar{width:32px;height:32px;border-radius:50%;background:var(--g700);color:var(--white);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .badge-dot{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#DC2626;color:var(--white);font-size:10px;font-weight:800;line-height:16px;text-align:center;}
 .burger{display:inline-flex;}
+.burger .i-close,.hdr.open .burger .i-menu{display:none;}
+.hdr.open .burger .i-close{display:inline-flex;}
 .drawer{background:var(--white);border-top:1px solid var(--line);box-shadow:0 16px 32px rgba(15,23,42,.12);max-height:calc(100vh - 68px);overflow-y:auto;}
 .drawer nav a{display:block;padding:12px 4px;border-bottom:1px solid #f1f5f9;font-weight:600;color:var(--body);}
 .drawer .langs{display:flex;flex-wrap:wrap;gap:6px;padding:14px 0;}
@@ -175,7 +176,7 @@ ul,ol{margin:0;padding:0;list-style:none;}
 @media (min-width:960px){.hero-in{grid-template-columns:1.25fr .9fr;padding-top:140px;padding-bottom:96px;}.demo{justify-self:end;}}
 
 /* Sections */
-.sec{padding:72px 0;}
+.sec{padding:72px 0;content-visibility:auto;contain-intrinsic-size:auto 900px;}   /* off-screen sections are laid out only when scrolled near */
 .sec-alt{background:var(--bg);}
 .sec-head{max-width:700px;margin:0 auto 40px;text-align:center;}
 .kicker{display:inline-block;font-size:13px;font-weight:700;color:var(--g700);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
@@ -325,7 +326,7 @@ ul,ol{margin:0;padding:0;list-style:none;}
 <a href="#main" class="skip">Skip to content</a>
 
 {{-- ═══════════ HEADER ═══════════ --}}
-<header id="main-nav" class="hdr" x-data="{ open:false }" :class="open ? 'open' : ''">
+<header id="main-nav" class="hdr">
     <div class="wrap hdr-in">
         <a href="/" class="brand">
             <img src="{{ asset('images/branding/msas-farmai-mark-96.png') }}" alt="" width="40" height="40" fetchpriority="high">
@@ -339,11 +340,11 @@ ul,ol{margin:0;padding:0;list-style:none;}
         </nav>
 
         <div class="hdr-actions">
-            <div class="lang-wrap" style="position:relative" x-data="{ langOpen:false }" @click.outside="langOpen=false" @keydown.escape.window="langOpen=false">
-                <button type="button" class="hdr-icon" @click="langOpen=!langOpen" :aria-expanded="langOpen.toString()" aria-haspopup="true" aria-label="Select language">
+            <div class="lang-wrap" style="position:relative">
+                <button type="button" class="hdr-icon" data-pop="lang-menu" aria-expanded="false" aria-haspopup="true" aria-controls="lang-menu" aria-label="Select language">
                     {!! $icon('globe', 18) !!} {{ $localeLabels[$locale] ?? 'EN' }}
                 </button>
-                <div class="menu" x-show="langOpen" x-cloak x-transition.opacity.duration.150ms>
+                <div class="menu" id="lang-menu" hidden>
                     @foreach($languages as [$code, $name, $short])
                     <form method="POST" action="{{ route('locale.set') }}">@csrf<input type="hidden" name="locale" value="{{ $code }}">
                         <button type="submit" class="{{ $locale === $code ? 'on' : '' }}">{{ $name }}@if($locale === $code)<span style="margin-left:auto">{!! $icon('check', 16) !!}</span>@endif</button>
@@ -362,11 +363,11 @@ ul,ol{margin:0;padding:0;list-style:none;}
                 {!! $icon('bell', 18) !!}
                 @if($navNotifCount > 0)<span class="badge-dot">{{ $navNotifCount > 9 ? '9+' : $navNotifCount }}</span>@endif
             </a>
-            <div style="position:relative" x-data="{ userOpen:false }" @click.outside="userOpen=false" @keydown.escape.window="userOpen=false">
-                <button type="button" class="hdr-icon" @click="userOpen=!userOpen" :aria-expanded="userOpen.toString()" aria-haspopup="true" aria-label="User menu">
+            <div style="position:relative">
+                <button type="button" class="hdr-icon" data-pop="user-menu" aria-expanded="false" aria-haspopup="true" aria-controls="user-menu" aria-label="User menu">
                     <span class="avatar" aria-hidden="true">{{ $initials }}</span> {!! $icon('down', 14) !!}
                 </button>
-                <div class="menu" x-show="userOpen" x-cloak x-transition.opacity.duration.150ms style="min-width:230px">
+                <div class="menu" id="user-menu" hidden style="min-width:230px">
                     <div class="menu-head">
                         <b>{{ trim(($navUser->first_name ?? '') . ' ' . ($navUser->last_name ?? '')) ?: $navUser->name }}</b>
                         <span>{{ $navUser->roleLabel ?? $navUser->role ?? 'User' }}</span>
@@ -385,16 +386,16 @@ ul,ol{margin:0;padding:0;list-style:none;}
             @endauth
         </div>
 
-        <button type="button" class="hdr-icon burger" @click="open=!open" :aria-expanded="open.toString()" aria-controls="mobile-nav-drawer" aria-label="Toggle navigation menu">
-            <span x-show="!open">{!! $icon('menu', 24) !!}</span><span x-show="open" x-cloak>{!! $icon('close', 24) !!}</span>
+        <button type="button" class="hdr-icon burger" data-drawer aria-expanded="false" aria-controls="mobile-nav-drawer" aria-label="Toggle navigation menu">
+            <span class="i-menu">{!! $icon('menu', 24) !!}</span><span class="i-close">{!! $icon('close', 24) !!}</span>
         </button>
     </div>
 
-    <div id="mobile-nav-drawer" class="drawer" x-show="open" x-cloak x-transition.opacity.duration.150ms>
+    <div id="mobile-nav-drawer" class="drawer" hidden>
         <div class="wrap">
             <nav aria-label="Mobile">
                 @foreach($navLinks as [$href, $label])
-                <a href="{{ $href }}" @click="open=false">{{ $label }}</a>
+                <a href="{{ $href }}">{{ $label }}</a>
                 @endforeach
             </nav>
             <div class="langs" role="group" aria-label="Language">
@@ -406,15 +407,15 @@ ul,ol{margin:0;padding:0;list-style:none;}
             </div>
             <div class="acts">
                 @auth
-                <a href="{{ url('/dashboard') }}" class="btn btn-green" @click="open=false">{!! $icon('gauge', 18) !!} Dashboard</a>
-                <a href="{{ route('profile.edit') }}" class="btn btn-line" @click="open=false">{!! $icon('user', 18) !!} My Profile</a>
-                <a href="{{ route('notifications.index') }}" class="btn btn-line" @click="open=false">{!! $icon('bell', 18) !!} Notifications</a>
+                <a href="{{ url('/dashboard') }}" class="btn btn-green">{!! $icon('gauge', 18) !!} Dashboard</a>
+                <a href="{{ route('profile.edit') }}" class="btn btn-line">{!! $icon('user', 18) !!} My Profile</a>
+                <a href="{{ route('notifications.index') }}" class="btn btn-line">{!! $icon('bell', 18) !!} Notifications</a>
                 <form method="POST" action="{{ route('logout') }}">@csrf
                     <button type="submit" class="btn btn-line" style="width:100%;color:#B91C1C;border-color:#FCA5A5">{!! $icon('logout', 18) !!} Sign Out</button>
                 </form>
                 @else
-                <a href="{{ route('register') }}" class="btn btn-main" @click="open=false">Register</a>
-                <a href="{{ route('login') }}" class="btn btn-line" @click="open=false">{!! $icon('login', 18) !!} Sign In</a>
+                <a href="{{ route('register') }}" class="btn btn-main">Register</a>
+                <a href="{{ route('login') }}" class="btn btn-line">{!! $icon('login', 18) !!} Sign In</a>
                 @endauth
             </div>
         </div>
@@ -790,6 +791,37 @@ ul,ol{margin:0;padding:0;list-style:none;}
     function onScroll() { nav.classList.toggle('solid', window.scrollY > 40); }
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
+})();
+// Menus (language, user, mobile drawer): plain JS, so the page needs no framework bundle.
+(function () {
+    var nav = document.getElementById('main-nav');
+    var drawer = document.getElementById('mobile-nav-drawer');
+    var burger = nav.querySelector('[data-drawer]');
+    function closePops(except) {
+        nav.querySelectorAll('[data-pop]').forEach(function (b) {
+            if (b === except) return;
+            b.setAttribute('aria-expanded', 'false');
+            document.getElementById(b.dataset.pop).hidden = true;
+        });
+    }
+    function setDrawer(open) {
+        drawer.hidden = !open;
+        nav.classList.toggle('open', open);
+        burger.setAttribute('aria-expanded', String(open));
+    }
+    nav.querySelectorAll('[data-pop]').forEach(function (b) {
+        b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var menu = document.getElementById(b.dataset.pop), open = menu.hidden;
+            closePops(b);
+            menu.hidden = !open;
+            b.setAttribute('aria-expanded', String(open));
+        });
+    });
+    burger.addEventListener('click', function () { setDrawer(drawer.hidden); });
+    drawer.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { setDrawer(false); }); });
+    document.addEventListener('click', function (e) { if (!e.target.closest('.menu')) closePops(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closePops(); setDrawer(false); } });
 })();
 // Contact form: open WhatsApp with the message filled in.
 function sendWhatsApp(form) {
