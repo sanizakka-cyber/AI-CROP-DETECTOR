@@ -51,7 +51,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
 
 <div class="hero">
     <h1>Refund Policy</h1>
-    <p>Last updated: July 2026 &nbsp;·&nbsp; Effective immediately</p>
+    <p>Last updated: November 2026 &nbsp;·&nbsp; Version {{ config('legal.versions.refund') }}</p>
 </div>
 
 <div class="container">
@@ -59,31 +59,32 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
     <div class="section">
         <span class="badge">Transparent &amp; Fair</span>
         <h2>1. Overview</h2>
-        <p>MSAS FarmAI is committed to delivering genuine value to every farmer and agribusiness on our platform. This Refund Policy sets out the conditions under which you may request a refund for subscription fees, marketplace purchases, and other paid services.</p>
+        <p>MSAS FarmAI is committed to delivering genuine value to every farmer and agribusiness on our platform. This Refund Policy explains that subscription payments are non-refundable once your plan is activated, the exceptions where we will refund, and the conditions under which you may request a refund for subscription fees, marketplace purchases, and other paid services.</p>
         <div class="info-box">If you have a question about a specific charge or believe you have been billed in error, please contact <strong>billing@msasagro.com</strong> before raising a dispute with your bank or payment provider — most issues can be resolved within 24 hours.</div>
     </div>
 
     <div class="section">
-        <h2>2. Subscription Refunds</h2>
-        <h3>14-Day Free Trial</h3>
-        <p>All new paid subscriptions begin with a 14-day free trial. You will <strong>not</strong> be charged during the trial period. You may cancel at any time during the trial with no obligation.</p>
+        <h2>2. Subscription Payments Are Non-Refundable</h2>
+        <h3>Free Trial</h3>
+        <p>Where a free trial is offered, you are <strong>not</strong> charged during the trial and you can stop using the service at any time during the trial at no cost.</p>
 
-        <h3>Paid Plans (Basic / Pro / Enterprise)</h3>
-        <p>After the free trial, subscription fees are billed monthly or annually in advance. The following conditions apply:</p>
+        <h3>Paid Plans</h3>
+        <p>Subscription fees are paid in advance, monthly or yearly. <strong>Once your payment is confirmed and your plan is activated, the payment is non-refundable</strong>, including if you stop using the service, downgrade or cancel before the end of the billing period. When you cancel, your plan stays active until the end of the period you have already paid for, and you are not charged again.</p>
+        <p>Before every subscription payment you are asked to confirm that you understand this.</p>
+
+        <h3>Exceptions — when we will refund or put it right</h3>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Scenario</th><th>Refund Eligibility</th></tr></thead>
+                <thead><tr><th>Situation</th><th>What we do</th></tr></thead>
                 <tbody>
-                    <tr><td>Cancellation within 7 days of first paid charge</td><td>Full refund, no questions asked</td></tr>
-                    <tr><td>Cancellation after 7 days but within the billing period</td><td>Pro-rata credit to your MSAS wallet, redeemable on next renewal</td></tr>
-                    <tr><td>Annual plan — cancelled within first 30 days</td><td>Full refund for unused months</td></tr>
-                    <tr><td>Annual plan — cancelled after 30 days</td><td>Pro-rata credit for remaining months (no cash refund)</td></tr>
-                    <tr><td>Duplicate charge due to system error</td><td>Full refund of the duplicate charge</td></tr>
-                    <tr><td>Service downtime &gt; 24 consecutive hours</td><td>Day-for-day credit applied automatically</td></tr>
+                    <tr><td>You were charged twice for the same subscription</td><td>Full refund of the duplicate charge</td></tr>
+                    <tr><td>Your payment was taken but your plan was not activated</td><td>We activate the plan, or refund the payment if we cannot</td></tr>
+                    <tr><td>The service failed on our side for a significant time</td><td>Extra subscription time to cover the outage, or a refund for the affected period</td></tr>
+                    <tr><td>A refund is required by Nigerian law (including the Federal Competition and Consumer Protection Act 2018)</td><td>Refund as the law requires</td></tr>
                 </tbody>
             </table>
         </div>
-        <div class="highlight">Refunds are processed within <strong>5–10 business days</strong> to the original payment method (card or bank account). MSAS wallet credits are applied instantly.</div>
+        <div class="highlight">Approved refunds are paid to the original payment method (card or bank account), normally within <strong>5–10 business days</strong>. Nothing in this policy limits your rights under Nigerian consumer protection law.</div>
     </div>
 
     <div class="section">
@@ -121,7 +122,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
         <ul>
             <li>Transaction fees charged by Paystack or your bank</li>
             <li>One-time setup or onboarding fees (where applicable)</li>
-            <li>Subscriptions cancelled after the 7-day window (cash refund) — wallet credit still applies</li>
+            <li>Subscription payments after the plan has been activated, except in the situations listed in section 2</li>
             <li>Any service where fraudulent or abusive use is detected</li>
         </ul>
     </div>

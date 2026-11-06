@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\LegalConsentService;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Mail\ApplicationReceivedMail;
@@ -115,7 +116,8 @@ class AuthApiController extends Controller
                 'plan'        => $request->input('plan', ''),
             ],
             $identifierType,
-            $identifier
+            $identifier,
+            fn ($user) => app(LegalConsentService::class)->recordRegistration($user, $request, 'registration_app')
         );
 
         if ($request->filled('language')) {

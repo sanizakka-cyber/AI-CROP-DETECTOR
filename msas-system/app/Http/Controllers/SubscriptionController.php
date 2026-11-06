@@ -59,8 +59,11 @@ class SubscriptionController extends Controller
     {
         $validPlans = implode(',', array_keys(config('subscription.plans', [])));
         $request->validate([
-            'plan'          => "required|in:{$validPlans}",
-            'billing_cycle' => 'required|in:monthly,yearly',
+            'plan'                => "required|in:{$validPlans}",
+            'billing_cycle'       => 'required|in:monthly,yearly',
+            'refund_acknowledged' => 'accepted',
+        ], [
+            'refund_acknowledged.accepted' => __('Please tick the box to confirm you understand that subscription payments are non-refundable.'),
         ]);
 
         $user      = auth()->user();
@@ -83,6 +86,11 @@ class SubscriptionController extends Controller
         // make, including on day 1 of that same trial.
         $amount    = config("subscription.plans.{$plan}.price.{$cycle}");
         $reference = $this->subs->generateReference();
+
+        // Proof that the user accepted "subscription payments are non-refundable"
+        // for this payment, before it starts.
+        app(\App\Services\LegalConsentService::class)
+            ->recordRefundAcknowledgement($user, $request, $reference, 'subscription_web');
 
         Log::info('SUBSCRIPTION_INIT', [
             'user_id' => $user->id,

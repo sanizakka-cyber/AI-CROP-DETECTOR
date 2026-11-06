@@ -37,6 +37,12 @@ Route::get('/faq',            [\App\Http\Controllers\ComplianceController::class
 Route::get('/help',           [\App\Http\Controllers\ComplianceController::class, 'help'])->name('legal.help');
 Route::get('/cookie-policy',  [\App\Http\Controllers\ComplianceController::class, 'cookie'])->name('legal.cookie');
 
+// Existing users accept new Terms/Privacy versions once (EnsureCurrentLegalAcceptance)
+Route::middleware('auth')->group(function () {
+    Route::get('/legal/accept',  [\App\Http\Controllers\LegalAcceptanceController::class, 'show'])->name('legal.accept.show');
+    Route::post('/legal/accept', [\App\Http\Controllers\LegalAcceptanceController::class, 'store'])->name('legal.accept.store');
+});
+
 // Services Public Routes (Redirects to register/login for now to prevent 404s)
 Route::prefix('services')->name('services.')->group(function () {
     Route::redirect('/livestock', '/register')->name('livestock');

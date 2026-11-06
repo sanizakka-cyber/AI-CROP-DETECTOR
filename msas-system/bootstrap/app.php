@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Redirect users with a temporary password to the change-password page
         $middleware->appendToGroup('web', \App\Http\Middleware\ForcePasswordReset::class);
 
+        // Ask signed-in users to accept the current Terms/Privacy versions
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureCurrentLegalAcceptance::class);
+
         // Exclude payment webhooks from CSRF (they're verified by HMAC signature instead)
         $middleware->validateCsrfTokens(except: [
             'webhooks/paystack',
