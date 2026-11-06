@@ -17,10 +17,8 @@
 <meta name="twitter:title" content="MSAS FarmAI | Smart Agriculture. Healthy Future.">
 <meta name="twitter:description" content="AI-powered agribusiness platform for Nigerian farmers and agri-enterprises.">
 <meta name="theme-color" content="#0B3B24">
-<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-{{-- Fonts load without blocking the first paint: text shows at once in the system font, then switches. --}}
-<link rel="preload" as="style" href="https://fonts.bunny.net/css?family=poppins:700,800|inter:400,600,700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.bunny.net/css?family=poppins:700,800|inter:400,600,700&display=swap"></noscript>
+{{-- No web fonts: the phone's own UI font renders instantly. (fonts.bunny.net now serves its files from
+     cdn.jsdelivr.net, which the site's Content Security Policy blocks, so they never loaded anyway.) --}}
 @vite(['resources/js/app.js'])
 @php
     // Real numbers only: plans, prices, scan counts and trial length come from config/subscription.php.
@@ -73,7 +71,7 @@
     --g950:#06291A;--g900:#0B3B24;--g800:#0E5332;--g700:#0F6B3E;--g600:#16803F;--g500:#1FA84A;--g100:#DCFCE7;--g50:#F0FDF4;
     --gold:#F4A300;--ink:#0F172A;--body:#334155;--muted:#526173;--line:#E2E8F0;--bg:#F7FAF8;--white:#fff;
     --r-sm:10px;--r:16px;--r-lg:24px;--shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.06);
-    --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--head:'Poppins','Inter',system-ui,sans-serif;
+    --font:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--head:var(--font);
 }
 *,*::before,*::after{box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
