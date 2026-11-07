@@ -33,8 +33,10 @@ class SelfHostedFontsAndClaimsTest extends TestCase
         preg_match_all("#url\\('(/fonts/[^']+)'\\)#", $css, $m);
 
         $this->assertCount(11, $m[1]);
-        // A "*/" inside the header comment once ended it early and broke the first rule.
-        $this->assertSame(1, substr_count(substr($css, 0, strpos($css, '@font-face')), '*/'), 'the header comment must close exactly once');
+        // A "*/" inside the header comment once ended it early and broke the first rule:
+        // with the comments removed, nothing but whitespace may come before it.
+        $before = substr($css, 0, strpos($css, '@font-face'));
+        $this->assertSame('', trim(preg_replace('#/\*.*?\*/#s', '', $before)), 'stray text before the first @font-face');
         foreach ($m[1] as $path) {
             $this->assertFileExists(public_path(ltrim($path, '/')), $path);
         }
