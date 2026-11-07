@@ -51,6 +51,24 @@ return [
     // Read locally; nothing is sent out.
     'places_path' => resource_path('geo/places'),
 
+    // A suggested Postal Code must start with one of its State's prefixes
+    // (owner decision, 7 Nov 2026: OpenStreetMap gave Abuja 223140). NIPOST's
+    // six-digit scheme: the first digit is the region, the first two digits
+    // the State (e.g. Ikeja 100001, Garki/Abuja 900001, Lokoja 270001, Port
+    // Harcourt 500001, Enugu 400001, Imo 460001). Not yet checked against an
+    // official NIPOST list: a State missing here gets no postal suggestion.
+    // Names as in App\Data\NigeriaLocations.
+    'postcode_prefixes' => [
+        'Lagos' => ['10'], 'Ogun' => ['11'], 'Oyo' => ['20', '21'], 'Osun' => ['23'], 'Kwara' => ['24', '25'],
+        'Kogi' => ['26', '27'], 'Edo' => ['30', '31'], 'Delta' => ['32', '33'], 'Ondo' => ['34', '35'], 'Ekiti' => ['36', '37'],
+        'Enugu' => ['40', '41'], 'Anambra' => ['42', '43'], 'Abia' => ['44', '45'], 'Imo' => ['46', '47'], 'Ebonyi' => ['48', '49'],
+        'Rivers' => ['50', '51'], 'Akwa Ibom' => ['52', '53'], 'Cross River' => ['54', '55'], 'Bayelsa' => ['56', '57'],
+        'Borno' => ['60', '61'], 'Yobe' => ['62', '63'], 'Adamawa' => ['64', '65'], 'Taraba' => ['66', '67'],
+        'Kano' => ['70', '71'], 'Jigawa' => ['72', '73'], 'Bauchi' => ['74', '75'], 'Gombe' => ['76', '77'],
+        'Kaduna' => ['80', '81'], 'Katsina' => ['82', '83'], 'Sokoto' => ['84', '85'], 'Kebbi' => ['86', '87'], 'Zamfara' => ['88', '89'],
+        'Federal Capital Territory' => ['90', '91'], 'Niger' => ['92'], 'Plateau' => ['93', '94'], 'Nasarawa' => ['95', '96'], 'Benue' => ['97', '98'],
+    ],
+
     // Settlement types for Community, in order of preference.
     'community_types' => ['village', 'hamlet', 'town', 'suburb', 'neighbourhood', 'city'],
 

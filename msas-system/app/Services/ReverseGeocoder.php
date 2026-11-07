@@ -50,7 +50,7 @@ class ReverseGeocoder
         if ($nominatim !== null) {
             $out['ok'] = true;
             $out['community'] = $this->community($nominatim, $rLat, $rLon, $pointState, $pointLga);
-            $out['postal_code'] = $this->postalCode((string) ($nominatim['point_postcode'] ?? ''));
+            $out['postal_code'] = $this->postalCode((string) ($nominatim['point_postcode'] ?? ''), $pointState);
         }
 
         // The landmark comes from our own copy of the places, at the exact point.
@@ -120,11 +120,16 @@ class ReverseGeocoder
             : mb_strtoupper(mb_substr($near, 0, 1)) . mb_substr($near, 1);
     }
 
-    private function postalCode(string $postcode): ?string
+    /** A 6-digit code whose first digits belong to the point's State (config geocoding.postcode_prefixes), else null. */
+    private function postalCode(string $postcode, string $state): ?string
     {
         $code = preg_replace('/\s+/', '', $postcode);
+        if (!preg_match('/^\d{6}$/', $code)) {
+            return null;
+        }
+        $prefixes = (array) (config('geocoding.postcode_prefixes')[$state] ?? []);
 
-        return preg_match('/^\d{6}$/', $code) ? $code : null;
+        return in_array(substr($code, 0, 2), $prefixes, true) ? $code : null;
     }
 
     // ── Nominatim ───────────────────────────────────────────────────────────
