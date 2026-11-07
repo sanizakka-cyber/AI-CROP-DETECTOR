@@ -291,18 +291,26 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Community / Town / Village') }}</label>
-                            <input type="text" name="loc_community" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('e.g., Funtua town') }}">
+                            <label for="locCommunity" class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Community / Town / Village') }}</label>
+                            <input type="text" id="locCommunity" name="loc_community" data-suggest="community" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('e.g., Funtua town') }}">
+                            <p class="loc-suggested hidden text-[11px] text-amber-700 mt-1" data-suggested-for="community">{{ __('Suggested from your location – please check') }}</p>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Postal Code') }}</label>
-                            <input type="text" name="loc_postal_code" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('If known') }}">
+                            <label for="locPostal" class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Postal Code') }}</label>
+                            <input type="text" id="locPostal" name="loc_postal_code" data-suggest="postal_code" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('If known') }}">
+                            <p class="loc-suggested hidden text-[11px] text-amber-700 mt-1" data-suggested-for="postal_code">{{ __('Suggested from your location – please check') }}</p>
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Address / Landmark') }}</label>
-                            <input type="text" name="loc_address" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('Optional — nearest landmark or address') }}">
+                            <label for="locAddress" class="block text-xs font-bold text-slate-500 uppercase mb-1">{{ __('Address / Landmark') }}</label>
+                            <input type="text" id="locAddress" name="loc_address" data-suggest="landmark" class="w-full border-slate-200 rounded-lg text-sm" placeholder="{{ __('Optional — nearest landmark or address') }}">
+                            <p class="loc-suggested hidden text-[11px] text-amber-700 mt-1" data-suggested-for="landmark">{{ __('Suggested from your location – please check') }}</p>
                         </div>
                     </div>
+                    <p id="locOsmCredit" class="hidden mt-2 text-[11px] text-slate-400">{{ config('geocoding.attribution') }}</p>
+                    {{-- Where each suggested field came from: gps (kept as suggested) or user (typed or edited) --}}
+                    <input type="hidden" id="locCommunitySource" name="loc_community_source" value="">
+                    <input type="hidden" id="locAddressSource" name="loc_address_source" value="">
+                    <input type="hidden" id="locPostalSource" name="loc_postal_code_source" value="">
 
                     <div class="mt-3 flex items-start gap-2">
                         <input type="checkbox" id="locDiffers" name="loc_differs_from_scan" value="1" class="mt-0.5 rounded border-slate-300" onchange="differsChanged();">
@@ -402,6 +410,7 @@
             'fillOnSubmit'   => __('Could not look up your State and LGA now. Leave them blank and they will be filled from your GPS point when you submit, or select them below.'),
             'namesChanged'   => __('You changed the State or LGA found from GPS. Your choice will be saved.'),
             'scanPlaceSaved' => __('Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.'),
+            'lowAccuracy'    => __('Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.'),
             'unsupported'    => __('Your browser does not support location capture. Please select your state/LGA manually.'),
             'denied'         => __('This site is not allowed to use your location.'),
             'unavailable'    => __('Your device could not find its location.'),
@@ -410,6 +419,7 @@
     @endphp
     {{-- GPS capture (best reading over 30 s) and the map preview with a draggable pin --}}
     <script src="{{ asset('js/gps-quality.js') }}"></script>
+    <script src="{{ asset('js/location-suggest.js') }}"></script>
     @vite('resources/js/location-map.js')
     <script>
     // Nigeria states + LGAs — same server-side dataset the backend
@@ -490,6 +500,7 @@
 
     var locCapture = null;     // the running MsasGps.captureBest(), if any
     var locOriginal = null;    // the device's own fix once the pin has been moved
+    var locEstimate = null;    // a reading worse than 1 km: shown on the map, nothing filled until the pin is moved
 
     function fmtAcc(m) { return m < 10 ? (Math.round(m * 10) / 10).toString() : String(Math.round(m)); }
     function ratingLabel(r) { return LOC_TEXT.ratings[r] || r; }
@@ -516,9 +527,12 @@
     function clearCollectionFix() {
         ['locLatitude', 'locLongitude', 'locAccuracy', 'locGpsAt', 'locNamesFrom', 'locOrigLatitude', 'locOrigLongitude'].forEach(function (id) { setVal(id, ''); });
         if (locFilled) { setStateAndLga('', ''); }
+        // Suggestions from the old point go too; anything typed stays.
+        applySuggestions({ community: null, landmark: null, postal_code: null });
         locFix = null;
         locFilled = false;
         locOriginal = null;
+        locEstimate = null;
         showNamesSource('');
         hide('locResult');
     }
@@ -570,19 +584,77 @@
         }
     }
 
-    function lookupNames(fix) {
+    // ── Suggested Community / Address-Landmark / Postal Code ────────────────
+    // Filled from the location only (never from IP), never over something the
+    // farmer typed; each carries its source (gps or user) to the server.
+    var SUGGEST_INPUTS = { community: ['locCommunity', 'locCommunitySource'], landmark: ['locAddress', 'locAddressSource'], postal_code: ['locPostal', 'locPostalSource'] };
+
+    function suggestFields() {
+        var f = {};
+        Object.keys(SUGGEST_INPUTS).forEach(function (k) {
+            f[k] = { value: val(SUGGEST_INPUTS[k][0]), source: val(SUGGEST_INPUTS[k][1]) || null };
+        });
+        return f;
+    }
+
+    function showSuggestFields(f) {
+        var anyGps = false;
+        Object.keys(SUGGEST_INPUTS).forEach(function (k) {
+            setVal(SUGGEST_INPUTS[k][0], f[k].value);
+            setVal(SUGGEST_INPUTS[k][1], f[k].source || '');
+            var gps = f[k].source === 'gps';
+            anyGps = anyGps || gps;
+            document.querySelector('[data-suggested-for="' + k + '"]').classList.toggle('hidden', !gps);
+            document.getElementById(SUGGEST_INPUTS[k][0]).classList.toggle('border-amber-300', gps);
+        });
+        hide('locOsmCredit', !anyGps);
+    }
+
+    function applySuggestions(suggestions) {
+        if (!window.MsasSuggest) { return; }
+        showSuggestFields(MsasSuggest.apply(suggestFields(), suggestions));
+    }
+
+    // Typing in a suggested field makes it the farmer's.
+    Object.keys(SUGGEST_INPUTS).forEach(function (k) {
+        document.getElementById(SUGGEST_INPUTS[k][0]).addEventListener('input', function (e) {
+            var f = suggestFields();
+            f[k] = window.MsasSuggest ? MsasSuggest.edited(e.target.value) : { value: e.target.value, source: 'user' };
+            showSuggestFields(f);
+        });
+    });
+
+    // Community, Address/Landmark and Postal Code take a few seconds (outside
+    // services), so they are asked for after State/LGA are shown. A failed
+    // lookup (ok: false) leaves the fields for the farmer.
+    function lookupSuggestions(fix, q) {
+        fetch(LOC_TEXT.lookupUrl + q + '&suggest=1', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (d) {
+                if (locFix !== fix) { return; }
+                applySuggestions(d.suggestions && d.suggestions.ok ? d.suggestions : null);
+            })
+            .catch(function () {});
+    }
+
+    // accuracy: the device's reading in metres, or null for a point placed on the map.
+    function lookupNames(fix, accuracy) {
         showNamesSource(LOC_TEXT.lookingUp);
-        fetch(LOC_TEXT.lookupUrl + '?lat=' + encodeURIComponent(fix.lat) + '&lon=' + encodeURIComponent(fix.lon), {
+        var q = '?lat=' + encodeURIComponent(fix.lat) + '&lon=' + encodeURIComponent(fix.lon)
+            + (accuracy != null ? '&accuracy=' + encodeURIComponent(accuracy) : '');
+        fetch(LOC_TEXT.lookupUrl + q, {
             headers: { 'Accept': 'application/json' }, credentials: 'same-origin',
         }).then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
             if (locFix !== fix) { return; } // a newer fix or a switch to manual came first
-            if (!d.found) { showNamesSource(LOC_TEXT.notFound); return; }
+            if (d.low_accuracy) { showNamesSource(LOC_TEXT.lowAccuracy); return; }
+            if (!d.found) { showNamesSource(LOC_TEXT.notFound); applySuggestions({ community: null, landmark: null, postal_code: null }); return; }
             setStateAndLga(d.state, d.lga);
             locFilled = true;
             setVal('locNamesFrom', 'lookup');
             showNamesSource(LOC_TEXT.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
+            lookupSuggestions(fix, q);
         }).catch(function () {
-            // Keep the coordinates: the server fills the names on submit, or the farmer picks them.
+            // Keep the coordinates: the server fills State/LGA on submit, or the farmer picks them.
             if (locFix === fix) { showNamesSource(LOC_TEXT.fillOnSubmit); }
         });
     }
@@ -631,19 +703,28 @@
     // The farmer moved the pin: that point is submitted, the device's fix is kept beside it.
     function onPinMoved(lat, lon) {
         if (!locOriginal) {
-            locOriginal = { lat: val('locLatitude'), lon: val('locLongitude') };
+            // A low-accuracy estimate was never put in the form; it is the device's own fix.
+            locOriginal = locEstimate ? { lat: locEstimate.lat, lon: locEstimate.lon } : { lat: val('locLatitude'), lon: val('locLongitude') };
             setVal('locOrigLatitude', locOriginal.lat);
             setVal('locOrigLongitude', locOriginal.lon);
+        }
+        if (locEstimate) {
+            setVal('locAccuracy', Math.round(locEstimate.acc * 10) / 10);
+            setVal('locGpsAt', locEstimate.at);
+            setVal('locCaptureMethod', 'gps_device');
+            locEstimate = null;
+            showLocStatus(null);
         }
         setVal('locLatitude', lat);
         setVal('locLongitude', lon);
         setVal('locSource', 'gps_adjusted');
         showPoint(lat, lon);
         hide('locAdjusted', false);
-        // Names the lookup filled follow the pin; names the farmer chose stay.
+        // Names the lookup filled follow the pin (State, LGA and the suggestions);
+        // names the farmer chose stay. A placed pin has no device accuracy.
+        locFix = { lat: lat, lon: lon };
         if (locFilled || !val('locState')) {
-            locFix = { lat: lat, lon: lon };
-            lookupNames(locFix);
+            lookupNames(locFix, null);
         }
     }
 
@@ -656,6 +737,15 @@
             return;
         }
         clearCollectionFix();
+        if (window.MsasSuggest && !MsasSuggest.canAutoFill(fix.acc)) {
+            // Worse than 1 km (a computer estimating from Wi-Fi): fill nothing,
+            // show the estimate on the map for the farmer to move.
+            locEstimate = fix;
+            showResult(fix);
+            showLocStatus('warn', LOC_TEXT.lowAccuracy);
+            showNamesSource('');
+            return;
+        }
         setVal('locLatitude', fix.lat);
         setVal('locLongitude', fix.lon);
         setVal('locAccuracy', Math.round(fix.acc * 10) / 10);
@@ -668,7 +758,7 @@
             LOC_TEXT.captured.replace(':acc', fmtAcc(fix.acc)).replace(':rating', ratingLabel(r))
             + (reason === 'window' ? ' ' + LOC_TEXT.bestIn30 : '') + ' ' + LOC_TEXT.checkNames);
         showResult(fix);
-        lookupNames(fix);
+        lookupNames(fix, fix.acc);
     }
 
     function stopCaptureNow() { if (locCapture) { locCapture.stop(); } }

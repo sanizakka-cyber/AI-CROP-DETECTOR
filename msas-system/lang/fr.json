@@ -568,5 +568,10 @@
   "Please read and accept them to keep using MSAS FarmAI. They explain how the service works, that subscription payments are non-refundable, that users must be 18 or older, and how we protect your personal data.": "Veuillez les lire et les accepter pour continuer à utiliser MSAS FarmAI. Elles expliquent le fonctionnement du service, que les paiements d'abonnement ne sont pas remboursables, que les utilisateurs doivent avoir 18 ans ou plus, et comment nous protégeons vos données personnelles.",
   "Accept and continue": "Accepter et continuer",
   "Not now — sign out": "Pas maintenant — se déconnecter",
-  "Thank you. Your agreement has been recorded.": "Merci. Votre accord a été enregistré."
+  "Thank you. Your agreement has been recorded.": "Merci. Votre accord a été enregistré.",
+  "Suggested from your location – please check": "Suggéré à partir de votre position – veuillez vérifier",
+  "Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.": "Votre ordinateur ne peut qu’estimer votre position. Faites glisser le repère jusqu’à votre exploitation ou choisissez votre État/LGA.",
+  "near :place": "près de :place",
+  "Drag the pin if it is not where your farm is.": "Faites glisser le repère s’il n’est pas à l’emplacement de votre exploitation.",
+  "Could not look up your State and LGA now. Please select them below.": "Impossible de trouver votre État et votre LGA pour le moment. Veuillez les choisir ci-dessous."
 }

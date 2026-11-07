@@ -15,6 +15,10 @@ import * as Location from 'expo-location';
 import { locationsAPI } from './api';
 import { buildLocationApiFields } from './locationFields';
 import { captureBest, needsRetry, rating } from './gpsQuality';
+import { apply as applySuggestions, canAutoFill, edited } from './locationSuggest';
+
+const NO_SUGGESTIONS = { community: null, landmark: null, postal_code: null };
+const EMPTY_FIELDS = { community: { value: '', source: null }, landmark: { value: '', source: null }, postal_code: { value: '', source: null } };
 
 export function useLocationCapture() {
   // Nigeria-only for now — the location dataset (App\Data\NigeriaLocations)
@@ -24,9 +28,20 @@ export function useLocationCapture() {
   const [country] = useState('Nigeria');
   const [state, setState]           = useState('');
   const [lga, setLga]               = useState('');
-  const [community, setCommunity]   = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [address, setAddress]       = useState('');
+  // Community, Address/Landmark and Postal Code, each with its source: 'gps'
+  // (a suggestion from the location, unchanged), 'user' (typed or edited) or
+  // null. Suggestions never overwrite what the farmer typed (lib/locationSuggest.js).
+  const [suggestFields, setSuggestFields] = useState(EMPTY_FIELDS);
+  const community  = suggestFields.community.value;
+  const postalCode = suggestFields.postal_code.value;
+  const address    = suggestFields.landmark.value;
+  const setCommunity  = useCallback((v) => setSuggestFields(f => ({ ...f, community: edited(v) })), []);
+  const setPostalCode = useCallback((v) => setSuggestFields(f => ({ ...f, postal_code: edited(v) })), []);
+  const setAddress    = useCallback((v) => setSuggestFields(f => ({ ...f, landmark: edited(v) })), []);
+  // A reading worse than 1 km (approximate location): shown on the map, nothing
+  // filled or sent until the farmer moves the pin.
+  const [needsPin, setNeedsPin] = useState(false);
+  const needsPinRef = useRef(false);
   // { latitude, longitude, accuracy } | null — the point that is submitted
   const [coords, setCoords]         = useState(null);
   // 'gps_device' | 'manual_coordinates' | 'administrative_selection' | 'address_entry' | null
@@ -127,6 +142,10 @@ export function useLocationCapture() {
     namesFilled.current = false;
     lookupFor.current = null;
     setNamesNote(null);
+    // Suggestions from the old point go; anything typed stays.
+    setSuggestFields(f => applySuggestions(f, NO_SUGGESTIONS));
+    needsPinRef.current = false;
+    setNeedsPin(false);
   }, []);
 
   const enterManually = useCallback(() => {
@@ -156,14 +175,20 @@ export function useLocationCapture() {
     }
   }, [enterManually]);
 
-  const lookupNames = useCallback(async (fix) => {
+  // accuracy: the device's reading in metres, or null for a point the farmer placed.
+  const lookupNames = useCallback(async (fix, accuracy = null) => {
     lookupFor.current = fix;
     setNamesNote({ key: 'loc_looking_up' });
     try {
-      const res = await locationsAPI.lookup(fix.latitude, fix.longitude);
+      const res = await locationsAPI.lookup(fix.latitude, fix.longitude, { accuracy });
       if (!isMounted.current || lookupFor.current !== fix) return;
+      if (res?.low_accuracy) {
+        setNamesNote({ key: 'loc_low_accuracy' });
+        return;
+      }
       if (!res?.found) {
         setNamesNote({ key: 'loc_not_found' });
+        setSuggestFields(f => applySuggestions(f, NO_SUGGESTIONS));
         return;
       }
       setState(res.state);
@@ -171,6 +196,15 @@ export function useLocationCapture() {
       namesFilled.current = true;
       setPlaceNamesFrom('lookup');
       setNamesNote({ key: 'loc_filled_from', params: { place: `${res.lga}, ${res.state}` }, attribution: res.attribution || '' });
+      // Community, Address/Landmark and Postal Code take a few seconds (outside
+      // services): asked for after State/LGA are shown. A failed lookup leaves
+      // the fields for the farmer.
+      locationsAPI.lookup(fix.latitude, fix.longitude, { accuracy, suggest: true })
+        .then((s) => {
+          if (!isMounted.current || lookupFor.current !== fix) return;
+          setSuggestFields(f => applySuggestions(f, s?.suggestions?.ok ? s.suggestions : null));
+        })
+        .catch(() => {});
     } catch {
       // Offline or the server is unreachable: keep the coordinates; the
       // server fills State/LGA from them when the scan is sent.
@@ -249,6 +283,14 @@ export function useLocationCapture() {
       setCaptureMethod('gps_device');
       setLocationSource('gps');
 
+      if (!canAutoFill(best.accuracy)) {
+        // Worse than 1 km: fill nothing; the farmer drags the pin to the farm.
+        needsPinRef.current = true;
+        setNeedsPin(true);
+        setGpsStatus({ type: 'warning', key: 'loc_low_accuracy', help: approximate ? ['loc_help_precise'] : [], canRetry: true, canManual: true });
+        return;
+      }
+
       const help = [];
       if (needsRetry(r)) help.push('loc_help_outside', 'loc_help_wait', 'loc_help_high_accuracy');
       if (approximate) help.push('loc_help_precise');
@@ -260,7 +302,7 @@ export function useLocationCapture() {
         help,
         canRetry: needsRetry(r) || best.mocked,
       });
-      await lookupNames(fix);
+      await lookupNames(fix, best.accuracy);
     } catch {
       if (isMounted.current) fail({ key: 'loc_err_failed' });
     } finally {
@@ -285,8 +327,15 @@ export function useLocationCapture() {
     fixRef.current = moved;
     setCoords(moved);
     setLocationSource('gps_adjusted');
-    // Names the lookup filled follow the pin; names the farmer chose stay.
-    if (namesFilled.current || !state) lookupNames(moved);
+    if (needsPinRef.current) {
+      // The low-accuracy estimate has been placed by the farmer: it can be used now.
+      needsPinRef.current = false;
+      setNeedsPin(false);
+      setGpsStatus(null);
+    }
+    // Names the lookup filled follow the pin (State, LGA and the suggestions);
+    // names the farmer chose stay. A placed pin has no device accuracy.
+    if (namesFilled.current || !state) lookupNames(moved, null);
   }, [lookupNames, state]);
 
   const openLocationSettings = useCallback(() => {
@@ -298,16 +347,30 @@ export function useLocationCapture() {
   // its unit tests.
   const toApiFields = useCallback(
     () => buildLocationApiFields({
-      country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan,
-      locationSource, gpsCapturedAt, placeNamesFrom, scanCoords, isMocked, originalCoords,
+      country, state, lga, community, postalCode, address,
+      // An estimate worse than 1 km is never sent as the collection point.
+      coords: needsPin ? null : coords,
+      captureMethod: needsPin ? null : captureMethod,
+      locationSource: needsPin ? null : locationSource,
+      confirmed, differsFromScan, gpsCapturedAt, placeNamesFrom, scanCoords, isMocked, originalCoords,
+      communitySource: suggestFields.community.source,
+      postalSource: suggestFields.postal_code.source,
+      addressSource: suggestFields.landmark.source,
     }),
     [country, state, lga, community, postalCode, address, coords, captureMethod, confirmed, differsFromScan,
-      locationSource, gpsCapturedAt, placeNamesFrom, scanCoords, isMocked, originalCoords]
+      locationSource, gpsCapturedAt, placeNamesFrom, scanCoords, isMocked, originalCoords, needsPin, suggestFields]
   );
+
+  // Which fields hold a suggestion from the location ("please check" + map credit).
+  const suggested = {
+    community: suggestFields.community.source === 'gps',
+    postalCode: suggestFields.postal_code.source === 'gps',
+    address: suggestFields.landmark.source === 'gps',
+  };
 
   return {
     country, state, lga, community, postalCode, address, coords, captureMethod,
-    confirmed, differsFromScan, gpsStatus, gpsLoading, gpsProgress,
+    confirmed, differsFromScan, gpsStatus, gpsLoading, gpsProgress, suggested, needsPin,
     mode, locationSource, namesNote, scanCoords, quality, isMocked, originalCoords, gpsCapturedAt,
     locations, lgasForState,
     setCommunity, setPostalCode, setAddress, setConfirmed, setDiffersFromScan: setDiffersFromScanPlace,

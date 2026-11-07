@@ -362,6 +362,7 @@ class User extends Authenticatable
             'terms_accepted_at'        => 'datetime',
             'age_declared_at'          => 'datetime',
             'age_declared'             => 'integer',
+            'location_field_sources'   => 'array',
         ];
     }
 }

@@ -33,6 +33,9 @@ export function buildLocationApiFields(locState) {
     captureMethod = null, confirmed = false, differsFromScan = false,
     locationSource = null, gpsCapturedAt = null, placeNamesFrom = null, scanCoords = null,
     isMocked = null, originalCoords = null,
+    // Where Community / Postal Code / Address came from: 'gps' (a suggestion
+    // from the location the farmer kept) or 'user'. See lib/locationSuggest.js.
+    communitySource = null, postalSource = null, addressSource = null,
   } = locState || {};
 
   // No location fields submitted means no location row at all — mirrors
@@ -47,6 +50,10 @@ export function buildLocationApiFields(locState) {
   if (community) fields.loc_community = community;
   if (postalCode) fields.loc_postal_code = postalCode;
   if (address)   fields.loc_address = address;
+  const source = (s) => (s === 'gps' ? 'gps' : 'user');
+  if (community)  fields.loc_community_source = source(communitySource);
+  if (postalCode) fields.loc_postal_code_source = source(postalSource);
+  if (address)    fields.loc_address_source = source(addressSource);
   if (coords) {
     fields.loc_latitude  = String(coords.latitude);
     fields.loc_longitude = String(coords.longitude);
