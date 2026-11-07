@@ -2,7 +2,7 @@
  * Inter and Poppins, served from our own site (public/fonts), so the
  * Content Security Policy does not have to allow another domain.
  * Source: @fontsource-variable/inter 5.1.0 and @fontsource/poppins 5.1.0.
- * Licence: SIL Open Font License 1.1 (public/fonts/*/OFL.txt).
+ * Licence: SIL Open Font License 1.1 (OFL.txt in each font folder).
  * Subsets: Latin, Latin Extended (Hausa ɓ ɗ ƙ) and, for Inter, Vietnamese
  * (the dotted vowels Yoruba and Igbo use: ẹ ọ ṣ ụ ị). A browser downloads a
  * subset only when the page uses one of its characters.
