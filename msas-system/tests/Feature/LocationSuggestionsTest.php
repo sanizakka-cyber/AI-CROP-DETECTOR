@@ -188,6 +188,39 @@ class LocationSuggestionsTest extends TestCase
         $this->assertStringStartsWith('grid3-2022', $loc->field_sources['lga']);
     }
 
+    public function test_the_profile_lookup_works_for_every_signed_in_role(): void
+    {
+        $this->fakeOsm(['village' => 'Funtua'], $this->funtuaElements());
+        $user = User::factory()->create(['role' => 'investor']);
+
+        $this->actingAs($user)->getJson(route('location.lookup', ['lat' => self::LAT, 'lon' => self::LON]))
+            ->assertOk()->assertJson(['found' => true, 'lga' => 'Funtua', 'suggestions' => ['community' => 'Funtua']]);
+        $this->actingAs($user)->getJson(route('location.lookup', ['lat' => self::LAT, 'lon' => self::LON, 'accuracy' => 2000]))
+            ->assertExactJson(['found' => false, 'low_accuracy' => true]);
+        auth()->logout();
+        $this->getJson(route('location.lookup', ['lat' => self::LAT, 'lon' => self::LON]))->assertUnauthorized();
+    }
+
+    public function test_profile_records_where_state_lga_and_ward_came_from(): void
+    {
+        $user = User::factory()->create(['role' => 'farmer', 'first_name' => 'Amina', 'last_name' => 'Bello']);
+
+        $this->actingAs($user)->patch(route('profile.update'), [
+            'first_name' => 'Amina', 'last_name' => 'Bello', 'email' => $user->email,
+            'country' => 'Nigeria', 'state' => 'Katsina', 'lga' => 'Funtua', 'ward' => 'Funtua',
+            'state_source' => 'gps', 'lga_source' => 'gps', 'ward_source' => 'gps',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(['state' => 'gps', 'lga' => 'gps', 'ward' => 'gps'], $user->fresh()->location_field_sources);
+
+        // The user edits Ward/Village; an unknown source value counts as the user's.
+        $this->actingAs($user)->patch(route('profile.update'), [
+            'first_name' => 'Amina', 'last_name' => 'Bello', 'email' => $user->email,
+            'country' => 'Nigeria', 'state' => 'Katsina', 'lga' => 'Funtua', 'ward' => 'Unguwar Sarki',
+            'state_source' => 'gps', 'lga_source' => 'boundary', 'ward_source' => 'user',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(['state' => 'gps', 'lga' => 'user', 'ward' => 'user'], $user->fresh()->location_field_sources);
+    }
+
     public function test_the_server_never_fills_suggested_fields_itself_on_submit(): void
     {
         // An offline capture syncing later: coordinates only. State/LGA come

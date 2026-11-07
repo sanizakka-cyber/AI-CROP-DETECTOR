@@ -59,6 +59,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/profile/welcome', [ProfileController::class, 'welcome'])->name('profile.welcome');
+    // State/LGA and place-name suggestions from a location, for the profile form (every role).
+    Route::get('/location/lookup', \App\Http\Controllers\LocationLookupController::class)
+        ->middleware('throttle:30,1')->name('location.lookup');
 
     // Force password reset (exempt from force.password.reset middleware by route name)
     Route::get('/change-password', [ProfileController::class, 'changePasswordForm'])->name('password.change');

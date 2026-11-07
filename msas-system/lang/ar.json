@@ -516,5 +516,10 @@
   "Please read and accept them to keep using MSAS FarmAI. They explain how the service works, that subscription payments are non-refundable, that users must be 18 or older, and how we protect your personal data.": "يرجى قراءتها والموافقة عليها لمواصلة استخدام MSAS FarmAI. فهي توضّح كيفية عمل الخدمة، وأن مدفوعات الاشتراك غير قابلة للاسترداد، وأن المستخدمين يجب أن يكونوا في سن 18 عامًا أو أكثر، وكيف نحمي بياناتك الشخصية.",
   "Accept and continue": "موافقة ومتابعة",
   "Not now — sign out": "ليس الآن — تسجيل الخروج",
-  "Thank you. Your agreement has been recorded.": "شكرًا لك. تم تسجيل موافقتك."
+  "Thank you. Your agreement has been recorded.": "شكرًا لك. تم تسجيل موافقتك.",
+  "Suggested from your location – please check": "مقترح من موقعك – يرجى التحقق",
+  "Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.": "لا يستطيع حاسوبك إلا تقدير موقعك. اسحب الدبوس إلى مزرعتك أو اختر الولاية/المنطقة المحلية.",
+  "near :place": "بالقرب من :place",
+  "Drag the pin if it is not where your farm is.": "اسحب الدبوس إذا لم يكن في مكان مزرعتك.",
+  "Could not look up your State and LGA now. Please select them below.": "تعذر العثور على ولايتك ومنطقتك المحلية الآن. يرجى اختيارهما أدناه."
 }
