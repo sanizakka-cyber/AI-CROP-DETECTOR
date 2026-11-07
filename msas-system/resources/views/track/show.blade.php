@@ -4,8 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Track Order {{ $order->order_number }} — MSAS FarmAI</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,600,700,800|poppins:700,800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ asset('css/fonts.css') }}">
     <style>
         *,*::before,*::after{box-sizing:border-box}
         body{font-family:'Inter',sans-serif;background:#f1f5f9;margin:0;min-height:100vh;}

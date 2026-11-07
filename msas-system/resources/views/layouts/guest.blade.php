@@ -10,8 +10,9 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/branding/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/branding/favicon-192.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/branding/msas-farmai-mark.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800,900|poppins:600,700,800,900&display=swap" rel="stylesheet"/>
+    {{-- Inter and Poppins from our own site (public/fonts); no other domain needed --}}
+    <link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ asset('css/fonts.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
     <style>
@@ -143,7 +144,7 @@
         <div class="fade-up-2" style="position:relative; z-index:10; margin-bottom:28px;">
             <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(244,163,0,0.18); border:1px solid rgba(244,163,0,0.35); border-radius:20px; padding:5px 14px; margin-bottom:16px;">
                 <span style="width:6px;height:6px;border-radius:50%;background:#F4A300;display:inline-block;"></span>
-                <span style="font-size:11px;font-weight:700;color:#F4A300;letter-spacing:0.07em;text-transform:uppercase;">Nigeria's #1 AgriTech Platform</span>
+                <span style="font-size:11px;font-weight:700;color:#F4A300;letter-spacing:0.07em;text-transform:uppercase;">AI farm assistant for Nigerian agriculture</span>
             </div>
             <h2 style="font-size:30px; font-weight:800; color:#fff; line-height:1.25; margin:0 0 14px 0; letter-spacing:-0.3px;">
                 Intelligent Agriculture<br>
@@ -187,8 +188,8 @@
             </div>
         </div>
 
-        <!-- ── Stats row ── -->
-        <div class="fade-up-4" style="position:relative; z-index:10; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:auto;">
+        {{-- Stats row: only what is true today (the States and Support pills were removed, 7 Nov 2026) --}}
+        <div class="fade-up-4" style="position:relative; z-index:10; display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:auto;">
             <div class="stat-pill" style="background:rgba(31,168,74,0.14);border:1px solid rgba(31,168,74,0.28);">
                 <div style="font-size:20px;font-weight:800;color:#1FA84A;font-family:'Poppins',sans-serif;">14</div>
                 <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;font-weight:600;">Roles</div>
@@ -196,14 +197,6 @@
             <div class="stat-pill" style="background:rgba(45,156,219,0.14);border:1px solid rgba(45,156,219,0.28);">
                 <div style="font-size:20px;font-weight:800;color:#2D9CDB;font-family:'Poppins',sans-serif;">AI</div>
                 <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;font-weight:600;">Powered</div>
-            </div>
-            <div class="stat-pill" style="background:rgba(244,163,0,0.14);border:1px solid rgba(244,163,0,0.28);">
-                <div style="font-size:20px;font-weight:800;color:#F4A300;font-family:'Poppins',sans-serif;">36+</div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;font-weight:600;">States</div>
-            </div>
-            <div class="stat-pill" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);">
-                <div style="font-size:20px;font-weight:800;color:#fff;font-family:'Poppins',sans-serif;">24/7</div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;font-weight:600;">Support</div>
             </div>
         </div>
 
