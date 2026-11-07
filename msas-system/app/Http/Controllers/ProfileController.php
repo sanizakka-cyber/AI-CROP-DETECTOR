@@ -80,6 +80,16 @@ class ProfileController extends Controller
         $user->lga         = $validated['lga'] ?? null;
         $user->ward        = $validated['ward'] ?? null;
 
+        // Where State, LGA and Ward/Village came from: 'gps' when the form's
+        // location filled them and the user kept them, otherwise 'user'.
+        $sources = [];
+        foreach (['state', 'lga', 'ward'] as $field) {
+            if (filled($user->{$field})) {
+                $sources[$field] = $request->input($field . '_source') === 'gps' ? 'gps' : 'user';
+            }
+        }
+        $user->location_field_sources = $sources ?: null;
+
         if (isset($validated['profile_photo'])) {
             $user->profile_photo = $validated['profile_photo'];
         }

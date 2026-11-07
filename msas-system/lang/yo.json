@@ -516,5 +516,10 @@
   "Please read and accept them to keep using MSAS FarmAI. They explain how the service works, that subscription payments are non-refundable, that users must be 18 or older, and how we protect your personal data.": "Jọ̀wọ́ ka wọ́n kí o sì gbà wọ́n láti máa lo MSAS FarmAI. Wọ́n ṣàlàyé bí iṣẹ́ náà ṣe ń ṣiṣẹ́, pé a kì í dá owó ìforúkọsílẹ̀ padà, pé àwọn olùlò gbọ́dọ̀ jẹ́ ọmọ ọdún 18 tàbí jù bẹ́ẹ̀ lọ, àti bí a ṣe ń dáàbò bo ìwífún ara ẹni rẹ.",
   "Accept and continue": "Gbà kí o sì tẹ̀síwájú",
   "Not now — sign out": "Kì í ṣe báyìí — jáde",
-  "Thank you. Your agreement has been recorded.": "A dúpẹ́. A ti ṣe àkọsílẹ̀ ìgbàsí rẹ."
+  "Thank you. Your agreement has been recorded.": "A dúpẹ́. A ti ṣe àkọsílẹ̀ ìgbàsí rẹ.",
+  "Suggested from your location – please check": "A dábàá rẹ̀ láti ibi tí o wà – jọ̀wọ́ ṣàyẹ̀wò",
+  "Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.": "Kọ̀ǹpútà rẹ lè ṣe àfojúsùn ibi tí o wà nìkan. Fa àmì náà sí oko rẹ tàbí yan Ìpínlẹ̀/LGA rẹ.",
+  "near :place": "nítòsí :place",
+  "Drag the pin if it is not where your farm is.": "Fa àmì náà tí kò bá sí níbi tí oko rẹ wà.",
+  "Could not look up your State and LGA now. Please select them below.": "A kò lè wá Ìpínlẹ̀ àti LGA rẹ báyìí. Jọ̀wọ́ yàn wọ́n nísàlẹ̀."
 }

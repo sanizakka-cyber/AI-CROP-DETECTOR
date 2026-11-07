@@ -70,7 +70,23 @@ describe('buildLocationApiFields', () => {
     const result = buildLocationApiFields({
       country: 'Nigeria', address: 'Near Funtua market', postalCode: '', coords: null, captureMethod: null,
     });
-    expect(result).toEqual({ loc_country: 'Nigeria', loc_address: 'Near Funtua market' });
+    expect(result).toEqual({ loc_country: 'Nigeria', loc_address: 'Near Funtua market', loc_address_source: 'user' });
+  });
+
+  test('sends where each suggested field came from: gps when kept, user otherwise', () => {
+    const result = buildLocationApiFields({
+      country: 'Nigeria', state: 'Katsina', lga: 'Funtua',
+      community: 'Funtua', communitySource: 'gps',
+      address: 'Zaria Road, near Government Day Secondary School', addressSource: 'user',
+      postalCode: '831101', postalSource: 'gps',
+    });
+    expect(result).toMatchObject({
+      loc_community: 'Funtua', loc_community_source: 'gps',
+      loc_address_source: 'user',
+      loc_postal_code: '831101', loc_postal_code_source: 'gps',
+    });
+    // An empty field sends no source.
+    expect(buildLocationApiFields({ state: 'Katsina', communitySource: 'gps' })).not.toHaveProperty('loc_community_source');
   });
 
   test('"differs from scan location" flag round-trips correctly', () => {

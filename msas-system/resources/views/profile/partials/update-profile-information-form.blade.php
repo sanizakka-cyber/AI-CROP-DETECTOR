@@ -103,6 +103,28 @@
             $locCountries    = \App\Data\NigeriaLocations::countries();
             $locNigeriaStates = \App\Data\NigeriaLocations::states();
         @endphp
+        {{-- Fill State, LGA and Ward/Village from the location (same rules and wording as the scan form) --}}
+        @php $locSources = $user->location_field_sources ?? []; @endphp
+        <div class="border border-gray-200 rounded-lg p-3">
+            <button type="button" id="profileUseGps" class="inline-flex items-center gap-1.5 text-sm font-bold border border-gray-300 rounded-lg px-3 py-2 hover:bg-emerald-50">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21c-4.5-4.5-7-8.25-7-11.25a7 7 0 1114 0C19 12.75 16.5 16.5 12 21z"/><circle cx="12" cy="9.75" r="2.25"/></svg>
+                {{ __('Use GPS') }}
+            </button>
+            <p id="profileGpsStatus" class="hidden mt-2 text-xs rounded-lg p-2" aria-live="polite"></p>
+            <div id="profileGpsResult" class="hidden mt-2">
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span id="profileGpsRating" class="px-2 py-0.5 rounded-full font-bold"></span>
+                    <span id="profileGpsAcc" class="font-semibold text-gray-700"></span>
+                </div>
+                <div id="profileMap" class="mt-2 h-48 rounded-lg border border-gray-200 bg-gray-100 relative z-0 isolate" role="img" aria-label="{{ __('Map preview of the captured location') }}"></div>
+                <p class="text-[11px] text-gray-500 mt-1">{{ __('Drag the pin if it is not where your farm is.') }}</p>
+            </div>
+            <p id="profileNamesSource" class="hidden mt-2 text-xs text-gray-500"></p>
+        </div>
+        <input type="hidden" id="state_source" name="state_source" value="{{ $locSources['state'] ?? '' }}">
+        <input type="hidden" id="lga_source" name="lga_source" value="{{ $locSources['lga'] ?? '' }}">
+        <input type="hidden" id="ward_source" name="ward_source" value="{{ $locSources['ward'] ?? '' }}">
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label for="country" :value="__('Country')" />
@@ -126,9 +148,11 @@
             <div>
                 <x-input-label for="ward" :value="__('Ward / Village')" />
                 <x-text-input id="ward" name="ward" type="text" class="mt-1 block w-full" :value="old('ward', $user->ward)" />
+                <p id="wardSuggested" class="{{ ($locSources['ward'] ?? null) === 'gps' ? '' : 'hidden' }} text-[11px] text-amber-700 mt-1">{{ __('Suggested from your location – please check') }}</p>
                 <x-input-error class="mt-2" :messages="$errors->get('ward')" />
             </div>
         </div>
+        <p id="profileOsmCredit" class="{{ ($locSources['ward'] ?? null) === 'gps' ? '' : 'hidden' }} text-[11px] text-gray-400">{{ config('geocoding.attribution') }}</p>
 
         {{-- Upload progress bar --}}
         <div id="profile-progress" class="hidden">
@@ -407,6 +431,146 @@
         } else {
             document.getElementById('profile-state-hint').style.display = 'block';
         }
+
+        // ── Location: fill State, LGA and Ward/Village from GPS ─────────────
+        // Same rules and wording as the scan form: best reading over 30 s,
+        // State/LGA from the boundaries, the village suggested into Ward/Village
+        // (never over what the user typed), nothing filled from a reading worse
+        // than 1 km (move the pin instead; moving it runs the lookups again).
+        @php
+            // Built here: Blade's @json() cannot take an array written over several lines.
+            $profileGpsText = [
+                'lookupUrl'   => route('location.lookup'),
+                'requesting'  => __('Requesting your location…'),
+                'gettingFirst'=> __('Getting your location… ±:to m'),
+                'improving'   => __('Improving accuracy… ±:from m → ±:to m'),
+                'lookingUp'   => __('Finding your State and LGA…'),
+                'filledFrom'  => __('Filled from your GPS point: :place. Change them if they are wrong.'),
+                'notFound'    => __('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.'),
+                'failed'      => __('Could not get your location. You can still select your state/LGA manually below.'),
+                'lookupFailed'=> __('Could not look up your State and LGA now. Please select them below.'),
+                'lowAccuracy' => __('Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.'),
+                'ratings'     => ['excellent' => __('Excellent'), 'good' => __('Good'), 'fair' => __('Fair'), 'low' => __('Low')],
+            ];
+        @endphp
+        var T = @json($profileGpsText);
+        var gpsFix = null, capture = null;
+
+        function status(type, msg) {
+            var el = document.getElementById('profileGpsStatus');
+            el.className = 'mt-2 text-xs rounded-lg p-2 ' + ({ ok: 'bg-emerald-50 text-emerald-700', warn: 'bg-amber-50 text-amber-800', error: 'bg-red-50 text-red-700' }[type] || '');
+            el.textContent = msg || '';
+            el.classList.toggle('hidden', !msg);
+        }
+        function namesNote(msg) {
+            var el = document.getElementById('profileNamesSource');
+            el.textContent = msg || '';
+            el.classList.toggle('hidden', !msg);
+        }
+        function fmt(m) { return m < 10 ? (Math.round(m * 10) / 10).toString() : String(Math.round(m)); }
+        function setSource(field, src) { document.getElementById(field + '_source').value = src || ''; }
+
+        function wardField() { return { value: document.getElementById('ward').value, source: document.getElementById('ward_source').value || null }; }
+        function showWard(f) {
+            document.getElementById('ward').value = f.value;
+            setSource('ward', f.source);
+            document.getElementById('wardSuggested').classList.toggle('hidden', f.source !== 'gps');
+            document.getElementById('profileOsmCredit').classList.toggle('hidden', f.source !== 'gps');
+        }
+        // The village suggestion goes into Ward/Village with the same rules as Community.
+        function suggestWard(suggestions) {
+            var none = { value: '', source: null };
+            var out = MsasSuggest.apply({ community: wardField(), landmark: none, postal_code: none },
+                suggestions ? { community: suggestions.community, landmark: null, postal_code: null } : null);
+            showWard(out.community);
+        }
+
+        document.getElementById('ward').addEventListener('input', function (e) { showWard(MsasSuggest.edited(e.target.value)); });
+        tsState.on('change', function () { if (!filling) { setSource('state', tsState.getValue() ? 'user' : ''); setSource('lga', ''); } });
+        tsLga.on('change', function () { if (!filling) { setSource('lga', tsLga.getValue() ? 'user' : ''); } });
+
+        var filling = false;
+        function fillStateLga(state, lga) {
+            filling = true;
+            tsCountry.setValue('Nigeria', true);
+            onCountryChange('Nigeria', true);
+            tsState.setValue(state, true);
+            onStateChange(state);
+            tsLga.setValue(lga, true);
+            filling = false;
+            setSource('state', 'gps');
+            setSource('lga', 'gps');
+        }
+
+        function lookup(point, accuracy) {
+            namesNote(T.lookingUp);
+            var q = '?lat=' + encodeURIComponent(point.lat) + '&lon=' + encodeURIComponent(point.lon) + (accuracy != null ? '&accuracy=' + encodeURIComponent(accuracy) : '');
+            fetch(T.lookupUrl + q, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                .then(function (d) {
+                    if (gpsFix !== point) { return; }
+                    if (d.low_accuracy) { namesNote(T.lowAccuracy); return; }
+                    if (!d.found) { namesNote(T.notFound); suggestWard({ community: null }); return; }
+                    fillStateLga(d.state, d.lga);
+                    namesNote(T.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
+                    // The village takes a few seconds (outside services): asked for after State/LGA.
+                    fetch(T.lookupUrl + q + '&suggest=1', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                        .then(function (s) { if (gpsFix === point) { suggestWard(s.suggestions && s.suggestions.ok ? s.suggestions : null); } })
+                        .catch(function () {});
+                })
+                .catch(function () { if (gpsFix === point) { namesNote(T.lookupFailed); } });
+        }
+
+        function showReading(fix) {
+            var r = MsasGps.rating(fix.accuracy);
+            var badge = document.getElementById('profileGpsRating');
+            badge.textContent = T.ratings[r] || r;
+            badge.className = 'px-2 py-0.5 rounded-full font-bold ' + ({ excellent: 'bg-emerald-100 text-emerald-800', good: 'bg-sky-100 text-sky-800', fair: 'bg-amber-100 text-amber-800', low: 'bg-red-100 text-red-800' }[r]);
+            document.getElementById('profileGpsAcc').textContent = '±' + fmt(fix.accuracy) + ' m';
+            document.getElementById('profileGpsResult').classList.remove('hidden');
+            if (window.MsasMap) {
+                window.MsasMap.show(document.getElementById('profileMap'), {
+                    lat: fix.lat, lon: fix.lon, accuracy: fix.accuracy,
+                    // A placed pin has no device accuracy: the lookups run as for GPS.
+                    onMove: function (lat, lon) { status(null); gpsFix = { lat: lat, lon: lon }; lookup(gpsFix, null); },
+                });
+            }
+        }
+
+        document.getElementById('profileUseGps').addEventListener('click', function () {
+            if (capture) { var old = capture; capture = null; old.stop(); }
+            if (!('geolocation' in navigator) || !window.MsasGps) { status('error', T.failed); return; }
+            status('ok', T.requesting);
+            var c = MsasGps.captureBest(navigator.geolocation, {
+                onProgress: function (best, first) {
+                    status('ok', first.accuracy > best.accuracy
+                        ? T.improving.replace(':from', fmt(first.accuracy)).replace(':to', fmt(best.accuracy))
+                        : T.gettingFirst.replace(':to', fmt(best.accuracy)));
+                },
+            });
+            capture = c;
+            c.promise.then(function (res) {
+                if (capture !== c) { return; }
+                capture = null;
+                status(null);
+                showReading(res.fix);
+                gpsFix = { lat: res.fix.lat, lon: res.fix.lon };
+                if (!MsasSuggest.canAutoFill(res.fix.accuracy)) {
+                    status('warn', T.lowAccuracy);   // nothing is filled until the pin is moved
+                    namesNote('');
+                    return;
+                }
+                lookup(gpsFix, res.fix.accuracy);
+            }, function () {
+                if (capture !== c) { return; }
+                capture = null;
+                status('error', T.failed);
+            });
+        });
     })();
     </script>
+    <script src="{{ asset('js/gps-quality.js') }}"></script>
+    <script src="{{ asset('js/location-suggest.js') }}"></script>
+    @vite('resources/js/location-map.js')
 </section>

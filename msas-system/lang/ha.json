@@ -568,5 +568,10 @@
   "Please read and accept them to keep using MSAS FarmAI. They explain how the service works, that subscription payments are non-refundable, that users must be 18 or older, and how we protect your personal data.": "Da fatan za ka karanta ka amince da su don ci gaba da amfani da MSAS FarmAI. Suna bayyana yadda sabis ɗin ke aiki, cewa ba a mayar da kuɗin rajista, cewa dole ne masu amfani su kasance shekara 18 ko fiye, da yadda muke kare bayananka na sirri.",
   "Accept and continue": "Amince ka ci gaba",
   "Not now — sign out": "Ba yanzu ba — fita",
-  "Thank you. Your agreement has been recorded.": "Mun gode. An adana yardarka."
+  "Thank you. Your agreement has been recorded.": "Mun gode. An adana yardarka.",
+  "Suggested from your location – please check": "An ba da shawara daga wurinka – da fatan ka duba",
+  "Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.": "Kwamfutarka tana iya ƙiyasta wurinka kawai. Ja alamar zuwa gonarka ko zaɓi Jiharka/Ƙaramar Hukumarka.",
+  "near :place": "kusa da :place",
+  "Drag the pin if it is not where your farm is.": "Ja alamar idan ba a inda gonarka take ba.",
+  "Could not look up your State and LGA now. Please select them below.": "Ba a iya nemo Jiharka da Ƙaramar Hukumarka yanzu ba. Da fatan ka zaɓe su a ƙasa."
 }

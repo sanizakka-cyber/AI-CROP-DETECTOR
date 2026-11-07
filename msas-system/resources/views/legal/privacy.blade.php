@@ -114,6 +114,7 @@ footer{text-align:center;padding:24px;font-size:12px;color:#94a3b8;border-top:1p
             <li><strong>Paystack</strong> (and other payment providers we may add) — to process payments. We never see or store your card details.</li>
             <li><strong>Render</strong> — hosts our website, app servers and database. Render's servers are outside Nigeria.</li>
             <li><strong>Email and SMS providers</strong> — to send one-time codes, receipts and service messages.</li>
+            <li><strong>OpenStreetMap place-name lookups</strong> (Nominatim, run by the OpenStreetMap Foundation) — when you use your location, our server sends the point, rounded to about 100 m, to suggest your community and a postal code. Your name and account details are not sent. This service is outside Nigeria. The nearby landmark is worked out on our own server from a copy of OpenStreetMap data and is not sent anywhere.</li>
             <li><strong>Map and weather services</strong> (such as OpenStreetMap-based map tiles and Open-Meteo) — to show maps and local weather; these receive approximate location and your device's IP address.</li>
             <li><strong>Experts on the platform</strong> — vets and agronomists receive only the consultation details you submit, including a linked scan; your full profile is not visible to them.</li>
             <li><strong>Logistics riders</strong> — receive only your delivery address and order details.</li>

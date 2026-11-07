@@ -516,5 +516,10 @@
   "Please read and accept them to keep using MSAS FarmAI. They explain how the service works, that subscription payments are non-refundable, that users must be 18 or older, and how we protect your personal data.": "Biko gụọ ma kwenye na ha iji nọgide na-eji MSAS FarmAI. Ha na-akọwa otú ọrụ ahụ si arụ, na anaghị akwụghachi ego ndenye aha, na ndị ọrụ ga-adị afọ 18 ma ọ bụ karịa, na otú anyị si echekwa ozi nkeonwe gị.",
   "Accept and continue": "Kwenye ma gaa n'ihu",
   "Not now — sign out": "Ọ bụghị ugbu a — pụọ",
-  "Thank you. Your agreement has been recorded.": "Daalụ. Edekọọla nkwenye gị."
+  "Thank you. Your agreement has been recorded.": "Daalụ. Edekọọla nkwenye gị.",
+  "Suggested from your location – please check": "E tụrụ aro ya site na ebe ị nọ – biko lelee",
+  "Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.": "Kọmputa gị nwere ike ịkọ ebe ị nọ naanị. Dọkpụrụ ntụtụ ahụ gaa n’ugbo gị ma ọ bụ họrọ Steeti/LGA gị.",
+  "near :place": "nso :place",
+  "Drag the pin if it is not where your farm is.": "Dọkpụrụ ntụtụ ahụ ma ọ bụrụ na ọ nọghị ebe ugbo gị dị.",
+  "Could not look up your State and LGA now. Please select them below.": "Enweghị ike ịchọta Steeti na LGA gị ugbu a. Biko họrọ ha n’okpuru."
 }

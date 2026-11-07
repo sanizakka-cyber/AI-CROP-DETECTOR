@@ -1,0 +1,17 @@
+{
+  "source": "OpenStreetMap via Geofabrik (nigeria-latest.osm.pbf)",
+  "source_date": "2026-11-06",
+  "licence": "Open Database Licence (ODbL) 1.0",
+  "attribution": "© OpenStreetMap contributors",
+  "cell_degrees": 0.5,
+  "counts": {
+    "church": 1984,
+    "health": 5845,
+    "market": 505,
+    "mosque": 428,
+    "school": 2887,
+    "worship": 958
+  },
+  "total": 12607,
+  "cells": 285
+}

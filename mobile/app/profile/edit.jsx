@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert,
+  View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { locationsAPI } from '../../lib/api';
+import { formatAccuracy } from '../../lib/gpsQuality';
+import { apply as applySuggestions, edited } from '../../lib/locationSuggest';
+import { useProfileLocation } from '../../lib/profileLocation';
+import LocationMapPreview from '../../components/LocationMapPreview';
 import { Colors, Spacing, Radius, Typography, Shadows } from '../../constants/Theme';
 import { Button, LoadingOverlay } from '../../components/UI';
 
@@ -23,7 +27,21 @@ export default function EditProfileScreen() {
   const [country, setCountry]     = useState(user?.country || 'Nigeria');
   const [state, setState]         = useState(user?.state || '');
   const [lga, setLga]             = useState(user?.lga || '');
-  const [village, setVillage]     = useState(user?.village || '');
+  // Village carries its source: 'gps' (suggested from the location, unchanged) or 'user'.
+  const [villageField, setVillageField] = useState({ value: user?.village || '', source: user?.location_field_sources?.village || (user?.village ? 'user' : null) });
+  const village = villageField.value;
+  const setVillage = (v) => setVillageField(edited(v));
+  // Where State and LGA came from: 'gps' (filled from the location) or 'user'.
+  const [namesSource, setNamesSource] = useState(null);
+
+  const location = useProfileLocation({
+    onNames: useCallback((s, l) => { setCountry('Nigeria'); setState(s); setLga(l); setNamesSource('gps'); }, []),
+    onVillage: useCallback((community) => {
+      const none = { value: '', source: null };
+      setVillageField(f => applySuggestions({ community: f, landmark: none, postal_code: none },
+        { community, landmark: null, postal_code: null }).community);
+    }, []),
+  });
 
   const [locations, setLocations] = useState({ countries: [], states: [] });
   const [locationsError, setLocationsError] = useState(false);
@@ -42,12 +60,18 @@ export default function EditProfileScreen() {
     setCountry(c);
     // A Nigerian LGA doesn't mean anything paired with a different country,
     // and vice versa — clear both when the country actually changes.
-    if (c !== country) { setState(''); setLga(''); }
+    if (c !== country) { setState(''); setLga(''); setNamesSource(null); }
   };
 
   const selectState = (s) => {
     setState(s);
     setLga('');
+    setNamesSource('user');
+  };
+
+  const selectLga = (l) => {
+    setLga(l);
+    setNamesSource('user');
   };
 
   const handleSave = async () => {
@@ -66,6 +90,9 @@ export default function EditProfileScreen() {
         state: state.trim(),
         lga: lga.trim(),
         village: village.trim() || null,
+        state_source: namesSource === 'gps' ? 'gps' : 'user',
+        lga_source: namesSource === 'gps' ? 'gps' : 'user',
+        village_source: villageField.source === 'gps' ? 'gps' : 'user',
       });
       Alert.alert(
         isHausa ? 'An yi nasara' : 'Profile updated successfully',
@@ -128,6 +155,25 @@ export default function EditProfileScreen() {
         <Text style={styles.label}>{isHausa ? 'Lambar Waya' : 'Phone'}</Text>
         <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+234..." placeholderTextColor={Colors.textMuted} keyboardType="phone-pad" />
 
+        {/* Fill State, LGA and Village from the location (same rules as the scan screens). */}
+        <View style={styles.gpsBox}>
+          <TouchableOpacity style={styles.gpsBtn} onPress={location.capture} disabled={location.loading} testID="profile-use-gps">
+            {location.loading ? <ActivityIndicator size="small" color={Colors.primary} /> : null}
+            <Text style={styles.gpsBtnText}>{t('loc_use_gps')}</Text>
+          </TouchableOpacity>
+          {location.fix ? (
+            <Text style={styles.hint}>±{formatAccuracy(location.fix.accuracy)} m · {t(`rating_${location.fix.rating}`)}</Text>
+          ) : null}
+          {location.note ? (
+            <Text style={[styles.hint, location.note.key === 'loc_low_accuracy' && styles.warnText]} testID="profile-gps-note">
+              {t(location.note.key, location.note.params)}{location.note.attribution ? ` ${location.note.attribution}` : ''}
+            </Text>
+          ) : null}
+          {location.fix ? (
+            <LocationMapPreview key={`${location.fix.latitude},${location.fix.longitude}`} fix={location.fix} onMove={location.movePin} t={t} />
+          ) : null}
+        </View>
+
         <Text style={styles.label}>{isHausa ? 'Ƙasa' : 'Country'}</Text>
         {locationsError ? (
           <Text style={styles.errorText}>{isHausa ? 'An kasa loda ƙasashe. Da fatan sake gwadawa.' : 'Unable to load countries. Please try again.'}</Text>
@@ -164,7 +210,7 @@ export default function EditProfileScreen() {
             {lgasForState.length === 0
               ? <Text style={styles.hint}>{isHausa ? 'Zaɓi jiha da farko' : 'Select a state first'}</Text>
               : lgasForState.map(l => (
-                  <TouchableOpacity key={l} style={[styles.chip, lga === l && styles.chipSel]} onPress={() => setLga(l)}>
+                  <TouchableOpacity key={l} style={[styles.chip, lga === l && styles.chipSel]} onPress={() => selectLga(l)}>
                     <Text style={[styles.chipText, lga === l && styles.chipTextSel]}>{l}</Text>
                   </TouchableOpacity>
                 ))
@@ -175,7 +221,13 @@ export default function EditProfileScreen() {
         )}
 
         <Text style={styles.label}>{isHausa ? 'Ƙauye (na zaɓi)' : 'Village (optional)'}</Text>
-        <TextInput style={styles.input} value={village} onChangeText={setVillage} placeholder={isHausa ? 'Sunan ƙauye' : 'Village name'} placeholderTextColor={Colors.textMuted} />
+        <TextInput style={[styles.input, villageField.source === 'gps' && styles.inputSuggested]} value={village} onChangeText={setVillage} placeholder={isHausa ? 'Sunan ƙauye' : 'Village name'} placeholderTextColor={Colors.textMuted} testID="profile-village" />
+        {villageField.source === 'gps' ? (
+          <>
+            <Text style={styles.suggestedNote} testID="profile-village-suggested">{t('loc_suggested')}</Text>
+            <Text style={styles.hint}>© OpenStreetMap contributors</Text>
+          </>
+        ) : null}
 
         <Button
           title={saving ? (isHausa ? 'Ana adanawa...' : 'Saving...') : (isHausa ? 'Ajiye Bayanai' : 'Update Profile')}
@@ -202,6 +254,12 @@ const styles = StyleSheet.create({
     padding: Spacing.sm, color: Colors.textPrimary, ...Typography.body,
   },
   hint: { ...Typography.tiny, color: Colors.textMuted, marginTop: 4 },
+  warnText: { color: '#B45309', fontWeight: '600' },
+  inputSuggested: { borderColor: '#F59E0B' },
+  suggestedNote: { ...Typography.tiny, color: '#B45309', marginTop: 4 },
+  gpsBox: { marginTop: Spacing.md, padding: Spacing.sm, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white, gap: 4 },
+  gpsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.primary },
+  gpsBtnText: { ...Typography.body, color: Colors.primary, fontWeight: '700' },
   errorText: { ...Typography.small, color: Colors.danger },
 
   readOnlyCard: {

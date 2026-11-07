@@ -304,6 +304,24 @@ class AuthApiController extends Controller
 
         $user->update($updates);
 
+        // Where State, LGA, Ward and Village came from (same as the web profile):
+        // 'gps' when the app's location filled them and the user kept them.
+        $located = ['state', 'lga', 'ward', 'village'];
+        if ($request->hasAny($located)) {
+            $sources = $user->location_field_sources ?? [];
+            foreach ($located as $field) {
+                if (!$request->has($field)) {
+                    continue;
+                }
+                if (filled($user->{$field})) {
+                    $sources[$field] = $request->input($field . '_source') === 'gps' ? 'gps' : 'user';
+                } else {
+                    unset($sources[$field]);
+                }
+            }
+            $user->forceFill(['location_field_sources' => $sources ?: null])->save();
+        }
+
         return response()->json(['user' => $this->userPayload($user->fresh())]);
     }
 

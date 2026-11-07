@@ -152,7 +152,7 @@ describe('place names and the map pin', () => {
     locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua', attribution: 'Boundaries: GRID3.' });
     const { result } = renderHook(() => useLocationCapture());
     await capture(result, [reading(4)]);
-    expect(locationsAPI.lookup).toHaveBeenCalledWith(11.523, 7.312);
+    expect(locationsAPI.lookup).toHaveBeenCalledWith(11.523, 7.312, { accuracy: 4 });
     expect(result.current.state).toBe('Katsina');
     expect(result.current.namesNote).toMatchObject({ key: 'loc_filled_from', params: { place: 'Funtua, Katsina' }, attribution: 'Boundaries: GRID3.' });
     expect(result.current.toApiFields()).toMatchObject({ loc_location_source: 'gps', loc_place_names_source: 'lookup' });
@@ -176,8 +176,8 @@ describe('place names and the map pin', () => {
   });
 
   test('dragging the pin submits the farmer\'s point and keeps the device\'s fix', async () => {
-    locationsAPI.lookup.mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Funtua' })
-      .mockResolvedValueOnce({ found: true, state: 'Katsina', lga: 'Bakori' });
+    locationsAPI.lookup.mockImplementation((lat) => Promise.resolve(
+      { found: true, state: 'Katsina', lga: lat === 11.523 ? 'Funtua' : 'Bakori' }));
     const { result } = renderHook(() => useLocationCapture());
     await capture(result, [reading(4)]);
     await act(async () => { result.current.adjustPoint(11.53, 7.33); });
@@ -187,6 +187,67 @@ describe('place names and the map pin', () => {
       loc_latitude: '11.53', loc_longitude: '7.33', loc_location_source: 'gps_adjusted',
       loc_gps_original_latitude: '11.523', loc_gps_original_longitude: '7.312',
     });
+  });
+});
+
+describe('Community, Address/Landmark and Postal Code suggested from the location', () => {
+  const answers = (suggestions, extra = {}) => (lat, lon, opts = {}) => Promise.resolve(opts.suggest
+    ? { found: true, state: 'Katsina', lga: 'Funtua', suggestions: { ok: true, ...suggestions } }
+    : { found: true, state: 'Katsina', lga: 'Funtua', ...extra });
+  const S = { community: 'Funtua', landmark: 'Zaria Road, near Government Day Secondary School', postal_code: null };
+
+  test('fill empty fields after State/LGA, marked as suggestions and sent as gps', async () => {
+    locationsAPI.lookup.mockImplementation(answers(S));
+    const { result } = renderHook(() => useLocationCapture());
+    await capture(result, [reading(4)]);
+    await waitFor(() => expect(result.current.community).toBe('Funtua'));
+    expect(locationsAPI.lookup).toHaveBeenCalledWith(11.523, 7.312, { accuracy: 4, suggest: true });
+    expect(result.current.address).toBe('Zaria Road, near Government Day Secondary School');
+    expect(result.current.postalCode).toBe('');   // no code for this point: none invented
+    expect(result.current.suggested).toEqual({ community: true, address: true, postalCode: false });
+    expect(result.current.toApiFields()).toMatchObject({ loc_community_source: 'gps', loc_address_source: 'gps' });
+  });
+
+  test('never overwrite what the farmer typed; an edit makes the field theirs', async () => {
+    locationsAPI.lookup.mockImplementation(answers(S));
+    const { result } = renderHook(() => useLocationCapture());
+    act(() => { result.current.setCommunity('My village'); });
+    await capture(result, [reading(4)]);
+    await waitFor(() => expect(result.current.address).not.toBe(''));
+    expect(result.current.community).toBe('My village');
+    act(() => { result.current.setAddress('Behind the clinic'); });
+    expect(result.current.suggested).toEqual({ community: false, address: false, postalCode: false });
+    expect(result.current.toApiFields()).toMatchObject({ loc_community_source: 'user', loc_address_source: 'user' });
+  });
+
+  test('a failed suggestion lookup leaves the fields empty for the farmer', async () => {
+    locationsAPI.lookup.mockImplementation((lat, lon, opts = {}) => (opts.suggest
+      ? Promise.reject(new Error('Network request failed'))
+      : Promise.resolve({ found: true, state: 'Katsina', lga: 'Funtua' })));
+    const { result } = renderHook(() => useLocationCapture());
+    await capture(result, [reading(4)]);
+    await act(async () => {});
+    expect(result.current.state).toBe('Katsina');
+    expect([result.current.community, result.current.address, result.current.postalCode]).toEqual(['', '', '']);
+  });
+
+  test('a reading worse than 1 km fills and sends nothing until the pin is moved', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    locationsAPI.lookup.mockImplementation(answers(S));
+    const { result } = renderHook(() => useLocationCapture());
+    await capture(result, [reading(2500)], { after: () => jest.advanceTimersByTime(30000) });
+    expect(result.current.needsPin).toBe(true);
+    expect(result.current.gpsStatus).toMatchObject({ type: 'warning', key: 'loc_low_accuracy' });
+    expect(locationsAPI.lookup).not.toHaveBeenCalled();
+    expect(result.current.state).toBe('');
+    expect(result.current.toApiFields()).toBeNull();   // the estimate is not sent
+
+    jest.useRealTimers();
+    await act(async () => { result.current.adjustPoint(11.53, 7.33); });
+    expect(result.current.needsPin).toBe(false);
+    expect(locationsAPI.lookup).toHaveBeenCalledWith(11.53, 7.33, { accuracy: null });
+    await waitFor(() => expect(result.current.community).toBe('Funtua'));
+    expect(result.current.toApiFields()).toMatchObject({ loc_latitude: '11.53', loc_location_source: 'gps_adjusted', loc_state: 'Katsina' });
   });
 });
 
