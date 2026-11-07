@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services;
 
@@ -45,11 +45,11 @@ class ReverseGeocoder
         $rLat = round($lat, $d);
         $rLon = round($lon, $d);
 
-        $nominatim = $this->cached("revgeo:v2:nom:{$rLat}:{$rLon}", fn () => $this->nominatimData($rLat, $rLon));
+        $nominatim = $this->cached("revgeo:v3:nom:{$rLat}:{$rLon}", fn () => $this->nominatimData($rLat, $rLon));
         if ($nominatim !== null) {
             $out['ok'] = true;
             $out['community'] = $this->community($nominatim, $rLat, $rLon, $pointState, $pointLga);
-            $out['postal_code'] = $this->postalCode($nominatim['address'] ?? []);
+            $out['postal_code'] = $this->postalCode((string) ($nominatim['point_postcode'] ?? ''));
         }
 
         // After Overpass fails, it is skipped for a while, so a busy server
@@ -70,7 +70,7 @@ class ReverseGeocoder
         return $out;
     }
 
-    // ── Field rules ─────────────────────────────────────────────────────────
+    // â”€â”€ Field rules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private function community(array $nom, float $lat, float $lon, string $state, string $lga): ?string
     {
@@ -134,14 +134,14 @@ class ReverseGeocoder
             : mb_strtoupper(mb_substr($near, 0, 1)) . mb_substr($near, 1);
     }
 
-    private function postalCode(array $address): ?string
+    private function postalCode(string $postcode): ?string
     {
-        $code = preg_replace('/\s+/', '', (string) ($address['postcode'] ?? ''));
+        $code = preg_replace('/\s+/', '', $postcode);
 
         return preg_match('/^\d{6}$/', $code) ? $code : null;
     }
 
-    // ── Providers ───────────────────────────────────────────────────────────
+    // â”€â”€ Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /** The cached answer, or the fetched one (cached only when it succeeded). */
     private function cached(string $key, callable $fetch): ?array
@@ -173,6 +173,8 @@ class ReverseGeocoder
         return [
             // The settlement fields of both answers, the point's own first.
             'address'    => array_merge((array) ($place['address'] ?? []), (array) ($point['address'] ?? [])),
+            // The postcode Nominatim gives for the exact point only (never the settlement's).
+            'point_postcode' => (string) ($point['address']['postcode'] ?? ''),
             'settlement' => isset($place['lat'], $place['lon']) ? [
                 'type' => $type, 'name' => trim((string) ($place['name'] ?? '')),
                 'lat' => (float) $place['lat'], 'lon' => (float) $place['lon'],
@@ -298,7 +300,7 @@ OQL;
         return 'MSAS-FarmAI/1.0 (+' . rtrim((string) config('app.url'), '/') . ')';
     }
 
-    // ── Geometry ────────────────────────────────────────────────────────────
+    // â”€â”€ Geometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /** @return array{0: ?float, 1: ?float} */
     private static function centre(array $el): array
