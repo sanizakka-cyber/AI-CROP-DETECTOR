@@ -96,10 +96,11 @@ class SecondPass(osmium.SimpleHandler):
 
 
 def main(pbf, out_dir):
+    # Filtered in C++ before Python sees anything: the first pass only gets objects with an amenity or healthcare tag, the second only the nodes the kept ways need.
     first = FirstPass()
-    first.apply_file(pbf)
+    first.apply_file(pbf, filters=[osmium.filter.KeyFilter('amenity', 'healthcare')])
     second = SecondPass(first.needed)
-    second.apply_file(pbf)
+    second.apply_file(pbf, filters=[osmium.filter.EntityFilter(osmium.osm.NODE), osmium.filter.IdFilter(first.needed)])
 
     places = list(first.places)
     for refs, k, name in first.ways:
