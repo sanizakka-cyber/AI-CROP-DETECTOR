@@ -52,7 +52,16 @@ class ReverseGeocoder
             $out['postal_code'] = $this->postalCode($nominatim['address'] ?? []);
         }
 
-        $nearby = $this->cached("revgeo:v2:ovp:{$rLat}:{$rLon}", fn () => $this->overpassData($rLat, $rLon));
+        // After Overpass fails, it is skipped for a while, so a busy server
+        // does not make every lookup wait for its timeouts.
+        $nearby = Cache::has('revgeo:overpass-resting') ? null
+            : $this->cached("revgeo:v2:ovp:{$rLat}:{$rLon}", function () use ($rLat, $rLon) {
+                $data = $this->overpassData($rLat, $rLon);
+                if ($data === null) {
+                    Cache::put('revgeo:overpass-resting', true, now()->addMinutes((int) config('geocoding.overpass.rest_minutes', 10)));
+                }
+                return $data;
+            });
         if ($nearby !== null) {
             $out['ok'] = true;
             $out['landmark'] = $this->landmark($nearby);
@@ -74,7 +83,7 @@ class ReverseGeocoder
         // 1. Nominatim's own settlement for the point, with its coordinates.
         $s = $nom['settlement'] ?? null;
         if ($s && in_array($s['type'], $types, true) && $s['name'] !== '') {
-            return $inLga($s['lat'], $s['lon']) ? $s['name'] : null;
+            return $inLga($s['lat'], $s['lon']) && !self::looksLikeAFacility($s['name']) ? $s['name'] : null;
         }
 
         // 2. The first settlement name in the address, in the order of preference.
@@ -83,12 +92,25 @@ class ReverseGeocoder
             if ($name === '') {
                 continue;
             }
+            if (self::looksLikeAFacility($name)) {
+                return null;   // mis-tagged map data (e.g. a city named after its stadium)
+            }
             $found = $this->cached('revgeo:v2:find:' . md5(mb_strtolower($name) . "|{$lat}|{$lon}"), fn () => $this->findSettlement($name, $lat, $lon));
 
             return $found !== null && $inLga($found['lat'], $found['lon']) ? $name : null;
         }
 
         return null;
+    }
+
+    /**
+     * A "settlement" name that is plainly a facility or a street is map data
+     * tagged wrongly (7 Nov 2026: Katsina city is named "Muhammadu Dikko
+     * Stadium" in OpenStreetMap). Such names are never suggested.
+     */
+    private static function looksLikeAFacility(string $name): bool
+    {
+        return (bool) preg_match('/\b(stadium|school|hospital|clinic|mosque|church|hotel|bank|plaza|university|college|office|street|road|avenue|junction|filling station|petrol station)\b/i', $name);
     }
 
     private function landmark(array $nearby): ?string

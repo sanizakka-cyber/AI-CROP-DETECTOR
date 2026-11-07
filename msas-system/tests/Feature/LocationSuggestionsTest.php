@@ -150,6 +150,29 @@ class LocationSuggestionsTest extends TestCase
         $this->lookup()->assertJson(['suggestions' => ['ok' => true, 'community' => 'Funtua', 'landmark' => null, 'postal_code' => '831101']]);
     }
 
+    public function test_a_facility_name_is_never_suggested_as_a_community(): void
+    {
+        // As OpenStreetMap had Katsina city on 7 Nov 2026.
+        $this->address = ['city_district' => 'Kudu 2', 'city' => 'Muhammadu Dikko Stadium'];
+        $this->settlement = ['addresstype' => 'city_district', 'name' => 'Gabas 1', 'lat' => '11.5245', 'lon' => '7.3130', 'address' => $this->address];
+        $this->search = [['addresstype' => 'city', 'name' => 'Muhammadu Dikko Stadium', 'lat' => '11.5240', 'lon' => '7.3130']];
+
+        $this->assertNull($this->lookup()->json('suggestions.community'));
+    }
+
+    public function test_a_busy_overpass_is_rested_so_later_lookups_do_not_wait_for_it(): void
+    {
+        $this->overpass = null;
+        $this->lookup();
+        $tries = Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'overpass'))->count();
+        $this->assertSame(2, $tries, 'each server is tried once');
+
+        $this->funtua();   // Overpass would answer now, but it is resting
+        $res = $this->lookup(['lat' => 11.5300, 'lon' => 7.3200]);
+        $this->assertSame($tries, Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'overpass'))->count());
+        $res->assertJson(['suggestions' => ['ok' => true, 'landmark' => null]]);
+    }
+
     public function test_a_low_accuracy_reading_fills_nothing_and_asks_nothing(): void
     {
         $this->lookup(['accuracy' => 1500])->assertExactJson(['found' => false, 'low_accuracy' => true]);

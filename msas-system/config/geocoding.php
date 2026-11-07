@@ -52,6 +52,8 @@ return [
         'urls'    => array_filter(explode(',', (string) env('OVERPASS_URLS',
             'https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter'))),
         'timeout' => 6,
+        // After every server failed, Overpass is not asked again for this long.
+        'rest_minutes' => 10,
     ],
 
     // Settlement types for Community, in order of preference.
