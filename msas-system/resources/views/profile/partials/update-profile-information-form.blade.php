@@ -437,19 +437,23 @@
         // State/LGA from the boundaries, the village suggested into Ward/Village
         // (never over what the user typed), nothing filled from a reading worse
         // than 1 km (move the pin instead; moving it runs the lookups again).
-        var T = @json([
-            'lookupUrl'   => route('location.lookup'),
-            'requesting'  => __('Requesting your location…'),
-            'gettingFirst'=> __('Getting your location… ±:to m'),
-            'improving'   => __('Improving accuracy… ±:from m → ±:to m'),
-            'lookingUp'   => __('Finding your State and LGA…'),
-            'filledFrom'  => __('Filled from your GPS point: :place. Change them if they are wrong.'),
-            'notFound'    => __('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.'),
-            'failed'      => __('Could not get your location. You can still select your state/LGA manually below.'),
-            'lookupFailed'=> __('Could not look up your State and LGA now. Please select them below.'),
-            'lowAccuracy' => __('Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.'),
-            'ratings'     => ['excellent' => __('Excellent'), 'good' => __('Good'), 'fair' => __('Fair'), 'low' => __('Low')],
-        ]);
+        @php
+            // Built here: Blade's @json() cannot take an array written over several lines.
+            $profileGpsText = [
+                'lookupUrl'   => route('location.lookup'),
+                'requesting'  => __('Requesting your location…'),
+                'gettingFirst'=> __('Getting your location… ±:to m'),
+                'improving'   => __('Improving accuracy… ±:from m → ±:to m'),
+                'lookingUp'   => __('Finding your State and LGA…'),
+                'filledFrom'  => __('Filled from your GPS point: :place. Change them if they are wrong.'),
+                'notFound'    => __('Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.'),
+                'failed'      => __('Could not get your location. You can still select your state/LGA manually below.'),
+                'lookupFailed'=> __('Could not look up your State and LGA now. Please select them below.'),
+                'lowAccuracy' => __('Your computer can only estimate your location. Drag the pin to your farm or select your State/LGA.'),
+                'ratings'     => ['excellent' => __('Excellent'), 'good' => __('Good'), 'fair' => __('Fair'), 'low' => __('Low')],
+            ];
+        @endphp
+        var T = @json($profileGpsText);
         var gpsFix = null, capture = null;
 
         function status(type, msg) {
