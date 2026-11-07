@@ -10,8 +10,9 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/branding/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/branding/favicon-192.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/branding/msas-farmai-mark.png') }}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800|poppins:600,700,800&display=swap" rel="stylesheet"/>
+    {{-- Inter and Poppins from our own site (public/fonts); no other domain needed --}}
+    <link rel="preload" href="/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ asset('css/fonts.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         *, *::before, *::after { box-sizing: border-box; }
