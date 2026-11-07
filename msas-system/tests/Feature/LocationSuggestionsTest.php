@@ -93,7 +93,8 @@ class LocationSuggestionsTest extends TestCase
     private function lookup(array $query = [], bool $suggest = true): \Illuminate\Testing\TestResponse
     {
         $user = User::factory()->create(['role' => 'farmer']);
-        $params = ['lat' => self::LAT, 'lon' => self::LON] + ($suggest ? ['suggest' => 1] : []) + $query;
+        // The test's own values win over the defaults.
+        $params = $query + ['lat' => self::LAT, 'lon' => self::LON] + ($suggest ? ['suggest' => 1] : []);
 
         return $this->actingAs($user)->getJson(route('diagnostics.location-lookup', $params))->assertOk();
     }
