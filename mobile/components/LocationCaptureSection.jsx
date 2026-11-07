@@ -191,29 +191,30 @@ export default function LocationCaptureSection({ loc }) {
         </TouchableOpacity>
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder={t('loc_community_ph')}
-        placeholderTextColor={Colors.textMuted}
-        value={loc.community}
-        onChangeText={loc.setCommunity}
-      />
-      <View style={styles.row}>
-        <TextInput
-          style={[styles.input, styles.inputHalf]}
-          placeholder={t('loc_postal_ph')}
-          placeholderTextColor={Colors.textMuted}
-          value={loc.postalCode}
-          onChangeText={loc.setPostalCode}
-        />
-        <TextInput
-          style={[styles.input, styles.inputHalf]}
-          placeholder={t('loc_address_ph')}
-          placeholderTextColor={Colors.textMuted}
-          value={loc.address}
-          onChangeText={loc.setAddress}
-        />
-      </View>
+      {/* Community, Postal Code and Address/Landmark: each may hold a suggestion
+          from the location, marked "please check"; typing makes it the farmer's. */}
+      {[
+        ['community', 'loc_community_ph', loc.community, loc.setCommunity],
+        ['postalCode', 'loc_postal_ph', loc.postalCode, loc.setPostalCode],
+        ['address', 'loc_address_ph', loc.address, loc.setAddress],
+      ].map(([key, ph, value, onChange]) => (
+        <View key={key}>
+          <TextInput
+            style={[styles.input, loc.suggested?.[key] && styles.inputSuggested]}
+            placeholder={t(ph)}
+            placeholderTextColor={Colors.textMuted}
+            value={value}
+            onChangeText={onChange}
+            testID={`loc-${key}`}
+          />
+          {loc.suggested?.[key] ? (
+            <Text style={styles.suggestedNote} testID={`loc-${key}-suggested`}>{t('loc_suggested')}</Text>
+          ) : null}
+        </View>
+      ))}
+      {loc.suggested && Object.values(loc.suggested).some(Boolean) ? (
+        <Text style={styles.osmCredit}>© OpenStreetMap contributors</Text>
+      ) : null}
 
       <TouchableOpacity style={styles.checkRow} onPress={() => loc.setDiffersFromScan(!loc.differsFromScan)}>
         <View style={[styles.checkbox, loc.differsFromScan && styles.checkboxChecked]}>
@@ -346,6 +347,9 @@ const styles = StyleSheet.create({
     padding: Spacing.sm, marginBottom: Spacing.sm, ...Typography.small, color: Colors.textPrimary,
   },
   inputHalf: { flex: 1, marginBottom: 0 },
+  inputSuggested: { borderColor: '#F59E0B' },
+  suggestedNote: { ...Typography.tiny, color: '#B45309', marginTop: -4, marginBottom: Spacing.sm },
+  osmCredit: { ...Typography.tiny, color: Colors.textMuted, marginBottom: Spacing.sm },
 
   checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginTop: 4 },
   checkbox: {

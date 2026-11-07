@@ -30,17 +30,21 @@ class LocationSuggestionsTest extends TestCase
 
     /** Nominatim answers: the point (zoom 18), its settlement (zoom 14), a settlement search. */
     private array $address = [];
+    private ?array $road = null;
     private array $settlement = [];
     private array $search = [];
     private int $nominatimStatus = 200;
-    /** Overpass answer (null: the server does not answer). */
-    private ?array $overpass = [];
+    private string $placesDir;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('local');
-        config(['geocoding.enabled' => true, 'geocoding.nominatim.min_interval_ms' => 0]);
+        // Our own copy of OpenStreetMap places, for these tests: one half-degree cell around Funtua.
+        $this->placesDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'msas-places-' . uniqid();
+        mkdir($this->placesDir);
+        config(['geocoding.enabled' => true, 'geocoding.nominatim.min_interval_ms' => 0, 'geocoding.places_path' => $this->placesDir]);
+        \App\Services\NearbyPlaces::forget();
         // Registered once (the first matching fake wins); each test sets the answers.
         Http::preventStrayRequests();
         Http::fake([
@@ -51,26 +55,39 @@ class LocationSuggestionsTest extends TestCase
                 if (str_contains($r->url(), '/search')) {
                     return Http::response($this->search);
                 }
-                return Http::response(str_contains($r->url(), 'zoom=14') ? $this->settlement : ['address' => $this->address]);
+                return Http::response(str_contains($r->url(), 'zoom=14') ? $this->settlement : ['address' => $this->address] + ($this->road ?? []));
             },
-            'overpass-api.de/*' => fn () => $this->overpass === null ? Http::response('busy', 504) : Http::response(['elements' => $this->overpass]),
-            'overpass.private.coffee/*' => fn () => $this->overpass === null ? Http::response('busy', 504) : Http::response(['elements' => $this->overpass]),
         ]);
         $this->funtua();
+    }
+
+    protected function tearDown(): void
+    {
+        array_map('unlink', glob($this->placesDir . DIRECTORY_SEPARATOR . '*.json') ?: []);
+        @rmdir($this->placesDir);
+        \App\Services\NearbyPlaces::forget();
+        parent::tearDown();
+    }
+
+    private function places(array $rows): void
+    {
+        file_put_contents($this->placesDir . DIRECTORY_SEPARATOR . '23_14.json', json_encode($rows));   // floor(11.523*2)_floor(7.312*2)
+        \App\Services\NearbyPlaces::forget();
     }
 
     /** Funtua as OpenStreetMap describes it: Nominatim's settlement level is a district, the town is in the address. */
     private function funtua(): void
     {
         $this->address = ['city_district' => 'Dandutse', 'town' => 'Funtua', 'state' => 'Katsina State', 'postcode' => '831101'];
+        // Nominatim's object for the point is the road it lies on, with its shape.
+        $this->road = ['category' => 'highway', 'type' => 'primary', 'name' => 'Zaria Road',
+            'geojson' => ['type' => 'LineString', 'coordinates' => [[7.3100, 11.5225], [7.3140, 11.5235]]]];
         $this->settlement = ['addresstype' => 'city_district', 'name' => 'Dandutse', 'lat' => '11.5161', 'lon' => '7.3157', 'address' => $this->address];
         $this->search = [['addresstype' => 'town', 'name' => 'Funtua', 'lat' => '11.5232', 'lon' => '7.3075']];
-        $this->overpass = [
-            ['type' => 'node', 'lat' => 11.5250, 'lon' => 7.3140, 'tags' => ['amenity' => 'school', 'name' => 'Government Day Secondary School']],
-            ['type' => 'node', 'lat' => 11.5400, 'lon' => 7.3300, 'tags' => ['amenity' => 'marketplace', 'name' => 'Far Market']],   // over 2 km away
-            ['type' => 'way', 'tags' => ['highway' => 'primary', 'name' => 'Zaria Road'],
-                'geometry' => [['lat' => 11.5225, 'lon' => 7.3100], ['lat' => 11.5235, 'lon' => 7.3140]]],
-        ];
+        $this->places([
+            [11.5250, 7.3140, 'school', 'Government Day Secondary School'],   // about 310 m away
+            [11.5400, 7.3300, 'market', 'Far Market'],                        // over 2 km away
+        ]);
     }
 
     private function lookup(array $query = [], bool $suggest = true): \Illuminate\Testing\TestResponse
@@ -138,16 +155,27 @@ class LocationSuggestionsTest extends TestCase
 
     public function test_no_named_place_within_500_m_leaves_the_landmark_empty(): void
     {
-        $this->overpass = array_values(array_filter($this->overpass, fn ($e) => ($e['tags']['amenity'] ?? '') !== 'school'));
+        $this->places([[11.5400, 7.3300, 'market', 'Far Market']]);
 
         $this->assertNull($this->lookup()->json('suggestions.landmark'));
     }
 
-    public function test_when_overpass_is_busy_only_the_landmark_stays_empty(): void
+    public function test_a_road_further_than_200_m_is_left_out_of_the_landmark(): void
     {
-        $this->overpass = null;
+        $this->road['geojson'] = ['type' => 'LineString', 'coordinates' => [[7.3200, 11.5300], [7.3250, 11.5310]]];   // about 1 km away
 
-        $this->lookup()->assertJson(['suggestions' => ['ok' => true, 'community' => 'Funtua', 'landmark' => null, 'postal_code' => '831101']]);
+        $this->assertSame('Near Government Day Secondary School', $this->lookup()->json('suggestions.landmark'));
+    }
+
+    public function test_the_landmark_comes_from_our_own_copy_and_nothing_is_sent_for_it(): void
+    {
+        // Even with Nominatim down, the landmark is found on our server (without a road name).
+        $this->nominatimStatus = 503;
+
+        $this->lookup()->assertJson(['suggestions' => [
+            'ok' => true, 'community' => null, 'postal_code' => null, 'landmark' => 'Near Government Day Secondary School',
+        ]]);
+        Http::assertNotSent(fn (HttpRequest $r) => !str_contains($r->url(), 'nominatim.openstreetmap.org'));
     }
 
     public function test_a_facility_name_is_never_suggested_as_a_community(): void
@@ -158,19 +186,6 @@ class LocationSuggestionsTest extends TestCase
         $this->search = [['addresstype' => 'city', 'name' => 'Muhammadu Dikko Stadium', 'lat' => '11.5240', 'lon' => '7.3130']];
 
         $this->assertNull($this->lookup()->json('suggestions.community'));
-    }
-
-    public function test_a_busy_overpass_is_rested_so_later_lookups_do_not_wait_for_it(): void
-    {
-        $this->overpass = null;
-        $this->lookup();
-        $tries = Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'overpass'))->count();
-        $this->assertSame(2, $tries, 'each server is tried once');
-
-        $this->funtua();   // Overpass would answer now, but it is resting
-        $res = $this->lookup(['lat' => 11.5300, 'lon' => 7.3200]);
-        $this->assertSame($tries, Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'overpass'))->count());
-        $res->assertJson(['suggestions' => ['ok' => true, 'landmark' => null]]);
     }
 
     public function test_a_low_accuracy_reading_fills_nothing_and_asks_nothing(): void
@@ -185,7 +200,7 @@ class LocationSuggestionsTest extends TestCase
     public function test_a_failed_lookup_leaves_the_suggestions_empty_and_state_lga_still_work(): void
     {
         $this->nominatimStatus = 503;
-        $this->overpass = null;
+        $this->places([]);   // and no place near the point in our own copy
 
         $this->lookup(['accuracy' => 10])->assertJson([
             'found' => true, 'state' => 'Katsina', 'lga' => 'Funtua',
@@ -280,6 +295,24 @@ class LocationSuggestionsTest extends TestCase
         $this->assertSame(['state' => 'gps', 'lga' => 'user', 'ward' => 'user'], $user->fresh()->location_field_sources);
     }
 
+    public function test_the_app_profile_records_where_state_lga_and_village_came_from(): void
+    {
+        $user = User::factory()->create(['role' => 'farmer']);
+        $auth = ['Authorization' => 'Bearer ' . $user->createToken('t')->plainTextToken];
+
+        $this->withHeaders($auth)->patchJson('/api/auth/profile', [
+            'state' => 'Katsina', 'lga' => 'Funtua', 'village' => 'Dandume Gari',
+            'state_source' => 'gps', 'lga_source' => 'gps', 'village_source' => 'gps',
+        ])->assertOk();
+        $this->assertSame(['state' => 'gps', 'lga' => 'gps', 'village' => 'gps'], $user->fresh()->location_field_sources);
+
+        // Clearing the village drops its source; a typed LGA is the user's.
+        $this->withHeaders($auth)->patchJson('/api/auth/profile', [
+            'lga' => 'Bakori', 'village' => null, 'lga_source' => 'user',
+        ])->assertOk();
+        $this->assertSame(['state' => 'gps', 'lga' => 'user'], $user->fresh()->location_field_sources);
+    }
+
     public function test_the_server_never_fills_suggested_fields_itself_on_submit(): void
     {
         // An offline capture syncing later: coordinates only. State/LGA come
@@ -297,6 +330,6 @@ class LocationSuggestionsTest extends TestCase
         $this->assertNull($loc->community);
         $this->assertNull($loc->address_landmark);
         $this->assertNull($loc->postal_code);
-        Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'nominatim') || str_contains($r->url(), 'overpass'));
+        Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'nominatim'));
     }
 }

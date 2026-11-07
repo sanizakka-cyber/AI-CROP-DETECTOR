@@ -6,15 +6,15 @@
 |--------------------------------------------------------------------------
 |
 | Community, Address/Landmark and Postal Code are suggested from OpenStreetMap
-| data, called from our server only (never from the browser or the app):
+| data, on our server only (never from the browser or the app):
 |
 | - Nominatim (https://nominatim.openstreetmap.org): the address of the point
-|   (settlement name, postcode). Usage policy: at most 1 request per second
-|   for the whole application, an identifying User-Agent, cached results.
-| - Overpass (https://overpass-api.de): settlements, named roads and named
-|   places (schools, markets, mosques, churches, health centres) near the
-|   point, to check the settlement is in the same LGA and to build the
-|   landmark.
+|   (settlement name, road, postcode) and its settlement. Usage policy: at
+|   most 1 request per second for the whole application, an identifying
+|   User-Agent, cached results.
+| - Our own copy of named places (resources/geo/places): the landmark.
+|   Nothing is sent out for it. (The public Overpass servers were tried
+|   first, 7 Nov 2026; they never answered from Render.)
 |
 | Data © OpenStreetMap contributors, ODbL. State and LGA never come from
 | here: they stay on the GRID3 boundaries (App\Services\LgaLookup).
@@ -46,15 +46,10 @@ return [
         'min_interval_ms' => 1100,                // a little over 1 request per second, for the whole app
     ],
 
-    // Public Overpass servers are often busy: each gets a short try, in order.
-    // When none answers, only the landmark stays empty.
-    'overpass' => [
-        'urls'    => array_filter(explode(',', (string) env('OVERPASS_URLS',
-            'https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter'))),
-        'timeout' => 6,
-        // After every server failed, Overpass is not asked again for this long.
-        'rest_minutes' => 10,
-    ],
+    // Our own copy of named schools, markets, mosques, churches and health
+    // centres (built by scripts/geo/build_place_index.py), for the landmark.
+    // Read locally; nothing is sent out.
+    'places_path' => resource_path('geo/places'),
 
     // Settlement types for Community, in order of preference.
     'community_types' => ['village', 'hamlet', 'town', 'suburb', 'neighbourhood', 'city'],

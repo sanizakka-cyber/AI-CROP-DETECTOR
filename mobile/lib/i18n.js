@@ -78,6 +78,10 @@ const en = {
     loc_not_found: "Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.",
     loc_fill_on_submit: "Could not look up your State and LGA now. Leave them blank and they will be filled from your GPS point when you submit, or select them below.",
     loc_names_changed: "You changed the State or LGA found from GPS. Your choice will be saved.",
+
+    loc_suggested: "Suggested from your location – please check",
+
+    loc_low_accuracy: "Your phone can only estimate your location. Drag the pin to your farm or select your State/LGA.",
     loc_scan_place_saved: "Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.",
     loc_mocked_badge: "The phone reported a simulated location. This scan is left out of outbreak maps.",
     loc_search: "Search…",
@@ -227,6 +231,10 @@ const ha = {
     loc_not_found: "Wurin GPS ɗinka baya cikin wata Ƙaramar Hukuma ta Najeriya da muka sani. Da fatan zaɓi Jiha da Ƙaramar Hukuma a ƙasa.",
     loc_fill_on_submit: "Ba a iya neman Jiharka da Ƙaramar Hukumarka yanzu ba. Bar su babu kome, za a cike su daga wurin GPS ɗinka idan ka aika, ko zaɓe su a ƙasa.",
     loc_names_changed: "Ka canza Jiha ko Ƙaramar Hukuma da aka samu daga GPS. Za a adana zaɓinka.",
+
+    loc_suggested: "An ba da shawara daga wurinka – da fatan ka duba",
+
+    loc_low_accuracy: "Wayarka tana iya ƙiyasta wurinka kawai. Ja alamar zuwa gonarka ko zaɓi Jiharka/Ƙaramar Hukumarka.",
     loc_scan_place_saved: "An adana wurin GPS ɗinka a matsayin inda kake bincike. Shigar da inda aka ɗauki samfurin a ƙasa.",
     loc_mocked_badge: "Wayar ta ba da wurin bogi. Ba za a saka wannan binciken a taswirar yaɗuwar cututtuka ba.",
     loc_search: "Bincika…",
@@ -373,6 +381,10 @@ const ig = {
     loc_not_found: "Ebe GPS gị anọghị n'ime LGA Naịjirịa anyị maara. Biko họrọ Steeti na LGA dị n'okpuru.",
     loc_fill_on_submit: "Enweghị ike ịchọta Steeti na LGA gị ugbu a. Hapụ ha efu, a ga-ejupụta ha site na ebe GPS gị mgbe i zigara, ma ọ bụ họrọ ha n'okpuru.",
     loc_names_changed: "Ị gbanwere Steeti ma ọ bụ LGA e nwetara site na GPS. A ga-echekwa nhọrọ gị.",
+
+    loc_suggested: "E tụrụ aro ya site na ebe ị nọ – biko lelee",
+
+    loc_low_accuracy: "Ekwentị gị nwere ike ịkọ ebe ị nọ naanị. Dọkpụrụ ntụtụ ahụ gaa n’ugbo gị ma ọ bụ họrọ Steeti/LGA gị.",
     loc_scan_place_saved: "Echekwara ebe GPS gị dịka ebe ị na-enyocha. Tinye ebe e weere ihe nlele n'okpuru.",
     loc_mocked_badge: "Ekwentị ahụ kọrọ ebe adịgboroja. A gaghị etinye nyocha a na maapụ mgbasa ọrịa.",
     loc_search: "Chọọ…",
@@ -519,6 +531,10 @@ const yo = {
     loc_not_found: "Ibi GPS rẹ kò sí nínú LGA Nàìjíríà kan tí a mọ̀. Jọ̀wọ́ yan Ìpínlẹ̀ àti LGA nísàlẹ̀.",
     loc_fill_on_submit: "A kò lè wá Ìpínlẹ̀ àti LGA rẹ báyìí. Fi wọ́n sílẹ̀ òfo, a ó kún wọn láti ibi GPS rẹ nígbà tí o bá fi ránṣẹ́, tàbí yan wọ́n nísàlẹ̀.",
     loc_names_changed: "O yí Ìpínlẹ̀ tàbí LGA tí GPS rí padà. A ó fi yíyàn rẹ pamọ́.",
+
+    loc_suggested: "A dábàá rẹ̀ láti ibi tí o wà – jọ̀wọ́ ṣàyẹ̀wò",
+
+    loc_low_accuracy: "Fóònù rẹ lè ṣe àfojúsùn ibi tí o wà nìkan. Fa àmì náà sí oko rẹ tàbí yan Ìpínlẹ̀/LGA rẹ.",
     loc_scan_place_saved: "A ti fi ibi GPS rẹ pamọ́ gẹ́gẹ́ bí ibi tí o ti ń ṣàyẹ̀wò. Tẹ ibi tí a ti mú àpẹẹrẹ nísàlẹ̀.",
     loc_mocked_badge: "Fóònù náà fi ibi àfarawé hàn. A kò ní fi àyẹ̀wò yìí sínú máàpù ìtànkálẹ̀ àrùn.",
     loc_search: "Wá…",
@@ -665,6 +681,10 @@ const ff = {
     loc_not_found: "Your GPS point is not inside a Nigerian LGA we know. Please select the State and LGA below.",
     loc_fill_on_submit: "Could not look up your State and LGA now. Leave them blank and they will be filled from your GPS point when you submit, or select them below.",
     loc_names_changed: "You changed the State or LGA found from GPS. Your choice will be saved.",
+
+    loc_suggested: "Suggested from your location – please check",
+
+    loc_low_accuracy: "Your phone can only estimate your location. Drag the pin to your farm or select your State/LGA.",
     loc_scan_place_saved: "Your GPS point is saved as the place you are scanning from. Enter where the sample was collected below.",
     loc_mocked_badge: "The phone reported a simulated location. This scan is left out of outbreak maps.",
     loc_search: "Search…",
@@ -814,6 +834,10 @@ const fr = {
     loc_not_found: "Votre point GPS n'est dans aucune LGA nigériane connue. Choisissez l'État et la LGA ci-dessous.",
     loc_fill_on_submit: "Impossible de trouver votre État et votre LGA pour l'instant. Laissez-les vides : ils seront remplis à partir de votre point GPS à l'envoi, ou choisissez-les ci-dessous.",
     loc_names_changed: "Vous avez modifié l'État ou la LGA trouvés par GPS. Votre choix sera enregistré.",
+
+    loc_suggested: "Suggéré à partir de votre position – veuillez vérifier",
+
+    loc_low_accuracy: "Votre téléphone ne peut qu’estimer votre position. Faites glisser le repère jusqu’à votre exploitation ou choisissez votre État/LGA.",
     loc_scan_place_saved: "Votre point GPS est enregistré comme lieu d'analyse. Indiquez ci-dessous où l'échantillon a été prélevé.",
     loc_mocked_badge: "Le téléphone a signalé une position simulée. Cette analyse n'apparaît pas sur les cartes d'épidémies.",
     loc_search: "Rechercher…",

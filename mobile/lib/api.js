@@ -279,7 +279,13 @@ export const authAPI = {
 export const locationsAPI = {
   list: () => request('/locations'),
   // The State and LGA a GPS point falls in: { found, state, lga, source, attribution }.
-  lookup: (lat, lon) => request(`/locations/lookup?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`),
+  // accuracy (m): a device reading worse than 1 km gets { found: false, low_accuracy: true }.
+  // suggest: also { suggestions: { ok, community, landmark, postal_code, attribution } } (a few seconds slower).
+  lookup: (lat, lon, { accuracy = null, suggest = false } = {}) => request(
+    `/locations/lookup?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+    + (accuracy != null ? `&accuracy=${encodeURIComponent(accuracy)}` : '')
+    + (suggest ? '&suggest=1' : '')
+  ),
 };
 
 // ── Farms ─────────────────────────────────────────────────────────────────────

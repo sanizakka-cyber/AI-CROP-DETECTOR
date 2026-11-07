@@ -9,25 +9,26 @@ use Throwable;
 
 /**
  * Suggestions for Community, Address/Landmark and Postal Code from a GPS
- * point, from OpenStreetMap, called from our server only. See
- * config/geocoding.php and resources/geo/README.md.
+ * point, from OpenStreetMap. See config/geocoding.php and
+ * resources/geo/README.md.
  *
- * Rules (owner decision, 7 Nov 2026):
+ * Rules (owner decisions, 7 Nov 2026):
  * - Community: the nearest village, hamlet, town, suburb, neighbourhood or
  *   city (in that order), and only when that settlement lies in the same
  *   LGA as the point (GRID3 boundaries). Otherwise empty. From Nominatim:
  *   its settlement-level answer (zoom 14), else the first of those names in
- *   the point's address, located with a bounded settlement search.
- * - Postal Code: only a 6-digit code Nominatim returns for the point. Never
- *   guessed, never taken from the LGA or State.
+ *   the point's address, located with a bounded settlement search. Names
+ *   that are plainly a facility or a street are never suggested.
+ * - Postal Code: only a 6-digit code Nominatim returns for the exact point.
+ *   Never guessed, never taken from the settlement, LGA or State.
  * - Address/Landmark: the nearest named school, market, mosque, church or
- *   health centre within about 500 m ("Road, near Place" with a named road
- *   within 200 m). From Overpass, which is often busy: when it does not
- *   answer, only the landmark stays empty.
+ *   health centre within about 500 m, from our own copy of OpenStreetMap
+ *   places (App\Services\NearbyPlaces, nothing sent out), written "Road,
+ *   near Place" when Nominatim's road for the point is within 200 m.
  * - Any failure leaves its fields empty; State/LGA are not affected.
  *
- * Coordinates are rounded (about 110 m) before they leave the server; each
- * provider's answers are cached by that rounded point.
+ * Only Nominatim is called, from our server only, with the point rounded to
+ * about 110 m; its answers are cached by that rounded point.
  */
 class ReverseGeocoder
 {
@@ -45,32 +46,21 @@ class ReverseGeocoder
         $rLat = round($lat, $d);
         $rLon = round($lon, $d);
 
-        $nominatim = $this->cached("revgeo:v3:nom:{$rLat}:{$rLon}", fn () => $this->nominatimData($rLat, $rLon));
+        $nominatim = $this->cached("revgeo:v4:nom:{$rLat}:{$rLon}", fn () => $this->nominatimData($rLat, $rLon));
         if ($nominatim !== null) {
             $out['ok'] = true;
             $out['community'] = $this->community($nominatim, $rLat, $rLon, $pointState, $pointLga);
             $out['postal_code'] = $this->postalCode((string) ($nominatim['point_postcode'] ?? ''));
         }
 
-        // After Overpass fails, it is skipped for a while, so a busy server
-        // does not make every lookup wait for its timeouts.
-        $nearby = Cache::has('revgeo:overpass-resting') ? null
-            : $this->cached("revgeo:v2:ovp:{$rLat}:{$rLon}", function () use ($rLat, $rLon) {
-                $data = $this->overpassData($rLat, $rLon);
-                if ($data === null) {
-                    Cache::put('revgeo:overpass-resting', true, now()->addMinutes((int) config('geocoding.overpass.rest_minutes', 10)));
-                }
-                return $data;
-            });
-        if ($nearby !== null) {
-            $out['ok'] = true;
-            $out['landmark'] = $this->landmark($nearby);
-        }
+        // The landmark comes from our own copy of the places, at the exact point.
+        $out['landmark'] = $this->landmark($lat, $lon, $nominatim['road'] ?? null);
+        $out['ok'] = $out['ok'] || $out['landmark'] !== null;
 
         return $out;
     }
 
-    // â”€â”€ Field rules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Field rules ─────────────────────────────────────────────────────────
 
     private function community(array $nom, float $lat, float $lon, string $state, string $lga): ?string
     {
@@ -95,7 +85,7 @@ class ReverseGeocoder
             if (self::looksLikeAFacility($name)) {
                 return null;   // mis-tagged map data (e.g. a city named after its stadium)
             }
-            $found = $this->cached('revgeo:v2:find:' . md5(mb_strtolower($name) . "|{$lat}|{$lon}"), fn () => $this->findSettlement($name, $lat, $lon));
+            $found = $this->cached('revgeo:v4:find:' . md5(mb_strtolower($name) . "|{$lat}|{$lon}"), fn () => $this->findSettlement($name, $lat, $lon));
 
             return $found !== null && $inLga($found['lat'], $found['lon']) ? $name : null;
         }
@@ -113,24 +103,20 @@ class ReverseGeocoder
         return (bool) preg_match('/\b(stadium|school|hospital|clinic|mosque|church|hotel|bank|plaza|university|college|office|street|road|avenue|junction|filling station|petrol station)\b/i', $name);
     }
 
-    private function landmark(array $nearby): ?string
+    /** @param array{name: string, line: array}|null $road Nominatim's road for the point */
+    private function landmark(float $lat, float $lon, ?array $road): ?string
     {
-        $place = collect($nearby['places'] ?? [])
-            ->filter(fn ($p) => $p['distance'] <= config('geocoding.landmark_radius_m'))
-            ->sortBy('distance')
-            ->first();
+        $place = NearbyPlaces::nearest($lat, $lon, (float) config('geocoding.landmark_radius_m', 500));
         if ($place === null) {
             return null;
         }
-        $road = collect($nearby['roads'] ?? [])
-            ->filter(fn ($r) => $r['distance'] <= config('geocoding.road_radius_m'))
-            ->sortBy('distance')
-            ->first();
+        $roadName = $road !== null && self::distanceToLine($lat, $lon, $road['line']) <= (float) config('geocoding.road_radius_m', 200)
+            ? $road['name'] : null;
 
         $near = __('near :place', ['place' => $place['name']]);
 
-        return $road && mb_strtolower($road['name']) !== mb_strtolower($place['name'])
-            ? $road['name'] . ', ' . $near
+        return $roadName !== null && mb_strtolower($roadName) !== mb_strtolower($place['name'])
+            ? $roadName . ', ' . $near
             : mb_strtoupper(mb_substr($near, 0, 1)) . mb_substr($near, 1);
     }
 
@@ -141,7 +127,7 @@ class ReverseGeocoder
         return preg_match('/^\d{6}$/', $code) ? $code : null;
     }
 
-    // â”€â”€ Providers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Nominatim ───────────────────────────────────────────────────────────
 
     /** The cached answer, or the fetched one (cached only when it succeeded). */
     private function cached(string $key, callable $fetch): ?array
@@ -157,11 +143,13 @@ class ReverseGeocoder
         return $value;
     }
 
-    /** @return array{address: array, settlement: ?array}|null */
+    /** @return array{address: array, point_postcode: string, settlement: ?array, road: ?array}|null */
     private function nominatimData(float $lat, float $lon): ?array
     {
         try {
-            $point = $this->nominatim('reverse', ['lat' => $lat, 'lon' => $lon, 'zoom' => 18, 'addressdetails' => 1]);
+            // The point itself, with the shape of the object found (a road, when it is one).
+            $point = $this->nominatim('reverse', ['lat' => $lat, 'lon' => $lon, 'zoom' => 18, 'addressdetails' => 1,
+                'polygon_geojson' => 1, 'polygon_threshold' => 0.00005]);
             $place = $this->nominatim('reverse', ['lat' => $lat, 'lon' => $lon, 'zoom' => 14, 'addressdetails' => 1]);
         } catch (Throwable $e) {
             Log::warning('REVERSE_GEOCODE_FAILED', ['provider' => 'nominatim', 'error' => $e->getMessage()]);
@@ -172,14 +160,39 @@ class ReverseGeocoder
 
         return [
             // The settlement fields of both answers, the point's own first.
-            'address'    => array_merge((array) ($place['address'] ?? []), (array) ($point['address'] ?? [])),
+            'address'        => array_merge((array) ($place['address'] ?? []), (array) ($point['address'] ?? [])),
             // The postcode Nominatim gives for the exact point only (never the settlement's).
             'point_postcode' => (string) ($point['address']['postcode'] ?? ''),
-            'settlement' => isset($place['lat'], $place['lon']) ? [
+            'settlement'     => isset($place['lat'], $place['lon']) ? [
                 'type' => $type, 'name' => trim((string) ($place['name'] ?? '')),
                 'lat' => (float) $place['lat'], 'lon' => (float) $place['lon'],
             ] : null,
+            'road'           => self::roadOf($point),
         ];
+    }
+
+    /** The named road Nominatim answered with, as a line of [lat, lon] points (at most 200). */
+    private static function roadOf(array $point): ?array
+    {
+        $name = trim((string) ($point['name'] ?? ''));
+        $geo = $point['geojson'] ?? null;
+        if (($point['category'] ?? '') !== 'highway' || $name === '' || !is_array($geo)) {
+            return null;
+        }
+        $coords = match ($geo['type'] ?? '') {
+            'LineString' => $geo['coordinates'] ?? [],
+            'MultiLineString', 'Polygon' => array_merge(...array_values((array) ($geo['coordinates'] ?? [[]]))),
+            'Point' => [$geo['coordinates'] ?? []],
+            default => [],
+        };
+        $line = [];
+        foreach (array_slice($coords, 0, 200) as $c) {
+            if (isset($c[0], $c[1])) {
+                $line[] = ['lat' => (float) $c[1], 'lon' => (float) $c[0]];
+            }
+        }
+
+        return $line ? ['name' => $name, 'line' => $line] : null;
     }
 
     /** A settlement with this name near the point (bounded search), or null. */
@@ -237,83 +250,12 @@ class ReverseGeocoder
         });
     }
 
-    /** Named places within 500 m and named roads within 200 m, from the first Overpass server that answers. */
-    private function overpassData(float $lat, float $lon): ?array
-    {
-        $p = (int) config('geocoding.landmark_radius_m');
-        $r = (int) config('geocoding.road_radius_m');
-        $query = <<<OQL
-[out:json][timeout:8];
-(
-  nwr(around:{$p},{$lat},{$lon})[name][amenity~"^(school|college|university|kindergarten|marketplace|place_of_worship|clinic|hospital|doctors|health_post)$"];
-  nwr(around:{$p},{$lat},{$lon})[name][healthcare];
-)->.near;
-way(around:{$r},{$lat},{$lon})[highway][name]->.roads;
-.near out tags center;
-.roads out tags geom;
-OQL;
-        foreach ((array) config('geocoding.overpass.urls') as $url) {
-            try {
-                $res = Http::withHeaders(['User-Agent' => $this->userAgent()])
-                    ->asForm()
-                    ->timeout((int) config('geocoding.overpass.timeout', 6))
-                    ->post($url, ['data' => $query])
-                    ->throw();
-                $elements = $res->json('elements');
-                if (!is_array($elements)) {
-                    throw new \RuntimeException('not an Overpass answer');
-                }
-
-                return $this->parseOverpass($elements, $lat, $lon);
-            } catch (Throwable $e) {
-                Log::warning('REVERSE_GEOCODE_FAILED', ['provider' => 'overpass', 'url' => $url, 'error' => $e->getMessage()]);
-            }
-        }
-
-        return null;
-    }
-
-    private function parseOverpass(array $elements, float $lat, float $lon): array
-    {
-        $out = ['places' => [], 'roads' => []];
-        foreach ($elements as $el) {
-            $tags = $el['tags'] ?? [];
-            $name = trim((string) ($tags['name:en'] ?? $tags['name'] ?? ''));
-            if ($name === '') {
-                continue;
-            }
-            if (isset($tags['highway']) && ($el['type'] ?? '') === 'way') {
-                $out['roads'][] = ['name' => $name, 'distance' => self::distanceToLine($lat, $lon, $el['geometry'] ?? [])];
-                continue;
-            }
-            [$eLat, $eLon] = self::centre($el);
-            if ($eLat !== null) {
-                $out['places'][] = ['name' => $name, 'distance' => self::metres($lat, $lon, $eLat, $eLon)];
-            }
-        }
-
-        return $out;
-    }
-
     private function userAgent(): string
     {
         return 'MSAS-FarmAI/1.0 (+' . rtrim((string) config('app.url'), '/') . ')';
     }
 
-    // â”€â”€ Geometry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-    /** @return array{0: ?float, 1: ?float} */
-    private static function centre(array $el): array
-    {
-        if (isset($el['lat'], $el['lon'])) {
-            return [(float) $el['lat'], (float) $el['lon']];
-        }
-        if (isset($el['center']['lat'], $el['center']['lon'])) {
-            return [(float) $el['center']['lat'], (float) $el['center']['lon']];
-        }
-
-        return [null, null];
-    }
+    // ── Geometry ────────────────────────────────────────────────────────────
 
     public static function metres(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
@@ -326,12 +268,12 @@ OQL;
     }
 
     /** Shortest distance (m) from the point to a road drawn as a line of points. */
-    private static function distanceToLine(float $lat, float $lon, array $geometry): float
+    private static function distanceToLine(float $lat, float $lon, array $line): float
     {
         $best = INF;
         $k = cos(deg2rad($lat)) * 111320;   // metres per degree of longitude here
         $prev = null;
-        foreach ($geometry as $pt) {
+        foreach ($line as $pt) {
             $cur = [((float) $pt['lon'] - $lon) * $k, ((float) $pt['lat'] - $lat) * 110540];
             if ($prev === null) {
                 $best = min($best, hypot($cur[0], $cur[1]));

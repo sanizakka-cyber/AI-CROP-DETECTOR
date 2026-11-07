@@ -31,10 +31,17 @@ OpenStreetMap, from our server only, never from the browser or the app:
   most 1 request per second for the whole app (enforced with a cache lock),
   an identifying User-Agent, results cached (30 days, by the point rounded to
   3 decimals, about 110 m). Only the rounded point is sent.
-- **Overpass** (Landmark only): named places within 500 m and named roads
-  within 200 m. The public servers are often busy (tested 7 Nov 2026: both
-  timed out from Render and from a Lagos connection), so each gets 6 seconds,
-  in order (`OVERPASS_URLS`); when none answers, only the landmark is empty.
+- **Our own copy of named places** (`places/`, Landmark only, owner decision
+  7 Nov 2026): schools, markets, mosques, churches and health centres with a
+  name, from the Geofabrik Nigeria extract, built by
+  `scripts/geo/build_place_index.py` (one file per half-degree cell; see
+  `places/index.json` for the date and counts). `App\Services\NearbyPlaces`
+  reads it on our server; nothing is sent out. The road name comes from
+  Nominatim's answer for the point, with its shape, so the 200 m check is
+  exact. Rebuild every few months to pick up new places. The public Overpass
+  servers were tried first and never answered from Render (7 Nov 2026).
+  ODbL: this folder is a derived database; if it is ever shared outside MSAS
+  it must be shared under ODbL.
 - Suggestions are asked for in a second call (`suggest=1`) after State/LGA
   are shown, so the State/LGA answer stays fast; app builds that never ask
   are unaffected.
@@ -49,7 +56,10 @@ Rules:
   is a village, hamlet, town, suburb, neighbourhood or city; otherwise the
   first of those names in the point's address (in that order), located with a
   bounded search. Only when that settlement lies in the same LGA as the point
-  (placed with these boundaries). Otherwise empty.
+  (placed with these boundaries). Otherwise empty. Names that are plainly a
+  facility or a street are never suggested: OpenStreetMap names the city of
+  Katsina "Muhammadu Dikko Stadium" (relation 3711502, 7 Nov 2026), which
+  any mapper can correct.
 - **Postal codes in OpenStreetMap are rare and not always right** (7 Nov 2026:
   none for Katsina city, Funtua or a Kankara village; Abuja CBD returned
   223140, unlike the 900xxx codes Abuja uses). The rule fills whatever 6-digit
