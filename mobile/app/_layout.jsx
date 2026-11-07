@@ -2,7 +2,7 @@ import '../lib/i18n';
 import { Stack } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { LanguageProvider } from '../context/LanguageContext';
@@ -12,6 +12,7 @@ import { profileAPI } from '../lib/api';
 import { setupGlobalErrorHandler } from '../lib/betaLogger';
 import { initOfflineQueue, offlineQueue } from '../lib/offlineQueue';
 import { scanQueue } from '../lib/scanQueue';
+import AuthSplash from '../components/AuthSplash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://msasagro.com/api';
@@ -111,7 +112,19 @@ function RootGuard({ children }) {
     }
   }, [user, loading, router, segments]);
 
-  return children;
+  // While the saved login is checked, a loading screen covers whatever route
+  // the app opened on (a notification or link can skip the index route), so
+  // the sign-in form never shows to a farmer who is signed in.
+  return (
+    <>
+      {children}
+      {loading && (
+        <View style={StyleSheet.absoluteFill} testID="auth-splash-overlay">
+          <AuthSplash />
+        </View>
+      )}
+    </>
+  );
 }
 
 export default function RootLayout() {
