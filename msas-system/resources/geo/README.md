@@ -14,17 +14,55 @@ uses it to fill State and LGA from a GPS point, server side.
   20 boundary spellings mapped onto our dropdown names, and fails if any
   LGA is left unmatched.
 
-Community names cannot be filled from coordinates: there are no open
-community boundaries.
+State and LGA always come from these boundaries; nothing below changes that.
 
-## Fields not filled from GPS (checked 23 Oct 2026)
+## Suggestions from the location (decision 7 Nov 2026)
 
-**Decision (owner, 23 Oct 2026): Ward and Community stay manual; Postal Code
-stays blank unless the farmer types it.** Revisit only if a dataset with an
-open, non-share-alike licence and national, validated coverage appears.
+**Decision (owner, 7 Nov 2026), replacing the 23 Oct decision: Community and
+Address/Landmark are filled from the location as suggestions; Postal Code is
+filled only when the provider returns one for that point. Ward stays manual.**
 
-Each stays empty and editable; `collection_locations.field_sources` records
-`user` when the farmer fills it.
+`App\Services\ReverseGeocoder` (settings in `config/geocoding.php`) asks
+OpenStreetMap, from our server only, never from the browser or the app:
+
+- **Nominatim** (reverse geocoding): the settlement and postcode of the point.
+  Policy: at most 1 request per second for the whole app (enforced with a
+  cache lock), an identifying User-Agent, results cached (30 days, by the
+  point rounded to 3 decimals, about 110 m). Only the rounded point is sent.
+- **Overpass**: settlements within 10 km (to place Nominatim's settlement in
+  an LGA), named places within 500 m, named roads within 200 m.
+- **Licence and credit:** OpenStreetMap data, ODbL. "© OpenStreetMap
+  contributors" is shown under the fields whenever a suggestion is shown.
+- **Off switch:** `REVERSE_GEOCODING_ENABLED=false` stops every lookup at once
+  (required by the OSMF policy); the fields then stay empty.
+
+Rules:
+
+- **Community / Town / Village:** the first of village, hamlet, town, suburb,
+  neighbourhood, city in Nominatim's address for the point, and only when that
+  settlement lies in the same LGA as the point (its location from Overpass,
+  placed with these boundaries). Otherwise empty.
+- **Address / Landmark:** the nearest named school, market, mosque, church or
+  health centre within about 500 m, written "Road, near Place" when a named
+  road is within 200 m, else "Near Place". No such place: empty.
+- **Postal Code:** only a 6-digit code Nominatim returns for the point. Never
+  guessed, never taken from the LGA or State.
+- Only from the GPS point or a pin the farmer placed, never from IP. A device
+  reading worse than 1 km (a laptop estimating from Wi-Fi) fills nothing: the
+  farmer drags the pin, which runs the same lookups.
+- Shown as "Suggested from your location – please check"; the farmer can edit
+  or clear each field, and nothing they typed is overwritten (shared rules:
+  `public/js/location-suggest.js`, `mobile/lib/locationSuggest.js`).
+- `collection_locations.field_sources` records `gps` for a suggestion kept as
+  is and `user` for anything typed or edited.
+- A failed lookup or no network leaves the three fields empty for the farmer;
+  State and LGA still come from the boundaries (offline scans included, when
+  they sync).
+
+## Earlier findings (23 Oct 2026)
+
+The 23 Oct decision kept Ward and Community manual and Postal Code blank. The
+datasets checked then still do not fit:
 
 - **Ward:** GRID3 NGA Operational Wards v3.0 (CIESIN, doi 10.7916/2pfj-hq78)
   is CC BY-SA 4.0 (share-alike: anything derived from it must carry the same

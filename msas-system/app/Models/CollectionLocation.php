@@ -48,6 +48,9 @@ class CollectionLocation extends Model
      */
     public const ACCURACY_RATINGS = ['excellent' => 5, 'good' => 15, 'fair' => 50];
 
+    /** Fields the form may fill from the GPS point as suggestions (App\Services\ReverseGeocoder). */
+    private const SUGGESTED_FIELDS = ['community', 'postal_code', 'address_landmark'];
+
     /** Fields whose source is recorded in field_sources. */
     private const NAMED_FIELDS = ['state' => 'loc_state', 'lga' => 'loc_lga', 'ward' => 'loc_ward',
         'community' => 'loc_community', 'postal_code' => 'loc_postal_code', 'address_landmark' => 'loc_address'];
@@ -147,9 +150,10 @@ class CollectionLocation extends Model
         }
 
         // Where each place-name field came from: the boundary lookup (its
-        // dataset version) or the user. Ward, community, postal code and
-        // address have no reliable open source to fill them from, so only
-        // the user fills them.
+        // dataset version) for State/LGA; for Community, Postal Code and
+        // Address/Landmark 'gps' when the farmer kept the suggestion from
+        // their location (loc_<field>_source=gps, set by the form), else
+        // 'user'. Ward is always the user's.
         $fieldSources = [];
         $names = ['state' => $state, 'lga' => $lga];
         foreach (self::NAMED_FIELDS as $field => $input) {
@@ -158,7 +162,8 @@ class CollectionLocation extends Model
                     $fieldSources[$field] = $placeNamesSource;
                 }
             } elseif ($request->filled($input)) {
-                $fieldSources[$field] = 'user';
+                $fieldSources[$field] = in_array($field, self::SUGGESTED_FIELDS, true) && $request->input($input . '_source') === 'gps'
+                    ? 'gps' : 'user';
             }
         }
 
@@ -170,7 +175,8 @@ class CollectionLocation extends Model
             'ward'                        => $request->input('loc_ward'),
             'community'                   => $request->input('loc_community'),
             'postal_code'                 => $request->input('loc_postal_code'),
-            'postal_code_source'          => $request->filled('loc_postal_code') ? 'user_entered' : null,
+            'postal_code_source'          => !$request->filled('loc_postal_code') ? null
+                : (($fieldSources['postal_code'] ?? null) === 'gps' ? 'osm_nominatim' : 'user_entered'),
             'address_landmark'            => $request->input('loc_address'),
             'latitude'                    => $lat,
             'longitude'                   => $lon,
