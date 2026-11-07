@@ -62,8 +62,13 @@ Rules:
   any mapper can correct.
 - **Postal codes in OpenStreetMap are rare and not always right** (7 Nov 2026:
   none for Katsina city, Funtua or a Kankara village; Abuja CBD returned
-  223140, unlike the 900xxx codes Abuja uses). The rule fills whatever 6-digit
-  code is returned, as a suggestion for the farmer to check.
+  223140, but Abuja codes start with 9). Owner decision 7 Nov 2026: a code is
+  suggested only when its first two digits belong to the State found for the
+  point (`geocoding.postcode_prefixes`, NIPOST's six-digit scheme: region,
+  then State). A State not in that list gets no suggestion. The list is not
+  yet checked against an official NIPOST table. NIPOST introduced
+  11-character digital postcodes on 1 Oct 2026; OpenStreetMap still holds the
+  old six-digit codes.
 - **Address / Landmark:** the nearest named school, market, mosque, church or
   health centre within about 500 m, written "Road, near Place" when a named
   road is within 200 m, else "Near Place". No such place: empty.

@@ -153,6 +153,32 @@ class LocationSuggestionsTest extends TestCase
         }
     }
 
+    public function test_a_postal_code_is_suggested_only_when_its_first_digits_match_the_state(): void
+    {
+        // Abuja (FCT) codes start with 90/91; OpenStreetMap gave 223140 there on 7 Nov 2026.
+        $abuja = ['lat' => 9.0579, 'lon' => 7.4951];
+        $this->address = ['postcode' => '223140'];
+        $this->assertNull($this->lookup($abuja)->json('suggestions.postal_code'));
+
+        Cache::flush();
+        $this->address = ['postcode' => '900211'];
+        $this->assertSame('900211', $this->lookup($abuja)->json('suggestions.postal_code'));
+
+        // A Katsina code at a Katsina point is kept; a Kano code there is not.
+        Cache::flush();
+        $this->funtua();
+        $this->assertSame('831101', $this->lookup()->json('suggestions.postal_code'));
+        Cache::flush();
+        $this->address['postcode'] = '700241';
+        $this->assertNull($this->lookup()->json('suggestions.postal_code'));
+
+        // A State with no known prefixes gets no suggestion at all.
+        Cache::flush();
+        $this->funtua();
+        config(['geocoding.postcode_prefixes' => ['Lagos' => ['10']]]);
+        $this->assertNull($this->lookup()->json('suggestions.postal_code'));
+    }
+
     public function test_no_named_place_within_500_m_leaves_the_landmark_empty(): void
     {
         $this->places([[11.5400, 7.3300, 'market', 'Far Market']]);
