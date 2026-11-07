@@ -28,6 +28,7 @@ class LocationLookupController extends Controller
             'lat'      => 'required|numeric|between:-90,90',
             'lon'      => 'required|numeric|between:-180,180',
             'accuracy' => 'nullable|numeric|min:0',
+            'suggest'  => 'nullable|boolean',
         ]);
 
         if (isset($data['accuracy']) && (float) $data['accuracy'] > (float) config('geocoding.max_auto_fill_accuracy_m', 1000)) {
@@ -41,22 +42,29 @@ class LocationLookupController extends Controller
             return response()->json(['found' => false]);
         }
 
-        $suggest = $geocoder->suggest($lat, $lon, $found['lga'], $found['state']);
-
-        return response()->json([
+        $body = [
             'found'       => true,
             'state'       => $found['state'],
             'lga'         => $found['lga'],
             'source'      => $found['source'],
             'attribution' => LgaLookup::attribution(),
+        ];
+
+        // Place-name suggestions take a few seconds (outside services), so
+        // forms ask for them in a second call (suggest=1) after State/LGA are
+        // shown; app builds that never ask keep the fast answer.
+        if ($request->boolean('suggest')) {
+            $suggest = $geocoder->suggest($lat, $lon, $found['lga'], $found['state']);
             // Suggestions only; the farmer checks, edits or clears them.
-            'suggestions' => [
+            $body['suggestions'] = [
                 'ok'          => $suggest['ok'],
                 'community'   => $suggest['community'],
                 'landmark'    => $suggest['landmark'],
                 'postal_code' => $suggest['postal_code'],
                 'attribution' => config('geocoding.attribution'),
-            ],
-        ]);
+            ];
+        }
+
+        return response()->json($body);
     }
 }

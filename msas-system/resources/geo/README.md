@@ -25,12 +25,19 @@ filled only when the provider returns one for that point. Ward stays manual.**
 `App\Services\ReverseGeocoder` (settings in `config/geocoding.php`) asks
 OpenStreetMap, from our server only, never from the browser or the app:
 
-- **Nominatim** (reverse geocoding): the settlement and postcode of the point.
-  Policy: at most 1 request per second for the whole app (enforced with a
-  cache lock), an identifying User-Agent, results cached (30 days, by the
-  point rounded to 3 decimals, about 110 m). Only the rounded point is sent.
-- **Overpass**: settlements within 10 km (to place Nominatim's settlement in
-  an LGA), named places within 500 m, named roads within 200 m.
+- **Nominatim**: the point's address and postcode (reverse, zoom 18), its
+  settlement with coordinates (reverse, zoom 14), and, when needed, a bounded
+  settlement search to place a settlement named in the address. Policy: at
+  most 1 request per second for the whole app (enforced with a cache lock),
+  an identifying User-Agent, results cached (30 days, by the point rounded to
+  3 decimals, about 110 m). Only the rounded point is sent.
+- **Overpass** (Landmark only): named places within 500 m and named roads
+  within 200 m. The public servers are often busy (tested 7 Nov 2026: both
+  timed out from Render and from a Lagos connection), so each gets 6 seconds,
+  in order (`OVERPASS_URLS`); when none answers, only the landmark is empty.
+- Suggestions are asked for in a second call (`suggest=1`) after State/LGA
+  are shown, so the State/LGA answer stays fast; app builds that never ask
+  are unaffected.
 - **Licence and credit:** OpenStreetMap data, ODbL. "© OpenStreetMap
   contributors" is shown under the fields whenever a suggestion is shown.
 - **Off switch:** `REVERSE_GEOCODING_ENABLED=false` stops every lookup at once
@@ -38,10 +45,15 @@ OpenStreetMap, from our server only, never from the browser or the app:
 
 Rules:
 
-- **Community / Town / Village:** the first of village, hamlet, town, suburb,
-  neighbourhood, city in Nominatim's address for the point, and only when that
-  settlement lies in the same LGA as the point (its location from Overpass,
-  placed with these boundaries). Otherwise empty.
+- **Community / Town / Village:** Nominatim's settlement for the point when it
+  is a village, hamlet, town, suburb, neighbourhood or city; otherwise the
+  first of those names in the point's address (in that order), located with a
+  bounded search. Only when that settlement lies in the same LGA as the point
+  (placed with these boundaries). Otherwise empty.
+- **Postal codes in OpenStreetMap are rare and not always right** (7 Nov 2026:
+  none for Katsina city, Funtua or a Kankara village; Abuja CBD returned
+  223140, unlike the 900xxx codes Abuja uses). The rule fills whatever 6-digit
+  code is returned, as a suggestion for the farmer to check.
 - **Address / Landmark:** the nearest named school, market, mosque, church or
   health centre within about 500 m, written "Road, near Place" when a named
   road is within 200 m, else "Near Place". No such place: empty.

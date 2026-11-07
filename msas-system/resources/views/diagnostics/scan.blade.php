@@ -624,6 +624,19 @@
         });
     });
 
+    // Community, Address/Landmark and Postal Code take a few seconds (outside
+    // services), so they are asked for after State/LGA are shown. A failed
+    // lookup (ok: false) leaves the fields for the farmer.
+    function lookupSuggestions(fix, q) {
+        fetch(LOC_TEXT.lookupUrl + q + '&suggest=1', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (d) {
+                if (locFix !== fix) { return; }
+                applySuggestions(d.suggestions && d.suggestions.ok ? d.suggestions : null);
+            })
+            .catch(function () {});
+    }
+
     // accuracy: the device's reading in metres, or null for a point placed on the map.
     function lookupNames(fix, accuracy) {
         showNamesSource(LOC_TEXT.lookingUp);
@@ -639,8 +652,7 @@
             locFilled = true;
             setVal('locNamesFrom', 'lookup');
             showNamesSource(LOC_TEXT.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
-            // A failed suggestion lookup (ok: false) leaves the fields for the farmer.
-            applySuggestions(d.suggestions && d.suggestions.ok ? d.suggestions : null);
+            lookupSuggestions(fix, q);
         }).catch(function () {
             // Keep the coordinates: the server fills State/LGA on submit, or the farmer picks them.
             if (locFix === fix) { showNamesSource(LOC_TEXT.fillOnSubmit); }

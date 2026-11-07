@@ -513,7 +513,11 @@
                     if (!d.found) { namesNote(T.notFound); suggestWard({ community: null }); return; }
                     fillStateLga(d.state, d.lga);
                     namesNote(T.filledFrom.replace(':place', d.lga + ', ' + d.state) + ' ' + d.attribution);
-                    suggestWard(d.suggestions && d.suggestions.ok ? d.suggestions : null);
+                    // The village takes a few seconds (outside services): asked for after State/LGA.
+                    fetch(T.lookupUrl + q + '&suggest=1', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                        .then(function (s) { if (gpsFix === point) { suggestWard(s.suggestions && s.suggestions.ok ? s.suggestions : null); } })
+                        .catch(function () {});
                 })
                 .catch(function () { if (gpsFix === point) { namesNote(T.lookupFailed); } });
         }

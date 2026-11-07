@@ -40,22 +40,26 @@ return [
     'max_auto_fill_accuracy_m' => 1000,
 
     'nominatim' => [
-        'url'        => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org/reverse'),
+        'url'        => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
         'email'      => env('NOMINATIM_EMAIL'),   // optional contact address sent with each request
         'timeout'    => 6,
         'min_interval_ms' => 1100,                // a little over 1 request per second, for the whole app
     ],
 
+    // Public Overpass servers are often busy: each gets a short try, in order.
+    // When none answers, only the landmark stays empty.
     'overpass' => [
-        'url'     => env('OVERPASS_URL', 'https://overpass-api.de/api/interpreter'),
-        'timeout' => 10,
+        'urls'    => array_filter(explode(',', (string) env('OVERPASS_URLS',
+            'https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter'))),
+        'timeout' => 6,
     ],
 
     // Settlement types for Community, in order of preference.
     'community_types' => ['village', 'hamlet', 'town', 'suburb', 'neighbourhood', 'city'],
 
-    // How far to look for the settlement Nominatim names, to place it in an LGA.
-    'settlement_radius_m' => 10000,
+    // Half-width (degrees, about 16 km) of the box searched for a settlement
+    // Nominatim names in the address, to place it in an LGA.
+    'settlement_search_deg' => 0.15,
 
     // Landmark: a named place of these kinds within this distance, plus the
     // name of a road this close to the point.
